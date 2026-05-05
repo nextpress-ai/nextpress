@@ -18,6 +18,9 @@
 
 set -euo pipefail
 
+VERSION="$(jq -r '.version' package.json 2>/dev/null || echo 'unknown')"
+echo "==> NextPress deploy starting (v${VERSION})"
+
 # ============================================
 # CLI Arguments
 # ============================================

@@ -11,6 +11,7 @@ import {
   Users, 
   Cog 
 } from "lucide-react";
+import { NEXTPRESS_CONFIG } from "../../../config";
 
 interface MenuItem {
   label: string;
@@ -47,12 +48,13 @@ export default function AdminSidebar() {
   }, {} as Record<string, MenuItem[]>);
 
   return (
-    <div className="fixed left-0 top-8 bottom-0 w-40 bg-wp-gray text-white overflow-y-auto z-40">
-      <div className="p-4">
-        <h1 className="text-lg font-bold text-white mb-4">NextPress</h1>
-      </div>
-      
-      <nav className="space-y-1">
+    <div className="fixed left-0 top-8 bottom-0 w-40 bg-wp-gray text-white overflow-hidden z-40">
+      <div className="flex h-full flex-col">
+        <div className="p-4">
+          <h1 className="text-lg font-bold text-white mb-4">NextPress</h1>
+        </div>
+
+        <nav className="flex-1 space-y-1 overflow-y-auto">
         {/* Main items (no section) */}
         {groupedItems.main?.map((item) => {
           const Icon = item.icon;
@@ -97,7 +99,12 @@ export default function AdminSidebar() {
             </div>
           </div>
         ))}
-      </nav>
+        </nav>
+
+        <div className="border-t border-white/10 px-4 py-3 text-[11px] text-white/60">
+          v{NEXTPRESS_CONFIG.version}
+        </div>
+      </div>
     </div>
   );
 }
