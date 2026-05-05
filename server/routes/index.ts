@@ -24,11 +24,17 @@ import { createRenderRoutes } from './render.routes';
 import { createSetupRoutes } from './setup.routes';
 import { setupCheck } from '../middleware/setupCheck';
 import express from 'express';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function resolveFirstExistingPath(paths: string[]): string | null {
+  const found = paths.find((candidate) => fs.existsSync(candidate));
+  return found ?? null;
+}
 
 /**
  * Orchestrates all route registration for the NextPress application.
@@ -102,18 +108,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   if (app.get('env') !== 'development') {
+    const adminIndexPath = resolveFirstExistingPath([
+      // Most common when the server is bundled into `dist/` (tsup single-file).
+      path.resolve(__dirname, 'public/index.html'),
+      // Common when running from source layouts with nested `server/` output structure.
+      path.resolve(__dirname, '../../dist/public/index.html'),
+      // Fallbacks for differing container WORKDIR / build layouts.
+      path.resolve(process.cwd(), 'dist/public/index.html'),
+      '/app/dist/public/index.html',
+      '/dist/public/index.html',
+    ]);
+
+    if (!adminIndexPath) {
+      throw new Error(
+        [
+          'Missing admin build file: dist/public/index.html.',
+          'Tried common locations relative to the runtime bundle and working directory.',
+          'Fix by ensuring the release image includes the Vite build output (dist/public).',
+        ].join(' '),
+      );
+    }
+
     // Admin static assets
+    const adminDistAssetsPath = path.resolve(path.dirname(adminIndexPath), 'assets');
+
     app.use(
       '/admin/assets',
-      express.static(path.join(__dirname, '../../dist/public/assets'))
+      express.static(adminDistAssetsPath)
     );
 
     // Admin SPA routes
     app.get('/admin', (_req, res) => {
-      res.sendFile(path.join(__dirname, '../../dist/public/index.html'));
+      res.sendFile(adminIndexPath);
     });
     app.get('/admin/*', (_req, res) => {
-      res.sendFile(path.join(__dirname, '../../dist/public/index.html'));
+      res.sendFile(adminIndexPath);
     });
   }
 
