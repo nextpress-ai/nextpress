@@ -1,7 +1,15 @@
 import type { CSSProperties, JSX, ReactNode } from "react";
 import { generateBlockAnimationCSS, getEntryAnimationAttributes } from "@shared/animation-utils";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import {
+  type ColumnLayout,
+  readColumnsData,
+  buildColumnsContainerStyle,
+  buildColumnStyle,
+} from "@shared/columns-layout";
 import { generateBlockModifierCSS, resolveTokenMap } from "@/lib/tailwind-tokens";
+import { IconRenderer } from "@/components/PageBuilder/blocks/shared/IconRenderer";
+import type { IconReference } from "@/lib/icon-indexes";
 
 type PublicBlockRendererProps = {
   block: BlockConfig;
@@ -36,10 +44,36 @@ type ButtonsData = {
     rel?: string;
     title?: string;
     className?: string;
+    icon?: IconReference;
+    iconPosition?: "left" | "right";
+    iconOnly?: boolean;
   }>;
   className?: string;
   layout?: string;
   orientation?: "horizontal" | "vertical";
+};
+
+type ButtonTextContent = TextContent & {
+  url?: string;
+  linkTarget?: "_self" | "_blank";
+  target?: string;
+  rel?: string;
+  title?: string;
+  icon?: IconReference;
+  iconPosition?: "left" | "right";
+  iconOnly?: boolean;
+};
+
+type FileBlockData = {
+  href?: string;
+  fileName?: string;
+  textLinkHref?: string;
+  textLinkTarget?: "_self" | "_blank";
+  showDownloadButton?: boolean;
+  downloadButtonText?: string;
+  displayPreview?: boolean;
+  fileSize?: string;
+  className?: string;
 };
 
 const HEADING_FONT_SIZES: Record<number, string> = {
@@ -67,11 +101,14 @@ const publicBlockRenderers: Record<string, BlockRenderer> = {
   "core/code": renderCodeBlock,
   "core/cover": renderCoverBlock,
   "core/divider": renderDividerBlock,
+  "core/file": renderFileBlock,
   "core/gallery": renderGalleryBlock,
   "core/group": renderGroupBlock,
   "core/heading": renderHeadingBlock,
   "core/html": renderHtmlBlock,
+  "core/icon": renderIconBlock,
   "core/image": renderImageBlock,
+  "core/columns": renderColumnsBlock,
   "core/list": renderListBlock,
   "core/markdown": renderMarkdownBlock,
   "core/media-text": renderMediaTextBlock,
@@ -156,8 +193,19 @@ function getStructuredData(content: BlockContent): Record<string, unknown> {
   return content?.kind === "structured" && content.data ? content.data : {};
 }
 
+/** Icon blocks may be structured (`data`) or legacy flat `{ icon, link, ... }`. */
+function getIconBlockPayload(content: BlockContent): Record<string, unknown> {
+  if (content?.kind === "structured" && content.data && typeof content.data === "object") {
+    return content.data as Record<string, unknown>;
+  }
+  if (content && typeof content === "object" && "icon" in content) {
+    return content as unknown as Record<string, unknown>;
+  }
+  return {};
+}
+
 function renderHeadingBlock(block: BlockConfig, styles: CSSProperties) {
-  const content = block.content as TextContent | undefined;
+  const content = block.content as (TextContent & { level?: number }) | undefined;
   const level = typeof content?.level === "number" ? content.level : 2;
   const safeLevel = Math.min(6, Math.max(1, level));
   const Tag = `h${safeLevel}` as keyof JSX.IntrinsicElements;
@@ -187,6 +235,16 @@ function renderHeadingBlock(block: BlockConfig, styles: CSSProperties) {
 function renderParagraphBlock(block: BlockConfig, styles: CSSProperties) {
   const content = block.content as TextContent | undefined;
   const align = styles.textAlign || content?.textAlign || content?.align;
+  const textAlignStyle =
+    align === "left" ||
+    align === "center" ||
+    align === "right" ||
+    align === "justify" ||
+    align === "start" ||
+    align === "end"
+      ? align
+      : undefined;
+
   const className = [
     "wp-block-paragraph",
     align ? `has-text-align-${align}` : "",
@@ -202,7 +260,7 @@ function renderParagraphBlock(block: BlockConfig, styles: CSSProperties) {
       className={className}
       style={{
         ...styles,
-        ...(align ? { textAlign: align } : {}),
+        ...(textAlignStyle ? { textAlign: textAlignStyle } : {}),
       }}
     >
       {getTextContent(block.content)}
@@ -210,11 +268,42 @@ function renderParagraphBlock(block: BlockConfig, styles: CSSProperties) {
   );
 }
 
+function mapTextAlignToJustifyContent(
+  textAlign: CSSProperties["textAlign"] | undefined,
+): CSSProperties["justifyContent"] | undefined {
+  if (!textAlign) return undefined;
+  if (textAlign === "left") return "flex-start";
+  if (textAlign === "center") return "center";
+  if (textAlign === "right") return "flex-end";
+  return undefined;
+}
+
 function renderButtonBlock(block: BlockConfig, styles: CSSProperties) {
-  const content = block.content as TextContent | undefined;
+  const content = block.content as ButtonTextContent | undefined;
   const url = content?.url || "#";
   const target = content?.linkTarget || content?.target;
   const className = ["wp-block-button", content?.className || ""].filter(Boolean).join(" ");
+  const icon = content?.icon;
+  const iconPosition = content?.iconPosition || "left";
+  const iconOnly = content?.iconOnly || false;
+  const textContent = getTextContent(block.content);
+
+  const iconElement = icon ? (
+    <IconRenderer
+      icon={icon}
+      size={icon.size || 16}
+      color="currentColor"
+      strokeWidth={icon.strokeWidth || 2}
+      style={{ flexShrink: 0 }}
+    />
+  ) : null;
+
+  const label = iconOnly && icon ? content?.title || textContent || undefined : undefined;
+  const justifyFromTextAlign = mapTextAlignToJustifyContent(styles?.textAlign);
+  const justifyContent =
+    (styles?.justifyContent as CSSProperties["justifyContent"] | undefined) ??
+    justifyFromTextAlign ??
+    "center";
 
   return (
     <div className={className} role="presentation">
@@ -223,15 +312,18 @@ function renderButtonBlock(block: BlockConfig, styles: CSSProperties) {
         href={url}
         target={target}
         rel={content?.rel}
-        title={content?.title}
+        title={label}
         style={{
           ...styles,
           display: "inline-flex",
-          alignItems: "center",
-          justifyContent: styles.justifyContent || "center",
+          alignItems: (styles?.alignItems as CSSProperties["alignItems"]) ?? "center",
+          justifyContent,
+          gap: iconElement && !iconOnly ? "6px" : undefined,
         }}
       >
-        {getTextContent(block.content)}
+        {iconElement && iconPosition === "left" ? iconElement : null}
+        {!iconOnly ? textContent : null}
+        {iconElement && iconPosition === "right" ? iconElement : null}
       </a>
     </div>
   );
@@ -266,33 +358,53 @@ function renderButtonsBlock(block: BlockConfig, styles: CSSProperties) {
         justifyContent: layout,
       }}
     >
-      {buttons.map((button, index) => (
-        <div
-          key={button.id || `${button.url}-${index}`}
-          className={["wp-block-button", button.className || ""].filter(Boolean).join(" ")}
-        >
-          <a
-            className="wp-block-button__link"
-            href={button.url || "#"}
-            target={button.linkTarget}
-            rel={button.rel}
-            title={button.title}
-            style={{
-              backgroundColor: "#007cba",
-              border: "none",
-              borderRadius: "4px",
-              color: "#ffffff",
-              display: "inline-block",
-              fontSize: "16px",
-              fontWeight: "600",
-              padding: "12px 24px",
-              textDecoration: "none",
-            }}
+      {buttons.map((button, index) => {
+        const icon = button.icon;
+        const iconPosition = button.iconPosition || "left";
+        const iconOnly = button.iconOnly || false;
+        const iconElement = icon ? (
+          <IconRenderer
+            icon={icon}
+            size={icon.size || 16}
+            color="#ffffff"
+            strokeWidth={icon.strokeWidth || 2}
+            style={{ flexShrink: 0 }}
+          />
+        ) : null;
+
+        return (
+          <div
+            key={button.id || `${button.url}-${index}`}
+            className={["wp-block-button", button.className || ""].filter(Boolean).join(" ")}
           >
-            {button.text || "Button"}
-          </a>
-        </div>
-      ))}
+            <a
+              className="wp-block-button__link"
+              href={button.url || "#"}
+              target={button.linkTarget}
+              rel={button.rel}
+              title={iconOnly && icon ? button.title || button.text : button.title}
+              style={{
+                backgroundColor: "#007cba",
+                border: "none",
+                borderRadius: "4px",
+                color: "#ffffff",
+                display: "inline-flex",
+                alignItems: "center",
+                fontSize: "16px",
+                fontWeight: "600",
+                gap: iconElement && !iconOnly ? "6px" : undefined,
+                justifyContent: "center",
+                padding: "12px 24px",
+                textDecoration: "none",
+              }}
+            >
+              {iconElement && iconPosition === "left" ? iconElement : null}
+              {!iconOnly ? button.text || "Button" : null}
+              {iconElement && iconPosition === "right" ? iconElement : null}
+            </a>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -576,6 +688,204 @@ function renderTableBlock(block: BlockConfig, styles: CSSProperties) {
         </tbody>
       </table>
     </figure>
+  );
+}
+
+function renderColumnsBlock(block: BlockConfig, styles: CSSProperties) {
+  const data = readColumnsData(block.content);
+  const layout =
+    (block.settings?.columnLayout as ColumnLayout[] | undefined) || [
+      { columnId: "default-col-1", width: "100%", blockIds: [] },
+    ];
+  const children = block.children || [];
+  const layoutMode = data.layoutMode || "flex";
+  const direction = data.direction || "row";
+
+  const columnVerticalAlignment = data.columnVerticalAlignment || "top";
+  const columnHorizontalAlignment = data.columnHorizontalAlignment || "stretch";
+
+  const columnAlignItems = {
+    stretch: "stretch",
+    left: "flex-start",
+    center: "center",
+    right: "flex-end",
+  }[columnHorizontalAlignment];
+
+  const columnJustifyContent = {
+    top: "flex-start",
+    center: "center",
+    bottom: "flex-end",
+    stretch: "stretch",
+  }[columnVerticalAlignment];
+
+  const containerStyle = buildColumnsContainerStyle(data, layout, styles);
+
+  return (
+    <div className="wp-block-columns" style={containerStyle}>
+      {layout.map((column) => {
+        const columnChildren = children.filter((child) => column.blockIds.includes(child.id));
+        const columnStyle = buildColumnStyle(data, layoutMode, direction, column, layout);
+
+        return (
+          <div
+            key={column.columnId}
+            className="wp-block-column"
+            style={{
+              ...columnStyle,
+              alignItems: columnAlignItems,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: columnJustifyContent,
+            }}
+          >
+            {columnChildren.map((child) => (
+              <PublicBlockRenderer key={child.id} block={child} />
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function renderIconBlock(block: BlockConfig, styles: CSSProperties) {
+  const d = getIconBlockPayload(block.content);
+  const iconRaw = (d.icon as Record<string, unknown>) || {};
+  const icon: IconReference = {
+    iconSet: (iconRaw.iconSet as IconReference["iconSet"]) || "lucide",
+    iconName: typeof iconRaw.iconName === "string" ? iconRaw.iconName : "star",
+    size: typeof iconRaw.size === "number" ? iconRaw.size : 24,
+    color: typeof iconRaw.color === "string" ? iconRaw.color : "currentColor",
+    strokeWidth: typeof iconRaw.strokeWidth === "number" ? iconRaw.strokeWidth : 2,
+  };
+  const link = typeof d.link === "string" ? d.link : "";
+  const linkTarget = d.linkTarget === "_blank" ? "_blank" : "_self";
+  const label = typeof d.label === "string" ? d.label : "";
+
+  const inner = (
+    <IconRenderer
+      icon={icon}
+      className="wp-block-icon"
+      style={{
+        ...styles,
+        alignItems: "center",
+        display: "inline-flex",
+        justifyContent: "center",
+      }}
+      aria-label={label || undefined}
+    />
+  );
+
+  if (link && link !== "#") {
+    return (
+      <a
+        href={link}
+        rel={linkTarget === "_blank" ? "noopener noreferrer" : undefined}
+        style={{ display: "inline-flex", textDecoration: "none" }}
+        target={linkTarget}
+        title={label || undefined}
+      >
+        {inner}
+      </a>
+    );
+  }
+
+  return inner;
+}
+
+function getFileBlockData(content: BlockContent): FileBlockData {
+  if (content?.kind === "structured" && content.data && typeof content.data === "object") {
+    return content.data as FileBlockData;
+  }
+  return {};
+}
+
+function renderFileBlock(block: BlockConfig, styles: CSSProperties) {
+  const blockData = getFileBlockData(block.content);
+  const url = blockData?.href || "";
+  const fileName = blockData?.fileName || "";
+  const textLinkHref = blockData?.textLinkHref || url;
+  const textLinkTarget = blockData?.textLinkTarget || "_self";
+  const showDownloadButton = blockData?.showDownloadButton !== false;
+  const downloadButtonText = blockData?.downloadButtonText || "Download";
+  const displayPreview = blockData?.displayPreview !== false;
+  const fileSize = blockData?.fileSize || "";
+
+  const className = ["wp-block-file", blockData?.className || ""].filter(Boolean).join(" ");
+  const fileExtension = fileName ? fileName.split(".").pop()?.toUpperCase() : "";
+
+  if (!url) {
+    return null;
+  }
+
+  const downloadGlyph = (
+    <IconRenderer
+      icon={{ iconSet: "lucide", iconName: "download", size: 16, color: "currentColor", strokeWidth: 2 }}
+      size={16}
+      style={{ flexShrink: 0 }}
+    />
+  );
+
+  return (
+    <div className={className} style={styles}>
+      <div className="wp-block-file__content-wrapper">
+        {displayPreview ? (
+          <div className="wp-block-file__preview">
+            <div style={{ alignItems: "center", display: "flex", marginBottom: "1em" }}>
+              <IconRenderer
+                icon={{ iconSet: "lucide", iconName: "file", size: 32, color: "#4b5563", strokeWidth: 2 }}
+                size={32}
+                style={{ flexShrink: 0, marginRight: "12px" }}
+              />
+              <div>
+                <div className="file-name font-medium">
+                  <a
+                    href={textLinkHref}
+                    rel={textLinkTarget === "_blank" ? "noopener noreferrer" : undefined}
+                    style={{ color: "#007cba", textDecoration: "none" }}
+                    target={textLinkTarget}
+                  >
+                    {fileName || "Download File"}
+                  </a>
+                </div>
+                {(fileExtension || fileSize) && (
+                  <div className="file-details text-sm text-gray-500">
+                    {fileExtension ? <span>{fileExtension}</span> : null}
+                    {fileExtension && fileSize ? <span> • </span> : null}
+                    {fileSize ? <span>{fileSize}</span> : null}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {showDownloadButton ? (
+          <div className="wp-block-file__button-container">
+            <a
+              className="wp-block-file__button"
+              download={fileName}
+              href={url}
+              style={{
+                alignItems: "center",
+                backgroundColor: "#007cba",
+                borderRadius: "4px",
+                color: "#ffffff",
+                display: "inline-flex",
+                fontSize: "16px",
+                fontWeight: "600",
+                gap: "8px",
+                padding: "12px 24px",
+                textDecoration: "none",
+              }}
+            >
+              {downloadGlyph}
+              {downloadButtonText}
+            </a>
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

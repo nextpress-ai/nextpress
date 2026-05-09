@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly CLI_VERSION="nextpress 1.0.7"
+readonly CLI_VERSION="nextpress 1.0.8"
 readonly DEFAULT_INSTALL_DIR="/opt/nextpress"
 readonly DEFAULT_VERSION="latest"
 readonly COMPOSE_FILE="docker-compose.prod.yml"

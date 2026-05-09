@@ -25,69 +25,19 @@ import BlockRenderer from "../../BlockRenderer";
 import { generateBlockId } from "../../utils";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
-import { buildFlexRowColumnStyle } from "@shared/columns-flex-style";
+import {
+  type ColumnLayout,
+  type ColumnsContent,
+  type ColumnsData,
+  readColumnsData,
+  writeColumnsData,
+  buildColumnsContainerStyle,
+  buildColumnStyle,
+} from "@shared/columns-layout";
 
 // ============================================================================
-// TYPES
+// DEFAULTS
 // ============================================================================
-
-interface ColumnLayout {
-  columnId: string;
-  width?: string;
-  blockIds: string[];
-}
-
-interface ColumnsData extends Record<string, unknown> {
-  layoutMode?: "flex" | "grid";
-  gap?: string;
-  minColumnWidth?: string;
-  verticalAlignment?: "top" | "center" | "bottom" | "stretch";
-  horizontalAlignment?: "left" | "center" | "right" | "space-between" | "space-around";
-  direction?: "row" | "column";
-  columnVerticalAlignment?: "top" | "center" | "bottom" | "stretch";
-  columnHorizontalAlignment?: "left" | "center" | "right" | "stretch";
-}
-
-type ColumnsContent = BlockContent & {
-  data?: ColumnsData;
-};
-
-function readColumnsData(content: BlockContent): ColumnsData {
-  if (!content) return {};
-  if (typeof content === "object" && "kind" in content) {
-    if (content.kind === "structured" && content.data && typeof content.data === "object") {
-      const data = content.data as Record<string, unknown>;
-      return {
-        layoutMode: typeof data.layoutMode === "string" ? (data.layoutMode as ColumnsData["layoutMode"]) : undefined,
-        gap: typeof data.gap === "string" ? data.gap : undefined,
-        minColumnWidth: typeof data.minColumnWidth === "string" ? data.minColumnWidth : undefined,
-        verticalAlignment: typeof data.verticalAlignment === "string" ? (data.verticalAlignment as ColumnsData["verticalAlignment"]) : undefined,
-        horizontalAlignment: typeof data.horizontalAlignment === "string" ? (data.horizontalAlignment as ColumnsData["horizontalAlignment"]) : undefined,
-        direction: typeof data.direction === "string" ? (data.direction as ColumnsData["direction"]) : undefined,
-        columnVerticalAlignment: typeof data.columnVerticalAlignment === "string" ? (data.columnVerticalAlignment as ColumnsData["columnVerticalAlignment"]) : undefined,
-        columnHorizontalAlignment: typeof data.columnHorizontalAlignment === "string" ? (data.columnHorizontalAlignment as ColumnsData["columnHorizontalAlignment"]) : undefined,
-      };
-    }
-    return {};
-  }
-  const legacy = content as unknown as Record<string, unknown>;
-  return {
-    layoutMode: typeof legacy.layoutMode === "string" ? (legacy.layoutMode as ColumnsData["layoutMode"]) : undefined,
-    gap: typeof legacy.gap === "string" ? legacy.gap : undefined,
-    minColumnWidth: typeof legacy.minColumnWidth === "string" ? legacy.minColumnWidth : undefined,
-    verticalAlignment: typeof legacy.verticalAlignment === "string" ? (legacy.verticalAlignment as ColumnsData["verticalAlignment"]) : undefined,
-    horizontalAlignment: typeof legacy.horizontalAlignment === "string" ? (legacy.horizontalAlignment as ColumnsData["horizontalAlignment"]) : undefined,
-    direction: typeof legacy.direction === "string" ? (legacy.direction as ColumnsData["direction"]) : undefined,
-    columnVerticalAlignment: typeof legacy.columnVerticalAlignment === "string" ? (legacy.columnVerticalAlignment as ColumnsData["columnVerticalAlignment"]) : undefined,
-    columnHorizontalAlignment: typeof legacy.columnHorizontalAlignment === "string" ? (legacy.columnHorizontalAlignment as ColumnsData["columnHorizontalAlignment"]) : undefined,
-  };
-}
-
-function writeColumnsData(prev: BlockContent, updates: Partial<ColumnsData>): BlockContent {
-  const current = readColumnsData(prev);
-  const next: ColumnsData = { ...current, ...updates };
-  return { kind: "structured", data: next as Record<string, unknown> };
-}
 
 const DEFAULT_CONTENT: ColumnsContent = {
   kind: "structured",
@@ -183,110 +133,6 @@ export function removeColumnAndCleanup(
     nextLayout,
     nextChildren: children.filter((child) => !removedIds.has(child.id)),
   };
-}
-
-/**
- * Computes the outer container style for the Columns block.
- */
-export function buildColumnsContainerStyle(
-  data: ColumnsData,
-  layout: ColumnLayout[],
-  styles?: React.CSSProperties,
-): React.CSSProperties {
-  const gap = data.gap || "20px";
-  const minColumnWidth = data.minColumnWidth || "220px";
-  const verticalAlignment = data.verticalAlignment || "top";
-  const horizontalAlignment = data.horizontalAlignment || "left";
-  const direction = data.direction || "row";
-  const layoutMode = data.layoutMode || "flex";
-
-  const alignItems = {
-    top: "flex-start",
-    center: "center",
-    bottom: "flex-end",
-    stretch: "stretch",
-  }[verticalAlignment];
-
-  const justifyContent = {
-    left: "flex-start",
-    center: "center",
-    right: "flex-end",
-    "space-between": "space-between",
-    "space-around": "space-around",
-  }[horizontalAlignment];
-
-  if (layoutMode === "grid") {
-    const isVertical = direction === "column";
-    return {
-      ...styles,
-      display: "grid",
-      gap,
-      width: "100%",
-      gridTemplateColumns: isVertical
-        ? "minmax(0, 1fr)"
-        : `repeat(${Math.max(layout.length, 1)}, minmax(0, 1fr))`,
-      gridTemplateRows: isVertical
-        ? `repeat(${Math.max(layout.length, 1)}, auto)`
-        : undefined,
-      alignItems,
-      justifyItems:
-        justifyContent === "flex-start"
-          ? "start"
-          : justifyContent === "flex-end"
-            ? "end"
-            : justifyContent === "center"
-              ? "center"
-              : "stretch",
-    };
-  }
-
-  return {
-    ...styles,
-    display: "flex",
-    flexDirection: direction,
-    flexWrap: direction === "row" ? "wrap" : "nowrap",
-    gap,
-    width: "100%",
-    maxWidth: "100%",
-    alignItems,
-    justifyContent,
-    ...(direction === "row"
-      ? {
-          alignContent: "stretch",
-          ['--np-columns-min-width' as string]: minColumnWidth,
-        }
-      : {}),
-  };
-}
-
-function buildColumnStyle(
-  data: ColumnsData,
-  layoutMode: NonNullable<ColumnsData["layoutMode"]>,
-  direction: NonNullable<ColumnsData["direction"]>,
-  column: ColumnLayout,
-  layout: ColumnLayout[],
-): React.CSSProperties {
-  if (layoutMode === "grid") {
-    return {
-      minWidth: 0,
-      width: "100%",
-    };
-  }
-
-  if (direction === "column") {
-    return {
-      minWidth: 0,
-      width: "100%",
-    };
-  }
-
-  const gap = data.gap?.trim() || "20px";
-  const columnCount = Math.max(1, layout.length);
-
-  return buildFlexRowColumnStyle(column.width, data.minColumnWidth, {
-    gap,
-    columnCount,
-  });
 }
 
 // ============================================================================

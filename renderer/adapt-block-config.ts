@@ -294,9 +294,6 @@ function extractContentProps(
 			} else if (blockName === "core/gallery") {
 				props.images = (content as any).images || [];
 				props.columns = (content as any).columns;
-			} else if (blockName === "core/file") {
-				props.filename = (content as any).filename;
-				props.fileSize = (content as any).fileSize;
 			} else if (blockName === "core/media-text") {
 				props.mediaPosition = (content as any).mediaPosition || "left";
 				props.verticalAlignment = (content as any).verticalAlignment;
@@ -345,7 +342,14 @@ function extractContentProps(
 					verticalAlignment: data.verticalAlignment,
 					horizontalAlignment: data.horizontalAlignment,
 					direction: data.direction,
-					columnLayout: data.columnLayout, // From settings, but may be in data
+					layoutMode: data.layoutMode,
+				};
+			} else if (blockName === "core/file") {
+				const href = typeof data.href === "string" ? data.href : "";
+				return {
+					url: href,
+					filename: typeof data.fileName === "string" ? data.fileName : "",
+					fileSize: typeof data.fileSize === "string" ? data.fileSize : "",
 				};
 			} else if (blockName === "core/group") {
 				return {

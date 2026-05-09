@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Save, Globe, Database, Code, Shield, Bell, Upload, X, ImageIcon } from 'lucide-react';
+import { Save, Globe, Database, Code, Shield, Bell, Upload, X, ImageIcon, Home } from 'lucide-react';
 import AdminTopBar from '@/components/AdminTopBar';
 import AdminSidebar from '@/components/AdminSidebar';
 import { Spinner } from '@/components/ui/spinner';
@@ -68,6 +68,15 @@ interface Settings {
     graphqlEnabled: boolean;
     webhooksEnabled: boolean;
   };
+}
+
+interface HomepageOptionResponse {
+  name: string;
+  value: string;
+}
+
+interface PublishedPagesForHomeResponse {
+  pages: Array<{ id: string; title: string; slug: string | null }>;
 }
 
 /**
@@ -204,6 +213,42 @@ export default function Settings() {
   if (themesError) {
     console.error('Themes error:', themesError);
   }
+
+  const { data: homepageOption } = useQuery<HomepageOptionResponse | null>({
+    queryKey: ['/api/options/homepage_page_slug'],
+    queryFn: async () => {
+      const response = await fetch('/api/options/homepage_page_slug');
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error('Failed to load homepage setting');
+      return response.json() as Promise<HomepageOptionResponse>;
+    },
+  });
+
+  const { data: publishedPagesForHome } = useQuery<PublishedPagesForHomeResponse>({
+    queryKey: ['/api/pages', { status: 'publish', page: 1, per_page: 100 }],
+  });
+
+  const homepageSelectMutation = useMutation({
+    mutationFn: async (slug: string) => {
+      const response = await apiRequest('POST', '/api/options', {
+        name: 'homepage_page_slug',
+        value: slug,
+      });
+      return response.json() as Promise<HomepageOptionResponse>;
+    },
+    onSuccess: (_data, slug) => {
+      toast.success(
+        slug
+          ? 'Homepage updated.'
+          : 'Homepage cleared — the site will use the default landing page.'
+      );
+      queryClient.invalidateQueries({ queryKey: ['/api/options/homepage_page_slug'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/public/homepage'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update homepage');
+    },
+  });
 
   // Extract settings from response
   const settings = settingsResponse?.data;
@@ -1124,6 +1169,54 @@ export default function Settings() {
                   <CardTitle>Reading Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+                    <div className="flex items-start gap-3">
+                      <Home className="mt-0.5 h-5 w-5 shrink-0 text-wp-blue" aria-hidden />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Label htmlFor="site-homepage-select">Site homepage</Label>
+                        <p className="text-sm text-gray-600">
+                          Published page shown at the site root (<span className="font-mono text-xs">/</span>
+                          ). Choose &quot;Default landing page&quot; to show the built-in landing until you select a page.
+                        </p>
+                        <Select
+                          disabled={homepageSelectMutation.isPending}
+                          onValueChange={(value) => {
+                            const slug = value === '__none__' ? '' : value;
+                            homepageSelectMutation.mutate(slug);
+                          }}
+                          value={
+                            homepageOption?.value && homepageOption.value.length > 0
+                              ? homepageOption.value
+                              : '__none__'
+                          }
+                        >
+                          <SelectTrigger id="site-homepage-select" className="max-w-md bg-white">
+                            <SelectValue placeholder="Select homepage" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">Default landing page</SelectItem>
+                            {homepageOption?.value &&
+                              homepageOption.value.length > 0 &&
+                              !(publishedPagesForHome?.pages ?? []).some(
+                                (p) => p.slug === homepageOption.value
+                              ) && (
+                                <SelectItem value={homepageOption.value}>
+                                  {homepageOption.value} (page missing or not in list)
+                                </SelectItem>
+                              )}
+                            {(publishedPagesForHome?.pages ?? [])
+                              .filter((p) => Boolean(p.slug?.trim()))
+                              .map((p) => (
+                                <SelectItem key={p.id} value={p.slug as string}>
+                                  {p.title}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="postsPerPage">Posts per Page</Label>

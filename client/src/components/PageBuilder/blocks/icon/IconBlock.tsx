@@ -36,6 +36,59 @@ const DEFAULT_CONTENT: IconContent = {
   label: '',
 };
 
+function parseIconReference(raw: unknown): IconReference {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_ICON };
+  const r = raw as Record<string, unknown>;
+  return {
+    iconSet: (r.iconSet as IconReference['iconSet']) || 'lucide',
+    iconName: typeof r.iconName === 'string' ? r.iconName : 'star',
+    size: typeof r.size === 'number' ? r.size : 24,
+    color: typeof r.color === 'string' ? r.color : 'currentColor',
+    strokeWidth: typeof r.strokeWidth === 'number' ? r.strokeWidth : 2,
+  };
+}
+
+/**
+ * Builds editor model from persisted content. Matches `{ kind: 'structured', data }`
+ * (API / renderer) and legacy flat `{ icon, link, ... }` from older saves.
+ */
+function parseIconContent(raw: BlockConfig['content'] | undefined): IconContent {
+  if (!raw || typeof raw !== 'object') {
+    return { ...DEFAULT_CONTENT, icon: { ...DEFAULT_ICON } };
+  }
+  const r = raw as Record<string, unknown>;
+  if (r.kind === 'structured' && r.data && typeof r.data === 'object') {
+    const d = r.data as Record<string, unknown>;
+    return {
+      icon: parseIconReference(d.icon),
+      link: typeof d.link === 'string' ? d.link : '',
+      linkTarget: d.linkTarget === '_blank' ? '_blank' : '_self',
+      label: typeof d.label === 'string' ? d.label : '',
+    };
+  }
+  return {
+    ...DEFAULT_CONTENT,
+    ...(typeof r.link === 'string' ? { link: r.link } : {}),
+    ...(r.linkTarget === '_blank' ? { linkTarget: '_blank' as const } : {}),
+    ...(typeof r.label === 'string' ? { label: r.label } : {}),
+    icon: parseIconReference(r.icon),
+  };
+}
+
+function serializeIconContent(c: IconContent): BlockContent {
+  return {
+    kind: 'structured',
+    data: {
+      icon: { ...c.icon },
+      link: c.link,
+      linkTarget: c.linkTarget,
+      label: c.label,
+    },
+  } as BlockContent;
+}
+
+const STRUCTURED_DEFAULT_ICON_CONTENT = serializeIconContent(DEFAULT_CONTENT);
+
 // ============================================================================
 // RENDERER
 // ============================================================================
@@ -92,10 +145,29 @@ export function IconBlockComponent({
   onChange,
   isPreview,
 }: BlockComponentProps) {
+  const valueForState = React.useMemo(
+    () => ({
+      ...value,
+      content: parseIconContent(value.content) as BlockContent,
+    }),
+    [value],
+  );
+
+  const persistOnChange = React.useCallback(
+    (block: BlockConfig) => {
+      const parsed = parseIconContent(block.content);
+      onChange({
+        ...block,
+        content: serializeIconContent(parsed),
+      });
+    },
+    [onChange],
+  );
+
   const { content, styles } = useBlockState<IconContent>({
-    value,
+    value: valueForState,
     getDefaultContent: () => ({ ...DEFAULT_CONTENT, icon: { ...DEFAULT_ICON } }),
-    onChange,
+    onChange: persistOnChange,
   });
 
   return <IconBlockRenderer content={content} styles={styles} isPreview={isPreview} />;
@@ -116,7 +188,7 @@ function IconSettings({ block, onUpdate }: IconSettingsProps) {
 
   const content = accessor
     ? (accessor.getContent() as unknown as IconContent)
-    : (block.content as unknown as IconContent) || DEFAULT_CONTENT;
+    : parseIconContent(block.content);
 
   const currentIcon: IconReference = content?.icon || DEFAULT_ICON;
 
@@ -127,10 +199,10 @@ function IconSettings({ block, onUpdate }: IconSettingsProps) {
       setUpdateTrigger((prev) => prev + 1);
     } else if (onUpdate) {
       onUpdate({
-        content: {
-          ...block.content,
+        content: serializeIconContent({
+          ...parseIconContent(block.content),
           ...updates,
-        } as BlockContent,
+        }),
       });
     }
   };
@@ -303,12 +375,7 @@ const IconBlock: BlockDefinition = {
   icon: Smile,
   description: 'Add an icon from various icon sets',
   category: 'basic',
-  defaultContent: {
-    icon: { ...DEFAULT_ICON },
-    link: '',
-    linkTarget: '_self',
-    label: '',
-  },
+  defaultContent: STRUCTURED_DEFAULT_ICON_CONTENT,
   defaultStyles: {
     display: 'inline-flex',
     alignItems: 'center',

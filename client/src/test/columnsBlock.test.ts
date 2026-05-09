@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { insertNewBlock, moveExistingBlock } from '@/lib/handlers/treeUtils';
 import type { BlockConfig } from '@shared/schema-types';
+import { buildColumnsContainerStyle } from '@shared/columns-layout';
 import {
-  buildColumnsContainerStyle,
   buildColumnsLayout,
   removeColumnAndCleanup,
 } from '@/components/PageBuilder/blocks/columns/ColumnsBlock';
