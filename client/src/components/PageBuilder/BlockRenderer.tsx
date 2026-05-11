@@ -224,6 +224,59 @@ interface BlockRendererProps {
   onBlockChange?: (updated: BlockConfig) => void;
 }
 
+/** Shared block label + actions row for editor chrome (positioning via className on the wrapper). */
+function BlockEditorToolbarPanel({
+  label,
+  dragHandleProps,
+  onDuplicate,
+  onDelete,
+  className,
+}: {
+  label: string;
+  dragHandleProps?: BlockRendererProps["dragHandleProps"];
+  onDuplicate: () => void;
+  onDelete: () => void;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <span className="text-xs text-gray-600 px-2">{label}</span>
+      {dragHandleProps && (
+        <Button
+          {...dragHandleProps}
+          variant="ghost"
+          size="sm"
+          aria-label="Drag to reorder block"
+          className="h-6 w-6 p-0 cursor-grab active:cursor-grabbing">
+          <GripVertical className="w-3 h-3" />
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-label="Duplicate block"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDuplicate();
+        }}
+        className="h-6 w-6 p-0">
+        <Copy className="w-3 h-3" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-label="Delete block"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
+        <Trash2 className="w-3 h-3" />
+      </Button>
+    </div>
+  );
+}
+
 export default function BlockRenderer({
   block,
   isSelected,
@@ -327,61 +380,59 @@ export default function BlockRenderer({
   const childrenHandledInRenderer =
     !!def?.handlesOwnChildren || containsContainerChildren(contentEl);
 
+  /**
+   * Container blocks nest other blocks inside this wrapper. Full-wrapper mouseenter/leave
+   * stays “inside” while the pointer is over any descendant, so the toolbar never clears
+   * when editing inner blocks. Use a top strip only for hover detection; non-containers keep
+   * hover-anywhere behavior.
+   */
+  const useTopToolbarHoverStrip = isContainer && !isPreview;
+  const showBlockToolbar = effectiveSelected || isHovered;
+  const blockLabel = blockRegistry[block.name]?.label || block.name;
+  const toolbarPanelClass =
+    "flex items-center gap-1 bg-white/90 border-b border-gray-200 rounded-t backdrop-blur-sm shadow-sm p-1";
+
   return (
     <div
       className="relative group"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      {...(useTopToolbarHoverStrip
+        ? {}
+        : {
+            onMouseEnter: () => setIsHovered(true),
+            onMouseLeave: () => setIsHovered(false),
+          })}
       onClick={(e) => {
         if (!isPreview) {
           e.stopPropagation();
           actions?.onSelect(block.id);
         }
       }}>
-      {!isPreview && (
-        <>
-          {/* Toolbar visible when hovered or selected */}
-          {(effectiveSelected || isHovered) && (
-            <div className="absolute top-0 left-0 right-0 z-20 flex items-center gap-1 bg-white/90 border-b border-gray-200 rounded-t backdrop-blur-sm shadow-sm p-1">
-              <span className="text-xs text-gray-600 px-2">
-                {blockRegistry[block.name]?.label || block.name}
-              </span>
-              {/* Drag handle - only show when dragHandleProps provided (canvas blocks) */}
-              {dragHandleProps && (
-                <Button
-                  {...dragHandleProps}
-                  variant="ghost"
-                  size="sm"
-                  aria-label="Drag to reorder block"
-                  className="h-6 w-6 p-0 cursor-grab active:cursor-grabbing">
-                  <GripVertical className="w-3 h-3" />
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Duplicate block"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDuplicate();
-                }}
-                className="h-6 w-6 p-0">
-                <Copy className="w-3 h-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Delete block"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
+      {!isPreview && !useTopToolbarHoverStrip && showBlockToolbar && (
+        <BlockEditorToolbarPanel
+          label={blockLabel}
+          dragHandleProps={dragHandleProps}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+          className={`absolute top-0 left-0 right-0 z-20 ${toolbarPanelClass}`}
+        />
+      )}
+      {!isPreview && useTopToolbarHoverStrip && (
+        <div
+          className="absolute top-0 left-0 right-0 z-20 flex flex-col"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}>
+          {showBlockToolbar ? (
+            <BlockEditorToolbarPanel
+              label={blockLabel}
+              dragHandleProps={dragHandleProps}
+              onDuplicate={onDuplicate}
+              onDelete={onDelete}
+              className={toolbarPanelClass}
+            />
+          ) : (
+            <div className="h-9 w-full shrink-0" aria-hidden />
           )}
-        </>
+        </div>
       )}
 
         <div

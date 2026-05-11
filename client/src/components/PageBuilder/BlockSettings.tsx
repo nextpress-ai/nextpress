@@ -189,6 +189,15 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
     });
   };
 
+  /**
+   * Live styles for spacing controls: block tree + in-memory accessor (when present) so fields
+   * stay in sync while typing.
+   */
+  const getResolvedStylesForSpacing = (): Record<string, unknown> => ({
+    ...(block.styles as Record<string, unknown> | undefined),
+    ...(accessor?.getStyles() as Record<string, unknown> | undefined),
+  });
+
   /** Writes one padding/margin side as raw CSS, clears conflicting tokenMap entry, drops shorthand `padding`/`margin` when needed. */
   const commitSpacingSide = (cssKey: keyof CSSProperties, fullValue: string | null) => {
     purgeTokenMapKeys([String(cssKey)]);
@@ -198,31 +207,37 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
         : String(cssKey).startsWith("margin") && cssKey !== "margin"
           ? ("margin" as const)
           : null;
+    const key = String(cssKey);
+
+    const buildNextStyles = (prev: Record<string, unknown>): Record<string, unknown> => {
+      const s = { ...prev };
+      // Dropping shorthand only in the patch object is not enough: updateBlockDeep deep-merges
+      // nested `styles` and keeps stale margin/padding unless explicitly cleared with null.
+      if (shorthand && prev[shorthand] != null) {
+        delete s[shorthand];
+        s[shorthand] = null;
+      }
+      if (fullValue == null || fullValue === "") {
+        delete s[key];
+      } else {
+        s[key] = fullValue;
+      }
+      return s;
+    };
 
     if (accessor) {
-      const s = { ...(accessor.getStyles() || {}) } as Record<string, unknown>;
-      if (shorthand && s[shorthand] != null) delete s[shorthand];
-      if (fullValue == null || fullValue === "") {
-        delete s[String(cssKey)];
-      } else {
-        s[String(cssKey)] = fullValue;
-      }
-      accessor.setStyles(s as CSSProperties);
+      const prev = (accessor.getStyles() || {}) as Record<string, unknown>;
+      accessor.setStyles(buildNextStyles(prev) as CSSProperties);
     } else {
-      const s = { ...(block.styles || {}) } as Record<string, unknown>;
-      if (shorthand && s[shorthand] != null) delete s[shorthand];
-      if (fullValue == null || fullValue === "") {
-        delete s[String(cssKey)];
-      } else {
-        s[String(cssKey)] = fullValue;
-      }
-      onUpdate({ styles: s as BlockConfig["styles"] });
+      const prev = (block.styles || {}) as Record<string, unknown>;
+      onUpdate({ styles: buildNextStyles(prev) as BlockConfig["styles"] });
     }
   };
 
   // Get individual spacing values with fallbacks
   const getPaddingValues = () => {
-    const padding = block.styles?.padding;
+    const st = getResolvedStylesForSpacing();
+    const padding = st.padding;
     if (padding) {
       const paddingStr = typeof padding === "string" ? padding : String(padding);
       const values = paddingStr.split(" ").map((v: string) => v.trim());
@@ -230,19 +245,22 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
         return { top: values[0], right: values[0], bottom: values[0], left: values[0] };
       if (values.length === 2)
         return { top: values[0], right: values[1], bottom: values[0], left: values[1] };
+      if (values.length === 3)
+        return { top: values[0], right: values[1], bottom: values[2], left: values[1] };
       if (values.length === 4)
         return { top: values[0], right: values[1], bottom: values[2], left: values[3] };
     }
     return {
-      top: String(block.styles?.paddingTop || ""),
-      right: String(block.styles?.paddingRight || ""),
-      bottom: String(block.styles?.paddingBottom || ""),
-      left: String(block.styles?.paddingLeft || ""),
+      top: String(st.paddingTop ?? ""),
+      right: String(st.paddingRight ?? ""),
+      bottom: String(st.paddingBottom ?? ""),
+      left: String(st.paddingLeft ?? ""),
     };
   };
 
   const getMarginValues = () => {
-    const margin = block.styles?.margin;
+    const st = getResolvedStylesForSpacing();
+    const margin = st.margin;
     if (margin) {
       const marginStr = typeof margin === "string" ? margin : String(margin);
       const values = marginStr.split(" ").map((v: string) => v.trim());
@@ -250,14 +268,16 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
         return { top: values[0], right: values[0], bottom: values[0], left: values[0] };
       if (values.length === 2)
         return { top: values[0], right: values[1], bottom: values[0], left: values[1] };
+      if (values.length === 3)
+        return { top: values[0], right: values[1], bottom: values[2], left: values[1] };
       if (values.length === 4)
         return { top: values[0], right: values[1], bottom: values[2], left: values[3] };
     }
     return {
-      top: String(block.styles?.marginTop || ""),
-      right: String(block.styles?.marginRight || ""),
-      bottom: String(block.styles?.marginBottom || ""),
-      left: String(block.styles?.marginLeft || ""),
+      top: String(st.marginTop ?? ""),
+      right: String(st.marginRight ?? ""),
+      bottom: String(st.marginBottom ?? ""),
+      left: String(st.marginLeft ?? ""),
     };
   };
 
