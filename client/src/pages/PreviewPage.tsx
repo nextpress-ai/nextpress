@@ -5,6 +5,7 @@ import type { Post, Template } from "@shared/schema-types";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
 import BlockRenderer from "@/components/PageBuilder/BlockRenderer";
 import { getGoogleFontUrl } from "@shared/google-fonts";
+import { getBlockSiblingFlexItemStyles } from "@shared/block-container-placement";
 
 interface PreviewPageProps {
   postId?: string;
@@ -127,17 +128,27 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
             </div>
           </div>
         ) : (
-          blocks.map((block) => (
-            <div key={block.id} className="block-container">
-              <BlockRenderer
-                block={block}
-                isSelected={false}
-                isPreview={true}
-                onDuplicate={() => {}}
-                onDelete={() => {}}
-              />
-            </div>
-          ))
+          <div className="flex flex-col items-stretch w-full">
+            {blocks.map((block) => (
+              <div
+                key={block.id}
+                className="block-container"
+                style={{
+                  width: '100%',
+                  minWidth: 0,
+                  ...getBlockSiblingFlexItemStyles(block.styles, 'column'),
+                }}
+              >
+                <BlockRenderer
+                  block={block}
+                  isSelected={false}
+                  isPreview={true}
+                  onDuplicate={() => {}}
+                  onDelete={() => {}}
+                />
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

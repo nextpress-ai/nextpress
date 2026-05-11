@@ -23,6 +23,7 @@ import {
   ExternalLink,
   Target,
   ChevronDown,
+  ChevronUp,
   ChevronRight,
   Ruler,
   Square,
@@ -42,11 +43,11 @@ import { blockRegistry } from "./blocks";
 import { ConditionBuilder } from "@/components/Templates/ConditionBuilder";
 import { VariablePicker } from "@/components/Templates/VariablePicker";
 import { getBlockStateAccessor } from "./blocks/blockStateRegistry";
+import type { CSSProperties } from "react";
 import TokenColorPicker from "./TokenColorPicker"
-import TokenSpacingPicker from "./TokenSpacingPicker"
 import AnimationPicker from "./AnimationPicker"
-import { propertyAliasMap, propertyUnitCategoryMap, unitCategories } from "@/lib/tailwind-tokens"
 import type { TokenEntry, BlockAnimation } from "@shared/schema-types"
+import { FreeformSpacingSideRow } from "./freeform-spacing-side-row";
 
 /** Font options matching PageSettings — same fonts available at block level */
 const FONT_OPTIONS = [
@@ -156,24 +157,6 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
     })
   }
 
-  const getUnits = (): Record<string, string> => {
-    return block.other?.units || { spacing: "px", font: "rem", dimension: "px", border: "px" }
-  }
-
-  const updateUnit = (category: string, unit: string) => {
-    const currentOther = block.other || {}
-    const currentUnits = currentOther.units || {}
-    onUpdate({
-      other: {
-        ...currentOther,
-        units: {
-          ...currentUnits,
-          [category]: unit,
-        },
-      },
-    })
-  }
-
   // Animation system helper
   // Uses null (not undefined) to clear animation, because deepMerge skips undefined values
   const updateAnimation = (animation: BlockAnimation | undefined) => {
@@ -186,53 +169,95 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
     })
   }
 
-  // Utility functions for parsing and formatting values
-  const parseSpacingValue = (value: string | number | undefined): { number: string; unit: string } => {
-    if (!value && value !== 0) return { number: '0', unit: 'px' };
-    const str = String(value);
-    const match = str.match(/^(\d*\.?\d+)(px|rem|em|%|)$/);
-    if (match) {
-      return { number: match[1], unit: match[2] || 'px' };
+  const purgeTokenMapKeys = (keys: string[]) => {
+    const cur = block.other?.tokenMap;
+    if (!cur) return;
+    let changed = false;
+    const next = { ...cur };
+    for (const k of keys) {
+      if (next[k] != null) {
+        delete next[k];
+        changed = true;
+      }
     }
-    return { number: '0', unit: 'px' };
+    if (!changed) return;
+    onUpdate({
+      other: {
+        ...block.other,
+        tokenMap: next,
+      },
+    });
   };
 
-  const formatSpacingValue = (number: string, unit: string): string => {
-    return number ? `${number}${unit}` : '0';
+  /** Writes one padding/margin side as raw CSS, clears conflicting tokenMap entry, drops shorthand `padding`/`margin` when needed. */
+  const commitSpacingSide = (cssKey: keyof CSSProperties, fullValue: string | null) => {
+    purgeTokenMapKeys([String(cssKey)]);
+    const shorthand =
+      String(cssKey).startsWith("padding") && cssKey !== "padding"
+        ? ("padding" as const)
+        : String(cssKey).startsWith("margin") && cssKey !== "margin"
+          ? ("margin" as const)
+          : null;
+
+    if (accessor) {
+      const s = { ...(accessor.getStyles() || {}) } as Record<string, unknown>;
+      if (shorthand && s[shorthand] != null) delete s[shorthand];
+      if (fullValue == null || fullValue === "") {
+        delete s[String(cssKey)];
+      } else {
+        s[String(cssKey)] = fullValue;
+      }
+      accessor.setStyles(s as CSSProperties);
+    } else {
+      const s = { ...(block.styles || {}) } as Record<string, unknown>;
+      if (shorthand && s[shorthand] != null) delete s[shorthand];
+      if (fullValue == null || fullValue === "") {
+        delete s[String(cssKey)];
+      } else {
+        s[String(cssKey)] = fullValue;
+      }
+      onUpdate({ styles: s as BlockConfig["styles"] });
+    }
   };
 
   // Get individual spacing values with fallbacks
   const getPaddingValues = () => {
     const padding = block.styles?.padding;
     if (padding) {
-      const paddingStr = typeof padding === 'string' ? padding : String(padding);
-      const values = paddingStr.split(' ').map((v: string) => v.trim());
-      if (values.length === 1) return { top: values[0], right: values[0], bottom: values[0], left: values[0] };
-      if (values.length === 2) return { top: values[0], right: values[1], bottom: values[0], left: values[1] };
-      if (values.length === 4) return { top: values[0], right: values[1], bottom: values[2], left: values[3] };
+      const paddingStr = typeof padding === "string" ? padding : String(padding);
+      const values = paddingStr.split(" ").map((v: string) => v.trim());
+      if (values.length === 1)
+        return { top: values[0], right: values[0], bottom: values[0], left: values[0] };
+      if (values.length === 2)
+        return { top: values[0], right: values[1], bottom: values[0], left: values[1] };
+      if (values.length === 4)
+        return { top: values[0], right: values[1], bottom: values[2], left: values[3] };
     }
     return {
-      top: String(block.styles?.paddingTop || '0px'),
-      right: String(block.styles?.paddingRight || '0px'),
-      bottom: String(block.styles?.paddingBottom || '0px'),
-      left: String(block.styles?.paddingLeft || '0px'),
+      top: String(block.styles?.paddingTop || ""),
+      right: String(block.styles?.paddingRight || ""),
+      bottom: String(block.styles?.paddingBottom || ""),
+      left: String(block.styles?.paddingLeft || ""),
     };
   };
 
   const getMarginValues = () => {
     const margin = block.styles?.margin;
     if (margin) {
-      const marginStr = typeof margin === 'string' ? margin : String(margin);
-      const values = marginStr.split(' ').map((v: string) => v.trim());
-      if (values.length === 1) return { top: values[0], right: values[0], bottom: values[0], left: values[0] };
-      if (values.length === 2) return { top: values[0], right: values[1], bottom: values[0], left: values[1] };
-      if (values.length === 4) return { top: values[0], right: values[1], bottom: values[2], left: values[3] };
+      const marginStr = typeof margin === "string" ? margin : String(margin);
+      const values = marginStr.split(" ").map((v: string) => v.trim());
+      if (values.length === 1)
+        return { top: values[0], right: values[0], bottom: values[0], left: values[0] };
+      if (values.length === 2)
+        return { top: values[0], right: values[1], bottom: values[0], left: values[1] };
+      if (values.length === 4)
+        return { top: values[0], right: values[1], bottom: values[2], left: values[3] };
     }
     return {
-      top: String(block.styles?.marginTop || '0px'),
-      right: String(block.styles?.marginRight || '0px'),
-      bottom: String(block.styles?.marginBottom || '0px'),
-      left: String(block.styles?.marginLeft || '0px'),
+      top: String(block.styles?.marginTop || ""),
+      right: String(block.styles?.marginRight || ""),
+      bottom: String(block.styles?.marginBottom || ""),
+      left: String(block.styles?.marginLeft || ""),
     };
   };
 
@@ -322,10 +347,32 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
 
   const renderStyleSettings = () => {
     const isColumnsBlock = block.name === "core/columns";
+    const showTypographyStyles = [
+      "heading",
+      "core/heading",
+      "text",
+      "core/paragraph",
+      "button",
+      "core/button",
+    ].includes(block.name);
+    const showFlowTextAlign = ["heading", "core/heading", "text", "core/paragraph"].includes(
+      block.name,
+    );
+    const showButtonLabelAlign = ["button", "core/button"].includes(block.name);
+    const sideLabel: Record<string, string> = {
+      paddingTop: "Top",
+      paddingRight: "Right",
+      paddingBottom: "Bottom",
+      paddingLeft: "Left",
+      marginTop: "Top",
+      marginRight: "Right",
+      marginBottom: "Bottom",
+      marginLeft: "Left",
+    };
     return (
       <div className="space-y-6">
         {/* Typography */}
-        {["heading", "core/heading", "text", "core/paragraph", "button", "core/button"].includes(block.name) && (
+        {showTypographyStyles && (
           <CollapsibleCard title="Typography" icon={Type} defaultOpen={true}>
             {/* Font Family */}
             <div>
@@ -386,19 +433,42 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               onChange={(value) => updateStyles({ fontWeight: String(value) })}
             />
 
-            {/* Text Alignment - Chip Grid */}
-            <ChipGroup
-              label="Text Alignment"
-              icon={AlignCenter}
-              options={[
-                { value: 'left', label: 'Left', icon: AlignLeft },
-                { value: 'center', label: 'Center', icon: AlignCenter },
-                { value: 'right', label: 'Right', icon: AlignRight },
-                { value: 'justify', label: 'Justify', icon: AlignJustify },
-              ]}
-              value={block.styles?.textAlign || 'left'}
-              onChange={(value) => updateStyles({ textAlign: value })}
-            />
+            {/* Paragraph / heading: flowing block text */}
+            {showFlowTextAlign && (
+              <ChipGroup
+                label="Text alignment"
+                icon={AlignCenter}
+                options={[
+                  { value: "left", label: "Left", icon: AlignLeft },
+                  { value: "center", label: "Center", icon: AlignCenter },
+                  { value: "right", label: "Right", icon: AlignRight },
+                  { value: "justify", label: "Justify", icon: AlignJustify },
+                ]}
+                value={block.styles?.textAlign || "left"}
+                onChange={(value) => updateStyles({ textAlign: value })}
+              />
+            )}
+
+            {showButtonLabelAlign && (
+              <div className="space-y-2">
+                <p className="text-xs text-gray-600">
+                  Aligns the label inside the button. Use{' '}
+                  <span className="font-semibold">Position in container</span>
+                  {' '}below to move the whole button in the layout.
+                </p>
+                <ChipGroup
+                  label="Label alignment (inside button)"
+                  icon={AlignCenter}
+                  options={[
+                    { value: "left", label: "Left", icon: AlignLeft },
+                    { value: "center", label: "Center", icon: AlignCenter },
+                    { value: "right", label: "Right", icon: AlignRight },
+                  ]}
+                  value={block.styles?.textAlign || "center"}
+                  onChange={(value) => updateStyles({ textAlign: value })}
+                />
+              </div>
+            )}
           </CollapsibleCard>
         )}
 
@@ -439,72 +509,119 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
 
         {/* Spacing */}
         <CollapsibleCard title="Spacing" icon={Move} defaultOpen={true}>
-            {/* Padding */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                  <Square className="w-3 h-3" />
-                  Padding
-                </Label>
-                <div className="flex items-center gap-2">
-                  <select 
-                    className="h-7 px-2 text-xs border border-gray-200 rounded-none bg-white focus:outline-none focus:ring-1 focus:ring-gray-400"
-                    value={getUnits().spacing || "px"}
-                    onChange={(e) => updateUnit("spacing", e.target.value)}
-                  >
-                    {(unitCategories.spacing || ["px", "rem", "em", "%"]).map((u) => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {(["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"] as const).map((prop) => {
-                  const labels: Record<string, string> = { paddingTop: "Top", paddingRight: "Right", paddingBottom: "Bottom", paddingLeft: "Left" }
-                  return (
-                    <div key={prop} onMouseEnter={() => onHoverArea?.('padding')} onMouseLeave={() => onHoverArea?.(null)}>
-                      <TokenSpacingPicker
-                        property={prop}
-                        currentEntry={getTokenEntry(prop)}
-                        currentStyleValue={getPaddingValues()[labels[prop].toLowerCase() as 'top' | 'right' | 'bottom' | 'left']}
-                        currentUnit={getUnits().spacing || "px"}
-                        onUnitChange={(u) => updateUnit("spacing", u)}
-                        onChange={updateTokenEntry}
-                      />
-                      <div className="text-xs text-gray-500 text-center mt-1">{labels[prop]}</div>
-                    </div>
-                  )
-                })}
-              </div>
+          <p className="text-xs text-gray-600 mb-3">
+            Type each value as freeform CSS spacing: lengths like <span className="font-mono">16px</span>,{' '}
+            <span className="font-mono">120 px</span> or <span className="font-mono">100 rem</span> (spaces are fine), or{' '}
+            <span className="font-mono">100rem</span> without spaces; also <span className="font-mono">auto</span>,
+            percentages, or <span className="font-mono">calc(…)</span>.
+          </p>
+
+          {/* Padding */}
+          <div className="mb-8">
+            <div className="mb-3">
+              <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <Square className="w-3 h-3" />
+                Padding
+              </Label>
             </div>
-            
-            {/* Margin */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                  <Circle className="w-3 h-3" />
-                  Margin
-                </Label>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {(["marginTop", "marginRight", "marginBottom", "marginLeft"] as const).map((prop) => {
-                  const labels: Record<string, string> = { marginTop: "Top", marginRight: "Right", marginBottom: "Bottom", marginLeft: "Left" }
-                  return (
-                    <div key={prop} onMouseEnter={() => onHoverArea?.('margin')} onMouseLeave={() => onHoverArea?.(null)}>
-                      <TokenSpacingPicker
-                        property={prop}
-                        currentEntry={getTokenEntry(prop)}
-                        currentStyleValue={getMarginValues()[labels[prop].toLowerCase() as 'top' | 'right' | 'bottom' | 'left']}
-                        currentUnit={getUnits().spacing || "px"}
-                        onUnitChange={(u) => updateUnit("spacing", u)}
-                        onChange={updateTokenEntry}
-                      />
-                      <div className="text-xs text-gray-500 text-center mt-1">{labels[prop]}</div>
-                    </div>
-                  )
-                })}
-              </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {(
+                [
+                  ["paddingTop", "top"],
+                  ["paddingRight", "right"],
+                  ["paddingBottom", "bottom"],
+                  ["paddingLeft", "left"],
+                ] as const
+              ).map(([prop, corner]) => (
+                <FreeformSpacingSideRow
+                  key={prop}
+                  label={sideLabel[prop]}
+                  value={getPaddingValues()[corner]}
+                  hoverArea="padding"
+                  onHoverArea={onHoverArea}
+                  onCommit={(full) => commitSpacingSide(prop, full)}
+                />
+              ))}
             </div>
+          </div>
+
+          {/* Margin */}
+          <div>
+            <div className="mb-3">
+              <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <Square className="w-3 h-3" />
+                Margin
+              </Label>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {(
+                [
+                  ["marginTop", "top"],
+                  ["marginRight", "right"],
+                  ["marginBottom", "bottom"],
+                  ["marginLeft", "left"],
+                ] as const
+              ).map(([prop, corner]) => (
+                <FreeformSpacingSideRow
+                  key={prop}
+                  label={sideLabel[prop]}
+                  value={getMarginValues()[corner]}
+                  hoverArea="margin"
+                  onHoverArea={onHoverArea}
+                  onCommit={(full) => commitSpacingSide(prop, full)}
+                />
+              ))}
+            </div>
+          </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard title="Position in container" icon={Layout} defaultOpen={false}>
+          <p className="text-xs text-gray-600 mb-3">
+            Where this block sits among siblings (canvas, columns, flex row/column stacks). Uses flex layout;
+            vertical center/bottom shows when extra space exists in the parent.
+          </p>
+          <ChipGroup
+            label="Horizontal"
+            icon={AlignLeft}
+            options={[
+              { value: "__unset", label: "Default", icon: Circle },
+              { value: "left", label: "Left", icon: AlignLeft },
+              { value: "center", label: "Center", icon: AlignCenter },
+              { value: "right", label: "Right", icon: AlignRight },
+            ]}
+            value={
+              (block.styles?.contentAlignHorizontal ??
+                "__unset") as string
+            }
+            onChange={(v) =>
+              updateStyles({
+                contentAlignHorizontal:
+                  v === "__unset"
+                    ? null
+                    : (v as "left" | "center" | "right"),
+              })
+            }
+          />
+          <ChipGroup
+            label="Vertical"
+            icon={AlignCenter}
+            className="mt-4"
+            options={[
+              { value: "__unset", label: "Default", icon: Circle },
+              { value: "top", label: "Top", icon: ChevronUp },
+              { value: "middle", label: "Middle", icon: AlignCenter },
+              { value: "bottom", label: "Bottom", icon: ChevronDown },
+            ]}
+            value={
+              (block.styles?.contentAlignVertical ?? "__unset") as string
+            }
+            onChange={(v) =>
+              updateStyles({
+                contentAlignVertical:
+                  v === "__unset" ? null : (v as "top" | "middle" | "bottom"),
+              })
+            }
+          />
         </CollapsibleCard>
 
         {/* Layout & Dimensions */}

@@ -14,6 +14,7 @@ import type {
 	media,
 	sessions,
 } from "./schema";
+import type { CSSProperties } from "react";
 
 // User types
 export type User = typeof users.$inferSelect;
@@ -204,6 +205,13 @@ export interface BlockAnimation {
   loop?: LoopAnimation;
 }
 
+/** Placement among siblings inside flex/grid parents; stored on styles, stripped DOM-side for primitives. */
+export interface BlockSiblingPlacementStyles {
+	/** `null` clears a previous alignment (required because `deepMerge` ignores `undefined` updates). */
+	contentAlignHorizontal?: "left" | "center" | "right" | null;
+	contentAlignVertical?: "top" | "middle" | "bottom" | null;
+}
+
 export interface BlockConfig {
 	// Core identity & type
 	id: string; // Unique instance ID
@@ -222,7 +230,7 @@ export interface BlockConfig {
 	content: BlockContent;
 
 	// Styling (three layers: typed styles → block dev CSS → user CSS)
-	styles?: React.CSSProperties; // Typed inline styles: {marginTop: "4rem", fontSize: "2rem"}
+	styles?: CSSProperties & BlockSiblingPlacementStyles; // inline CSS + sibling placement controls
 	customCss?: string; // CSS string defined by block developer
 
 	// Container support (ONLY for type: "container")

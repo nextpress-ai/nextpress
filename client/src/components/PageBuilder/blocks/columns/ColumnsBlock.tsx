@@ -34,6 +34,7 @@ import {
   buildColumnsContainerStyle,
   buildColumnStyle,
 } from "@shared/columns-layout";
+import { getBlockSiblingFlexItemStyles } from "@shared/block-container-placement";
 
 // ============================================================================
 // DEFAULTS
@@ -219,14 +220,22 @@ function ColumnsRenderer({
                 }}
               >
                 {columnChildren.map((childBlock) => (
-                  <BlockRenderer
+                  <div
                     key={childBlock.id}
-                    block={childBlock}
-                    isSelected={false}
-                    isPreview={true}
-                    onDuplicate={() => {}}
-                    onDelete={() => {}}
-                  />
+                    style={{
+                      width: "100%",
+                      minWidth: 0,
+                      ...getBlockSiblingFlexItemStyles(childBlock.styles, "column"),
+                    }}
+                  >
+                    <BlockRenderer
+                      block={childBlock}
+                      isSelected={false}
+                      isPreview={true}
+                      onDuplicate={() => {}}
+                      onDelete={() => {}}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -262,17 +271,26 @@ function ColumnsRenderer({
                               className={`relative group ${
                                 dragSnapshot.isDragging ? "opacity-50" : ""
                               }`}
+                              style={{
+                                width: "100%",
+                                minWidth: 0,
+                                ...getBlockSiblingFlexItemStyles(childBlock.styles, "column"),
+                              }}
                             >
                               <BlockRenderer
                                 block={childBlock}
-                                isSelected={actions?.selectedBlockId === childBlock.id}
+                                isSelected={
+                                  actions?.selectedBlockId === childBlock.id
+                                }
                                 isPreview={false}
-                              onDuplicate={() => actions?.onDuplicate(childBlock.id)}
-                              onDelete={() => actions?.onDelete(childBlock.id)}
-                              dragHandleProps={dragProvided.dragHandleProps}
-                              onBlockChange={onBlockChange}
-                            />
-                          </div>
+                                onDuplicate={() =>
+                                  actions?.onDuplicate(childBlock.id)
+                                }
+                                onDelete={() => actions?.onDelete(childBlock.id)}
+                                dragHandleProps={dragProvided.dragHandleProps}
+                                onBlockChange={onBlockChange}
+                              />
+                            </div>
                         )}
                         </Draggable>
                       ))

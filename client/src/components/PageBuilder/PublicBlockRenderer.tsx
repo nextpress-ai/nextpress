@@ -7,12 +7,19 @@ import {
   buildColumnsContainerStyle,
   buildColumnStyle,
 } from "@shared/columns-layout";
+import {
+  getBlockSiblingFlexItemStyles,
+  stripBlockContainerPlacementStyles,
+  type BlockStackDirection,
+} from "@shared/block-container-placement";
 import { generateBlockModifierCSS, resolveTokenMap } from "@/lib/tailwind-tokens";
 import { IconRenderer } from "@/components/PageBuilder/blocks/shared/IconRenderer";
 import type { IconReference } from "@/lib/icon-indexes";
 
 type PublicBlockRendererProps = {
   block: BlockConfig;
+  /** Sibling stacking direction inside the immediate parent (column cells, canvas, row groups, etc.). */
+  stackDirection?: BlockStackDirection;
 };
 
 type BlockRenderer = (block: BlockConfig, styles: CSSProperties) => ReactNode;
@@ -129,21 +136,34 @@ const publicBlockRenderers: Record<string, BlockRenderer> = {
  * Renders published page-builder blocks without importing editor modules.
  * This keeps public routes fast and avoids loading drag/drop, settings panels, and pickers.
  */
-export default function PublicBlockRenderer({ block }: PublicBlockRendererProps) {
+export default function PublicBlockRenderer({
+  block,
+  stackDirection = "column",
+}: PublicBlockRendererProps) {
   const { styles, css } = getPublicBlockStyles(block);
   const renderer = publicBlockRenderers[block.name] ?? renderUnsupportedBlock;
   const animationAttributes = block.other?.animation?.entry
     ? getEntryAnimationAttributes(block.other.animation.entry)
     : {};
 
+  const flexItemPlacement = getBlockSiblingFlexItemStyles(block.styles, stackDirection);
+
   return (
-    <div className="block-container">
+    <div className="block-container w-full">
       <div
-        className={`block-${block.id}`}
-        style={{ width: styles.width || "100%" }}
-        {...animationAttributes}
+        style={{
+          width: "100%",
+          minWidth: 0,
+          ...flexItemPlacement,
+        }}
       >
-        {renderer(block, styles)}
+        <div
+          className={`block-${block.id}`}
+          style={{ width: styles.width || "100%" }}
+          {...animationAttributes}
+        >
+          {renderer(block, styles)}
+        </div>
       </div>
       {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
     </div>
@@ -158,10 +178,10 @@ function getPublicBlockStyles(block: BlockConfig): {
     ? resolveTokenMap(block.other.tokenMap, block.other?.units || {})
     : null;
 
-  const styles: CSSProperties = {
+  const styles: CSSProperties = stripBlockContainerPlacementStyles({
     ...block.styles,
     ...(tokenResolution?.style || {}),
-  };
+  });
 
   const modifierCSS = tokenResolution?.modifierEntries?.length
     ? generateBlockModifierCSS(block.id, tokenResolution.modifierEntries)
@@ -177,12 +197,21 @@ function getPublicBlockStyles(block: BlockConfig): {
   };
 }
 
-function renderNestedBlocks(blocks: BlockConfig[] | undefined) {
+function renderNestedBlocks(
+  blocks: BlockConfig[] | undefined,
+  stackDirection: BlockStackDirection = "column",
+) {
   if (!Array.isArray(blocks) || blocks.length === 0) {
     return null;
   }
 
-  return blocks.map((child) => <PublicBlockRenderer key={child.id} block={child} />);
+  return blocks.map((child) => (
+    <PublicBlockRenderer
+      key={child.id}
+      block={child}
+      stackDirection={stackDirection}
+    />
+  ));
 }
 
 function getTextContent(content: BlockContent): string {
@@ -500,6 +529,9 @@ function renderGroupBlock(block: BlockConfig, styles: CSSProperties) {
   const Tag = tagName as keyof JSX.IntrinsicElements;
   const display = typeof content?.display === "string" ? content.display : "block";
   const gap = typeof content?.gap === "string" ? content.gap : "0px";
+  const flexDir = typeof content?.flexDirection === "string" ? content.flexDirection : "column";
+  const groupStackDirection: BlockStackDirection =
+    flexDir === "row" || flexDir === "row-reverse" ? "row" : "column";
 
   return (
     <Tag
@@ -518,7 +550,9 @@ function renderGroupBlock(block: BlockConfig, styles: CSSProperties) {
         overflow: content?.overflow as CSSProperties["overflow"],
       }}
     >
-      <div className="wp-block-group__inner-container">{renderNestedBlocks(block.children)}</div>
+      <div className="wp-block-group__inner-container">
+        {renderNestedBlocks(block.children, groupStackDirection)}
+      </div>
     </Tag>
   );
 }

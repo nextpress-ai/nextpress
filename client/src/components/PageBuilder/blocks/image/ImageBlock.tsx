@@ -372,9 +372,14 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
         defaultOpen={true}
       >
         <div className="space-y-4">
-          {/* Alignment */}
+          {/* Block width in the editor (use Style → Position in container for flex placement) */}
           <div>
-            <Label>Alignment</Label>
+            <Label className="text-sm font-semibold text-gray-800">Figure width</Label>
+            <p className="text-xs text-gray-600 mt-1 mb-2">
+              How wide the image sits in the layout. This is not text alignment; use{" "}
+              <span className="font-semibold">Style → Position in container</span> to nudge the block left, center, or
+              right among siblings.
+            </p>
             <div className="grid grid-cols-2 gap-2 mt-2">
               {alignmentOptions.map((option) => {
                 const Icon = option.icon;
@@ -387,7 +392,7 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
                         ? 'bg-gray-200 text-gray-800 border-gray-200 hover:bg-gray-300'
                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                     }`}
-                    aria-label={`Image align ${option.label}`}
+                    aria-label={`Figure width ${option.label}`}
                   >
                     <Icon className="w-4 h-4" />
                     {option.label}

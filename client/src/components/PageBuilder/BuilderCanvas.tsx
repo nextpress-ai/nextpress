@@ -5,6 +5,7 @@ import BlockRenderer from './BlockRenderer';
 import { Layers } from 'lucide-react';
 import { useBlockActions } from './BlockActionsContext';
 import type { BlockConfig } from "@shared/schema-types";
+import { getBlockSiblingFlexItemStyles } from "@shared/block-container-placement";
 
 export function BuilderCanvas({
   blocks,
@@ -37,7 +38,7 @@ export function BuilderCanvas({
                 {...provided.droppableProps}
                 role="region"
                 aria-label="Canvas"
-                className={`min-h-full p-4 ${snapshot.isDraggingOver ? 'bg-blue-50' : ''}`}
+                className={`min-h-full p-4 flex flex-col items-stretch w-full ${snapshot.isDraggingOver ? 'bg-blue-50' : ''}`}
               >
                 {blocks.length === 0 ? (
                   <div className="text-center py-12 text-gray-400">
@@ -52,6 +53,11 @@ export function BuilderCanvas({
                            ref={provided.innerRef}
                            {...provided.draggableProps}
                            className={`relative group ${snapshot.isDragging ? 'opacity-50' : ''}`}
+                           style={{
+                             width: '100%',
+                             minWidth: 0,
+                             ...getBlockSiblingFlexItemStyles(block.styles, 'column'),
+                           }}
                            onClick={() => {
                              actions?.onSelect(block.id);
                            }}

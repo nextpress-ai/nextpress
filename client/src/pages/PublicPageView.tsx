@@ -221,8 +221,8 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
                 </div>
               </div>
             ) : (
-              <div 
-                className="w-full mx-auto" 
+              <div
+                className="flex flex-col items-stretch w-full mx-auto"
                 data-testid="page-builder-content"
                 style={{
                   maxWidth: design?.containerWidth || undefined,

@@ -7,6 +7,20 @@ import { Droppable, Draggable } from '@/lib/dnd';
 import { useBlockActions } from './BlockActionsContext';
 import { resolveTokenMap, generateBlockModifierCSS } from '@/lib/tailwind-tokens';
 import { generateBlockAnimationCSS } from '@/lib/animation-presets';
+import {
+  stripBlockContainerPlacementStyles,
+  getBlockSiblingFlexItemStyles,
+  type BlockStackDirection,
+} from "@shared/block-container-placement";
+
+/** Parent stacks siblings in a row vs column — drives per-block placement flex-item mapping. */
+function getSiblingStackDirection(
+  parentDisplay: "flex" | "grid" | "block",
+  parentDirection: "row" | "column",
+): BlockStackDirection {
+  if (parentDisplay === "flex" && parentDirection === "row") return "row";
+  return "column";
+}
 
 /**
  * Detects the parent container's display mode from content
@@ -46,6 +60,33 @@ export function ContainerChildren({
   const parentDirection = getParentFlexDirection(block);
   const isHorizontal = parentDisplay === 'flex' && parentDirection === 'row';
   const dropDirection = isHorizontal ? 'horizontal' : 'vertical';
+  const siblingStackDirection = getSiblingStackDirection(parentDisplay, parentDirection);
+
+  /** When parent isn't flex/grid, emulate a vertical sibling stack so placement behaves like canvas. */
+  const childOuterDisplay =
+    parentDisplay === 'flex' ? 'flex' : parentDisplay === 'grid' ? 'grid' : 'flex';
+
+  /** Flex direction for sibling list (grid omits flexDirection). */
+  const siblingFlexDirection: React.CSSProperties['flexDirection'] =
+    parentDisplay === 'flex' ? parentDirection : 'column';
+
+  const stackGap =
+    parentDisplay !== 'block'
+      ? (block.content as any)?.gap || '16px'
+      : undefined;
+
+  /** Shared wrapper layout for Droppable + preview child lists */
+  const childrenStackStyle = (): React.CSSProperties => ({
+    display: childOuterDisplay,
+    ...(stackGap != null ? { gap: stackGap } : {}),
+    ...(childOuterDisplay === 'flex'
+      ? {
+          flexDirection: siblingFlexDirection,
+          flexWrap: parentDisplay === 'flex' ? ((block.content as any)?.flexWrap || 'wrap') : undefined,
+          alignItems: 'stretch',
+        }
+      : {}),
+  });
 
   if (import.meta.env.DEBUG_BUILDER) {
     console.debug(
@@ -59,19 +100,19 @@ export function ContainerChildren({
   }
   if (isPreview) {
     return (
-      <div
-        data-container-children="true"
-        style={{
-          display: parentDisplay === 'flex' ? 'flex' : parentDisplay === 'grid' ? 'grid' : undefined,
-          flexDirection: parentDisplay === 'flex' ? parentDirection : undefined,
-          flexWrap: parentDisplay === 'flex' ? ((block.content as any)?.flexWrap || 'wrap') : undefined,
-          gap: parentDisplay !== 'block' ? ((block.content as any)?.gap || '16px') : undefined,
-          width: '100%',
-          minWidth: 0,
-        }}
-      >
+      <div data-container-children="true" style={{ ...childrenStackStyle(), width: '100%', minWidth: 0 }}>
         {children.map((child) => (
-          <div key={child.id} style={{ minWidth: 0, flex: parentDisplay === 'flex' && parentDirection === 'row' ? '1 1 auto' : undefined }}>
+          <div
+            key={child.id}
+            style={{
+              minWidth: 0,
+              flex:
+                parentDisplay === 'flex' && parentDirection === 'row'
+                  ? '1 1 auto'
+                  : undefined,
+              ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
+            }}
+          >
             <BlockRenderer
               block={child}
               isSelected={actions?.selectedBlockId === child.id}
@@ -93,10 +134,7 @@ export function ContainerChildren({
           {...provided.droppableProps}
           data-container-children="true"
           style={{
-            display: parentDisplay === 'flex' ? 'flex' : parentDisplay === 'grid' ? 'grid' : undefined,
-            flexDirection: parentDisplay === 'flex' ? parentDirection : undefined,
-            flexWrap: parentDisplay === 'flex' ? ((block.content as any)?.flexWrap || 'wrap') : undefined,
-            gap: parentDisplay !== 'block' ? ((block.content as any)?.gap || '16px') : undefined,
+            ...childrenStackStyle(),
             minHeight: '60px',
             minWidth: 0,
             width: '100%',
@@ -123,6 +161,7 @@ export function ContainerChildren({
                     style={{
                       minWidth: 0,
                       flex: isHorizontal ? '1 1 auto' : undefined,
+                      ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
                     }}
                   >
                     <BlockRenderer
@@ -215,39 +254,16 @@ export default function BlockRenderer({
   const parsePadding = parseMargin;
   const [pTop, pRight, pBottom, pLeft] = parsePadding(paddingString);
 
-  const horizontal = (block.styles as any)?.contentAlignHorizontal as
-    | 'left'
-    | 'center'
-    | 'right'
-    | undefined;
-  const vertical = (block.styles as any)?.contentAlignVertical as
-    | 'top'
-    | 'middle'
-    | 'bottom'
-    | undefined;
-  const justifyContent =
-    horizontal === 'center'
-      ? 'center'
-      : horizontal === 'right'
-        ? 'flex-end'
-        : 'flex-start';
-  const alignItems =
-    vertical === 'middle'
-      ? 'center'
-      : vertical === 'bottom'
-        ? 'flex-end'
-        : 'flex-start';
-
   // Resolve tokenMap to inline styles + modifier CSS
   const tokenResolution = block.other?.tokenMap
     ? resolveTokenMap(block.other.tokenMap, block.other?.units || {})
     : null;
 
-  // Merge styles: tokenMap resolved styles take priority over block.styles
-  const mergedStyles: React.CSSProperties = {
+  // Placement meta belongs on sibling flex wrapper — strip before styling block markup
+  const mergedStyles: React.CSSProperties = stripBlockContainerPlacementStyles({
     ...block.styles,
     ...(tokenResolution?.style || {}),
-  };
+  });
 
   // Create a patched block with token-resolved styles for the component
   const patchedBlock: typeof block = {
