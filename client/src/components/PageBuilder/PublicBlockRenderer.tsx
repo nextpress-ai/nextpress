@@ -10,6 +10,7 @@ import {
 import {
   getBlockSiblingFlexItemStyles,
   stripBlockContainerPlacementStyles,
+  getBlockStackLayerWrapperStyles,
   type BlockStackDirection,
 } from "@shared/block-container-placement";
 import { generateBlockModifierCSS, resolveTokenMap } from "@/lib/tailwind-tokens";
@@ -111,6 +112,7 @@ const publicBlockRenderers: Record<string, BlockRenderer> = {
   "core/file": renderFileBlock,
   "core/gallery": renderGalleryBlock,
   "core/group": renderGroupBlock,
+  "core/container": renderContainerBlock,
   "core/heading": renderHeadingBlock,
   "core/html": renderHtmlBlock,
   "core/icon": renderIconBlock,
@@ -155,6 +157,7 @@ export default function PublicBlockRenderer({
           width: "100%",
           minWidth: 0,
           ...flexItemPlacement,
+          ...getBlockStackLayerWrapperStyles(block),
         }}
       >
         <div
@@ -523,6 +526,22 @@ function renderDividerBlock(_block: BlockConfig, styles: CSSProperties) {
   return <hr className="wp-block-divider" style={styles} />;
 }
 
+function renderContainerBlock(block: BlockConfig, styles: CSSProperties) {
+  const content = block.content as Record<string, unknown> | undefined;
+  const tagName = typeof content?.tagName === "string" ? content.tagName : "div";
+  const Tag = tagName as keyof JSX.IntrinsicElements;
+  return (
+    <Tag
+      className={["wp-block-container", typeof content?.className === "string" ? content.className : ""]
+        .filter(Boolean)
+        .join(" ")}
+      style={{ ...styles, boxSizing: "border-box" }}
+    >
+      <div className="wp-block-container__inner">{renderNestedBlocks(block.children, "column")}</div>
+    </Tag>
+  );
+}
+
 function renderGroupBlock(block: BlockConfig, styles: CSSProperties) {
   const content = block.content as Record<string, unknown> | undefined;
   const tagName = typeof content?.tagName === "string" ? content.tagName : "div";
@@ -796,18 +815,21 @@ function renderIconBlock(block: BlockConfig, styles: CSSProperties) {
   const linkTarget = d.linkTarget === "_blank" ? "_blank" : "_self";
   const label = typeof d.label === "string" ? d.label : "";
 
+  const wrapperStyle: CSSProperties = {
+    ...styles,
+    alignItems: "center",
+    display: "inline-flex",
+    justifyContent: "center",
+  };
+
   const inner = (
-    <IconRenderer
-      icon={icon}
-      className="wp-block-icon"
-      style={{
-        ...styles,
-        alignItems: "center",
-        display: "inline-flex",
-        justifyContent: "center",
-      }}
-      aria-label={label || undefined}
-    />
+    <span className="wp-block-icon" style={wrapperStyle}>
+      <IconRenderer
+        icon={icon}
+        className="wp-block-icon__glyph"
+        aria-label={label || undefined}
+      />
+    </span>
   );
 
   if (link && link !== "#") {

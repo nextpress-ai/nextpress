@@ -2,6 +2,14 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import type { TokenEntry } from "@shared/schema-types"
 import { tokenSpacing, propertyAliasMap, propertyUnitCategoryMap, unitCategories } from "@/lib/tailwind-tokens"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 interface TokenSpacingPickerProps {
   property: string                // CSS property: "paddingTop", "marginLeft", etc.
@@ -90,15 +98,23 @@ export default function TokenSpacingPicker({ property, currentEntry, currentStyl
             min="0"
             step="1"
           />
-          <select
-            value={currentUnit}
-            onChange={(e) => onUnitChange(e.target.value)}
-            className="h-8 px-2 text-xs border border-gray-200 rounded-none bg-white focus:outline-none focus:ring-1 focus:ring-gray-400"
-          >
-            {availableUnits.map((u) => (
-              <option key={u} value={u}>{u}</option>
-            ))}
-          </select>
+          <Select value={currentUnit} onValueChange={onUnitChange}>
+            <SelectTrigger
+              className={cn(
+                "h-8 w-[4.25rem] rounded-none px-2 text-xs",
+                "npb-settings-select-trigger",
+              )}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableUnits.map((u) => (
+                <SelectItem key={u} value={u}>
+                  {u}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       ) : (
         /* Token chips grid */

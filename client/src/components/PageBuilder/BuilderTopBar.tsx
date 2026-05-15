@@ -6,20 +6,13 @@ import {
   Tablet,
   Monitor,
   Sidebar,
-  Settings as SettingsIcon,
-  Settings2,
-  FileText,
+  FileStack,
   Pen,
   Palette,
   RotateCcw,
   RotateCw,
 } from "lucide-react";
-import {
-  SiteMenu,
-  PagesMenu,
-  BlogMenu,
-  DesignMenu,
-} from "@/components/PageBuilder/EditorBar";
+import { PagesMenu, BlogMenu, DesignMenu } from "@/components/PageBuilder/EditorBar";
 
 export function BuilderTopBar({
   data,
@@ -29,7 +22,6 @@ export function BuilderTopBar({
   blocks,
   sidebarVisible,
   onToggleSidebar,
-  onSaveClick,
   onUndo,
   onRedo,
   canUndo,
@@ -43,7 +35,6 @@ export function BuilderTopBar({
   blocks: any[];
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
-  onSaveClick?: () => void;
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
@@ -102,21 +93,6 @@ export function BuilderTopBar({
         <div className="flex items-center gap-4">
           <div className="text-sm text-gray-500">{blocks.length} blocks</div>
 
-          {/* Menus moved here next to the inner Save */}
-          <SiteMenu>
-            <Button variant="outline" size="sm" className="gap-2">
-              <SettingsIcon className="w-4 h-4" />
-              Site
-            </Button>
-          </SiteMenu>
-
-          <PagesMenu currentPageId={data?.id}>
-            <Button variant="outline" size="sm" className="gap-2">
-              <FileText className="w-4 h-4" />
-              Pages
-            </Button>
-          </PagesMenu>
-
           <BlogMenu currentPostId={data?.id} blogId={data?.blogId ?? undefined}>
             <Button variant="outline" size="sm" className="gap-2">
               <Pen className="w-4 h-4" />
@@ -134,14 +110,7 @@ export function BuilderTopBar({
             </Button>
           </DesignMenu>
 
-          {onPageSettingsClick && (
-            <Button variant="outline" size="sm" className="gap-2" onClick={onPageSettingsClick}>
-              <Settings2 className="w-4 h-4" />
-              Page
-            </Button>
-          )}
-
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {onUndo && (
               <Button
                 size="sm"
@@ -164,11 +133,20 @@ export function BuilderTopBar({
                 <RotateCw className="w-4 h-4" />
               </Button>
             )}
-            {onSaveClick && (
-              <Button size="sm" onClick={onSaveClick} title="Save (Ctrl+S)">
-                Save
+            <PagesMenu
+              currentPageId={data?.id}
+              onPageSettingsClick={onPageSettingsClick}
+            >
+              <Button
+                type="button"
+                size="sm"
+                title="Page — browse, create, settings"
+                className="mr-2 gap-2 border border-zinc-950 bg-zinc-950 text-white shadow-sm hover:bg-zinc-800 hover:text-white focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+              >
+                <FileStack className="h-4 w-4 shrink-0 text-white" aria-hidden />
+                Page
               </Button>
-            )}
+            </PagesMenu>
           </div>
         </div>
       </div>

@@ -271,7 +271,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Layout" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
             <Label htmlFor="media-position" className="text-sm font-medium text-gray-700">Media Position</Label>

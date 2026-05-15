@@ -10,6 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronDown, ChevronRight, LayoutTemplate, Plus } from "lucide-react";
 import type { Template, BlockConfig } from "@shared/schema-types";
+import {
+  NPB_TEMPLATE_LIST_NAME_MAX_CHARS,
+  truncateWithEllipsis,
+} from "@/lib/truncate-with-ellipsis";
 
 interface TemplatesApiResponse {
   templates: Template[];
@@ -76,6 +80,10 @@ export function TemplateLibrary({ onInsertTemplate }: TemplateLibraryProps) {
                 {templates.map((template) => {
                   const blockCount =
                     Array.isArray(template.blocks) ? template.blocks.length : 0;
+                  const nameDisplay = truncateWithEllipsis({
+                    text: template.name,
+                    maxChars: NPB_TEMPLATE_LIST_NAME_MAX_CHARS,
+                  });
                   return (
                     <button
                       key={template.id}
@@ -87,8 +95,10 @@ export function TemplateLibrary({ onInsertTemplate }: TemplateLibraryProps) {
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-800 truncate">
-                              {template.name}
+                            <span
+                              className="text-sm font-medium text-gray-800 min-w-0 shrink"
+                              title={template.name}>
+                              {nameDisplay}
                             </span>
                             <Badge
                               variant="secondary"

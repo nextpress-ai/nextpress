@@ -2,27 +2,25 @@ import { useState } from 'react';
 import { Draggable, Droppable } from '@/lib/dnd';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
+  NPB_BLOCK_LIBRARY_CARD_LABEL_MAX_CHARS,
+  truncateWithEllipsis,
+} from '@/lib/truncate-with-ellipsis';
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { blockRegistry } from './blocks';
+import type { BlockDefinition } from './blocks/types';
 import { Box, ChevronDown, ChevronRight } from 'lucide-react';
 
-// Utility function to truncate single words longer than 6 characters
-const truncateBlockName = (name: string): string => {
-  const words = name.trim().split(/\s+/);
-
-  // Only truncate if it's a single word and longer than 6 characters
-  if (words.length === 1 && words[0].length > 8) {
-    return words[0].slice(0, 8) + '..';
-  }
-
-  return name;
+export type BlockLibraryCategory = {
+  id: string;
+  name: string;
+  blocks: BlockDefinition[];
 };
 
-// Dedupe by block definition id to avoid showing aliases (e.g., "heading" vs "core/heading")
 if (import.meta.env.DEBUG_BUILDER) {
   console.log('blockRegistry:', blockRegistry);
 }
@@ -31,60 +29,84 @@ const allBlocks = Object.values(blockRegistry).filter(
   (block, index, arr) => arr.findIndex((b) => b.id === block.id) === index
 );
 
-let categories = [
-  {
-    id: 'basic',
-    name: 'Basic',
-    blocks: allBlocks.filter((b: any) => b.category === 'basic'),
-  },
-  {
-    id: 'media',
-    name: 'Media',
-    blocks: allBlocks.filter((b: any) => b.category === 'media'),
-  },
-  {
-    id: 'layout',
-    name: 'Layout',
-    blocks: allBlocks.filter((b: any) => b.category === 'layout'),
-  },
-  {
-    id: 'advanced',
-    name: 'Advanced',
-    blocks: allBlocks.filter((b: any) => b.category === 'advanced'),
-  },
-  {
-    id: 'post',
-    name: 'Post',
-    blocks: allBlocks.filter((b: any) => b.category === 'post'),
-  },
-].filter((c) => c.blocks.length > 0);
+/**
+ * Category groups for the block library sidebar (Basic, Media, …).
+ * Exported so BuilderSidebar can own accordion open state for fold-all.
+ */
+export function buildBlockLibraryCategories(): BlockLibraryCategory[] {
+  let cats: BlockLibraryCategory[] = [
+    {
+      id: 'basic',
+      name: 'Basic',
+      blocks: allBlocks.filter((b) => b.category === 'basic'),
+    },
+    {
+      id: 'media',
+      name: 'Media',
+      blocks: allBlocks.filter((b) => b.category === 'media'),
+    },
+    {
+      id: 'layout',
+      name: 'Layout',
+      blocks: allBlocks.filter((b) => b.category === 'layout'),
+    },
+    {
+      id: 'advanced',
+      name: 'Advanced',
+      blocks: allBlocks.filter((b) => b.category === 'advanced'),
+    },
+    {
+      id: 'post',
+      name: 'Post',
+      blocks: allBlocks.filter((b) => b.category === 'post'),
+    },
+  ].filter((c) => c.blocks.length > 0);
 
-// Fallback when blocks have no categories (e.g., in tests with mocked registry)
-if (categories.length === 0 && allBlocks.length > 0) {
-  categories = [{ id: 'all', name: 'All Blocks', blocks: allBlocks as any[] }];
+  if (cats.length === 0 && allBlocks.length > 0) {
+    cats = [{ id: 'all', name: 'All Blocks', blocks: allBlocks }];
+  }
+  return cats;
 }
 
-export default function BlockLibrary() {
-  // Calculate continuous index across all categories to avoid duplicate indexes
-  let globalIndex = 0;
+const DEFAULT_CATEGORIES = buildBlockLibraryCategories();
 
-  // State to track which categories are open (all open by default)
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(
-    categories.reduce(
-      (acc, category) => ({
-        ...acc,
-        [category.id]: true,
-      }),
+export type BlockLibraryProps = {
+  categories?: BlockLibraryCategory[];
+  openCategories?: Record<string, boolean>;
+  onCategoryOpenChange?: (categoryId: string, open: boolean) => void;
+};
+
+export default function BlockLibrary({
+  categories: categoriesProp,
+  openCategories: openCategoriesProp,
+  onCategoryOpenChange,
+}: BlockLibraryProps) {
+  const categories = categoriesProp ?? DEFAULT_CATEGORIES;
+
+  const isControlled =
+    openCategoriesProp !== undefined && onCategoryOpenChange !== undefined;
+
+  const [internalOpen, setInternalOpen] = useState<Record<string, boolean>>(() =>
+    (categoriesProp ?? DEFAULT_CATEGORIES).reduce<Record<string, boolean>>(
+      (acc, category) => ({ ...acc, [category.id]: true }),
       {}
     )
   );
 
-  const toggleCategory = (categoryId: string) => {
-    setOpenCategories((prev) => ({
+  const openCategories = isControlled ? openCategoriesProp! : internalOpen;
+
+  const handleOpenChange = (categoryId: string, open: boolean) => {
+    if (isControlled) {
+      onCategoryOpenChange!(categoryId, open);
+      return;
+    }
+    setInternalOpen((prev) => ({
       ...prev,
-      [categoryId]: !prev[categoryId],
+      [categoryId]: open,
     }));
   };
+
+  let globalIndex = 0;
 
   return (
     <div className="space-y-4">
@@ -98,7 +120,7 @@ export default function BlockLibrary() {
             className="border border-gray-200 bg-white shadow-sm rounded-none">
             <Collapsible
               open={openCategories[category.id]}
-              onOpenChange={() => toggleCategory(category.id)}>
+              onOpenChange={(open) => handleOpenChange(category.id, open)}>
               <CardHeader className="p-0">
                 <CollapsibleTrigger asChild>
                   <Button
@@ -123,7 +145,7 @@ export default function BlockLibrary() {
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {category.blocks.map((block: any, index: number) => (
+                        {category.blocks.map((block, index) => (
                           <Draggable
                             key={block.id}
                             draggableId={block.id}
@@ -149,8 +171,13 @@ export default function BlockLibrary() {
                                         <Box className="w-5 h-5 text-gray-600" />
                                       )}
                                     </div>
-                                    <p className="text-sm font-medium text-gray-800 w-full leading-snug">
-                                      {truncateBlockName(block.label)}
+                                    <p
+                                      className="text-sm font-medium text-gray-800 w-full leading-snug min-w-0"
+                                      title={block.label}>
+                                      {truncateWithEllipsis({
+                                        text: block.label,
+                                        maxChars: NPB_BLOCK_LIBRARY_CARD_LABEL_MAX_CHARS,
+                                      })}
                                     </p>
                                   </div>
                                 </CardContent>

@@ -329,8 +329,14 @@ function extractContentProps(
 					iconSet: icon.iconSet || "lucide",
 					iconName: icon.iconName || "star",
 					iconSize: icon.size || 24,
+					iconSizeUnit:
+						typeof icon.sizeUnit === "string" ? icon.sizeUnit : undefined,
 					iconColor: icon.color || "currentColor",
 					iconStrokeWidth: icon.strokeWidth || 2,
+					iconStrokeWidthUnit:
+						typeof icon.strokeWidthUnit === "string"
+							? icon.strokeWidthUnit
+							: undefined,
 					link: data.link || undefined,
 					linkTarget: data.linkTarget || undefined,
 					label: data.label || undefined,
@@ -355,6 +361,11 @@ function extractContentProps(
 				return {
 					layout: data.layout,
 					tagName: data.tagName || "div",
+				};
+			} else if (blockName === "core/container") {
+				return {
+					tagName: data.tagName || "div",
+					className: typeof data.className === "string" ? data.className : undefined,
 				};
 			} else if (blockName === "core/spacer") {
 				return {

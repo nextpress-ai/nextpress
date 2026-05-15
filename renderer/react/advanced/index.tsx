@@ -253,8 +253,10 @@ export function IconBlock(props: BlockData) {
     iconSet,
     iconName,
     iconSize,
+    iconSizeUnit,
     iconColor,
     iconStrokeWidth,
+    iconStrokeWidthUnit,
     link,
     linkTarget,
     label,
@@ -263,9 +265,19 @@ export function IconBlock(props: BlockData) {
     attributes,
   } = props as Extract<BlockData, { blockName: "core/icon" }>;
 
-  const size = iconSize || 24;
+  const sizeNum = iconSize || 24;
+  const sizeUnit = iconSizeUnit || "px";
+  const boxW =
+    sizeUnit === "px" ? sizeNum : `${sizeNum}${sizeUnit}`;
+  const boxH = boxW;
   const color = iconColor || "currentColor";
-  const strokeWidth = iconStrokeWidth || 2;
+  const strokeU = iconStrokeWidthUnit || "px";
+  const strokeWidthVal =
+    strokeU === "px"
+      ? String(iconStrokeWidth || 2)
+      : `${iconStrokeWidth || 2}${strokeU}`;
+  const svgW = sizeUnit === "px" ? sizeNum : "100%";
+  const svgH = sizeUnit === "px" ? sizeNum : "100%";
 
   const mergedClassName = ["wp-block-icon", className]
     .filter(Boolean)
@@ -275,20 +287,20 @@ export function IconBlock(props: BlockData) {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    width: size,
-    height: size,
+    width: boxW,
+    height: boxH,
     ...style,
   };
 
   // Render inline SVG placeholder for SSR
   const svgContent = (
     <svg
-      width={size}
-      height={size}
+      width={svgW}
+      height={svgH}
       viewBox="0 0 24 24"
       fill="none"
       stroke={color}
-      strokeWidth={String(strokeWidth)}
+      strokeWidth={strokeWidthVal}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-label={label || undefined}

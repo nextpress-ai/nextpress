@@ -234,9 +234,6 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
   const content = accessor
     ? (accessor.getContent() as ImageContent)
     : (block.content as ImageContent) || DEFAULT_CONTENT;
-  const styles = accessor
-    ? accessor.getStyles()
-    : block.styles;
 
   // Update handlers
   const updateContent = (updates: Partial<ImageContent>) => {
@@ -250,21 +247,6 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
           ...block.content,
           ...updates,
         } as BlockContent,
-      });
-    }
-  };
-
-  const updateStyles = (styleUpdates: Partial<React.CSSProperties>) => {
-    if (accessor) {
-      const current = accessor.getStyles() || {};
-      accessor.setStyles({ ...current, ...styleUpdates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        styles: {
-          ...block.styles,
-          ...styleUpdates,
-        },
       });
     }
   };
@@ -367,7 +349,7 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
       </CollapsibleCard>
 
       <CollapsibleCard
-        title="Settings"
+        title="Figure layout"
         icon={Settings}
         defaultOpen={true}
       >
@@ -422,74 +404,10 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
             </div>
           </div>
 
-          {/* Dimensions */}
-          <div>
-            <Label>Dimensions</Label>
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              <div>
-                <Label htmlFor="img-width" className="text-sm text-gray-600">Width</Label>
-                <Input
-                  id="img-width"
-                  aria-label="Image width"
-                  className="h-9"
-                  value={styles?.width || ''}
-                  onChange={(e) => updateStyles({ width: e.target.value })}
-                  placeholder="e.g. 300px or 50%"
-                />
-              </div>
-              <div>
-                <Label htmlFor="img-height" className="text-sm text-gray-600">Height</Label>
-                <Input
-                  id="img-height"
-                  aria-label="Image height"
-                  className="h-9"
-                  value={styles?.height || ''}
-                  onChange={(e) => updateStyles({ height: e.target.value })}
-                  placeholder="e.g. 200px or auto"
-                />
-              </div>
-              <div>
-                <Label htmlFor="img-max-width" className="text-sm text-gray-600">Max Width</Label>
-                <Input
-                  id="img-max-width"
-                  value={styles?.maxWidth || ''}
-                  onChange={(e) => updateStyles({ maxWidth: e.target.value })}
-                  placeholder="e.g. 100% or 800px"
-                />
-              </div>
-              <div>
-                <Label htmlFor="img-max-height" className="text-sm text-gray-600">Max Height</Label>
-                <Input
-                  id="img-max-height"
-                  aria-label="Image max height"
-                  className="h-9"
-                  value={styles?.maxHeight || ''}
-                  onChange={(e) => updateStyles({ maxHeight: e.target.value })}
-                  placeholder="e.g. none or 600px"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Object Fit */}
-          <div>
-            <Label htmlFor="img-fit-select">Object Fit</Label>
-            <Select
-              value={styles?.objectFit || 'contain'}
-              onValueChange={(value) => updateStyles({ objectFit: value as any })}
-            >
-              <SelectTrigger id="img-fit-select" aria-label="Object fit">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="contain">Contain</SelectItem>
-                <SelectItem value="cover">Cover</SelectItem>
-                <SelectItem value="fill">Fill</SelectItem>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="scale-down">Scale Down</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <p className="text-xs text-gray-600">
+            Width, height, max size, and object fit live under the sidebar <span className="font-semibold">Style</span>{" "}
+            tab (Layout &amp; Dimensions).
+          </p>
         </div>
       </CollapsibleCard>
 

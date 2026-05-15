@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { ContainerChildren } from "../../BlockRenderer";
-import { Package as GroupIcon, Settings, Layout, Palette } from "lucide-react";
+import { Package as GroupIcon, Settings, Layout } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
 
@@ -144,13 +144,14 @@ const DEFAULT_CONTENT: GroupContent = {
 // ============================================================================
 
 interface GroupRendererProps {
+  hostBlock: BlockConfig;
   content: GroupContent;
   styles?: React.CSSProperties;
   children?: BlockConfig[];
   isPreview?: boolean;
 }
 
-function GroupRenderer({ content, styles, children, isPreview }: GroupRendererProps) {
+function GroupRenderer({ hostBlock, content, styles, children, isPreview }: GroupRendererProps) {
   const tagName = content?.tagName || 'div';
   const className = [
     'wp-block-group',
@@ -198,15 +199,12 @@ function GroupRenderer({ content, styles, children, isPreview }: GroupRendererPr
     boxSizing: 'border-box',
   };
 
-  // Create a block config for ContainerChildren
+  // Real block id/name so ContainerChildren registers a valid droppableId for insert/move.
   const blockForChildren: BlockConfig = {
-    id: '',
-    name: '',
-    type: 'container',
-    parentId: null,
+    ...hostBlock,
     content: content as any,
     styles,
-    children: children || [],
+    children: children ?? hostBlock.children ?? [],
   };
 
   return (
@@ -238,6 +236,7 @@ export function GroupBlockComponent({
 
   return (
     <GroupRenderer
+      hostBlock={value}
       content={content}
       styles={styles}
       children={value.children}
@@ -263,9 +262,6 @@ function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
   const content = accessor
     ? (accessor.getContent() as GroupContent)
     : (block.content as GroupContent) || DEFAULT_CONTENT;
-  const styles = accessor
-    ? accessor.getStyles()
-    : block.styles;
 
   // Update handlers
   const updateContent = (updates: Partial<GroupContent>) => {
@@ -279,21 +275,6 @@ function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
           ...block.content,
           ...updates,
         } as BlockContent,
-      });
-    }
-  };
-
-  const updateStyles = (styleUpdates: Partial<React.CSSProperties>) => {
-    if (accessor) {
-      const current = accessor.getStyles() || {};
-      accessor.setStyles({ ...current, ...styleUpdates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        styles: {
-          ...block.styles,
-          ...styleUpdates,
-        },
       });
     }
   };
@@ -356,7 +337,7 @@ function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
       </CollapsibleCard>
 
       <CollapsibleCard
-        title="Settings"
+        title="Wrapper & display"
         icon={Settings}
         defaultOpen={true}
       >
@@ -660,36 +641,6 @@ function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
                 <SelectItem value="scroll">Scroll</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </div>
-      </CollapsibleCard>
-
-      <CollapsibleCard
-        title="Style"
-        icon={Palette}
-        defaultOpen={false}
-      >
-        <div className="space-y-4">
-          {/* Background Color */}
-          <div>
-            <Label htmlFor="group-background">Background Color</Label>
-            <Input
-              id="group-background"
-              type="color"
-              value={styles?.backgroundColor || "#ffffff"}
-              onChange={(e) => updateStyles({ backgroundColor: e.target.value })}
-            />
-          </div>
-
-          {/* Padding */}
-          <div>
-            <Label htmlFor="group-padding">Padding</Label>
-            <Input
-              id="group-padding"
-              value={styles?.padding || "1.25em 2.375em"}
-              onChange={(e) => updateStyles({ padding: e.target.value })}
-              placeholder="e.g. 20px, 1em 2em"
-            />
           </div>
         </div>
       </CollapsibleCard>

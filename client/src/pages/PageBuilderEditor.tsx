@@ -4,11 +4,12 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Eye, Save, FileText } from 'lucide-react';
+import { ArrowLeft, Eye, Save, FileText, Settings2 } from 'lucide-react';
 import AdminTopBar from '@/components/AdminTopBar';
 import AdminSidebar from '@/components/AdminSidebar';
 import PageBuilder from '@/components/PageBuilder/PageBuilder';
 import PublishDialog from '@/components/PageBuilder/PublishDialog';
+import { SiteMenu } from '@/components/PageBuilder/EditorBar';
 import { useToast } from '@/hooks/use-toast';
 import type { BlockConfig, Page, Post, Template } from '@shared/schema-types';
 import { storeSlugToIdMapping, getPageIdFromSlug } from '@/lib/editorStorage';
@@ -531,8 +532,8 @@ export default function PageBuilderEditor({
     queryClient.invalidateQueries({ queryKey: [apiBase] });
   };
 
-  const handlePageBuilderSave = async () => {
-    if (!data) return;
+  const handlePageBuilderSave = async (): Promise<boolean> => {
+    if (!data) return false;
 
     setIsSaving(true);
     try {
@@ -556,7 +557,7 @@ export default function PageBuilderEditor({
         clearPostDraft(updated.id);
         setInlinePostData(updated);
         handleSave();
-        return;
+        return true;
       }
 
       const payload = isTemplate
@@ -589,6 +590,7 @@ export default function PageBuilderEditor({
         clearPageDraft(updated.id);
       }
       handleSave();
+      return true;
     } catch (err) {
       console.error(`Error saving ${type}:`, err);
       toast({
@@ -596,26 +598,29 @@ export default function PageBuilderEditor({
         description: `Failed to save ${type}`,
         variant: 'destructive',
       });
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handlePreview = () => {
-    // When inline-editing a post, preview the post
-    if (inlinePostId) {
-      window.open(`/preview/post/${inlinePostId}`, '_blank');
-      return;
-    }
-    if (!data) return;
+  const handlePreview = async () => {
     if (isTemplate) {
-      // Templates don't have a preview route yet
       toast({
         title: 'Preview',
         description: 'Template preview is not available yet',
       });
       return;
     }
+
+    const saved = await handlePageBuilderSave();
+    if (!saved) return;
+
+    if (inlinePostId) {
+      window.open(`/preview/post/${inlinePostId}`, '_blank');
+      return;
+    }
+    if (!data) return;
     const previewPath = isPost
       ? `/preview/post/${data.id}`
       : `/preview/page/${data.id}`;
@@ -665,10 +670,21 @@ export default function PageBuilderEditor({
           </div>
 
           <div className="flex items-center gap-2">
+            <SiteMenu>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 text-gray-800"
+                data-testid="button-site-settings">
+                <Settings2 className="w-4 h-4" />
+                Site settings
+              </Button>
+            </SiteMenu>
             <Button
               variant="outline"
               size="sm"
-              onClick={handlePreview}
+              onClick={() => void handlePreview()}
+              disabled={isSaving}
               className="flex items-center gap-2 text-gray-800"
               data-testid="button-preview">
               <Eye className="w-4 h-4" />

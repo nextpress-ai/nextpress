@@ -1,6 +1,6 @@
 # Copywriting Rules
 
-Rules for all user-facing copy across Nylon Pay.
+Rules for all user-facing copy across the project.
 
 ## Language
 

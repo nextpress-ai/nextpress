@@ -296,10 +296,21 @@ function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
               </div>
             ))}
           </div>
+
+          <div>
+            <Label htmlFor="gallery-caption">Gallery caption</Label>
+            <Input
+              id="gallery-caption"
+              value={galleryData?.caption || ""}
+              onChange={(e) => updateContent({ caption: e.target.value })}
+              placeholder="Describe the gallery"
+              className="mt-2 h-9"
+            />
+          </div>
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Grid layout" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
             <Label htmlFor="gallery-columns">Columns</Label>
@@ -329,11 +340,15 @@ function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
               onCheckedChange={(checked) => updateContent({ imageCrop: checked })}
             />
           </div>
+        </div>
+      </CollapsibleCard>
 
+      <CollapsibleCard title="Links & image size" icon={Settings} defaultOpen={false}>
+        <div className="space-y-4">
           <div>
             <Label htmlFor="gallery-link-to">Link to</Label>
             <Select
-              value={galleryData?.linkTo || 'none'}
+              value={galleryData?.linkTo || "none"}
               onValueChange={(value) => updateContent({ linkTo: value as any })}
             >
               <SelectTrigger className="h-9">
@@ -350,7 +365,7 @@ function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
           <div>
             <Label htmlFor="gallery-size">Image Size</Label>
             <Select
-              value={galleryData?.sizeSlug || 'large'}
+              value={galleryData?.sizeSlug || "large"}
               onValueChange={(value) => updateContent({ sizeSlug: value })}
             >
               <SelectTrigger className="h-9">
@@ -363,17 +378,6 @@ function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
                 <SelectItem value="full">Full</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="gallery-caption">Gallery Caption</Label>
-            <Input
-              id="gallery-caption"
-              value={galleryData?.caption || ''}
-              onChange={(e) => updateContent({ caption: e.target.value })}
-              placeholder="Describe the gallery"
-              className="h-9"
-            />
           </div>
         </div>
       </CollapsibleCard>

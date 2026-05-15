@@ -41,6 +41,83 @@
   -webkit-user-select: none !important;
 }
 
+/**
+ * Page builder — thin native scrollbars + Radix ScrollArea chrome (scoped to `.npb-editor-shell`).
+ * Firefox: inherited `scrollbar-width` / `scrollbar-color`. WebKit: pseudo-elements on descendants.
+ * Radix viewport hides native bars; sibling scrollbar + thumb styled explicitly (~7px, ~4px radius, quiet zinc).
+ */
+.npb-editor-shell {
+  --npb-scrollbar-track: transparent;
+  --npb-scrollbar-thumb: color-mix(in srgb, rgb(113 113 122) 30%, transparent);
+  --npb-scrollbar-thumb-hover: color-mix(in srgb, rgb(82 82 91) 52%, transparent);
+  scrollbar-width: thin;
+  scrollbar-color: var(--npb-scrollbar-thumb) var(--npb-scrollbar-track);
+}
+
+.npb-editor-shell .npb-editor-sidebar {
+  --npb-scrollbar-thumb: color-mix(in srgb, rgb(161 161 170) 22%, transparent);
+  --npb-scrollbar-thumb-hover: color-mix(in srgb, rgb(200 200 204) 40%, transparent);
+}
+
+.npb-editor-shell .npb-editor-sidebar.npb-editor-sidebar--light {
+  --npb-scrollbar-thumb: color-mix(in srgb, rgb(113 113 122) 34%, transparent);
+  --npb-scrollbar-thumb-hover: color-mix(in srgb, rgb(82 82 91) 50%, transparent);
+}
+
+.npb-editor-shell *::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.npb-editor-shell *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.npb-editor-shell *::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background-color: var(--npb-scrollbar-thumb);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 120ms ease;
+}
+
+.npb-editor-shell *::-webkit-scrollbar-thumb:hover {
+  background-color: var(--npb-scrollbar-thumb-hover);
+}
+
+.npb-editor-shell *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Radix ScrollArea — custom thumb/track (viewport native bars are suppressed by Radix) */
+.npb-editor-shell [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"] {
+  width: 7px !important;
+  border-left: 0 !important;
+  padding: 1px !important;
+  background: transparent;
+}
+
+.npb-editor-shell [data-radix-scroll-area-viewport] ~ [data-orientation="horizontal"] {
+  height: 7px !important;
+  border-top: 0 !important;
+  padding: 1px !important;
+  background: transparent;
+}
+
+.npb-editor-shell [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"] > div[data-state],
+.npb-editor-shell [data-radix-scroll-area-viewport] ~ [data-orientation="horizontal"] > div[data-state] {
+  border-radius: 4px !important;
+  background-color: var(--npb-scrollbar-thumb) !important;
+  transition: background-color 120ms ease;
+}
+
+.npb-editor-shell [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"]:hover > div[data-state],
+.npb-editor-shell [data-radix-scroll-area-viewport] ~ [data-orientation="horizontal"]:hover > div[data-state],
+.npb-editor-shell [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"] > div[data-state]:hover,
+.npb-editor-shell [data-radix-scroll-area-viewport] ~ [data-orientation="horizontal"] > div[data-state]:hover {
+  background-color: var(--npb-scrollbar-thumb-hover) !important;
+}
+
 
 @layer base {
   * {
@@ -148,6 +225,623 @@
   
   .hover\:text-wp-blue-light:hover {
     color: var(--wp-blue-light);
+  }
+
+  /**
+   * Page builder editor sidebar — dark chrome. Descendant overrides remap common
+   * gray/white Tailwind utilities used by BlockLibrary / BlockSettings / TemplateLibrary.
+   */
+  .npb-editor-sidebar .bg-white {
+    background-color: rgb(9 9 11) !important;
+  }
+  .npb-editor-sidebar .bg-white\/60 {
+    background-color: rgb(9 9 11 / 0.72) !important;
+  }
+  .npb-editor-sidebar .bg-gray-50 {
+    background-color: rgb(24 24 27 / 0.72) !important;
+  }
+  .npb-editor-sidebar .bg-gray-100 {
+    background-color: rgb(39 39 42) !important;
+  }
+  .npb-editor-sidebar .bg-gray-200 {
+    background-color: rgb(47 47 52) !important;
+  }
+  .npb-editor-sidebar .hover\:bg-gray-50:hover {
+    background-color: rgb(39 39 42 / 0.92) !important;
+  }
+  .npb-editor-sidebar .hover\:bg-gray-100:hover {
+    background-color: rgb(55 55 62) !important;
+  }
+  .npb-editor-sidebar .hover\:bg-gray-200:hover {
+    background-color: rgb(63 63 70) !important;
+  }
+  .npb-editor-sidebar .hover\:bg-gray-300:hover {
+    background-color: rgb(72 72 78) !important;
+  }
+  .npb-editor-sidebar .hover\:border-gray-300:hover {
+    border-color: rgb(113 113 122) !important;
+  }
+  .npb-editor-sidebar .hover\:text-gray-900:hover {
+    color: rgb(244 244 245) !important;
+  }
+  .npb-editor-sidebar .text-gray-400 {
+    color: rgb(161 161 170) !important;
+  }
+  .npb-editor-sidebar .text-gray-500 {
+    color: rgb(161 161 170) !important;
+  }
+  .npb-editor-sidebar .text-gray-600 {
+    color: rgb(212 212 216) !important;
+  }
+  .npb-editor-sidebar .text-gray-700 {
+    color: rgb(228 228 231) !important;
+  }
+  .npb-editor-sidebar .text-gray-800 {
+    color: rgb(244 244 245) !important;
+  }
+  .npb-editor-sidebar .text-black {
+    color: rgb(250 250 250) !important;
+  }
+  .npb-editor-sidebar [data-state="active"][class*="bg-white"],
+  .npb-editor-sidebar [data-state="active"].bg-white {
+    background-color: rgb(39 39 42) !important;
+    color: rgb(250 250 250) !important;
+  }
+  .npb-editor-sidebar [role="tab"][data-state="active"] {
+    color: rgb(250 250 250) !important;
+  }
+  .npb-editor-sidebar .border-gray-200 {
+    border-color: rgb(63 63 70 / 0.42) !important;
+  }
+  .npb-editor-sidebar .border-gray-300 {
+    border-color: rgb(63 63 70 / 0.55) !important;
+  }
+  .npb-editor-sidebar .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.35);
+  }
+  .npb-editor-sidebar .shadow-md {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.45);
+  }
+  .npb-editor-sidebar .shadow-xl {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5);
+  }
+  .npb-editor-sidebar .bg-black {
+    background-color: rgb(63 63 70) !important;
+  }
+  .npb-editor-sidebar .border-gray-400 {
+    border-color: rgb(113 113 122) !important;
+  }
+  .npb-editor-sidebar .bg-border {
+    background-color: rgb(82 82 91) !important;
+  }
+
+  /**
+   * Light sidebar chrome — same utility class names as BlockLibrary / TemplateLibrary,
+   * but real light backgrounds + dark text (no white-on-white from dark remaps).
+   */
+  .npb-editor-sidebar.npb-editor-sidebar--light .bg-white {
+    background-color: rgb(255 255 255) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .bg-white\/60 {
+    background-color: rgb(255 255 255 / 0.6) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .bg-gray-50 {
+    background-color: rgb(249 250 251) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .bg-gray-100 {
+    background-color: rgb(243 244 246) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .hover\:bg-gray-50:hover {
+    background-color: rgb(249 250 251) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .hover\:bg-gray-100:hover {
+    background-color: rgb(243 244 246) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .hover\:border-gray-300:hover {
+    border-color: rgb(209 213 219) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .hover\:text-gray-900:hover {
+    color: rgb(17 24 39) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .text-gray-400 {
+    color: rgb(156 163 175) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .text-gray-500 {
+    color: rgb(107 114 128) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .text-gray-600 {
+    color: rgb(75 85 99) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .text-gray-700 {
+    color: rgb(55 65 81) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .text-gray-800 {
+    color: rgb(31 41 55) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .text-black {
+    color: rgb(0 0 0) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light [data-state="active"][class*="bg-white"],
+  .npb-editor-sidebar.npb-editor-sidebar--light [data-state="active"].bg-white {
+    background-color: rgb(255 255 255) !important;
+    color: rgb(24 24 27) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light [role="tab"][data-state="active"] {
+    color: rgb(24 24 27) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .border-gray-200 {
+    border-color: rgb(228 231 235 / 0.82) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .border-gray-300 {
+    border-color: rgb(209 213 219 / 0.72) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .shadow-md {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.08);
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .shadow-xl {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .bg-black {
+    background-color: rgb(24 24 27) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .border-gray-400 {
+    border-color: rgb(156 163 175) !important;
+  }
+  .npb-editor-sidebar.npb-editor-sidebar--light .bg-border {
+    background-color: rgb(228 228 231) !important;
+  }
+
+  /**
+   * Block settings + sidebar collapsibles — tokens follow sidebar dark / --light.
+   * BlockLibrary uses gray remaps; BlockSettings used zinc-only → mismatch in light mode.
+   */
+  .npb-editor-sidebar {
+    /**
+     * Scoped shadcn semantic tokens: global `* { border-border }` uses `var(--border)` from :root
+     * (light gray). Without this, dark sidebar chrome picks up harsh light border-color on any
+     * `border-*` edge and on `ring-offset-background` (tabs / ghost controls).
+     */
+    --border: rgb(63 63 70 / 0.38);
+    --input: rgb(63 63 70 / 0.45);
+    --background: rgb(5 5 7);
+    --npb-settings-hero-bg: rgb(3 3 5);
+    /* Tier: panel chrome — slightly stronger than inner wells */
+    --npb-settings-hero-border: rgb(63 63 70 / 0.52);
+    --npb-settings-hero-title: rgb(250 250 250);
+    --npb-settings-hero-sub: rgb(113 113 122);
+    --npb-settings-panel-bg: rgb(9 9 11 / 0.88);
+    --npb-settings-panel-border: rgb(63 63 70 / 0.38);
+    --npb-settings-label: rgb(244 244 245);
+    --npb-settings-hint: rgb(228 228 231);
+    --npb-settings-hint-muted: rgb(113 113 122);
+    --npb-settings-divider: rgb(63 63 70 / 0.3);
+    --npb-chip-border: rgb(63 63 70 / 0.45);
+    --npb-chip-bg: rgb(9 9 11 / 0.95);
+    --npb-chip-text: rgb(228 228 231);
+    --npb-chip-border-hover: rgb(82 82 91 / 0.65);
+    --npb-chip-bg-hover: rgb(24 24 27);
+    --npb-chip-active-border: rgb(161 161 170 / 0.85);
+    --npb-chip-active-bg: rgb(30 30 34);
+    --npb-chip-active-text: rgb(250 250 250);
+    --npb-chip-active-shadow: 0 1px 0 0 rgb(0 0 0 / 0.55);
+    --npb-chip-ring: rgb(161 161 170 / 0.35);
+    --npb-coll-bg: rgb(9 9 11 / 0.92);
+    --npb-coll-header-bg: rgb(3 3 5);
+    --npb-coll-header-hover: rgb(15 15 18);
+    /* Tier: card / group — hairline; header rule softer than outer edge */
+    --npb-coll-border: rgb(63 63 70 / 0.34);
+    --npb-coll-header-divider: rgb(63 63 70 / 0.26);
+    --npb-coll-title: rgb(250 250 250);
+    --npb-coll-icon: rgb(200 200 204);
+    --npb-coll-chevron: rgb(113 113 122);
+    --npb-coll-shadow: 0 1px 0 0 rgb(0 0 0 / 0.35);
+    --npb-coll-body-text: rgb(228 228 231);
+    --npb-settings-hero-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+    --npb-settings-panel-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.03);
+  }
+
+  /**
+   * Tab panel scroll hint — matches inner panel chrome (zinc-950 / white), not a heavy vignette.
+   * Theme switches with `.npb-editor-sidebar--light` on the same root as `BuilderSidebar`.
+   * High z-index: Radix viewport/scrollbar paint in the same root; overlay is last in DOM.
+   */
+  .npb-editor-sidebar .npb-editor-scroll-fade {
+    pointer-events: none;
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 40;
+    height: 4rem;
+    border-bottom-left-radius: inherit;
+    border-bottom-right-radius: inherit;
+    background: linear-gradient(
+      to top,
+      rgb(9 9 11 / 0.78) 0%,
+      rgb(9 9 11 / 0.38) 42%,
+      rgb(9 9 11 / 0.11) 72%,
+      transparent 100%
+    );
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light .npb-editor-scroll-fade {
+    background: linear-gradient(
+      to top,
+      rgb(255 255 255 / 0.9) 0%,
+      rgb(250 250 250 / 0.48) 40%,
+      rgb(244 244 245 / 0.14) 72%,
+      transparent 100%
+    );
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light {
+    --border: rgb(228 228 231 / 0.92);
+    --input: rgb(212 212 216 / 0.78);
+    --background: rgb(255 255 255);
+    --npb-settings-hero-bg: rgb(255 255 255);
+    --npb-settings-hero-border: rgb(212 212 216 / 0.78);
+    --npb-settings-hero-title: rgb(24 24 27);
+    --npb-settings-hero-sub: rgb(113 113 122);
+    --npb-settings-panel-bg: rgb(249 250 251);
+    --npb-settings-panel-border: rgb(212 212 216 / 0.55);
+    --npb-settings-label: rgb(24 24 27);
+    --npb-settings-hint: rgb(63 63 70);
+    --npb-settings-hint-muted: rgb(113 113 122);
+    --npb-settings-divider: rgb(212 212 216 / 0.45);
+    --npb-chip-border: rgb(212 212 216 / 0.75);
+    --npb-chip-bg: rgb(255 255 255);
+    --npb-chip-text: rgb(63 63 70);
+    --npb-chip-border-hover: rgb(161 161 170 / 0.85);
+    --npb-chip-bg-hover: rgb(249 250 251);
+    --npb-chip-active-border: rgb(161 161 170 / 0.9);
+    --npb-chip-active-bg: rgb(244 244 245);
+    --npb-chip-active-text: rgb(24 24 27);
+    --npb-chip-active-shadow: 0 1px 0 0 rgb(0 0 0 / 0.06);
+    --npb-chip-ring: rgb(113 113 122 / 0.35);
+    --npb-coll-bg: rgb(255 255 255);
+    --npb-coll-header-bg: rgb(249 250 251);
+    --npb-coll-header-hover: rgb(244 244 245);
+    --npb-coll-border: rgb(212 212 216 / 0.58);
+    --npb-coll-header-divider: rgb(212 212 216 / 0.42);
+    --npb-coll-title: rgb(24 24 27);
+    --npb-coll-icon: rgb(82 82 91);
+    --npb-coll-chevron: rgb(113 113 122);
+    --npb-coll-shadow: 0 1px 0 0 rgb(0 0 0 / 0.06);
+    --npb-coll-body-text: rgb(63 63 70);
+    --npb-settings-hero-inset: inset 0 1px 0 0 rgb(0 0 0 / 0.04);
+    --npb-settings-panel-inset: inset 0 1px 0 0 rgb(0 0 0 / 0.03);
+  }
+
+  .npb-settings-hero {
+    border-radius: 0;
+    border: 1px solid var(--npb-settings-hero-border);
+    background-color: var(--npb-settings-hero-bg);
+    padding: 1rem;
+    box-shadow: var(--npb-settings-hero-inset);
+  }
+
+  .npb-settings-hero-title {
+    color: var(--npb-settings-hero-title);
+  }
+
+  .npb-settings-panel {
+    border-radius: 0;
+    border: 1px solid var(--npb-settings-panel-border);
+    background-color: var(--npb-settings-panel-bg);
+    padding: 1rem;
+    box-shadow: var(--npb-settings-panel-inset);
+  }
+
+  .npb-settings-label {
+    color: var(--npb-settings-label);
+  }
+
+  .npb-settings-hint {
+    color: var(--npb-settings-hint);
+  }
+
+  .npb-settings-hint-muted {
+    color: var(--npb-settings-hint-muted);
+  }
+
+  .npb-settings-divider-b {
+    border-bottom: 1px solid var(--npb-settings-divider);
+  }
+
+  .npb-settings-collapsible-card {
+    border-radius: 0;
+    border: 1px solid var(--npb-coll-border);
+    background-color: var(--npb-coll-bg);
+    color: var(--npb-coll-body-text);
+    box-shadow: var(--npb-coll-shadow);
+  }
+
+  .npb-settings-collapsible-header {
+    cursor: pointer;
+    border-bottom: 1px solid var(--npb-coll-header-divider);
+    background-color: var(--npb-coll-header-bg);
+    padding: 1rem;
+    transition: background-color 150ms ease;
+  }
+
+  .npb-settings-collapsible-header:hover {
+    background-color: var(--npb-coll-header-hover);
+  }
+
+  .npb-settings-collapsible-title {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--npb-coll-title);
+  }
+
+  .npb-settings-collapsible-icon {
+    color: var(--npb-coll-icon);
+  }
+
+  .npb-settings-collapsible-chevron {
+    color: var(--npb-coll-chevron);
+  }
+
+  .npb-settings-chip {
+    height: 2.5rem;
+    min-width: 0;
+    border-radius: 0;
+    border: 1px solid var(--npb-chip-border);
+    background-color: var(--npb-chip-bg);
+    color: var(--npb-chip-text);
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    transition-property: color, background-color, border-color, box-shadow;
+    transition-duration: 200ms;
+  }
+
+  .npb-settings-chip:hover:not(.npb-settings-chip--active) {
+    border-color: var(--npb-chip-border-hover);
+    background-color: var(--npb-chip-bg-hover);
+  }
+
+  .npb-settings-chip:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--npb-chip-ring);
+  }
+
+  .npb-settings-chip--active {
+    border-color: var(--npb-chip-active-border);
+    background-color: var(--npb-chip-active-bg);
+    color: var(--npb-chip-active-text);
+    box-shadow: var(--npb-chip-active-shadow), 0 0 0 1px var(--npb-chip-ring);
+  }
+
+  /**
+   * Sidebar template tools — inherited zinc + shadcn outline/ghost/muted fight panel tokens.
+   * Scoped to `.npb-editor-sidebar` so TemplateModal (dialog) keeps default shadcn chrome.
+   */
+  .npb-settings-hint-muted-fallback {
+    color: var(--muted-foreground);
+  }
+
+  .npb-editor-sidebar .npb-settings-hint-muted-fallback {
+    color: var(--npb-settings-hint-muted);
+  }
+
+  .npb-settings-rule-h {
+    height: 1px;
+    align-self: stretch;
+    background-color: var(--npb-settings-divider, var(--border));
+  }
+
+  .npb-editor-sidebar .npb-settings-btn-outline {
+    border: 1px solid var(--npb-chip-border) !important;
+    background-color: var(--npb-chip-bg) !important;
+    color: var(--npb-chip-text) !important;
+    box-shadow: 0 1px 0 0 rgb(0 0 0 / 0.22);
+  }
+
+  .npb-editor-sidebar .npb-settings-btn-outline:hover {
+    border-color: var(--npb-chip-border-hover) !important;
+    background-color: var(--npb-chip-bg-hover) !important;
+    color: var(--npb-chip-text) !important;
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light .npb-settings-btn-outline {
+    box-shadow: 0 1px 0 0 rgb(0 0 0 / 0.05);
+  }
+
+  .npb-editor-sidebar .npb-settings-btn-ghost {
+    color: var(--npb-settings-hint-muted) !important;
+  }
+
+  .npb-editor-sidebar .npb-settings-btn-ghost:hover {
+    background-color: var(--npb-chip-bg-hover) !important;
+    color: var(--npb-settings-label) !important;
+  }
+
+  .npb-editor-sidebar .npb-settings-btn-ghost.npb-settings-btn-ghost--danger:hover {
+    color: var(--destructive) !important;
+  }
+}
+
+/**
+ * Page builder sidebar — utilities layer so field/tab chrome wins over Tailwind atoms.
+ * Zinc-950 fields + zinc-600 hairline + zinc-400 focus ring (single cue, no stacked rings).
+ */
+@layer utilities {
+  .npb-editor-sidebar input:is(
+      :not([type]),
+      [type="text"],
+      [type="number"],
+      [type="search"],
+      [type="email"],
+      [type="url"]
+    ):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  .npb-editor-sidebar select,
+  .npb-editor-sidebar textarea {
+    background-color: rgb(7 7 9) !important;
+    color: rgb(250 250 250) !important;
+    border-color: rgb(63 63 70 / 0.58) !important;
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.05),
+      0 1px 0 0 rgb(0 0 0 / 0.28) !important;
+  }
+
+  .npb-editor-sidebar input:is(
+      :not([type]),
+      [type="text"],
+      [type="number"],
+      [type="search"],
+      [type="email"],
+      [type="url"]
+    ):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus-visible,
+  .npb-editor-sidebar select:focus-visible,
+  .npb-editor-sidebar textarea:focus-visible {
+    --tw-ring-width: 0 !important;
+    --tw-ring-offset-width: 0 !important;
+    outline: none !important;
+    border-color: rgb(161 161 170) !important;
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.08),
+      0 0 0 1px rgb(161 161 170 / 0.45) !important;
+  }
+
+  .npb-editor-sidebar input::placeholder,
+  .npb-editor-sidebar textarea::placeholder {
+    color: rgb(113 113 122) !important;
+  }
+
+  .npb-editor-sidebar [role="tablist"] {
+    border-color: rgb(63 63 70 / 0.38) !important;
+    background-color: rgb(12 12 15) !important;
+    box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.03);
+  }
+
+  .npb-editor-sidebar [role="tab"][data-state="inactive"] {
+    color: rgb(130 130 138) !important;
+  }
+
+  .npb-editor-sidebar [role="tab"][data-state="active"] {
+    background-color: rgb(24 24 27) !important;
+    color: rgb(250 250 250) !important;
+    box-shadow:
+      0 1px 0 0 rgb(0 0 0 / 0.45),
+      inset 0 1px 0 0 rgb(255 255 255 / 0.05),
+      0 0 0 1px rgb(63 63 70 / 0.42) !important;
+    border: 1px solid transparent !important;
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light input:is(
+      :not([type]),
+      [type="text"],
+      [type="number"],
+      [type="search"],
+      [type="email"],
+      [type="url"]
+    ):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  .npb-editor-sidebar.npb-editor-sidebar--light select,
+  .npb-editor-sidebar.npb-editor-sidebar--light textarea {
+    background-color: rgb(255 255 255) !important;
+    color: rgb(24 24 27) !important;
+    border-color: rgb(212 212 216 / 0.72) !important;
+    box-shadow:
+      inset 0 1px 0 0 rgb(0 0 0 / 0.03),
+      0 1px 0 0 rgb(0 0 0 / 0.03) !important;
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light input:is(
+      :not([type]),
+      [type="text"],
+      [type="number"],
+      [type="search"],
+      [type="email"],
+      [type="url"]
+    ):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus-visible,
+  .npb-editor-sidebar.npb-editor-sidebar--light select:focus-visible,
+  .npb-editor-sidebar.npb-editor-sidebar--light textarea:focus-visible {
+    --tw-ring-width: 0 !important;
+    --tw-ring-offset-width: 0 !important;
+    outline: none !important;
+    border-color: rgb(113 113 122) !important;
+    box-shadow:
+      inset 0 1px 0 0 rgb(0 0 0 / 0.05),
+      0 0 0 1px rgb(113 113 122 / 0.35) !important;
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light input::placeholder,
+  .npb-editor-sidebar.npb-editor-sidebar--light textarea::placeholder {
+    color: rgb(113 113 122) !important;
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light [role="tablist"] {
+    border-color: rgb(212 212 216 / 0.55) !important;
+    background-color: rgb(244 244 245) !important;
+    box-shadow: inset 0 1px 0 0 rgb(0 0 0 / 0.03);
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light [role="tab"][data-state="inactive"] {
+    color: rgb(113 113 122) !important;
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light [role="tab"][data-state="active"] {
+    background-color: rgb(255 255 255) !important;
+    color: rgb(24 24 27) !important;
+    box-shadow:
+      0 1px 0 0 rgb(0 0 0 / 0.05),
+      inset 0 1px 0 0 rgb(255 255 255 / 0.88),
+      0 0 0 1px rgb(212 212 216 / 0.55) !important;
+    border: 1px solid transparent !important;
+  }
+
+  /* Radix SelectTrigger is a button — match native field chrome from sidebar input rules. */
+  .npb-editor-sidebar .npb-settings-select-trigger {
+    background-color: rgb(7 7 9) !important;
+    color: rgb(250 250 250) !important;
+    border-color: rgb(63 63 70) !important;
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.06),
+      0 1px 0 0 rgb(0 0 0 / 0.35) !important;
+  }
+
+  .npb-editor-sidebar .npb-settings-select-trigger:focus-visible {
+    --tw-ring-width: 0 !important;
+    --tw-ring-offset-width: 0 !important;
+    outline: none !important;
+    border-color: rgb(161 161 170) !important;
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.08),
+      0 0 0 1px rgb(161 161 170 / 0.45) !important;
+  }
+
+  .npb-editor-sidebar .npb-settings-select-trigger [data-placeholder] {
+    color: rgb(161 161 170) !important;
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light .npb-settings-select-trigger {
+    background-color: rgb(255 255 255) !important;
+    color: rgb(24 24 27) !important;
+    border-color: rgb(212 212 216) !important;
+    box-shadow:
+      inset 0 1px 0 0 rgb(0 0 0 / 0.04),
+      0 1px 0 0 rgb(0 0 0 / 0.04) !important;
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light .npb-settings-select-trigger:focus-visible {
+    --tw-ring-width: 0 !important;
+    --tw-ring-offset-width: 0 !important;
+    outline: none !important;
+    border-color: rgb(113 113 122) !important;
+    box-shadow:
+      inset 0 1px 0 0 rgb(0 0 0 / 0.05),
+      0 0 0 1px rgb(113 113 122 / 0.35) !important;
+  }
+
+  .npb-editor-sidebar.npb-editor-sidebar--light .npb-settings-select-trigger [data-placeholder] {
+    color: rgb(113 113 122) !important;
   }
 }
 

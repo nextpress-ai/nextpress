@@ -41,6 +41,7 @@ export const BLOCK_COMPONENTS: Record<string, React.FC<BlockData>> = {
   // Layout blocks
   "core/columns": LayoutBlocks.ColumnsBlock,
   "core/group": LayoutBlocks.GroupBlock,
+  "core/container": LayoutBlocks.ContainerBlock,
   "core/spacer": LayoutBlocks.SpacerBlock,
   "core/separator": LayoutBlocks.SeparatorBlock,
   "core/divider": LayoutBlocks.DividerBlock,

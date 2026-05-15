@@ -264,9 +264,6 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
   const content = accessor
     ? (accessor.getContent() as VideoContent)
     : (block.content as VideoContent) || DEFAULT_CONTENT;
-  const styles = accessor
-    ? accessor.getStyles()
-    : block.styles;
 
   // Update handlers
   const updateContent = (updates: Partial<VideoContent>) => {
@@ -280,21 +277,6 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
           ...block.content,
           ...updates,
         } as BlockContent,
-      });
-    }
-  };
-
-  const updateStyles = (styleUpdates: Partial<React.CSSProperties>) => {
-    if (accessor) {
-      const current = accessor.getStyles() || {};
-      accessor.setStyles({ ...current, ...styleUpdates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        styles: {
-          ...block.styles,
-          ...styleUpdates,
-        },
       });
     }
   };
@@ -371,36 +353,8 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard
-        title="Settings"
-        icon={Settings}
-        defaultOpen={true}
-      >
+      <CollapsibleCard title="Playback" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
-          {/* Alignment */}
-          <div>
-            <Label>Alignment</Label>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {alignmentOptions.map((option) => {
-                const Icon = option.icon;
-                return (
-                  <button
-                    key={option.value}
-                    onClick={() => updateContent({ align: option.value === 'default' ? undefined : option.value as any })}
-                    className={`flex items-center gap-2 p-3 text-sm font-medium rounded-lg border transition-colors ${
-                      currentAlign === option.value
-                        ? 'bg-gray-200 text-gray-800 border-gray-200 hover:bg-gray-300'
-                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Player Controls */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -466,29 +420,39 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
               </Select>
             </div>
           </div>
+        </div>
+      </CollapsibleCard>
 
-          {/* Dimensions */}
+      <CollapsibleCard title="Figure layout" icon={Maximize} defaultOpen={false}>
+        <div className="space-y-3">
           <div>
-            <Label>Dimensions</Label>
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              <div>
-                <Label htmlFor="video-width" className="text-sm text-gray-600">Width</Label>
-                <Input
-                  id="video-width"
-                  value={styles?.width || ''}
-                  onChange={(e) => updateStyles({ width: e.target.value })}
-                  placeholder="e.g. 100% or 640px"
-                />
-              </div>
-              <div>
-                <Label htmlFor="video-height" className="text-sm text-gray-600">Height</Label>
-                <Input
-                  id="video-height"
-                  value={styles?.height || ''}
-                  onChange={(e) => updateStyles({ height: e.target.value })}
-                  placeholder="e.g. auto or 360px"
-                />
-              </div>
+            <Label>Figure width</Label>
+            <p className="text-xs text-gray-600 mt-1 mb-2">
+              Wide and full presets. Use the sidebar <span className="font-semibold">Style</span> tab for exact width
+              and height.
+            </p>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {alignmentOptions.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() =>
+                      updateContent({
+                        align: option.value === "default" ? undefined : (option.value as "wide" | "full"),
+                      })
+                    }
+                    className={`flex items-center gap-2 p-3 text-sm font-medium rounded-lg border transition-colors ${
+                      currentAlign === option.value
+                        ? "bg-gray-200 text-gray-800 border-gray-200 hover:bg-gray-300"
+                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {option.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

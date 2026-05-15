@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Pencil } from 'lucide-react';
 import type { IconReference } from '@/lib/icon-indexes';
+import { cn } from '@/lib/utils';
 import { IconPickerDialog } from './IconPickerDialog';
 
 interface IconPickerButtonProps {
@@ -9,6 +10,8 @@ interface IconPickerButtonProps {
   onSelect: (icon: IconReference) => void;
   variant?: 'default' | 'outline' | 'ghost';
   size?: 'default' | 'sm' | 'icon';
+  /** Merged onto trigger button (e.g. `shrink-0` beside truncated label). */
+  className?: string;
 }
 
 export function IconPickerButton({
@@ -16,6 +19,7 @@ export function IconPickerButton({
   onSelect,
   variant = 'outline',
   size = 'sm',
+  className,
 }: IconPickerButtonProps) {
   const [open, setOpen] = useState(false);
 
@@ -25,7 +29,7 @@ export function IconPickerButton({
         variant={variant}
         size={size}
         onClick={() => setOpen(true)}
-        className="gap-1"
+        className={cn('gap-1', className)}
       >
         <Pencil className="w-3 h-3" />
         Change

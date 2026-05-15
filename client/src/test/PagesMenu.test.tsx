@@ -135,6 +135,26 @@ describe('PagesMenu', () => {
     expect(mockSetLocation).toHaveBeenCalledWith('/admin/pages?create=true');
   });
 
+  test('shows Page settings when onPageSettingsClick is provided', async () => {
+    const user = userEvent.setup();
+    const onPageSettings = vi.fn();
+    renderPagesMenu({ onPageSettingsClick: onPageSettings });
+
+    await user.click(screen.getByText('Pages'));
+    expect(screen.getByText('Page settings…')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Page settings…'));
+    expect(onPageSettings).toHaveBeenCalledTimes(1);
+  });
+
+  test('hides Page settings when onPageSettingsClick is omitted', async () => {
+    const user = userEvent.setup();
+    renderPagesMenu();
+
+    await user.click(screen.getByText('Pages'));
+    expect(screen.queryByText('Page settings…')).not.toBeInTheDocument();
+  });
+
   test('highlights current page in command palette', async () => {
     const user = userEvent.setup();
     renderPagesMenu({ currentPageId: 'page-2' });

@@ -160,6 +160,11 @@ interface GroupConfig extends BaseBlockData {
 	tagName?: string;
 }
 
+interface ContainerConfig extends BaseBlockData {
+	blockName: "core/container";
+	tagName?: string;
+}
+
 interface SpacerConfig extends BaseBlockData {
 	blockName: "core/spacer";
 	height?: string;
@@ -232,8 +237,10 @@ interface IconConfig extends BaseBlockData {
 	iconSet: "lucide" | "react-icons" | "svgl";
 	iconName: string;
 	iconSize?: number;
+	iconSizeUnit?: string;
 	iconColor?: string;
 	iconStrokeWidth?: number;
+	iconStrokeWidthUnit?: string;
 	link?: string;
 	linkTarget?: "_blank" | "_self";
 	label?: string;
@@ -265,6 +272,7 @@ export type BlockData =
 	| MediaTextConfig
 	| ColumnsConfig
 	| GroupConfig
+	| ContainerConfig
 	| SpacerConfig
 	| SeparatorConfig
 	| DividerConfig

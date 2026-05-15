@@ -1,10 +1,7 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { CollapsibleCard } from "@/components/ui/collapsible-card";
-import { FileText as MarkdownIcon, Wrench } from "lucide-react";
+import { FileText as MarkdownIcon } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
 
@@ -39,17 +36,14 @@ interface MarkdownRendererProps {
 
 function MarkdownRenderer({ content, styles, isPreview, onChange }: MarkdownRendererProps) {
   const markdownText = content?.content || "";
-  
-  const className = [
-    "wp-block-markdown",
-    content?.className || "",
-  ].filter(Boolean).join(" ");
+
+  const className = ["wp-block-markdown", content?.className || ""].filter(Boolean).join(" ");
 
   // In preview mode or rendering mode, display the actual markdown
   if (isPreview) {
     return (
       <div className={className} style={styles} data-color-mode="light">
-        <MDEditor.Markdown source={markdownText} style={{ whiteSpace: 'pre-wrap' }} />
+        <MDEditor.Markdown source={markdownText} style={{ whiteSpace: "pre-wrap" }} />
       </div>
     );
   }
@@ -57,7 +51,7 @@ function MarkdownRenderer({ content, styles, isPreview, onChange }: MarkdownRend
   // Edit Mode: show embeddable markdown editor
   return (
     <div className={className} style={styles} data-color-mode="light">
-      <div className="border border-transparent hover:border-gray-200 transition-colors focus-within:border-wp-blue rounded-md overflow-hidden">
+      <div className="overflow-hidden rounded-md border border-transparent transition-colors hover:border-gray-200 focus-within:border-wp-blue">
         <MDEditor
           value={markdownText}
           onChange={(val) => onChange?.(val || "")}
@@ -102,72 +96,14 @@ export function MarkdownBlockComponent({
   };
 
   return (
-    <MarkdownRenderer 
-      content={content} 
-      styles={styles} 
-      isPreview={isPreview} 
+    <MarkdownRenderer
+      content={content}
+      styles={styles}
+      isPreview={isPreview}
       onChange={handleEditorChange}
     />
   );
 }
-
-// ============================================================================
-// SETTINGS COMPONENT
-// ============================================================================
-
-interface MarkdownSettingsProps {
-  block: BlockConfig;
-  onUpdate?: (updates: Partial<BlockConfig>) => void;
-}
-
-function MarkdownSettings({ block, onUpdate }: MarkdownSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as MarkdownContent)
-    : (block.content as MarkdownContent) || DEFAULT_CONTENT;
-
-  // Update handlers
-  const updateContent = (updates: Partial<MarkdownContent>) => {
-    if (accessor) {
-      const current = accessor.getContent() as MarkdownContent;
-      accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...(block.content as Record<string, unknown>),
-          ...updates,
-        } as unknown as BlockContent,
-      });
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <CollapsibleCard title="Advanced" icon={Wrench} defaultOpen={false}>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="markdown-class" className="text-sm font-medium text-gray-700">Additional CSS Class(es)</Label>
-            <Input
-              id="markdown-class"
-              value={content?.className || ""}
-              onChange={(e) => updateContent({ className: e.target.value })}
-              placeholder="e.g. custom-widget"
-              className="mt-1 h-9 text-sm"
-            />
-          </div>
-        </div>
-      </CollapsibleCard>
-    </div>
-  );
-}
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION
@@ -187,8 +123,7 @@ const MarkdownBlock: BlockDefinition = {
     margin: "1em 0",
   },
   component: MarkdownBlockComponent,
-  settings: MarkdownSettings,
-  hasSettings: true,
+  hasSettings: false,
 };
 
 export default MarkdownBlock;

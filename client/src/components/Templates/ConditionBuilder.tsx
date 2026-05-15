@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
+import { cn } from "@/lib/utils";
 import type { DisplayCondition, ConditionTypeDefinitionUI } from "@shared/schema-types";
 
 /** All available condition types for the UI builder */
@@ -158,8 +159,8 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
 
   if (conditions.length === 0) {
     return (
-      <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">
+      <div className="npb-condition-builder space-y-3">
+        <p className="npb-settings-hint-muted-fallback text-sm">
           No display rules set. This template will show on all pages.
         </p>
         <Button
@@ -167,7 +168,7 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
           variant="outline"
           size="sm"
           onClick={addCondition}
-          className="gap-1.5"
+          className={cn("gap-1.5", "npb-settings-btn-outline")}
         >
           <Plus className="h-3.5 w-3.5" />
           Add Condition
@@ -177,7 +178,7 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
   }
 
   return (
-    <div className="space-y-3">
+    <div className="npb-condition-builder space-y-3">
       <div className="space-y-2">
         {conditions.map((condition, index) => {
           const def = getConditionDef(condition.type);
@@ -191,7 +192,7 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-6 px-2 text-xs font-medium"
+                    className="npb-settings-btn-ghost h-6 px-2 text-xs font-medium"
                     onClick={() => toggleLogic(condition.id)}
                   >
                     <Badge
@@ -201,7 +202,7 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
                       {condition.logic === "or" ? "OR" : "AND"}
                     </Badge>
                   </Button>
-                  <div className="flex-1 h-px bg-border" />
+                  <div className="npb-settings-rule-h" />
                 </div>
               )}
 
@@ -219,7 +220,7 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
                         });
                       }}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={cn("flex-1", "npb-settings-select-trigger")}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -227,7 +228,7 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
                           <SelectItem key={ct.type} value={ct.type}>
                             <div className="flex flex-col">
                               <span>{ct.label}</span>
-                              <span className="text-xs text-muted-foreground">
+                              <span className="npb-settings-hint-muted-fallback text-xs">
                                 {ct.description}
                               </span>
                             </div>
@@ -243,7 +244,7 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
                         updateCondition(condition.id, { operator: value })
                       }
                     >
-                      <SelectTrigger className="w-24">
+                      <SelectTrigger className={cn("w-24", "npb-settings-select-trigger")}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -263,7 +264,7 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
                             updateCondition(condition.id, { value })
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="npb-settings-select-trigger">
                             <SelectValue placeholder="Select value..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -294,7 +295,7 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                  className="npb-settings-btn-ghost npb-settings-btn-ghost--danger h-9 w-9 shrink-0"
                   onClick={() => removeCondition(condition.id)}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -310,7 +311,7 @@ export function ConditionBuilder({ conditions, onChange }: ConditionBuilderProps
         variant="outline"
         size="sm"
         onClick={addCondition}
-        className="gap-1.5"
+        className={cn("gap-1.5", "npb-settings-btn-outline")}
       >
         <Plus className="h-3.5 w-3.5" />
         Add Condition

@@ -215,9 +215,6 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
   const content = accessor
     ? (accessor.getContent() as CoverContent)
     : (block.content as CoverContent) || DEFAULT_CONTENT;
-  const styles = accessor
-    ? accessor.getStyles()
-    : block.styles;
 
   const blockData = content?.kind === 'structured' 
     ? (content.data as CoverData) 
@@ -249,21 +246,6 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
             ...updates,
           },
         } as BlockContent,
-      });
-    }
-  };
-
-  const updateStyles = (styleUpdates: Partial<React.CSSProperties>) => {
-    if (accessor) {
-      const current = accessor.getStyles() || {};
-      accessor.setStyles({ ...current, ...styleUpdates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        styles: {
-          ...block.styles,
-          ...styleUpdates,
-        },
       });
     }
   };
@@ -347,7 +329,7 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Layout & overlay" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           {blockData?.backgroundType === 'image' && (
             <div className="flex items-center justify-between">

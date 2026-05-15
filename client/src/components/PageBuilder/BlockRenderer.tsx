@@ -1,4 +1,4 @@
-import React, { useState, isValidElement, ReactNode } from 'react';
+import React, { useState, useRef, useEffect, isValidElement, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Copy, Trash2, GripVertical } from 'lucide-react';
 import type { BlockConfig } from '@shared/schema-types';
@@ -10,8 +10,32 @@ import { generateBlockAnimationCSS } from '@/lib/animation-presets';
 import {
   stripBlockContainerPlacementStyles,
   getBlockSiblingFlexItemStyles,
+  getBlockStackLayerWrapperStyles,
   type BlockStackDirection,
 } from "@shared/block-container-placement";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  extractIconReferenceFromBlockContent,
+  formatIconReferenceLabel,
+} from '@/lib/icon-indexes';
+import {
+  NPB_BLOCK_TOOLBAR_LABEL_MAX_CHARS,
+  NPB_ICON_REFERENCE_ROW_MAX_CHARS,
+  truncateWithEllipsis,
+} from '@/lib/truncate-with-ellipsis';
+
+/** Mount-only cleanup wrapper (matches PageBuilder / editor pattern). */
+function useMountEffect(effect: () => void | (() => void)) {
+  useEffect(effect, []);
+}
+
+/** Hover-only: entire floating toolbar hides after this idle period without pointer movement. */
+const CANVAS_HOVER_TOOLBAR_IDLE_MS = 3000;
 
 /** Parent stacks siblings in a row vs column — drives per-block placement flex-item mapping. */
 function getSiblingStackDirection(
@@ -111,6 +135,7 @@ export function ContainerChildren({
                   ? '1 1 auto'
                   : undefined,
               ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
+              ...getBlockStackLayerWrapperStyles(child),
             }}
           >
             <BlockRenderer
@@ -162,6 +187,7 @@ export function ContainerChildren({
                       minWidth: 0,
                       flex: isHorizontal ? '1 1 auto' : undefined,
                       ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
+                      ...getBlockStackLayerWrapperStyles(child),
                     }}
                   >
                     <BlockRenderer
@@ -227,53 +253,94 @@ interface BlockRendererProps {
 /** Shared block label + actions row for editor chrome (positioning via className on the wrapper). */
 function BlockEditorToolbarPanel({
   label,
+  labelTooltip,
   dragHandleProps,
   onDuplicate,
   onDelete,
   className,
 }: {
   label: string;
+  /** Full toolbar string when `label` is JS-truncated (block name, icon ref, etc.). */
+  labelTooltip?: string;
   dragHandleProps?: BlockRendererProps["dragHandleProps"];
   onDuplicate: () => void;
   onDelete: () => void;
   className?: string;
 }) {
+  const labelClass =
+    'block min-w-0 flex-1 px-2 text-left text-xs text-gray-600';
+
   return (
-    <div className={className}>
-      <span className="text-xs text-gray-600 px-2">{label}</span>
-      {dragHandleProps && (
-        <Button
-          {...dragHandleProps}
-          variant="ghost"
-          size="sm"
-          aria-label="Drag to reorder block"
-          className="h-6 w-6 p-0 cursor-grab active:cursor-grabbing">
-          <GripVertical className="w-3 h-3" />
-        </Button>
-      )}
-      <Button
-        variant="ghost"
-        size="sm"
-        aria-label="Duplicate block"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDuplicate();
-        }}
-        className="h-6 w-6 p-0">
-        <Copy className="w-3 h-3" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        aria-label="Delete block"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
-        <Trash2 className="w-3 h-3" />
-      </Button>
-    </div>
+    <TooltipProvider delayDuration={300}>
+      <div className={`min-w-0 max-w-full ${className ?? ''}`}>
+        {labelTooltip ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={`${labelClass} cursor-default`} title={labelTooltip}>
+                {label}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-xs break-all">
+              {labelTooltip}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <span className={labelClass} title={label}>
+            {label}
+          </span>
+        )}
+        {dragHandleProps && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                {...dragHandleProps}
+                variant="ghost"
+                size="sm"
+                title="Drag to reorder block"
+                aria-label="Drag to reorder block"
+                className="h-6 w-6 p-0 cursor-grab active:cursor-grabbing">
+                <GripVertical className="w-3 h-3" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Drag to reorder block</TooltipContent>
+          </Tooltip>
+        )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              title="Duplicate block"
+              aria-label="Duplicate block"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate();
+              }}
+              className="h-6 w-6 p-0">
+              <Copy className="w-3 h-3" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Duplicate block</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              title="Delete block"
+              aria-label="Delete block"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Delete block</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   );
 }
 
@@ -290,6 +357,50 @@ export default function BlockRenderer({
   const [isHovered, setIsHovered] = useState(false);
   const actions = useBlockActions();
   const effectiveSelected = isSelected || actions?.selectedBlockId === block.id;
+  const idleHideToolbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearCanvasHoverToolbarIdleTimer = () => {
+    if (idleHideToolbarTimerRef.current != null) {
+      clearTimeout(idleHideToolbarTimerRef.current);
+      idleHideToolbarTimerRef.current = null;
+    }
+  };
+
+  const scheduleCanvasHoverToolbarIdleHide = () => {
+    clearCanvasHoverToolbarIdleTimer();
+    idleHideToolbarTimerRef.current = setTimeout(() => {
+      idleHideToolbarTimerRef.current = null;
+      setIsHovered(false);
+    }, CANVAS_HOVER_TOOLBAR_IDLE_MS);
+  };
+
+  useMountEffect(() => () => {
+    clearCanvasHoverToolbarIdleTimer();
+  });
+
+  const handleCanvasHoverEnter = () => {
+    setIsHovered(true);
+    scheduleCanvasHoverToolbarIdleHide();
+  };
+
+  const handleCanvasHoverLeave = () => {
+    clearCanvasHoverToolbarIdleTimer();
+    setIsHovered(false);
+  };
+
+  /**
+   * Resets idle timer on real pointer movement only. Coalesced / no-op pointermove events
+   * (movement 0) would otherwise keep resetting the timer so the hover toolbar never hides.
+   */
+  const handleCanvasHoverPointerMove = (e: React.PointerEvent) => {
+    if (e.movementX === 0 && e.movementY === 0) return;
+    setIsHovered((prev) => {
+      if (!prev) return true;
+      return prev;
+    });
+    scheduleCanvasHoverToolbarIdleHide();
+  };
+
   const effectiveHoverHighlight = effectiveSelected
     ? (hoverHighlight ?? actions?.hoverHighlight ?? null)
     : null;
@@ -387,29 +498,53 @@ export default function BlockRenderer({
    * hover-anywhere behavior.
    */
   const useTopToolbarHoverStrip = isContainer && !isPreview;
-  const showBlockToolbar = effectiveSelected || isHovered;
-  const blockLabel = blockRegistry[block.name]?.label || block.name;
+  /** Toolbar is hover-only so it never sticks when a block stays selected without pointer motion. */
+  const showBlockToolbar = isHovered;
+  const baseBlockLabel = blockRegistry[block.name]?.label || block.name;
+  const iconRefForToolbar =
+    block.name === 'core/icon' ? extractIconReferenceFromBlockContent(block.content) : null;
+  const iconRefFullLabel =
+    iconRefForToolbar !== null ? formatIconReferenceLabel(iconRefForToolbar) : null;
+  const fullToolbarLabel =
+    iconRefFullLabel !== null ? `${baseBlockLabel} · ${iconRefFullLabel}` : baseBlockLabel;
+  const toolbarLabelWithShortIconRef =
+    iconRefFullLabel !== null
+      ? `${baseBlockLabel} · ${truncateWithEllipsis({
+          text: iconRefFullLabel,
+          maxChars: NPB_ICON_REFERENCE_ROW_MAX_CHARS,
+        })}`
+      : baseBlockLabel;
+  const blockToolbarLabel = truncateWithEllipsis({
+    text: toolbarLabelWithShortIconRef,
+    maxChars: NPB_BLOCK_TOOLBAR_LABEL_MAX_CHARS,
+  });
+  const blockToolbarLabelTooltip =
+    blockToolbarLabel !== fullToolbarLabel ? fullToolbarLabel : undefined;
   const toolbarPanelClass =
-    "flex items-center gap-1 bg-white/90 border-b border-gray-200 rounded-t backdrop-blur-sm shadow-sm p-1";
+    "flex min-w-0 max-w-full items-center gap-1 bg-white/90 border-b border-gray-200 rounded-t backdrop-blur-sm shadow-sm p-1";
 
   return (
     <div
       className="relative group"
-      {...(useTopToolbarHoverStrip
+      {...(isPreview || useTopToolbarHoverStrip
         ? {}
         : {
-            onMouseEnter: () => setIsHovered(true),
-            onMouseLeave: () => setIsHovered(false),
+            onMouseEnter: handleCanvasHoverEnter,
+            onMouseLeave: handleCanvasHoverLeave,
+            onPointerMove: handleCanvasHoverPointerMove,
           })}
       onClick={(e) => {
         if (!isPreview) {
           e.stopPropagation();
+          clearCanvasHoverToolbarIdleTimer();
           actions?.onSelect(block.id);
+          scheduleCanvasHoverToolbarIdleHide();
         }
       }}>
       {!isPreview && !useTopToolbarHoverStrip && showBlockToolbar && (
         <BlockEditorToolbarPanel
-          label={blockLabel}
+          label={blockToolbarLabel}
+          labelTooltip={blockToolbarLabelTooltip}
           dragHandleProps={dragHandleProps}
           onDuplicate={onDuplicate}
           onDelete={onDelete}
@@ -419,11 +554,13 @@ export default function BlockRenderer({
       {!isPreview && useTopToolbarHoverStrip && (
         <div
           className="absolute top-0 left-0 right-0 z-20 flex flex-col"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}>
+          onMouseEnter={handleCanvasHoverEnter}
+          onMouseLeave={handleCanvasHoverLeave}
+          onPointerMove={handleCanvasHoverPointerMove}>
           {showBlockToolbar ? (
             <BlockEditorToolbarPanel
-              label={blockLabel}
+              label={blockToolbarLabel}
+              labelTooltip={blockToolbarLabelTooltip}
               dragHandleProps={dragHandleProps}
               onDuplicate={onDuplicate}
               onDelete={onDelete}

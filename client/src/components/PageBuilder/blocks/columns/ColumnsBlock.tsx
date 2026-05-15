@@ -34,7 +34,10 @@ import {
   buildColumnsContainerStyle,
   buildColumnStyle,
 } from "@shared/columns-layout";
-import { getBlockSiblingFlexItemStyles } from "@shared/block-container-placement";
+import {
+  getBlockSiblingFlexItemStyles,
+  getBlockStackLayerWrapperStyles,
+} from "@shared/block-container-placement";
 
 // ============================================================================
 // DEFAULTS
@@ -226,6 +229,7 @@ function ColumnsRenderer({
                       width: "100%",
                       minWidth: 0,
                       ...getBlockSiblingFlexItemStyles(childBlock.styles, "column"),
+                      ...getBlockStackLayerWrapperStyles(childBlock),
                     }}
                   >
                     <BlockRenderer
@@ -275,6 +279,7 @@ function ColumnsRenderer({
                                 width: "100%",
                                 minWidth: 0,
                                 ...getBlockSiblingFlexItemStyles(childBlock.styles, "column"),
+                                ...getBlockStackLayerWrapperStyles(childBlock),
                               }}
                             >
                               <BlockRenderer
@@ -534,7 +539,7 @@ function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Row layout" icon={Settings} defaultOpen={true}>
         <div className="space-y-3">
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
@@ -616,7 +621,7 @@ function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Advanced" icon={Wrench} defaultOpen={false}>
+      <CollapsibleCard title="Column alignment" icon={Wrench} defaultOpen={false}>
         <div className="space-y-3">
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">

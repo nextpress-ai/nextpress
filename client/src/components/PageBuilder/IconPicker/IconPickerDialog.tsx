@@ -8,12 +8,24 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { IconReference } from '@/lib/icon-indexes';
 import { LUCIDE_ICONS } from '@/lib/icon-indexes/lucide';
 import { REACT_ICONS_SETS } from '@/lib/icon-indexes/react-icons';
 import { SVGL_ICONS } from '@/lib/icon-indexes/svgl';
 import { IconRenderer } from '../blocks/shared/IconRenderer';
+import {
+  NPB_ICON_REFERENCE_ROW_MAX_CHARS,
+  truncateWithEllipsis,
+} from '@/lib/truncate-with-ellipsis';
 
 // ============================================================================
 // CONSTANTS
@@ -54,6 +66,14 @@ const ICON_SET_OPTIONS: IconSetOption[] = [
     names: SVGL_ICONS,
   },
 ];
+
+function formatIconSetOptionLabel(opt: IconSetOption): string {
+  if (opt.iconSet === "lucide") return `Lucide (${opt.names.length.toLocaleString()})`;
+  if (opt.iconSet === "svgl") return `Brands / SVGL (${opt.names.length.toLocaleString()})`;
+  if (opt.prefix)
+    return `react-icons / ${opt.prefix} (${opt.names.length.toLocaleString()})`;
+  return opt.label;
+}
 
 // ============================================================================
 // COMPONENT
@@ -140,19 +160,23 @@ export function IconPickerDialog({
               className="pl-9 h-9"
             />
           </div>
-          <select
-            value={selectedSet}
-            onChange={(e) => handleSetChange(e.target.value)}
-            className="h-9 px-3 rounded-md border border-gray-200 bg-white text-sm min-w-[180px]"
-          >
-            <option value="lucide">Lucide (1,736)</option>
-            {Object.entries(REACT_ICONS_SETS).map(([prefix, names]) => (
-              <option key={prefix} value={`react-icons:${prefix}`}>
-                {prefix} ({names.length.toLocaleString()})
-              </option>
-            ))}
-            <option value="svgl">Brands / SVGL ({SVGL_ICONS.length})</option>
-          </select>
+          <Select value={selectedSet} onValueChange={handleSetChange}>
+            <SelectTrigger
+              className={cn(
+                "h-9 min-w-[180px] shrink-0 rounded-md text-sm",
+                "npb-settings-select-trigger",
+              )}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ICON_SET_OPTIONS.map((opt) => (
+                <SelectItem key={opt.storageKey} value={opt.storageKey}>
+                  {formatIconSetOptionLabel(opt)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Results count */}
@@ -168,6 +192,13 @@ export function IconPickerDialog({
               const isSelected =
                 currentIcon?.iconName === iconName ||
                 currentIcon?.iconName === `${activeSet.prefix}:${iconName}`;
+              const storageName = activeSet.prefix
+                ? `${activeSet.prefix}:${iconName}`
+                : iconName;
+              const displayName = truncateWithEllipsis({
+                text: storageName,
+                maxChars: NPB_ICON_REFERENCE_ROW_MAX_CHARS,
+              });
               return (
                 <button
                   key={iconName}
@@ -181,20 +212,20 @@ export function IconPickerDialog({
                         : 'hover:bg-gray-100 border border-transparent hover:border-gray-200'
                     }
                   `}
-                  title={iconName}
+                  title={storageName}
                 >
                   <IconRenderer
                     icon={{
                       iconSet: activeSet.iconSet,
-                      iconName: activeSet.prefix ? `${activeSet.prefix}:${iconName}` : iconName,
+                      iconName: storageName,
                       size: 20,
                       color: 'currentColor',
                       strokeWidth: 2,
                     }}
                     size={20}
                   />
-                  <span className="text-[9px] text-gray-500 truncate w-full text-center leading-tight">
-                    {iconName.length > 12 ? iconName.slice(0, 12) + '…' : iconName}
+                  <span className="block min-h-0 min-w-0 w-full text-center text-[9px] leading-tight text-gray-500">
+                    {displayName}
                   </span>
                 </button>
               );

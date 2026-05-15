@@ -363,7 +363,7 @@ export default function PageBuilder({
   );
 
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="npb-editor-shell flex h-full bg-gray-50">
       <PageProvider pageOther={data?.other as any}>
         <BlockActionsProvider
         value={{
@@ -429,7 +429,6 @@ export default function PageBuilder({
               blocks={blocks}
               sidebarVisible={sidebarVisible}
               onToggleSidebar={toggleSidebar}
-              onSaveClick={handleSave}
               onUndo={undo}
               onRedo={redo}
               canUndo={canUndo}

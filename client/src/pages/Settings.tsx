@@ -9,12 +9,12 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Save, Globe, Database, Code, Shield, Bell, Upload, X, ImageIcon, Home } from 'lucide-react';
+import { Save, Globe, Database, Code, Shield, Bell, Upload, X, ImageIcon, Home, Check } from 'lucide-react';
 import AdminTopBar from '@/components/AdminTopBar';
 import AdminSidebar from '@/components/AdminSidebar';
 import { Spinner } from '@/components/ui/spinner';
 import { apiRequest } from '@/lib/queryClient';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import MediaPickerDialog from '@/components/media/MediaPickerDialog';
 import {
   Select,
@@ -148,6 +148,70 @@ const TIME_FORMAT_OPTIONS = [
   { value: 'HH:mm:ss', label: '13:30:45 (24-hour with seconds)' },
 ];
 
+function SiteHomepageField({
+  selectId,
+  homepageOption,
+  publishedPagesForHome,
+  isPending,
+  onSelectSlug,
+}: {
+  selectId: string;
+  homepageOption: HomepageOptionResponse | null | undefined;
+  publishedPagesForHome: PublishedPagesForHomeResponse | undefined;
+  isPending: boolean;
+  onSelectSlug: (slug: string) => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+      <div className="flex items-start gap-3">
+        <Home className="mt-0.5 h-5 w-5 shrink-0 text-wp-blue" aria-hidden />
+        <div className="min-w-0 flex-1 space-y-2">
+          <Label htmlFor={selectId}>Site homepage</Label>
+          <p className="text-sm text-gray-600">
+            Published page shown at the site root (<span className="font-mono text-xs">/</span>
+            ). Choose &quot;Default landing page&quot; to show the built-in landing until you select a page.
+          </p>
+          <Select
+            disabled={isPending}
+            onValueChange={(value) => {
+              const slug = value === '__none__' ? '' : value;
+              onSelectSlug(slug);
+            }}
+            value={
+              homepageOption?.value && homepageOption.value.length > 0
+                ? homepageOption.value
+                : '__none__'
+            }
+          >
+            <SelectTrigger id={selectId} className="max-w-md bg-white">
+              <SelectValue placeholder="Select homepage" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Default landing page</SelectItem>
+              {homepageOption?.value &&
+                homepageOption.value.length > 0 &&
+                !(publishedPagesForHome?.pages ?? []).some(
+                  (p) => p.slug === homepageOption.value
+                ) && (
+                  <SelectItem value={homepageOption.value}>
+                    {homepageOption.value} (page missing or not in list)
+                  </SelectItem>
+                )}
+              {(publishedPagesForHome?.pages ?? [])
+                .filter((p) => Boolean(p.slug?.trim()))
+                .map((p) => (
+                  <SelectItem key={p.id} value={p.slug as string}>
+                    {p.title}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Settings() {
   const [formData, setFormData] = useState<Settings | null>(null);
   const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null);
@@ -169,6 +233,9 @@ export default function Settings() {
   const faviconInputRef = useRef<HTMLInputElement>(null);
   
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const settingsSaveAckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [settingsJustSaved, setSettingsJustSaved] = useState(false);
 
   /**
    * Safely format a date with the given format string
@@ -237,16 +304,21 @@ export default function Settings() {
       return response.json() as Promise<HomepageOptionResponse>;
     },
     onSuccess: (_data, slug) => {
-      toast.success(
-        slug
-          ? 'Homepage updated.'
-          : 'Homepage cleared — the site will use the default landing page.'
-      );
+      toast({
+        title: slug ? 'Homepage updated' : 'Homepage cleared',
+        description: slug
+          ? 'The site root now shows the page you selected.'
+          : 'The site will use the default landing page until you choose another.',
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/options/homepage_page_slug'] });
       queryClient.invalidateQueries({ queryKey: ['/api/public/homepage'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update homepage');
+      toast({
+        title: 'Could not update homepage',
+        description: error.message || 'Failed to update homepage',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -281,6 +353,14 @@ export default function Settings() {
     }
   }, [siteInfoResponse, siteInfo, isSiteInfoLoading]);
 
+  useEffect(() => {
+    return () => {
+      if (settingsSaveAckTimerRef.current) {
+        clearTimeout(settingsSaveAckTimerRef.current);
+      }
+    };
+  }, []);
+
   // Save mutation - sends entire nested structure via PATCH
   const saveMutation = useMutation({
     mutationFn: async (data: Settings) => {
@@ -289,8 +369,19 @@ export default function Settings() {
     },
     onSuccess: () => {
       setValidationErrors({});
-      toast.success('Settings saved successfully');
+      toast({
+        title: 'Settings saved',
+        description: 'Your site settings were updated successfully.',
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      if (settingsSaveAckTimerRef.current) {
+        clearTimeout(settingsSaveAckTimerRef.current);
+      }
+      setSettingsJustSaved(true);
+      settingsSaveAckTimerRef.current = setTimeout(() => {
+        setSettingsJustSaved(false);
+        settingsSaveAckTimerRef.current = null;
+      }, 3500);
     },
     onError: (error: any) => {
       console.error('Save error:', error);
@@ -306,7 +397,11 @@ export default function Settings() {
 
           // Domain validation or Caddy config failure
           if (errorData.message && !errorData.errors) {
-            toast.error(errorData.message);
+            toast({
+              title: 'Could not save',
+              description: errorData.message,
+              variant: 'destructive',
+            });
             return;
           }
           
@@ -320,7 +415,11 @@ export default function Settings() {
             });
             
             setValidationErrors(errorMap);
-            toast.error('Please fix the validation errors highlighted below');
+            toast({
+              title: 'Validation error',
+              description: 'Please fix the validation errors highlighted below.',
+              variant: 'destructive',
+            });
             return;
           }
         }
@@ -328,7 +427,11 @@ export default function Settings() {
         console.error('Error parsing validation errors:', parseError);
       }
       
-      toast.error('Failed to save settings');
+      toast({
+        title: 'Save failed',
+        description: 'Failed to save settings. Try again or check the console for details.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -339,12 +442,19 @@ export default function Settings() {
       return response.json();
     },
     onSuccess: () => {
-      toast.success('Site information updated successfully');
+      toast({
+        title: 'Site information updated',
+        description: 'Logo, favicon, or theme changes were saved.',
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/site'] });
     },
     onError: (error: any) => {
       console.error('Save site info error:', error);
-      toast.error('Failed to update site information');
+      toast({
+        title: 'Update failed',
+        description: 'Could not update site information. Try again.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -378,14 +488,22 @@ export default function Settings() {
   const handleFileSelect = useCallback((file: File, type: 'logo' | 'favicon') => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+      toast({
+        title: 'Invalid file',
+        description: 'Please select an image file.',
+        variant: 'destructive',
+      });
       return;
     }
 
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error('File size must be less than 5MB');
+      toast({
+        title: 'File too large',
+        description: 'File size must be less than 5MB.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -401,7 +519,7 @@ export default function Settings() {
       }
     };
     reader.readAsDataURL(file);
-  }, []);
+  }, [toast]);
 
   /**
    * Upload file to media library and update site info
@@ -444,15 +562,17 @@ export default function Settings() {
         setFaviconPreview(null);
         setFaviconFile(null);
       }
-
-      toast.success(`${type === 'logo' ? 'Logo' : 'Favicon'} uploaded successfully`);
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(`Failed to upload ${type === 'logo' ? 'logo' : 'favicon'}`);
+      toast({
+        title: 'Upload failed',
+        description: `Could not upload ${type === 'logo' ? 'logo' : 'favicon'}. Try again.`,
+        variant: 'destructive',
+      });
     } finally {
       setUploading(false);
     }
-  }, [logoFile, faviconFile, siteInfo, saveSiteInfoMutation]);
+  }, [logoFile, faviconFile, siteInfo, saveSiteInfoMutation, toast]);
 
   /**
    * Cancel file preview
@@ -659,13 +779,21 @@ export default function Settings() {
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold text-wp-gray">Settings</h1>
+          <div className="flex items-center gap-3">
+            {settingsJustSaved ? (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+                <Check className="h-4 w-4 shrink-0" aria-hidden />
+                Saved
+              </span>
+            ) : null}
             <Button
               className="bg-wp-blue hover:bg-wp-blue-dark text-white"
               onClick={handleSave}
               disabled={saveMutation.isPending}>
               <Save className="w-4 h-4 mr-2" />
-              Save Changes
+              {saveMutation.isPending ? 'Saving…' : 'Save Changes'}
             </Button>
+          </div>
           </div>
         </div>
 
@@ -769,6 +897,14 @@ export default function Settings() {
                       </p>
                     )}
                   </div>
+
+                  <SiteHomepageField
+                    selectId="settings-general-homepage"
+                    homepageOption={homepageOption}
+                    publishedPagesForHome={publishedPagesForHome}
+                    isPending={homepageSelectMutation.isPending}
+                    onSelectSlug={(slug) => homepageSelectMutation.mutate(slug)}
+                  />
 
                   <Separator />
 
@@ -1169,53 +1305,13 @@ export default function Settings() {
                   <CardTitle>Reading Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
-                    <div className="flex items-start gap-3">
-                      <Home className="mt-0.5 h-5 w-5 shrink-0 text-wp-blue" aria-hidden />
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <Label htmlFor="site-homepage-select">Site homepage</Label>
-                        <p className="text-sm text-gray-600">
-                          Published page shown at the site root (<span className="font-mono text-xs">/</span>
-                          ). Choose &quot;Default landing page&quot; to show the built-in landing until you select a page.
-                        </p>
-                        <Select
-                          disabled={homepageSelectMutation.isPending}
-                          onValueChange={(value) => {
-                            const slug = value === '__none__' ? '' : value;
-                            homepageSelectMutation.mutate(slug);
-                          }}
-                          value={
-                            homepageOption?.value && homepageOption.value.length > 0
-                              ? homepageOption.value
-                              : '__none__'
-                          }
-                        >
-                          <SelectTrigger id="site-homepage-select" className="max-w-md bg-white">
-                            <SelectValue placeholder="Select homepage" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">Default landing page</SelectItem>
-                            {homepageOption?.value &&
-                              homepageOption.value.length > 0 &&
-                              !(publishedPagesForHome?.pages ?? []).some(
-                                (p) => p.slug === homepageOption.value
-                              ) && (
-                                <SelectItem value={homepageOption.value}>
-                                  {homepageOption.value} (page missing or not in list)
-                                </SelectItem>
-                              )}
-                            {(publishedPagesForHome?.pages ?? [])
-                              .filter((p) => Boolean(p.slug?.trim()))
-                              .map((p) => (
-                                <SelectItem key={p.id} value={p.slug as string}>
-                                  {p.title}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
+                  <SiteHomepageField
+                    selectId="settings-reading-homepage"
+                    homepageOption={homepageOption}
+                    publishedPagesForHome={publishedPagesForHome}
+                    isPending={homepageSelectMutation.isPending}
+                    onSelectSlug={(slug) => homepageSelectMutation.mutate(slug)}
+                  />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">

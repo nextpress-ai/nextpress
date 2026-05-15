@@ -119,3 +119,16 @@ export function getBlockSiblingFlexItemStyles(
 
 	return out;
 }
+
+/**
+ * When `other.stackLayer` is set, siblings inside a layout container can overlap with predictable paint order
+ * (higher values render above). Requires `position: relative` on the flex/grid item wrapper.
+ */
+export function getBlockStackLayerWrapperStyles(block: {
+	other?: { stackLayer?: number | null };
+}): CSSProperties {
+	const raw = block.other?.stackLayer;
+	if (raw === undefined || raw === null) return {};
+	const z = typeof raw === "number" && Number.isFinite(raw) ? Math.trunc(raw) : 0;
+	return { position: "relative", zIndex: z };
+}

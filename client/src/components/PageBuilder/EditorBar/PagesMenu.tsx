@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
-import { FileText, Plus, Search } from "lucide-react";
+import { FileText, Plus, Search, Settings2 } from "lucide-react";
 import { BiPencil } from "react-icons/bi";
 import {
   DropdownMenu,
@@ -24,13 +24,19 @@ import { Badge } from "@/components/ui/badge";
 interface PagesMenuProps {
   children: ReactNode;
   currentPageId?: string;
+  /** Opens the editor Page Settings modal when set */
+  onPageSettingsClick?: () => void;
 }
 
 /**
- * PagesMenu - Dropdown for browsing and creating pages
- * Opens Command palette for searchable page list
+ * PagesMenu — unified page actions: browse/create pages and optional Page Settings entry.
+ * Opens Command palette for searchable page list from "Browse Pages".
  */
-export function PagesMenu({ children, currentPageId }: PagesMenuProps) {
+export function PagesMenu({
+  children,
+  currentPageId,
+  onPageSettingsClick,
+}: PagesMenuProps) {
   const [, setLocation] = useLocation();
   const [showCommand, setShowCommand] = useState(false);
   const { pages, pagesLoading } = useContentLists();
@@ -69,6 +75,19 @@ export function PagesMenu({ children, currentPageId }: PagesMenuProps) {
             <Plus className="w-4 h-4" />
             Create New Page
           </DropdownMenuItem>
+          {onPageSettingsClick ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  onPageSettingsClick();
+                }}
+              >
+                <Settings2 className="w-4 h-4" />
+                Page settings…
+              </DropdownMenuItem>
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
 

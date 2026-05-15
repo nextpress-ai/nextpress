@@ -208,6 +208,59 @@ export function GroupBlock(props: BlockData) {
 }
 
 /**
+ * Container Block — single column wrapper with styles from block config
+ */
+export function ContainerBlock(props: BlockData) {
+  const { tagName, className, style, attributes, children } = props as Extract<
+    BlockData,
+    { blockName: "core/container" }
+  >;
+
+  const Tag = (tagName || "div") as
+    | "div"
+    | "section"
+    | "article"
+    | "aside";
+
+  const mergedClassName = ["wp-block-container", className].filter(Boolean).join(" ");
+
+  const renderChild = (child: BlockData): React.ReactNode => {
+    const ChildComponent = BLOCK_COMPONENTS[child.blockName];
+    if (!ChildComponent) {
+      return null;
+    }
+    return <ChildComponent {...child} />;
+  };
+
+  if (children && children.length > 0) {
+    return (
+      <Tag
+        className={mergedClassName || undefined}
+        style={{ ...style, boxSizing: "border-box" }}
+        {...attributes}
+      >
+        <div className="wp-block-container__inner">
+          {children.map((child, index) => {
+            const childKey = `${child.blockName}-${index}`;
+            return <React.Fragment key={childKey}>{renderChild(child)}</React.Fragment>;
+          })}
+        </div>
+      </Tag>
+    );
+  }
+
+  return (
+    <Tag
+      className={mergedClassName || undefined}
+      style={{ ...style, boxSizing: "border-box" }}
+      {...attributes}
+    >
+      <div className="wp-block-container__inner">{/* Empty container */}</div>
+    </Tag>
+  );
+}
+
+/**
  * Spacer Block Component
  * Renders a vertical spacer with configurable height
  */

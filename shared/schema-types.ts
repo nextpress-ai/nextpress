@@ -255,6 +255,8 @@ export interface BlockConfig {
 		tokenMap?: Record<string, TokenEntry>;
 		units?: Record<string, string>;
 		animation?: BlockAnimation | null;
+		/** Z-order among siblings inside layout containers (group, container, columns, etc.). Higher draws on top. */
+		stackLayer?: number;
 	}
 }
 

@@ -3,10 +3,21 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Extends Radix root props with optional chrome rendered after viewport/scrollbar so overlays
+ * stack above the scroll surface (sibling overlays outside the root can sit under composited layers).
+ */
+type ScrollAreaProps = React.ComponentPropsWithoutRef<
+  typeof ScrollAreaPrimitive.Root
+> & {
+  /** Pinned above viewport + scrollbar (e.g. bottom edge fade). Must use its own positioning. */
+  bottomOverlay?: React.ReactNode;
+};
+
 const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
->(({ className, children, ...props }, ref) => (
+  ScrollAreaProps
+>(({ className, children, bottomOverlay, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
     className={cn("relative overflow-hidden", className)}
@@ -17,6 +28,7 @@ const ScrollArea = React.forwardRef<
     </ScrollAreaPrimitive.Viewport>
     <ScrollBar />
     <ScrollAreaPrimitive.Corner />
+    {bottomOverlay}
   </ScrollAreaPrimitive.Root>
 ))
 ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName

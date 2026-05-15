@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Braces, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import type { VariableNamespaceUI } from "@shared/schema-types";
 
 /** Variable namespaces available for template insertion */
@@ -116,7 +117,11 @@ export function VariablePicker({ onInsert }: VariablePickerProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn("gap-1.5", "npb-settings-btn-outline")}
+        >
           <Braces className="h-3.5 w-3.5" />
           Variables
         </Button>

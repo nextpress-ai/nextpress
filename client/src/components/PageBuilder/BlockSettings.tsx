@@ -8,6 +8,15 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { SettingsChipGroup } from "./settings-chip-group";
 
 import { 
   Palette, 
@@ -35,8 +44,8 @@ import {
   Rows,
   Grid3X3,
   Minus,
-  Settings,
-  Sparkles
+  Sparkles,
+  Layers,
 } from "lucide-react";
 import type { BlockConfig, DisplayCondition } from "@shared/schema-types";
 import { blockRegistry } from "./blocks";
@@ -296,74 +305,24 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
       const SettingsComp = def.settings;
       return <SettingsComp block={block} onUpdate={onUpdate} />;
     }
-    
+
+    if (block.name === "core/markdown") {
+      return (
+        <p className="npb-settings-hint-muted py-4 text-center text-xs leading-relaxed">
+          Edit markdown on the canvas. Use the sidebar <span className="font-semibold">Advanced</span> tab for CSS
+          classes, anchor, animations, and display conditions.
+        </p>
+      );
+    }
+
     return (
-      <div className="text-center text-gray-500 py-8">
+      <div className="npb-settings-hint-muted py-8 text-center">
         No content settings available for this block type.
       </div>
     );
   };
 
 
-
-  // Enhanced chip-based control component with grid layout and truncation
-  const ChipGroup = ({ 
-    label, 
-    options, 
-    value, 
-    onChange, 
-    icon: Icon,
-    className = ""
-  }: { 
-    label: string; 
-    options: { value: string; label: string; icon?: any }[]; 
-    value: string; 
-    onChange: (value: string) => void; 
-    icon?: any;
-    className?: string;
-  }) => {
-    // Determine grid layout based on number of options - use 2x2 grid for 3+ options
-    const getGridLayout = () => {
-      if (options.length === 1) return "grid-cols-1";
-      if (options.length === 2) return "grid-cols-2";
-      // For 3+ options, use 2x2 grid (2 columns, rows as needed)
-      return "grid-cols-2";
-    };
-
-    const truncateText = (text: string, maxLength: number = 8) => {
-      return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-    };
-
-    return (
-      <div className={`space-y-3 ${className}`}>
-        {label && (
-          <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-            {Icon && <Icon className="w-4 h-4" />}
-            {label}
-          </Label>
-        )}
-        <div className={`grid ${getGridLayout()} gap-2`}>
-          {options.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => onChange(option.value)}
-              className={`h-10 px-2 text-xs font-medium border rounded-none transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:ring-offset-1 min-w-0 ${
-                value === option.value 
-                  ? "bg-gray-200 text-gray-800 border-gray-200 hover:bg-gray-300" 
-                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-              }`}
-              title={option.label} // Tooltip for truncated text
-            >
-              <div className="flex items-center justify-center gap-1 min-w-0">
-                {option.icon && <option.icon className="w-3 h-3 flex-shrink-0" />}
-                <span className="truncate min-w-0">{truncateText(option.label)}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   const renderStyleSettings = () => {
     const isColumnsBlock = block.name === "core/columns";
@@ -389,6 +348,24 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
       marginBottom: "Bottom",
       marginLeft: "Left",
     };
+    const widthRaw = block.styles?.width;
+    const widthLayoutMode =
+      widthRaw == null || widthRaw === "" || widthRaw === "auto"
+        ? "auto"
+        : widthRaw === "100%"
+          ? "fill"
+          : widthRaw === "fit-content"
+            ? "fit"
+            : "custom";
+    const heightRaw = block.styles?.height;
+    const heightLayoutMode =
+      heightRaw == null || heightRaw === "" || heightRaw === "auto"
+        ? "auto"
+        : heightRaw === "min-content"
+          ? "min-content"
+          : heightRaw === "max-content"
+            ? "max-content"
+            : "custom";
     return (
       <div className="space-y-6">
         {/* Typography */}
@@ -396,24 +373,44 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
           <CollapsibleCard title="Typography" icon={Type} defaultOpen={true}>
             {/* Font Family */}
             <div>
-              <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Label className="npb-settings-label flex items-center gap-2 text-sm font-semibold">
                 <Type className="w-3 h-3" />
                 Font Family
               </Label>
-              <select
-                value={block.styles?.fontFamily || ''}
-                onChange={(e) => updateStyles({ fontFamily: e.target.value || undefined })}
-                className="mt-2 w-full h-9 px-3 text-sm border border-gray-200 rounded-none bg-white focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+              <Select
+                value={
+                  block.styles?.fontFamily != null && block.styles.fontFamily !== ""
+                    ? block.styles.fontFamily
+                    : "__inherit"
+                }
+                onValueChange={(v) =>
+                  updateStyles({ fontFamily: v === "__inherit" ? undefined : v })
+                }
               >
-                {FONT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+                <SelectTrigger
+                  className={cn(
+                    "mt-2 h-9 w-full rounded-none text-sm focus-visible:outline-none",
+                    "npb-settings-select-trigger",
+                  )}
+                >
+                  <SelectValue placeholder="Default (Inherit)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FONT_OPTIONS.map((opt) => (
+                    <SelectItem
+                      key={opt.value === "" ? "__inherit" : opt.value}
+                      value={opt.value === "" ? "__inherit" : opt.value}
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Font Size */}
             <div>
-              <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Label className="npb-settings-label flex items-center gap-2 text-sm font-semibold">
                 <Ruler className="w-3 h-3" />
                 Font Size
               </Label>
@@ -421,13 +418,13 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 value={block.styles?.fontSize || '16px'}
                 onChange={(e) => updateStyles({ fontSize: e.target.value })}
                 placeholder="16px"
-                className="mt-2 h-9 text-sm border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
               />
             </div>
             
             {/* Line Height - Full Width */}
             <div>
-              <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Label className="npb-settings-label flex items-center gap-2 text-sm font-semibold">
                 <Rows className="w-3 h-3" />
                 Line Height
               </Label>
@@ -435,12 +432,12 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 value={block.styles?.lineHeight || '1.6'}
                 onChange={(e) => updateStyles({ lineHeight: e.target.value })}
                 placeholder="1.6"
-                className="mt-2 h-9 text-sm border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
               />
             </div>
             
             {/* Font Weight - Chip Grid */}
-            <ChipGroup
+            <SettingsChipGroup
               label="Font Weight"
               icon={Bold}
               options={[
@@ -455,7 +452,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
 
             {/* Paragraph / heading: flowing block text */}
             {showFlowTextAlign && (
-              <ChipGroup
+              <SettingsChipGroup
                 label="Text alignment"
                 icon={AlignCenter}
                 options={[
@@ -471,12 +468,12 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
 
             {showButtonLabelAlign && (
               <div className="space-y-2">
-                <p className="text-xs text-gray-600">
+                <p className="npb-settings-hint text-xs">
                   Aligns the label inside the button. Use{' '}
                   <span className="font-semibold">Position in container</span>
                   {' '}below to move the whole button in the layout.
                 </p>
-                <ChipGroup
+                <SettingsChipGroup
                   label="Label alignment (inside button)"
                   icon={AlignCenter}
                   options={[
@@ -496,7 +493,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
         <CollapsibleCard title="Colors" icon={Palette} defaultOpen={true}>
           {/* Text Color */}
           <div>
-            <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
               <Type className="w-3 h-3" />
               Text Color
             </Label>
@@ -512,7 +509,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
           
           {/* Background Color */}
           <div>
-            <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
               <Square className="w-3 h-3" />
               Background Color
             </Label>
@@ -529,7 +526,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
 
         {/* Spacing */}
         <CollapsibleCard title="Spacing" icon={Move} defaultOpen={true}>
-          <p className="text-xs text-gray-600 mb-3">
+          <p className="npb-settings-hint mb-3 text-xs">
             Type each value as freeform CSS spacing: lengths like <span className="font-mono">16px</span>,{' '}
             <span className="font-mono">120 px</span> or <span className="font-mono">100 rem</span> (spaces are fine), or{' '}
             <span className="font-mono">100rem</span> without spaces; also <span className="font-mono">auto</span>,
@@ -539,7 +536,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
           {/* Padding */}
           <div className="mb-8">
             <div className="mb-3">
-              <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
                 <Square className="w-3 h-3" />
                 Padding
               </Label>
@@ -568,7 +565,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
           {/* Margin */}
           <div>
             <div className="mb-3">
-              <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
                 <Square className="w-3 h-3" />
                 Margin
               </Label>
@@ -596,11 +593,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
         </CollapsibleCard>
 
         <CollapsibleCard title="Position in container" icon={Layout} defaultOpen={false}>
-          <p className="text-xs text-gray-600 mb-3">
+          <p className="npb-settings-hint mb-3 text-xs">
             Where this block sits among siblings (canvas, columns, flex row/column stacks). Uses flex layout;
             vertical center/bottom shows when extra space exists in the parent.
           </p>
-          <ChipGroup
+          <SettingsChipGroup
             label="Horizontal"
             icon={AlignLeft}
             options={[
@@ -622,7 +619,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               })
             }
           />
-          <ChipGroup
+          <SettingsChipGroup
             label="Vertical"
             icon={AlignCenter}
             className="mt-4"
@@ -649,38 +646,46 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
             {/* Width */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
                   <Columns className="w-3 h-3" />
                   Width
                 </Label>
-                <select
-                  className="h-7 px-2 text-xs border border-gray-200 rounded-none bg-white focus:outline-none focus:ring-1 focus:ring-gray-400"
-                  value={block.styles?.width ? (block.styles.width === '100%' ? 'Fill' : block.styles.width === 'fit-content' ? 'Fit' : block.styles.width === 'auto' ? 'Auto' : 'Custom') : 'Auto'}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'Auto') updateStyles({ width: 'auto' });
-                    else if (val === 'Fill') updateStyles({ width: '100%' });
-                    else if (val === 'Fit') updateStyles({ width: 'fit-content' });
+                <Select
+                  value={widthLayoutMode}
+                  onValueChange={(val) => {
+                    if (val === "auto") updateStyles({ width: "auto" });
+                    else if (val === "fill") updateStyles({ width: "100%" });
+                    else if (val === "fit") updateStyles({ width: "fit-content" });
                   }}
                 >
-                  <option>Auto</option>
-                  <option>Fill</option>
-                  <option>Fit</option>
-                  <option>Custom</option>
-                </select>
+                  <SelectTrigger
+                    className={cn(
+                      "h-7 w-[7.5rem] rounded-none px-2 text-xs focus-visible:outline-none",
+                      "npb-settings-select-trigger",
+                    )}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto</SelectItem>
+                    <SelectItem value="fill">Fill</SelectItem>
+                    <SelectItem value="fit">Fit</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <Input
                 value={block.styles?.width || 'auto'}
                 onChange={(e) => updateStyles({ width: e.target.value })}
                 placeholder="auto"
-                className="h-8 text-sm border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
+                className="h-8 rounded-none text-sm focus-visible:outline-none"
               />
             </div>
 
             {/* Max Width */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
                   <Columns className="w-3 h-3" />
                   Max Width
                 </Label>
@@ -689,21 +694,21 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 value={block.styles?.maxWidth || ''}
                 onChange={(e) => updateStyles({ maxWidth: e.target.value || undefined })}
                 placeholder="none"
-                className="h-8 text-sm border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
+                className="h-8 rounded-none text-sm focus-visible:outline-none"
               />
             </div>
             
             {/* Display Type for Layout-capable Blocks
                 NOTE: `core/columns` layout is controlled via its own Content settings to avoid conflicts.
              */}
-            {['container', 'core/group'].includes(block.name) && (
+            {['container', 'core/group', 'core/container'].includes(block.name) && (
               <>
                   <div>
-                    <Label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
                       <Grid3X3 className="w-3 h-3" />
                       Display
                     </Label>
-                  <ChipGroup
+                  <SettingsChipGroup
                     label=""
                     options={[
                       { value: 'block', label: 'Block' },
@@ -719,11 +724,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 {/* Flex Direction (if display is flex) */}
                 {(block.styles?.display === 'flex' || block.styles?.display === 'inline-flex') && (
                   <div>
-                    <Label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
                       <RotateCw className="w-3 h-3" />
                       Direction
                     </Label>
-                    <ChipGroup
+                    <SettingsChipGroup
                       label=""
                       options={[
                         { value: 'row', label: 'Row' },
@@ -740,11 +745,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 {/* Flex Wrap (if display is flex) */}
                 {(block.styles?.display === 'flex' || block.styles?.display === 'inline-flex') && (
                   <div>
-                    <Label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
                       <Rows className="w-3 h-3" />
                       Wrap
                     </Label>
-                    <ChipGroup
+                    <SettingsChipGroup
                       label=""
                       options={[
                         { value: 'nowrap', label: 'No Wrap' },
@@ -759,11 +764,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
 
                 {/* Justify Content */}
                 <div>
-                  <Label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
                     <AlignCenter className="w-3 h-3" />
                     Justify
                   </Label>
-                  <ChipGroup
+                  <SettingsChipGroup
                     label=""
                     options={[
                       { value: 'flex-start', label: 'Start' },
@@ -779,11 +784,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
 
                 {/* Align Items */}
                 <div>
-                  <Label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
                     <AlignLeft className="w-3 h-3" />
                     Align
                   </Label>
-                  <ChipGroup
+                  <SettingsChipGroup
                     label=""
                     options={[
                       { value: 'flex-start', label: 'Start' },
@@ -799,7 +804,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 {/* Gap */}
                 {!isColumnsBlock && (
                   <div>
-                  <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
                     <Move className="w-3 h-3" />
                     Gap
                   </Label>
@@ -807,7 +812,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                     value={block.styles?.gap || ''}
                     onChange={(e) => updateStyles({ gap: e.target.value || undefined })}
                     placeholder="e.g. 16px, 1rem"
-                    className="mt-2 h-8 text-sm border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
+                    className="mt-2 h-8 rounded-none text-sm focus-visible:outline-none"
                   />
                   </div>
                 )}
@@ -815,46 +820,85 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
             )}
 
             {/* Height for specific blocks */}
-            {['image', 'video', 'container', 'core/group'].includes(block.name) && (
+            {['image', 'video', 'container', 'core/group', 'core/container'].includes(block.name) && (
               <div>
                   <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
                       <Rows className="w-3 h-3" />
                       Height
                     </Label>
-                  <select
-                    className="h-7 px-2 text-xs border border-gray-200 rounded-none bg-white focus:outline-none focus:ring-1 focus:ring-gray-400"
-                    value={block.styles?.height ? (block.styles.height === 'auto' ? 'Auto' : block.styles.height === 'min-content' ? 'Min Content' : block.styles.height === 'max-content' ? 'Max Content' : 'Custom') : 'Auto'}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === 'Auto') updateStyles({ height: 'auto' });
-                      else if (val === 'Min Content') updateStyles({ height: 'min-content' });
-                      else if (val === 'Max Content') updateStyles({ height: 'max-content' });
+                  <Select
+                    value={heightLayoutMode}
+                    onValueChange={(val) => {
+                      if (val === "auto") updateStyles({ height: "auto" });
+                      else if (val === "min-content") updateStyles({ height: "min-content" });
+                      else if (val === "max-content") updateStyles({ height: "max-content" });
                     }}
                   >
-                    <option>Auto</option>
-                    <option>Min Content</option>
-                    <option>Max Content</option>
-                    <option>Custom</option>
-                  </select>
+                    <SelectTrigger
+                      className={cn(
+                        "h-7 w-[9.5rem] rounded-none px-2 text-xs focus-visible:outline-none",
+                        "npb-settings-select-trigger",
+                      )}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto</SelectItem>
+                      <SelectItem value="min-content">Min Content</SelectItem>
+                      <SelectItem value="max-content">Max Content</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Input
                   value={block.styles?.height || 'auto'}
                   onChange={(e) => updateStyles({ height: e.target.value })}
                   placeholder="auto"
-                  className="h-8 text-sm border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  className="h-8 rounded-none text-sm focus-visible:outline-none"
                 />
               </div>
             )}
 
-            {/* Overflow */}
-            {['container', 'core/group'].includes(block.name) && (
+            {block.name === "core/image" && (
               <div>
-                <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
+                  <Square className="w-3 h-3" />
+                  Object fit
+                </Label>
+                <Select
+                  value={(block.styles?.objectFit as string) || "contain"}
+                  onValueChange={(value) =>
+                    updateStyles({ objectFit: value as CSSProperties["objectFit"] })
+                  }
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "mt-2 h-9 w-full rounded-none text-sm focus-visible:outline-none",
+                      "npb-settings-select-trigger",
+                    )}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="contain">Contain</SelectItem>
+                    <SelectItem value="cover">Cover</SelectItem>
+                    <SelectItem value="fill">Fill</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="scale-down">Scale down</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Overflow */}
+            {['container', 'core/group', 'core/container'].includes(block.name) && (
+              <div>
+                <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
                   <Square className="w-3 h-3" />
                   Overflow
                 </Label>
-                <ChipGroup
+                <SettingsChipGroup
                   label=""
                   options={[
                     { value: 'visible', label: 'Visible' },
@@ -871,11 +915,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
             {/* For Columns, keep true dimensions here, but avoid duplicating layout controls. */}
             {isColumnsBlock && (
               <div>
-                <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
                   <Square className="w-3 h-3" />
                   Overflow
                 </Label>
-                <ChipGroup
+                <SettingsChipGroup
                   label=""
                   options={[
                     { value: 'visible', label: 'Visible' },
@@ -894,7 +938,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
         <CollapsibleCard title="Border & Radius" icon={Square} defaultOpen={false}>
           {/* Border - Full Width */}
           <div>
-            <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
               <Square className="w-3 h-3" />
               Border
             </Label>
@@ -902,13 +946,13 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               value={block.styles?.border || 'none'}
               onChange={(e) => updateStyles({ border: e.target.value })}
               placeholder="1px solid #ccc"
-              className="mt-2 h-9 text-sm border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+              className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
             />
           </div>
           
           {/* Border Radius - Full Width */}
           <div>
-            <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
               <Circle className="w-3 h-3" />
               Border Radius
             </Label>
@@ -916,7 +960,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               value={block.styles?.borderRadius || '0px'}
               onChange={(e) => updateStyles({ borderRadius: e.target.value })}
               placeholder="4px"
-              className="mt-2 h-9 text-sm border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+              className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
             />
           </div>
         </CollapsibleCard>
@@ -925,49 +969,38 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
   };
 
   return (
-    <div className="space-y-4">
-      <div className="p-4 bg-gray-50 rounded-none border border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-800 mb-1">Block Settings</h3>
-        <p className="text-xs text-gray-600">{blockRegistry[block.name]?.label || block.name}</p>
+    <div className="npb-block-settings space-y-4">
+      <div className="npb-settings-hero">
+        <h3 className="npb-settings-hero-title mb-1 text-sm font-semibold">Block Settings</h3>
+        <p className="npb-settings-hint-muted text-xs">{blockRegistry[block.name]?.label || block.name}</p>
       </div>
 
       <Tabs defaultValue="content" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-100 p-1 rounded-lg">
-          <TabsTrigger 
+        <TabsList className="grid w-full grid-cols-3 gap-1 rounded-lg p-1">
+          <TabsTrigger
             value="content"
-            className="flex items-center gap-2 text-gray-600 data-[state=active]:text-black data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium px-3 py-2 rounded-md transition-all text-xs"
-          >
-            <Type className="w-3 h-3" /> Content
+            className="flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors">
+            <Type className="h-3 w-3" /> Content
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
             value="style"
-            className="flex items-center gap-2 text-gray-600 data-[state=active]:text-black data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium px-3 py-2 rounded-md transition-all text-xs"
-          >
-            <Palette className="w-3 h-3" /> Style
+            className="flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors">
+            <Palette className="h-3 w-3" /> Style
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
             value="advanced"
-            className="flex items-center gap-2 text-gray-600 data-[state=active]:text-black data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium px-3 py-2 rounded-md transition-all text-xs"
-          >
-            <Code className="w-3 h-3" /> Advanced
-          </TabsTrigger>
-          <TabsTrigger 
-            value="conditions"
-            className="flex items-center gap-2 text-gray-600 data-[state=active]:text-black data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium px-3 py-2 rounded-md transition-all text-xs"
-          >
-            <Settings className="w-3 h-3" /> Conditions
+            className="flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors">
+            <Code className="h-3 w-3" /> Advanced
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="content" className="space-y-4 mt-4">
-          <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
+        <TabsContent value="content" className="mt-4 space-y-4">
+          <div className="npb-settings-panel">
             {/* Variable insertion for blocks with text content */}
             {typeof (block.content as Record<string, unknown>)?.value === 'string' && (
-              <div className="mb-4 pb-4 border-b border-gray-200">
+              <div className="mb-4 npb-settings-divider-b pb-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold text-gray-800">
-                    Insert Variable
-                  </Label>
+                  <Label className="npb-settings-label text-sm font-semibold">Insert Variable</Label>
                   <VariablePicker
                     onInsert={(variable) => {
                       const currentValue = (block.content as Record<string, unknown>)?.value as string || '';
@@ -975,7 +1008,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                     }}
                   />
                 </div>
-                <p className="text-[11px] text-gray-400 mt-1">
+                <p className="mt-1 text-[11px] npb-settings-hint-muted">
                   Click a variable to append it to the block content below
                 </p>
               </div>
@@ -984,14 +1017,14 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
           </div>
         </TabsContent>
 
-        <TabsContent value="style" className="space-y-4 mt-4">
-          <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
+        <TabsContent value="style" className="mt-4 space-y-4">
+          <div className="npb-settings-panel">
             {renderStyleSettings()}
           </div>
         </TabsContent>
 
-        <TabsContent value="advanced" className="space-y-4 mt-4">
-          <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
+        <TabsContent value="advanced" className="mt-4 space-y-4">
+          <div className="npb-settings-panel">
             {/* Animation Section */}
             <CollapsibleCard title="Animations" icon={Sparkles} defaultOpen={false}>
               <AnimationPicker
@@ -1011,7 +1044,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                       rows={8}
                       className="font-mono text-sm resize-none"
                     />
-                    <p className="text-xs text-gray-500">
+                    <p className="npb-settings-hint-muted text-xs">
                       CSS will be applied to this block only. Use standard CSS syntax.
                     </p>
                   </div>
@@ -1023,7 +1056,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               <CollapsibleCard title="HTML Anchor & Classes" icon={Hash} defaultOpen={false}>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="block-anchor" className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <Label htmlFor="block-anchor" className="text-sm font-semibold npb-settings-label flex items-center gap-2">
                       <Target className="w-3 h-3" />
                       Anchor ID
                     </Label>
@@ -1032,14 +1065,14 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                       value={(block.content as Record<string, unknown>)?.anchor as string || ''}
                       onChange={(e) => updateContent({ anchor: e.target.value })}
                       placeholder="Add an anchor (without #)"
-                      className="mt-2 h-9 text-sm border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                      className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="npb-settings-hint-muted mt-1 text-xs">
                       Used for linking directly to this block via #anchor
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="block-classes" className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <Label htmlFor="block-classes" className="text-sm font-semibold npb-settings-label flex items-center gap-2">
                       <Code className="w-3 h-3" />
                       CSS Classes
                     </Label>
@@ -1048,23 +1081,64 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                       value={(block.content as Record<string, unknown>)?.className as string || ''}
                       onChange={(e) => updateContent({ className: e.target.value })}
                       placeholder="e.g. my-custom-class"
-                      className="mt-2 h-9 text-sm border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                      className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
                     />
                   </div>
                 </div>
               </CollapsibleCard>
             </div>
-          </div>
-        </TabsContent>
 
-        <TabsContent value="conditions" className="space-y-4 mt-4">
-          <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
-            <div className="space-y-3">
+            {block.parentId != null && (
+              <div className="mt-4">
+                <CollapsibleCard title="Stack layer" icon={Layers} defaultOpen={false}>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium npb-settings-label">
+                      Paint order among siblings
+                    </Label>
+                    <p className="npb-settings-hint-muted text-xs">
+                      Only applies inside a layout parent (container, group, columns). Higher draws on top;
+                      negative sends behind. Flow overlap still needs margins or positioning to separate.
+                    </p>
+                    <Input
+                      type="number"
+                      className="h-8 rounded-none text-sm focus-visible:outline-none"
+                      placeholder="default — clear to reset"
+                      value={
+                        block.other?.stackLayer !== undefined && block.other?.stackLayer !== null
+                          ? String(block.other.stackLayer)
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const raw = e.target.value.trim();
+                        const currentOther = block.other || {};
+                        if (raw === "") {
+                          const { stackLayer: _removed, ...restOther } = currentOther as Record<
+                            string,
+                            unknown
+                          >;
+                          onUpdate({ other: restOther as typeof block.other });
+                          return;
+                        }
+                        const n = Number.parseInt(raw, 10);
+                        onUpdate({
+                          other: {
+                            ...currentOther,
+                            stackLayer: Number.isNaN(n) ? undefined : n,
+                          },
+                        });
+                      }}
+                    />
+                  </div>
+                </CollapsibleCard>
+              </div>
+            )}
+
+            <div className="mt-4 space-y-3">
               <div>
-                <Label className="text-sm font-semibold text-gray-800">
+                <Label className="npb-settings-label text-sm font-semibold">
                   Display Conditions
                 </Label>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="npb-settings-hint-muted mt-0.5 text-xs">
                   Control when this block is visible. Add conditions to show or
                   hide the block based on page type, user status, or URL.
                 </p>

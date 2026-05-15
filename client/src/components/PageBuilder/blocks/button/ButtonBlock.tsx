@@ -9,7 +9,16 @@ import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
 import { IconRenderer } from "../shared/IconRenderer";
 import { IconPickerButton } from "../../IconPicker/IconPickerButton";
-import type { IconReference } from "@/lib/icon-indexes";
+import { formatIconReferenceLabel, type IconReference } from "@/lib/icon-indexes";
+import {
+  NPB_ICON_REFERENCE_ROW_MAX_CHARS,
+  truncateWithEllipsis,
+} from "@/lib/truncate-with-ellipsis";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // ============================================================================
 // TYPES
@@ -158,6 +167,13 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
     : (block.content as ButtonContent) || DEFAULT_CONTENT;
 
   const currentIcon = content?.icon as IconReference | undefined;
+  const iconRefFullLabel = currentIcon ? formatIconReferenceLabel(currentIcon) : '';
+  const iconRefDisplayLabel = currentIcon
+    ? truncateWithEllipsis({
+        text: iconRefFullLabel,
+        maxChars: NPB_ICON_REFERENCE_ROW_MAX_CHARS,
+      })
+    : '';
 
   // Update handlers
   const updateContent = (updates: Partial<ButtonContent>) => {
@@ -215,21 +231,31 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
         <div className="space-y-4">
           <div>
             <Label className="text-sm font-medium text-gray-700">Button Icon</Label>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="mt-1 flex min-w-0 items-center gap-2">
               {currentIcon ? (
                 <>
-                  <div className="flex items-center justify-center w-8 h-8 rounded-md border border-gray-200 bg-gray-50">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-gray-50">
                     <IconRenderer icon={currentIcon} size={16} />
                   </div>
-                  <span className="text-xs text-gray-500 flex-1 truncate">
-                    {currentIcon.iconName}
-                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="min-w-0 flex-1 cursor-default text-xs text-gray-500"
+                        title={iconRefFullLabel}>
+                        {iconRefDisplayLabel}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs break-all">
+                      {iconRefFullLabel}
+                    </TooltipContent>
+                  </Tooltip>
                   <button
+                    type="button"
                     onClick={handleRemoveIcon}
-                    className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                    className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
                     title="Remove icon"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="h-3 w-3" />
                   </button>
                 </>
               ) : (
@@ -241,6 +267,7 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
               )}
               {currentIcon && (
                 <IconPickerButton
+                  className="shrink-0"
                   currentIcon={currentIcon}
                   onSelect={handleIconSelect}
                   variant="ghost"

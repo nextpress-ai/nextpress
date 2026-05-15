@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 import type { IconReference } from '@/lib/icon-indexes';
 
 // ---------------------------------------------------------------------------
@@ -107,12 +108,12 @@ function PlaceholderIcon({ size = 24, color = '#999' }: { size?: number; color?:
 export interface IconRendererProps {
   /** Icon reference with set, name, and visual props */
   icon: IconReference;
-  /** Override size (px) */
-  size?: number;
+  /** Override size (px or CSS length string such as `100%`) */
+  size?: number | string;
   /** Override color */
   color?: string;
-  /** Override stroke width */
-  strokeWidth?: number;
+  /** Override stroke width (number in user units, or CSS length string) */
+  strokeWidth?: number | string;
   /** Additional className */
   className?: string;
   /** Additional inline styles */
@@ -125,6 +126,19 @@ export interface IconRendererProps {
  * Renders an icon from any supported set (lucide, react-icons, svgl).
  * Resolves the icon component dynamically from the imported modules.
  */
+function resolvePositiveSize(
+  value: number | string | undefined,
+  fallback: number,
+): number | string {
+  if (typeof value === "string") return value;
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function resolveStroke(value: number | string | undefined, fallback: number): number | string {
+  if (typeof value === "string") return value;
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 export function IconRenderer({
   icon,
   size,
@@ -134,9 +148,23 @@ export function IconRenderer({
   style,
   ...rest
 }: IconRendererProps) {
-  const resolvedSize = size ?? icon.size ?? 24;
+  const unit = icon.sizeUnit ?? 'px';
+  const defaultDim: number | string = unit === 'px' ? (icon.size ?? 24) : '100%';
+  const resolvedSize =
+    size !== undefined && size !== null
+      ? resolvePositiveSize(size, 24)
+      : resolvePositiveSize(defaultDim, 24);
   const resolvedColor = color ?? icon.color ?? 'currentColor';
-  const resolvedStroke = strokeWidth ?? icon.strokeWidth ?? 2;
+  const strokeUnit = icon.strokeWidthUnit ?? 'px';
+  const resolvedStroke =
+    strokeWidth !== undefined && strokeWidth !== null
+      ? resolveStroke(strokeWidth, 2)
+      : resolveStroke(
+          strokeUnit === 'px' ? (icon.strokeWidth ?? 2) : `${icon.strokeWidth ?? 2}${strokeUnit}`,
+          2,
+        );
+  const placeholderPixelSize =
+    typeof resolvedSize === 'number' ? resolvedSize : (icon.size ?? 24);
 
   let Component: React.ComponentType<any> | null = null;
 
@@ -149,7 +177,7 @@ export function IconRenderer({
             size={resolvedSize}
             color={resolvedColor}
             strokeWidth={resolvedStroke}
-            className={className}
+            className={cn('shrink-0', className)}
             style={style}
             {...rest}
           />
@@ -164,7 +192,7 @@ export function IconRenderer({
           <Component
             size={resolvedSize}
             color={resolvedColor}
-            className={className}
+            className={cn('shrink-0', className)}
             style={{
               ...style,
               strokeWidth: resolvedStroke,
@@ -191,7 +219,7 @@ export function IconRenderer({
           }}
           {...rest}
         >
-          <PlaceholderIcon size={resolvedSize} color={resolvedColor} />
+          <PlaceholderIcon size={placeholderPixelSize} color={resolvedColor} />
         </span>
       );
   }
@@ -210,7 +238,7 @@ export function IconRenderer({
       }}
       {...rest}
     >
-      <PlaceholderIcon size={resolvedSize} color={resolvedColor} />
+      <PlaceholderIcon size={placeholderPixelSize} color={resolvedColor} />
     </span>
   );
 }
