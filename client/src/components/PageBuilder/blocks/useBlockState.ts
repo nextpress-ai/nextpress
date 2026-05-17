@@ -12,6 +12,33 @@ function useMountEffect(effect: () => void | (() => void)) {
 	useEffect(effect, []);
 }
 
+/**
+ * WHY: `updateBlockDeep` deep-merges `styles`; keys missing from the patch keep old values.
+ * Callers often build the next sheet by spreading `prev` and **dropping** cleared keys.
+ * Emitting explicit `null` for those keys matches `deepMerge`’s clear contract (see `treeUtils.ts`).
+ */
+function withNullsForRemovedStyleKeys(
+	prev: React.CSSProperties | undefined,
+	next: React.CSSProperties | undefined,
+): React.CSSProperties | undefined {
+	if (next === undefined) {
+		return undefined;
+	}
+	const merged: Record<string, string | number | null | undefined> = {
+		...(next as Record<string, string | number | null | undefined>),
+	};
+	if (!prev) {
+		return merged as React.CSSProperties;
+	}
+	const prevRec = prev as Record<string, string | number | null | undefined>;
+	for (const key of Object.keys(prevRec)) {
+		if (!Object.prototype.hasOwnProperty.call(next, key)) {
+			merged[key] = null;
+		}
+	}
+	return merged as React.CSSProperties;
+}
+
 interface UseBlockStateOptions<TContent> {
 	value: BlockConfig;
 	getDefaultContent: () => TContent;
@@ -116,9 +143,10 @@ export function useBlockState<TContent>({
 							) => React.CSSProperties | undefined
 						)(prev)
 					: update;
+			const stylesForTree = withNullsForRemovedStyleKeys(prev, next);
 			// Eagerly update refs before notifying parent
-			stylesRef.current = next;
-			const updatedBlock = { ...valueRef.current, styles: next };
+			stylesRef.current = stylesForTree;
+			const updatedBlock = { ...valueRef.current, styles: stylesForTree };
 			valueRef.current = updatedBlock;
 			onChangeRef.current(updatedBlock);
 		},
