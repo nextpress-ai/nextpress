@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { isImageFile } from '@/lib/is-image-asset';
 
 interface ImageDropzoneProps {
   value?: string; // Image URL
@@ -63,8 +64,8 @@ export function ImageDropzone({
    * Validates and processes selected file
    */
   const handleFile = useCallback(async (file: File) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate file type (SVG often reports empty type; rely on extension)
+    if (!isImageFile(file)) {
       throw new Error('Please select an image file');
     }
 

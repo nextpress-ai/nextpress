@@ -8,13 +8,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Image as ImageIcon, Film, Music, File, Upload } from "lucide-react";
 import { ImageDropzone } from "@/components/ui/image-dropzone";
 import type { Media } from "@shared/schema-types";
+import { isImageMedia } from "@/lib/is-image-asset";
 
 type MediaKind = "any" | "image" | "video" | "audio";
 
 /** Maps MediaKind to the file accept string for the upload dropzone */
 const ACCEPT_BY_KIND: Record<MediaKind, string> = {
   any: "image/*,video/*,audio/*,.pdf,.txt",
-  image: "image/*",
+  // Explicit gif/svg so pickers that ignore image/* still offer these
+  image: "image/*,.gif,.svg,.svgz",
   video: "video/*",
   audio: "audio/*",
 };
@@ -40,6 +42,7 @@ export default function MediaPickerDialog({ open, onOpenChange, onSelect, kind =
   const filtered = useMemo(() => {
     const matchesKind = (m: Media) => {
       if (kind === "any") return true;
+      if (kind === "image") return isImageMedia(m);
       return m.mimeType?.startsWith(kind + "/");
     };
     const matchesSearch = (m: Media) => {
@@ -88,7 +91,7 @@ export default function MediaPickerDialog({ open, onOpenChange, onSelect, kind =
   }, [queryClient, onSelect, onOpenChange]);
 
   const renderThumb = (m: Media) => {
-    if (m.mimeType?.startsWith("image/")) {
+    if (isImageMedia(m)) {
       return (
         <img
           src={m.url}
