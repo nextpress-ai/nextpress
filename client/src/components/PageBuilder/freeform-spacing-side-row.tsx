@@ -11,7 +11,8 @@ interface FreeformSpacingSideRowProps {
 }
 
 /**
- * One padding or margin side as freeform CSS text (e.g. `16px`, `120 px`, `2rem`, `auto`, `calc(…)`).
+ * One padding or margin side as freeform CSS text (e.g. `16px`, `120px`, `2rem`, `auto`, `calc(…)`).
+ * NextPress expects the number and unit adjacent (`120px`); avoid `120 px`.
  */
 export function FreeformSpacingSideRow({
 	label,
@@ -29,7 +30,7 @@ export function FreeformSpacingSideRow({
 			<Label className="text-xs text-muted-foreground">{label}</Label>
 			<Input
 				value={value}
-				placeholder="16px, 120 px, 100 rem, auto…"
+				placeholder="16px, 120px, 20rem, auto…"
 				spellCheck={false}
 				autoComplete="off"
 				className="h-9 w-full text-sm"

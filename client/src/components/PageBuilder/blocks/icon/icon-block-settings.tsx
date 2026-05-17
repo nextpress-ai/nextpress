@@ -61,17 +61,17 @@ function paddingStyleToField(padding: unknown): {
 } {
   const raw = String(padding ?? "").trim();
   if (!raw) {
-    return { field: { magnitude: "0", unit: "px" }, asymmetric: false };
+    return { field: { magnitude: "", unit: "px" }, asymmetric: false };
   }
   const parts = raw.split(/\s+/).filter(Boolean);
   if (parts.length === 0) {
-    return { field: { magnitude: "0", unit: "px" }, asymmetric: false };
+    return { field: { magnitude: "", unit: "px" }, asymmetric: false };
   }
   const first = parts[0]!;
   const asymmetric = parts.some((p) => p !== first);
   const parsed = parseCssLengthToNumericWithUnit(first);
   return {
-    field: parsed ?? { magnitude: "0", unit: "px" },
+    field: parsed ?? { magnitude: "", unit: "px" },
     asymmetric,
   };
 }
@@ -89,6 +89,13 @@ export type IconBlockSettingsProps = {
 export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
   const accessor = getBlockStateAccessor(block.id);
   const [, setUpdateTrigger] = React.useState(0);
+  const [iconSizeDraft, setIconSizeDraft] = React.useState<NumericWithUnitValue | null>(
+    null,
+  );
+  const [iconStrokeDraft, setIconStrokeDraft] = React.useState<NumericWithUnitValue | null>(
+    null,
+  );
+  const [paddingDraft, setPaddingDraft] = React.useState<NumericWithUnitValue | null>(null);
 
   const content = accessor
     ? (accessor.getContent() as unknown as IconContent)
@@ -127,6 +134,22 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
       onUpdate({
         styles: { ...block.styles, ...styleUpdates },
       });
+    }
+  };
+
+  /** WHY: Shallow merge cannot drop keys; omitting padding clears uniform inner padding in saved styles. */
+  const removeUniformPadding = (): void => {
+    if (accessor) {
+      const current = accessor.getStyles() || {};
+      if (!("padding" in current)) return;
+      const { padding: _removed, ...rest } = current;
+      accessor.setStyles(rest);
+      setUpdateTrigger((n) => n + 1);
+    } else if (onUpdate) {
+      const prev = block.styles || {};
+      if (!("padding" in prev)) return;
+      const { padding: _removed, ...rest } = prev;
+      onUpdate({ styles: rest });
     }
   };
 
@@ -177,9 +200,18 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
     updateContent({ icon });
   };
 
-  const sizeField = iconSizeToField(currentIcon);
-  const strokeField = iconStrokeToField(currentIcon);
+  React.useEffect(() => {
+    setIconSizeDraft(null);
+  }, [currentIcon.size]);
+
+  React.useEffect(() => {
+    setIconStrokeDraft(null);
+  }, [currentIcon.strokeWidth]);
+
+  const sizeField = iconSizeDraft ?? iconSizeToField(currentIcon);
+  const strokeField = iconStrokeDraft ?? iconStrokeToField(currentIcon);
   const padState = paddingStyleToField(styles?.padding);
+  const paddingField = paddingDraft ?? padState.field;
 
   return (
     <div className="space-y-4">
@@ -221,10 +253,25 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
             id="icon-size"
             label="Icon size"
             value={sizeField}
+            magnitudeInputProps={{
+              onBlur: () => setIconSizeDraft(null),
+            }}
             onChange={(next) => {
               const raw = next.magnitude.trim();
-              const n = raw === "" ? 24 : Number(raw);
-              const safe = Number.isFinite(n) ? Math.min(200, Math.max(0.25, n)) : 24;
+              if (raw === "") {
+                setIconSizeDraft({ magnitude: next.magnitude, unit: next.unit });
+                updateContent({
+                  icon: { ...currentIcon, sizeUnit: next.unit },
+                });
+                return;
+              }
+              const n = Number(raw);
+              if (!Number.isFinite(n)) {
+                setIconSizeDraft({ magnitude: next.magnitude, unit: next.unit });
+                return;
+              }
+              setIconSizeDraft(null);
+              const safe = Math.min(200, Math.max(0.25, n));
               updateContent({
                 icon: {
                   ...currentIcon,
@@ -283,10 +330,25 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
               id="icon-stroke"
               label="Stroke width"
               value={strokeField}
+              magnitudeInputProps={{
+                onBlur: () => setIconStrokeDraft(null),
+              }}
               onChange={(next) => {
                 const raw = next.magnitude.trim();
-                const n = raw === "" ? 2 : Number(raw);
-                const safe = Number.isFinite(n) ? Math.min(8, Math.max(0.25, n)) : 2;
+                if (raw === "") {
+                  setIconStrokeDraft({ magnitude: next.magnitude, unit: next.unit });
+                  updateContent({
+                    icon: { ...currentIcon, strokeWidthUnit: next.unit },
+                  });
+                  return;
+                }
+                const n = Number(raw);
+                if (!Number.isFinite(n)) {
+                  setIconStrokeDraft({ magnitude: next.magnitude, unit: next.unit });
+                  return;
+                }
+                setIconStrokeDraft(null);
+                const safe = Math.min(8, Math.max(0.25, n));
                 updateContent({
                   icon: {
                     ...currentIcon,
@@ -302,10 +364,24 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
             <NumericWithUnitField
               id="icon-padding-uniform"
               label="Inner padding (uniform)"
-              value={padState.field}
+              value={paddingField}
+              magnitudeInputProps={{
+                onBlur: () => setPaddingDraft(null),
+              }}
               onChange={(next) => {
-                const css = composeCssLength(next);
-                updateStyles({ padding: css });
+                const raw = next.magnitude.trim();
+                if (raw === "") {
+                  setPaddingDraft(null);
+                  removeUniformPadding();
+                  return;
+                }
+                const n = Number(raw);
+                if (!Number.isFinite(n)) {
+                  setPaddingDraft(next);
+                  return;
+                }
+                setPaddingDraft(null);
+                updateStyles({ padding: composeCssLength(next) });
               }}
             />
             {padState.asymmetric ? (

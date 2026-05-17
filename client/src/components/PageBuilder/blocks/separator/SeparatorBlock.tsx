@@ -154,7 +154,13 @@ function SeparatorSettings({ block, onUpdate }: SeparatorSettingsProps) {
             <Label htmlFor="separator-width" className="text-sm font-medium text-gray-700">Width</Label>
             <Input
               id="separator-width"
-              value={styles?.width || "100px"}
+              value={
+                styles?.width !== undefined &&
+                styles.width !== null &&
+                String(styles.width).trim() !== ""
+                  ? String(styles.width)
+                  : ""
+              }
               onChange={(e) => updateStyles({ width: e.target.value })}
               placeholder="e.g. 100px, 50%, auto"
               className="mt-1 h-9"

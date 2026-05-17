@@ -489,9 +489,15 @@ function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
               <Label htmlFor="flex-gap">Gap</Label>
               <Input
                 id="flex-gap"
-                value={content?.gap || '0px'}
+                value={
+                  content?.gap !== undefined &&
+                  content.gap !== null &&
+                  String(content.gap).trim() !== ""
+                    ? String(content.gap)
+                    : ""
+                }
                 onChange={(e) => updateContent({ gap: e.target.value })}
-                placeholder="e.g. 10px, 1rem"
+                placeholder="e.g. 0px, 10px, 1rem"
               />
             </div>
           </div>
@@ -554,7 +560,13 @@ function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
               <Label htmlFor="grid-gap">Gap</Label>
               <Input
                 id="grid-gap"
-                value={content?.gap || '16px'}
+                value={
+                  content?.gap !== undefined &&
+                  content.gap !== null &&
+                  String(content.gap).trim() !== ""
+                    ? String(content.gap)
+                    : ""
+                }
                 onChange={(e) => updateContent({ gap: e.target.value })}
                 placeholder="e.g. 16px, 1rem"
               />

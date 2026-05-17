@@ -73,6 +73,64 @@ const FONT_OPTIONS = [
   { value: 'Montserrat, sans-serif', label: 'Montserrat' },
 ] as const;
 
+type SpacingSideQuad = {
+  top: string;
+  right: string;
+  bottom: string;
+  left: string;
+};
+
+/**
+ * WHY: Matches CSS box shorthand expansion so sidebar sides align with serialized `padding` / `margin`.
+ */
+function expandSpacingShorthand(raw: unknown): SpacingSideQuad {
+  if (raw == null || raw === "") {
+    return { top: "", right: "", bottom: "", left: "" };
+  }
+  const str = typeof raw === "string" ? raw : String(raw);
+  const values = str
+    .split(/\s+/)
+    .map((v: string) => v.trim())
+    .filter((v) => v.length > 0);
+  if (values.length === 0) return { top: "", right: "", bottom: "", left: "" };
+  if (values.length === 1) {
+    const v = values[0]!;
+    return { top: v, right: v, bottom: v, left: v };
+  }
+  if (values.length === 2) {
+    const [a, b] = values as [string, string];
+    return { top: a, right: b, bottom: a, left: b };
+  }
+  if (values.length === 3) {
+    const [a, b, c] = values as [string, string, string];
+    return { top: a, right: b, bottom: c, left: b };
+  }
+  const [a, b, c, d] = values as [string, string, string, string];
+  return { top: a, right: b, bottom: c, left: d };
+}
+
+/**
+ * WHY: Longhands win over shorthand in the UI when both appear after merges (accessor vs tree styles).
+ */
+function overlaySpacingLonghands(
+  st: Record<string, unknown>,
+  expanded: SpacingSideQuad,
+  prefix: "padding" | "margin",
+): SpacingSideQuad {
+  const pick = (longSuffix: string, side: keyof SpacingSideQuad): string => {
+    const longKey = `${prefix}${longSuffix}`;
+    const v = st[longKey];
+    if (v != null && String(v).trim() !== "") return String(v);
+    return expanded[side];
+  };
+  return {
+    top: pick("Top", "top"),
+    right: pick("Right", "right"),
+    bottom: pick("Bottom", "bottom"),
+    left: pick("Left", "left"),
+  };
+}
+
 interface BlockSettingsProps {
   block: BlockConfig;
   onUpdate: (updates: Partial<BlockConfig>) => void;
@@ -217,17 +275,21 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
           ? ("margin" as const)
           : null;
     const key = String(cssKey);
+    /** Merged tree + accessor — shorthand may live only on `block.styles` while edits apply via accessor. */
+    const resolved = getResolvedStylesForSpacing();
 
     const buildNextStyles = (prev: Record<string, unknown>): Record<string, unknown> => {
       const s = { ...prev };
       // Dropping shorthand only in the patch object is not enough: updateBlockDeep deep-merges
       // nested `styles` and keeps stale margin/padding unless explicitly cleared with null.
-      if (shorthand && prev[shorthand] != null) {
+      if (shorthand && resolved[shorthand] != null) {
         delete s[shorthand];
         s[shorthand] = null;
       }
+      // WHY: `updateBlockDeep` deep-merges `styles`; omitted keys keep old values. Explicit `null`
+      // clears longhands the same way shorthand uses `padding: null` above.
       if (fullValue == null || fullValue === "") {
-        delete s[key];
+        s[key] = null;
       } else {
         s[key] = fullValue;
       }
@@ -244,50 +306,16 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
   };
 
   // Get individual spacing values with fallbacks
-  const getPaddingValues = () => {
+  const getPaddingValues = (): SpacingSideQuad => {
     const st = getResolvedStylesForSpacing();
-    const padding = st.padding;
-    if (padding) {
-      const paddingStr = typeof padding === "string" ? padding : String(padding);
-      const values = paddingStr.split(" ").map((v: string) => v.trim());
-      if (values.length === 1)
-        return { top: values[0], right: values[0], bottom: values[0], left: values[0] };
-      if (values.length === 2)
-        return { top: values[0], right: values[1], bottom: values[0], left: values[1] };
-      if (values.length === 3)
-        return { top: values[0], right: values[1], bottom: values[2], left: values[1] };
-      if (values.length === 4)
-        return { top: values[0], right: values[1], bottom: values[2], left: values[3] };
-    }
-    return {
-      top: String(st.paddingTop ?? ""),
-      right: String(st.paddingRight ?? ""),
-      bottom: String(st.paddingBottom ?? ""),
-      left: String(st.paddingLeft ?? ""),
-    };
+    const expanded = expandSpacingShorthand(st.padding);
+    return overlaySpacingLonghands(st, expanded, "padding");
   };
 
-  const getMarginValues = () => {
+  const getMarginValues = (): SpacingSideQuad => {
     const st = getResolvedStylesForSpacing();
-    const margin = st.margin;
-    if (margin) {
-      const marginStr = typeof margin === "string" ? margin : String(margin);
-      const values = marginStr.split(" ").map((v: string) => v.trim());
-      if (values.length === 1)
-        return { top: values[0], right: values[0], bottom: values[0], left: values[0] };
-      if (values.length === 2)
-        return { top: values[0], right: values[1], bottom: values[0], left: values[1] };
-      if (values.length === 3)
-        return { top: values[0], right: values[1], bottom: values[2], left: values[1] };
-      if (values.length === 4)
-        return { top: values[0], right: values[1], bottom: values[2], left: values[3] };
-    }
-    return {
-      top: String(st.marginTop ?? ""),
-      right: String(st.marginRight ?? ""),
-      bottom: String(st.marginBottom ?? ""),
-      left: String(st.marginLeft ?? ""),
-    };
+    const expanded = expandSpacingShorthand(st.margin);
+    return overlaySpacingLonghands(st, expanded, "margin");
   };
 
   const renderContentSettings = () => {
@@ -415,7 +443,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 Font Size
               </Label>
               <Input
-                value={block.styles?.fontSize || '16px'}
+                value={
+                  block.styles?.fontSize !== undefined && block.styles.fontSize !== null
+                    ? String(block.styles.fontSize)
+                    : ""
+                }
                 onChange={(e) => updateStyles({ fontSize: e.target.value })}
                 placeholder="16px"
                 className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
@@ -429,7 +461,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 Line Height
               </Label>
               <Input
-                value={block.styles?.lineHeight || '1.6'}
+                value={
+                  block.styles?.lineHeight !== undefined && block.styles.lineHeight !== null
+                    ? String(block.styles.lineHeight)
+                    : ""
+                }
                 onChange={(e) => updateStyles({ lineHeight: e.target.value })}
                 placeholder="1.6"
                 className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
@@ -527,9 +563,9 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
         {/* Spacing */}
         <CollapsibleCard title="Spacing" icon={Move} defaultOpen={true}>
           <p className="npb-settings-hint mb-3 text-xs">
-            Type each value as freeform CSS spacing: lengths like <span className="font-mono">16px</span>,{' '}
-            <span className="font-mono">120 px</span> or <span className="font-mono">100 rem</span> (spaces are fine), or{' '}
-            <span className="font-mono">100rem</span> without spaces; also <span className="font-mono">auto</span>,
+            Each side is freeform CSS spacing. Use lengths with <span className="font-semibold">no space</span> between
+            the number and unit (<span className="font-mono">120px</span>,{' '}
+            <span className="font-mono">20rem</span>). You can also use <span className="font-mono">auto</span>,
             percentages, or <span className="font-mono">calc(…)</span>.
           </p>
 
@@ -675,7 +711,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 </Select>
               </div>
               <Input
-                value={block.styles?.width || 'auto'}
+                value={
+                  block.styles?.width !== undefined && block.styles.width !== null
+                    ? String(block.styles.width)
+                    : ""
+                }
                 onChange={(e) => updateStyles({ width: e.target.value })}
                 placeholder="auto"
                 className="h-8 rounded-none text-sm focus-visible:outline-none"
@@ -691,7 +731,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 </Label>
               </div>
               <Input
-                value={block.styles?.maxWidth || ''}
+                value={
+                  block.styles?.maxWidth !== undefined && block.styles.maxWidth !== null
+                    ? String(block.styles.maxWidth)
+                    : ""
+                }
                 onChange={(e) => updateStyles({ maxWidth: e.target.value || undefined })}
                 placeholder="none"
                 className="h-8 rounded-none text-sm focus-visible:outline-none"
@@ -809,7 +853,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                     Gap
                   </Label>
                   <Input
-                    value={block.styles?.gap || ''}
+                    value={
+                      block.styles?.gap !== undefined && block.styles.gap !== null
+                        ? String(block.styles.gap)
+                        : ""
+                    }
                     onChange={(e) => updateStyles({ gap: e.target.value || undefined })}
                     placeholder="e.g. 16px, 1rem"
                     className="mt-2 h-8 rounded-none text-sm focus-visible:outline-none"
@@ -852,7 +900,11 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                   </Select>
                 </div>
                 <Input
-                  value={block.styles?.height || 'auto'}
+                  value={
+                    block.styles?.height !== undefined && block.styles.height !== null
+                      ? String(block.styles.height)
+                      : ""
+                  }
                   onChange={(e) => updateStyles({ height: e.target.value })}
                   placeholder="auto"
                   className="h-8 rounded-none text-sm focus-visible:outline-none"
@@ -943,9 +995,13 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               Border
             </Label>
             <Input
-              value={block.styles?.border || 'none'}
+              value={
+                block.styles?.border !== undefined && block.styles.border !== null
+                  ? String(block.styles.border)
+                  : ""
+              }
               onChange={(e) => updateStyles({ border: e.target.value })}
-              placeholder="1px solid #ccc"
+              placeholder="none — e.g. 1px solid #ccc"
               className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
             />
           </div>
@@ -957,9 +1013,14 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               Border Radius
             </Label>
             <Input
-              value={block.styles?.borderRadius || '0px'}
+              value={
+                block.styles?.borderRadius !== undefined &&
+                block.styles.borderRadius !== null
+                  ? String(block.styles.borderRadius)
+                  : ""
+              }
               onChange={(e) => updateStyles({ borderRadius: e.target.value })}
-              placeholder="4px"
+              placeholder="e.g. 0px, 4px"
               className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
             />
           </div>

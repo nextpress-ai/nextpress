@@ -202,7 +202,11 @@ function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
             <Label htmlFor="preformatted-font-size" className="text-sm font-medium text-gray-700">Font Size</Label>
             <Input
               id="preformatted-font-size"
-              value={styles?.fontSize || "14px"}
+              value={
+                styles?.fontSize !== undefined && styles.fontSize !== null
+                  ? String(styles.fontSize)
+                  : ""
+              }
               onChange={(e) => updateStyles({ fontSize: e.target.value })}
               placeholder="14px"
               className="mt-1 h-9"

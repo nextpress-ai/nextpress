@@ -585,7 +585,7 @@ function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
               <Label htmlFor="columns-gap">Gap</Label>
             </div>
             <div className="col-span-8">
-              <Input id="columns-gap" className="h-9" value={data.gap || "20px"} onChange={(e) => updateContent({ gap: e.target.value })} placeholder="e.g. 10px, 2rem" aria-label="Gap between columns" />
+              <Input id="columns-gap" className="h-9" value={data.gap !== undefined && data.gap !== null && String(data.gap).trim() !== "" ? String(data.gap) : ""} onChange={(e) => updateContent({ gap: e.target.value })} placeholder="e.g. 20px, 2rem" aria-label="Gap between columns" />
             </div>
           </div>
 
@@ -598,7 +598,13 @@ function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
                 <Input
                   id="columns-min-width"
                   className="h-9"
-                  value={data.minColumnWidth || "220px"}
+                  value={
+                    data.minColumnWidth !== undefined &&
+                    data.minColumnWidth !== null &&
+                    String(data.minColumnWidth).trim() !== ""
+                      ? String(data.minColumnWidth)
+                      : ""
+                  }
                   onChange={(e) => updateContent({ minColumnWidth: e.target.value })}
                   placeholder="220px"
                   aria-label="Minimum column width"

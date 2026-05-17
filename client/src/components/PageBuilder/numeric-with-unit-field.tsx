@@ -34,8 +34,8 @@ export function composeCssLength(value: NumericWithUnitValue): string {
 
 /**
  * Parses a CSS length into magnitude + known layout unit, or null if unrecognized.
- * WHY: Lets us hydrate the field from legacy `styles.padding` / saved icon dimensions
- * without forcing users through a reset when values were authored as full CSS.
+ * WHY: Hydrates from legacy/saved CSS; regex still tolerates an optional space before the unit,
+ * but NextPress expects adjacent tokens (`120px`, `20rem`) when authoring new values.
  */
 export function parseCssLengthToNumericWithUnit(
   input: string | undefined,
