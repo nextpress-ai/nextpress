@@ -189,15 +189,15 @@ describe('adaptBlockConfigToBlockData', () => {
   });
 
   describe('Animation attributes', () => {
-    it('adds data-aos attributes for entry animation', () => {
+    it('adds entry animation attributes for scroll observer', () => {
       const block = makeBlock('test-id', {
         other: { animation: { entry: { name: 'fadeIn' } } },
       });
       const result = adaptBlockConfigToBlockData(block);
       expect(result?.attributes).toMatchObject({
-        'data-aos': 'animate__fadeIn',
-        'data-aos-duration': '1000',
-        'data-aos-once': 'true',
+        'data-np-entry': 'fadeIn',
+        'data-np-entry-duration': '1000',
+        'data-np-entry-once': 'true',
       });
     });
 
@@ -206,7 +206,7 @@ describe('adaptBlockConfigToBlockData', () => {
         other: { animation: { entry: { name: 'slideIn', delay: 500 } } },
       });
       const result = adaptBlockConfigToBlockData(block);
-      expect(result?.attributes).toHaveProperty('data-aos-delay', '500');
+      expect(result?.attributes).toHaveProperty('data-np-entry-delay', '500');
     });
 
     it('no animation attributes if no entry', () => {
@@ -259,6 +259,16 @@ describe('adaptBlockConfigToBlockData', () => {
       const result = adaptBlockConfigToBlockData(block);
       expect((result as any)?.content).toBe('<strong>HTML</strong>');
       expect((result as any)?.sanitized).toBe(true);
+    });
+
+    it('extracts legacy editor html shape (content.content)', () => {
+      const block = makeBlock('test-id', {
+        name: 'core/html',
+        content: { content: '<div class="custom">Legacy</div>', className: 'my-html' } as BlockConfig['content'],
+      });
+      const result = adaptBlockConfigToBlockData(block);
+      expect((result as any)?.content).toBe('<div class="custom">Legacy</div>');
+      expect((result as any)?.className).toBe('my-html');
     });
 
     it('extracts for structured kind (columns)', () => {
@@ -385,9 +395,9 @@ describe('adaptBlockConfigToBlockData', () => {
         customCss: '.test { }',
         setting: 'value',
         attributes: {
-          'data-aos': 'animate__fadeIn',
-          'data-aos-duration': '1000',
-          'data-aos-once': 'true',
+          'data-np-entry': 'fadeIn',
+          'data-np-entry-duration': '1000',
+          'data-np-entry-once': 'true',
         },
       });
       expect(result?.children).toHaveLength(1);

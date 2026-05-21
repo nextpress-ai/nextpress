@@ -323,6 +323,7 @@ function ColumnsRenderer({
 export function ColumnsBlockComponent({
   value,
   onChange,
+  onNestedBlockChange,
   isPreview,
 }: BlockComponentProps) {
   const { content, styles, settings, setSettings } = useBlockState<ColumnsContent>({
@@ -355,7 +356,7 @@ export function ColumnsBlockComponent({
       children={value.children}
       columnLayout={columnLayout}
       isPreview={isPreview}
-      onBlockChange={onChange}
+      onBlockChange={onNestedBlockChange}
     />
   );
 }

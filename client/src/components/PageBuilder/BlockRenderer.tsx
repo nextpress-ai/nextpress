@@ -6,12 +6,21 @@ import { blockRegistry } from './blocks';
 import { Droppable, Draggable } from '@/lib/dnd';
 import { useBlockActions } from './BlockActionsContext';
 import { resolveTokenMap, generateBlockModifierCSS } from '@/lib/tailwind-tokens';
-import { generateBlockAnimationCSS } from '@/lib/animation-presets';
+import { generateBlockAnimationCSS, getEntryAnimationAttributes } from '@/lib/animation-presets';
+import {
+  clearEntryAnimationPreview,
+  useBlockEntryAnimationPreview,
+} from '@/lib/entry-animation-preview-store';
 import {
   stripBlockContainerPlacementStyles,
   getBlockSiblingFlexItemStyles,
   getBlockStackLayerWrapperStyles,
-  type BlockStackDirection,
+  readContainerLayoutFromBlock,
+  getContainerParentDisplayMode,
+  getContainerSiblingStackDirection,
+  getContainerChildrenStackStyle,
+  hasContainerShellSizing,
+  stackNeedsVerticalPlacementRoom,
 } from "@shared/block-container-placement";
 import {
   Tooltip,
@@ -34,83 +43,50 @@ function useMountEffect(effect: () => void | (() => void)) {
   useEffect(effect, []);
 }
 
+/** Ring fade and entry preview both use `animation`; keep preview on an inner wrapper. */
+function isEntryPreviewAnimationEnd(
+  event: React.AnimationEvent<HTMLElement>,
+  animName: string,
+): boolean {
+  if (event.target !== event.currentTarget) return false;
+  const ended = event.animationName;
+  return ended === animName || ended.endsWith(animName);
+}
+
 /** Hover-only: entire floating toolbar hides after this idle period without pointer movement. */
 const CANVAS_HOVER_TOOLBAR_IDLE_MS = 3000;
-
-/** Parent stacks siblings in a row vs column — drives per-block placement flex-item mapping. */
-function getSiblingStackDirection(
-  parentDisplay: "flex" | "grid" | "block",
-  parentDirection: "row" | "column",
-): BlockStackDirection {
-  if (parentDisplay === "flex" && parentDirection === "row") return "row";
-  return "column";
-}
-
-/**
- * Detects the parent container's display mode from content
- */
-function getParentDisplayMode(block: BlockConfig): 'flex' | 'grid' | 'block' {
-  const content = block.content as Record<string, unknown> | undefined;
-  const display = content?.display as string | undefined;
-  if (display === 'flex' || display === 'inline-flex') return 'flex';
-  if (display === 'grid') return 'grid';
-  return 'block';
-}
-
-/**
- * Detects flex direction from parent content
- */
-function getParentFlexDirection(block: BlockConfig): 'row' | 'column' {
-  const content = block.content as Record<string, unknown> | undefined;
-  const dir = content?.flexDirection as string | undefined;
-  return dir === 'row' || dir === 'row-reverse' ? 'row' : 'column';
-}
 
 export function ContainerChildren({
   block,
   isPreview,
   onBlockChange,
+  stackClassName,
 }: {
   block: BlockConfig;
   isPreview: boolean;
   onBlockChange?: (updated: BlockConfig) => void;
+  /** Applied to the flex/grid stack that directly wraps children (e.g. wp-block-container__inner). */
+  stackClassName?: string;
 }) {
   const children = Array.isArray(block.children) ? block.children : [];
   const isContainer = !!blockRegistry[block.name]?.isContainer;
   const actions = useBlockActions();
   if (!isContainer) return null;
 
-  const parentDisplay = getParentDisplayMode(block);
-  const parentDirection = getParentFlexDirection(block);
-  const isHorizontal = parentDisplay === 'flex' && parentDirection === 'row';
+  const layout = readContainerLayoutFromBlock({ styles: block.styles, content: block.content as Record<string, unknown> });
+  const parentDisplay = getContainerParentDisplayMode(layout);
+  const isHorizontal = parentDisplay === 'flex' && layout.flexDirection === 'row';
   const dropDirection = isHorizontal ? 'horizontal' : 'vertical';
-  const siblingStackDirection = getSiblingStackDirection(parentDisplay, parentDirection);
-
-  /** When parent isn't flex/grid, emulate a vertical sibling stack so placement behaves like canvas. */
-  const childOuterDisplay =
-    parentDisplay === 'flex' ? 'flex' : parentDisplay === 'grid' ? 'grid' : 'flex';
-
-  /** Flex direction for sibling list (grid omits flexDirection). */
-  const siblingFlexDirection: React.CSSProperties['flexDirection'] =
-    parentDisplay === 'flex' ? parentDirection : 'column';
-
-  const stackGap =
-    parentDisplay !== 'block'
-      ? (block.content as any)?.gap || '16px'
-      : undefined;
-
-  /** Shared wrapper layout for Droppable + preview child lists */
-  const childrenStackStyle = (): React.CSSProperties => ({
-    display: childOuterDisplay,
-    ...(stackGap != null ? { gap: stackGap } : {}),
-    ...(childOuterDisplay === 'flex'
-      ? {
-          flexDirection: siblingFlexDirection,
-          flexWrap: parentDisplay === 'flex' ? ((block.content as any)?.flexWrap || 'wrap') : undefined,
-          alignItems: 'stretch',
-        }
-      : {}),
+  const siblingStackDirection = getContainerSiblingStackDirection(layout);
+  const childrenStackStyle = getContainerChildrenStackStyle(layout, {
+    shellStyles: block.styles,
+    children,
   });
+  const needsEmptyDropMinHeight =
+    !isPreview &&
+    children.length === 0 &&
+    !hasContainerShellSizing(block.styles) &&
+    !stackNeedsVerticalPlacementRoom(children);
 
   if (import.meta.env.DEBUG_BUILDER) {
     console.debug(
@@ -124,14 +100,18 @@ export function ContainerChildren({
   }
   if (isPreview) {
     return (
-      <div data-container-children="true" style={{ ...childrenStackStyle(), width: '100%', minWidth: 0 }}>
+      <div
+        data-container-children="true"
+        className={stackClassName}
+        style={childrenStackStyle}
+      >
         {children.map((child) => (
           <div
             key={child.id}
             style={{
               minWidth: 0,
               flex:
-                parentDisplay === 'flex' && parentDirection === 'row'
+                parentDisplay === 'flex' && layout.flexDirection === 'row'
                   ? '1 1 auto'
                   : undefined,
               ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
@@ -158,11 +138,12 @@ export function ContainerChildren({
           ref={provided.innerRef}
           {...provided.droppableProps}
           data-container-children="true"
+          className={stackClassName}
           style={{
-            ...childrenStackStyle(),
-            minHeight: '60px',
+            ...childrenStackStyle,
+            ...(needsEmptyDropMinHeight ? { minHeight: "60px" } : {}),
             minWidth: 0,
-            width: '100%',
+            width: "100%",
             border: snapshot.isDraggingOver
               ? '2px solid #3b82f6'
               : '2px dashed #e2e8f0',
@@ -442,8 +423,21 @@ export default function BlockRenderer({
 
   // Generate animation CSS (hover/loop animations)
   const animationCSS = block.other?.animation
-    ? generateBlockAnimationCSS(block.id, block.other.animation)
+    ? generateBlockAnimationCSS(block.id, block.other.animation, {
+        scopeLoopAfterEntry: isPreview && !!block.other.animation.entry,
+      })
     : "";
+
+  const entryAnimationAttributes =
+    isPreview && block.other?.animation?.entry
+      ? getEntryAnimationAttributes(block.other.animation.entry)
+      : {};
+
+  const entryPreview = useBlockEntryAnimationPreview(block.id);
+  const entryPreviewClassName =
+    !isPreview && entryPreview
+      ? `animate__animated animate__${entryPreview.animName}`
+      : "";
 
   // Combined CSS to inject
   const injectedCSS = [modifierCSS, animationCSS].filter(Boolean).join("\n");
@@ -463,6 +457,7 @@ export default function BlockRenderer({
           onChange={(updated) => {
             onBlockChange?.(updated);
           }}
+          onNestedBlockChange={onBlockChange}
           isPreview={isPreview}
           isSelected={effectiveSelected}
         />
@@ -575,12 +570,15 @@ export default function BlockRenderer({
         <div
           className={`${!isPreview ? 'cursor-pointer' : ''} transition-all duration-200`}>
           <div
+            data-block-id={block.id}
             className={`block-${block.id} ${!isPreview && effectiveSelected ? 'block-ring-fade' : ''} ${!isPreview && isHovered && !effectiveSelected ? 'ring-1 ring-gray-300' : ''} relative`}
             style={{
               width: '100%',
               minWidth: 0,
               boxSizing: 'border-box',
-            }}>
+            }}
+            {...entryAnimationAttributes}
+          >
           {!isPreview && effectiveHoverHighlight === 'padding' && (
             <>
               <div
@@ -632,7 +630,27 @@ export default function BlockRenderer({
               }}
             />
           )}
-          <div style={{ width: mergedStyles?.width || '100%' }}>
+          <div
+            className={entryPreviewClassName || undefined}
+            style={{
+              width: mergedStyles?.width || '100%',
+              ...(entryPreview
+                ? {
+                    ['--animate-duration' as string]: `${entryPreview.durationMs}ms`,
+                    animationDelay:
+                      entryPreview.delayMs > 0 ? `${entryPreview.delayMs}ms` : undefined,
+                  }
+                : {}),
+            }}
+            onAnimationEnd={
+              entryPreview
+                ? (event) => {
+                    if (!isEntryPreviewAnimationEnd(event, entryPreview.animName)) return;
+                    clearEntryAnimationPreview(entryPreview.token);
+                  }
+                : undefined
+            }
+          >
             {contentEl}
           </div>
         </div>

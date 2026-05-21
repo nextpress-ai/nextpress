@@ -13,7 +13,7 @@ import type { BlockConfig } from "@shared/schema-types";
 import type { BlockAnimation } from "@shared/schema-types";
 import type { BlockData } from "../../renderer/react/block-types";
 
-import { generateBlockAnimationCSS } from "@shared/animation-utils";
+import { generateBlockAnimationCSS, getEntryAnimationBaseCSS } from "@shared/animation-utils";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -322,14 +322,15 @@ export function createRenderRoutes(deps: Deps): Router {
 				if (animationCssRules) headParts.push(`<style>${animationCssRules}</style>`);
 				if (modifierCssRules) headParts.push(`<style>${modifierCssRules}</style>`);
 				if (hasAnimations) headParts.push(`<link rel="stylesheet" href="/vendor/animate.min.css">`);
-				if (hasEntryAnimations) headParts.push(`<link rel="stylesheet" href="/vendor/aos.css">`);
+				if (hasEntryAnimations) {
+					headParts.push(`<style>${getEntryAnimationBaseCSS()}</style>`);
+				}
 				const headScripts = headParts.filter(Boolean).join("\n");
 
-				// Build bodyScripts with conditional AOS init
 				const bodyParts: string[] = [];
 				if (hasEntryAnimations) {
-					bodyParts.push(`<script src="/vendor/aos.js"></script>`);
-					bodyParts.push(`<script>AOS.init({useClassNames:true,initClassName:false,animatedClassName:"animate__animated",once:true,duration:1000,offset:120,easing:"ease"});</script>`);
+					bodyParts.push(`<script src="/vendor/entry-animations.js"></script>`);
+					bodyParts.push(`<script>initEntryAnimations();</script>`);
 				}
 				const bodyScripts = bodyParts.join("\n");
 

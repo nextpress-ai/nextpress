@@ -6,6 +6,14 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card"
 import { Zap, MousePointer, Repeat, Eye, X } from "lucide-react"
 import type { BlockAnimation, EntryAnimation, HoverAnimation, LoopAnimation } from "@shared/schema-types"
 import { entryPresets, hoverPresets, loopPresets, type AnimationPreset } from "@/lib/animation-presets"
+import {
+  triggerEntryAnimationPreview,
+  clearEntryAnimationPreview,
+} from "@/lib/entry-animation-preview-store"
+import {
+  scheduleAnimateCssPreview,
+  clearAnimateCssPreview,
+} from "@/lib/play-animate-css-preview"
 
 interface AnimationPickerProps {
   animation: BlockAnimation | null | undefined
@@ -33,37 +41,31 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
     }
   }, [animation, onChange])
 
-  /** Preview animation on the canvas block element */
-  const previewAnimation = useCallback((animName: string, infinite = false) => {
-    const el = document.querySelector(`.block-${blockId}`) as HTMLElement | null
-    if (!el) return
-
-    // Remove any existing preview classes
-    el.classList.remove("animate__animated", "animate__infinite")
-    el.getAnimations().forEach(a => a.cancel())
-
-    // Force reflow to restart animation
-    void el.offsetWidth
-
-    el.classList.add("animate__animated", `animate__${animName}`)
-    if (infinite) {
-      el.classList.add("animate__infinite")
-    }
-
-    if (!infinite) {
-      const cleanup = () => {
-        el.classList.remove("animate__animated", `animate__${animName}`)
-        el.removeEventListener("animationend", cleanup)
-      }
-      el.addEventListener("animationend", cleanup, { once: true })
-    }
+  /** Preview entry animation on the canvas block via React-controlled classes. */
+  const previewEntryAnimation = useCallback((
+    animName: string,
+    durationMs?: number,
+    delayMs?: number,
+  ) => {
+    triggerEntryAnimationPreview({
+      blockId,
+      animName,
+      durationMs: durationMs ?? 1000,
+      delayMs: delayMs ?? 0,
+    });
   }, [blockId])
 
   const stopPreview = useCallback(() => {
-    const el = document.querySelector(`.block-${blockId}`) as HTMLElement | null
-    if (!el) return
-    const classes = Array.from(el.classList).filter(c => c.startsWith("animate__"))
-    classes.forEach(c => el.classList.remove(c))
+    clearAnimateCssPreview(blockId);
+    clearEntryAnimationPreview();
+  }, [blockId])
+
+  /** Preview hover/loop animations imperatively (not entry — those use the preview store). */
+  const previewHoverOrLoopAnimation = useCallback((
+    animName: string,
+    infinite = false,
+  ) => {
+    scheduleAnimateCssPreview({ blockId, animName, infinite });
   }, [blockId])
 
   const renderPresetGrid = (
@@ -125,7 +127,11 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
                   once: animation?.entry?.once ?? true,
                 },
               })
-              previewAnimation(name)
+              previewEntryAnimation(
+                name,
+                animation?.entry?.duration ?? 1000,
+                animation?.entry?.delay ?? 0,
+              )
             }
           }
         )}
@@ -138,9 +144,14 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
               <Label className="text-xs text-gray-600">Duration: {animation.entry.duration ?? 1000}ms</Label>
               <Slider
                 value={[animation.entry.duration ?? 1000]}
-                onValueChange={([v]) =>
+                onValueChange={([v]) => {
                   updateAnimation({ entry: { ...animation.entry!, duration: v } })
-                }
+                  previewEntryAnimation(
+                    animation.entry!.name,
+                    v,
+                    animation.entry!.delay ?? 0,
+                  )
+                }}
                 min={200}
                 max={3000}
                 step={50}
@@ -154,11 +165,17 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
               <Input
                 type="number"
                 value={animation.entry.delay ?? 0}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const delay = Number(e.target.value)
                   updateAnimation({
-                    entry: { ...animation.entry!, delay: Number(e.target.value) },
+                    entry: { ...animation.entry!, delay },
                   })
-                }
+                  previewEntryAnimation(
+                    animation.entry!.name,
+                    animation.entry!.duration ?? 1000,
+                    delay,
+                  )
+                }}
                 min={0}
                 max={3000}
                 step={50}
@@ -184,7 +201,13 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
 
             {/* Preview button */}
             <button
-              onClick={() => previewAnimation(animation.entry!.name)}
+              onClick={() =>
+                previewEntryAnimation(
+                  animation.entry!.name,
+                  animation.entry!.duration ?? 1000,
+                  animation.entry!.delay ?? 0,
+                )
+              }
               className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-none bg-white text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
             >
               <Eye className="w-3 h-3" /> Preview
@@ -206,7 +229,7 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
               updateAnimation({ hover: { name } })
             }
           },
-          (name) => previewAnimation(name)
+          (name) => previewHoverOrLoopAnimation(name)
         )}
       </CollapsibleCard>
 
@@ -221,7 +244,7 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
               stopPreview()
             } else {
               updateAnimation({ loop: { name } })
-              previewAnimation(name, true)
+              previewHoverOrLoopAnimation(name, true)
             }
           }
         )}

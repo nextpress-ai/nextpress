@@ -190,6 +190,21 @@ function extractContentProps(
 		return {};
 	}
 
+	// Handle HTML block specially - editor stores content at content.content (not content.value)
+	if (blockName === "core/html") {
+		const htmlContent = (content as { content?: string; value?: string; className?: string; sanitized?: boolean }).content;
+		if (typeof htmlContent === "string") {
+			return {
+				content: htmlContent,
+				className: (content as { className?: string }).className || "",
+			};
+		}
+		return {
+			content: (content as { value?: string }).value || "",
+			sanitized: (content as { sanitized?: boolean }).sanitized || false,
+		};
+	}
+
 	// Handle markdown block specially - stores content at content.content (not content.value)
 	// This is different from the "markdown" kind which expects content.value
 	if (blockName === "core/markdown") {

@@ -14,7 +14,7 @@ import { pages } from '@shared/schema';
  * - GET /api/preview/page/:id - Preview a page by ID (draft, preview, or publish)
  * - GET /api/preview/template/:id - Preview a template by ID (all templates available)
  * 
- * These routes allow previewing content without requiring authentication.
+ * Requires authentication — draft/preview content must not be public.
  * Pages use the pages table; posts use the posts table.
  * 
  * @param deps - Injected dependencies (models)
@@ -22,7 +22,9 @@ import { pages } from '@shared/schema';
  */
 export function createPreviewRoutes(deps: Deps): Router {
   const router = Router();
-  const { models } = deps;
+  const { models, requireAuth } = deps;
+
+  router.use(requireAuth);
 
   /**
    * GET /api/preview/post/:id - Preview a post by ID

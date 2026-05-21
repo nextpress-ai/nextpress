@@ -102,6 +102,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/', createRenderRoutes(deps));
 
   // Vendor files for published pages (animation libraries, etc.)
+  const vendorFileSources: Record<string, string[]> = {
+    'animate.min.css': [
+      path.join(__dirname, '../../dist/public/vendor/animate.min.css'),
+      path.join(process.cwd(), 'client/src/lib/animate.min.css'),
+      path.join(process.cwd(), 'node_modules/animate.css/animate.min.css'),
+    ],
+    'entry-animations.js': [
+      path.join(__dirname, '../../dist/public/vendor/entry-animations.js'),
+      path.join(process.cwd(), 'client/public/vendor/entry-animations.js'),
+    ],
+  };
+
+  for (const [filename, candidates] of Object.entries(vendorFileSources)) {
+    app.get(`/vendor/${filename}`, (_req, res) => {
+      const resolved = candidates.find((candidate) => fs.existsSync(candidate));
+      if (!resolved) {
+        res.status(404).send('Vendor asset not found');
+        return;
+      }
+      res.sendFile(path.resolve(resolved));
+    });
+  }
+
   app.use(
     '/vendor',
     express.static(path.join(__dirname, '../../dist/public/vendor'))

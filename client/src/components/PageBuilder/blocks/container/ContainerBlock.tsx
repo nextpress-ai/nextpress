@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { ContainerChildren } from "../../BlockRenderer";
+import { getContainerOuterShellStyle } from "@shared/block-container-placement";
 import { Box, Layout, Palette, Ruler } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -86,6 +87,7 @@ interface ContainerRendererProps {
   styles?: React.CSSProperties;
   children?: BlockConfig[];
   isPreview?: boolean;
+  onNestedBlockChange?: (updated: BlockConfig) => void;
 }
 
 /** Wraps nested blocks with Box-like spacing and background controls from styles. */
@@ -95,15 +97,15 @@ function ContainerRenderer({
   styles,
   children,
   isPreview,
+  onNestedBlockChange,
 }: ContainerRendererProps) {
   const tagName = content?.tagName || "div";
   const className = ["wp-block-container", content?.className || ""].filter(Boolean).join(" ");
   const TagName = tagName as keyof JSX.IntrinsicElements;
 
-  const containerStyle: React.CSSProperties = {
-    ...styles,
-    boxSizing: "border-box",
-  };
+  const containerStyle = getContainerOuterShellStyle(styles, {
+    children: children ?? host.children ?? [],
+  });
 
   const blockForChildren: BlockConfig = {
     ...host,
@@ -114,9 +116,12 @@ function ContainerRenderer({
 
   return (
     <TagName className={className} style={containerStyle}>
-      <div className="wp-block-container__inner">
-        <ContainerChildren block={blockForChildren} isPreview={isPreview ?? false} />
-      </div>
+      <ContainerChildren
+        block={blockForChildren}
+        isPreview={isPreview ?? false}
+        stackClassName="wp-block-container__inner"
+        onBlockChange={onNestedBlockChange}
+      />
     </TagName>
   );
 }
@@ -124,6 +129,7 @@ function ContainerRenderer({
 export function ContainerBlockComponent({
   value,
   onChange,
+  onNestedBlockChange,
   isPreview,
 }: BlockComponentProps) {
   const { content, styles } = useBlockState<ContainerContent>({
@@ -139,6 +145,7 @@ export function ContainerBlockComponent({
       styles={styles}
       children={value.children}
       isPreview={isPreview}
+      onNestedBlockChange={onNestedBlockChange}
     />
   );
 }

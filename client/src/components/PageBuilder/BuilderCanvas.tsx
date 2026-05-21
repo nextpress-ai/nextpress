@@ -2,6 +2,7 @@ import React from 'react';
 import { Droppable, Draggable } from '@/lib/dnd';
 import DevicePreview from './DevicePreview';
 import BlockRenderer from './BlockRenderer';
+import { BlockAnimationRuntime } from './BlockAnimationRuntime';
 import { Layers } from 'lucide-react';
 import { useBlockActions } from './BlockActionsContext';
 import type { BlockConfig } from "@shared/schema-types";
@@ -46,7 +47,13 @@ export function BuilderCanvas({
                     <p>Drag blocks from the sidebar to start building your page</p>
                   </div>
                 ) : (
-                  blocks.map((block, index) => (
+                  <>
+                    {isPreviewMode && (
+                      <BlockAnimationRuntime
+                        contentKey={`builder-preview-${blocks.length}`}
+                      />
+                    )}
+                    {blocks.map((block, index) => (
                     <Draggable key={block.id} draggableId={block.id} index={index}>
                       {(provided, snapshot) => (
                          <div
@@ -75,7 +82,8 @@ export function BuilderCanvas({
                         </div>
                       )}
                     </Draggable>
-                  ))
+                  ))}
+                  </>
                 )}
                 {provided.placeholder}
               </div>

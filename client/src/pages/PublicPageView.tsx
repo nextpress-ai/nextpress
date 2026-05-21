@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { Helmet } from "react-helmet";
 import PublicBlockRenderer from "@/components/PageBuilder/PublicBlockRenderer";
+import { BlockAnimationRuntime } from "@/components/PageBuilder/BlockAnimationRuntime";
 import Landing from "@/pages/Landing";
 import { getGoogleFontUrl } from "@shared/google-fonts";
 import type { Post } from "@shared/schema-types";
@@ -229,6 +230,7 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
                   padding: design?.padding || undefined,
                 }}
               >
+                <BlockAnimationRuntime contentKey={`${type}-${data.id}-${blocks.length}`} />
                 {blocks.map((block) => (
                   <PublicBlockRenderer key={block.id} block={block} />
                 ))}

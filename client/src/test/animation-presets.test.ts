@@ -67,7 +67,7 @@ describe('Animation Presets', () => {
     it('should generate loop CSS with entry', () => {
       const loop: LoopAnimation = { name: 'bounce' };
       const result = generateLoopAnimationCSS('456', loop, true);
-      expect(result).toBe('.block-456.aos-animate { animation: bounce 1s infinite both; }');
+      expect(result).toBe('.block-456.np-entry-played { animation: bounce 1s infinite both; }');
     });
   });
 
@@ -105,7 +105,7 @@ describe('Animation Presets', () => {
     it('should generate hover and loop with entry', () => {
       const animation: BlockAnimation = { entry: { name: 'fadeIn' }, hover: { name: 'pulse' }, loop: { name: 'bounce' } };
       const result = generateBlockAnimationCSS('789', animation);
-      expect(result).toBe('.block-789:hover { animation: pulse 1s both; }\n.block-789.aos-animate { animation: bounce 1s infinite both; }');
+      expect(result).toBe('.block-789:hover { animation: pulse 1s both; }\n.block-789.np-entry-played { animation: bounce 1s infinite both; }');
     });
   });
 
@@ -114,9 +114,9 @@ describe('Animation Presets', () => {
       const entry: EntryAnimation = { name: 'fadeIn' };
       const result = getEntryAnimationAttributes(entry);
       expect(result).toEqual({
-        'data-aos': 'animate__fadeIn',
-        'data-aos-duration': '1000',
-        'data-aos-once': 'true',
+        'data-np-entry': 'fadeIn',
+        'data-np-entry-duration': '1000',
+        'data-np-entry-once': 'true',
       });
     });
 
@@ -124,9 +124,9 @@ describe('Animation Presets', () => {
       const entry: EntryAnimation = { name: 'fadeIn', duration: 500 };
       const result = getEntryAnimationAttributes(entry);
       expect(result).toEqual({
-        'data-aos': 'animate__fadeIn',
-        'data-aos-duration': '500',
-        'data-aos-once': 'true',
+        'data-np-entry': 'fadeIn',
+        'data-np-entry-duration': '500',
+        'data-np-entry-once': 'true',
       });
     });
 
@@ -134,10 +134,10 @@ describe('Animation Presets', () => {
       const entry: EntryAnimation = { name: 'fadeIn', delay: 200 };
       const result = getEntryAnimationAttributes(entry);
       expect(result).toEqual({
-        'data-aos': 'animate__fadeIn',
-        'data-aos-duration': '1000',
-        'data-aos-delay': '200',
-        'data-aos-once': 'true',
+        'data-np-entry': 'fadeIn',
+        'data-np-entry-duration': '1000',
+        'data-np-entry-delay': '200',
+        'data-np-entry-once': 'true',
       });
     });
 
@@ -145,9 +145,9 @@ describe('Animation Presets', () => {
       const entry: EntryAnimation = { name: 'fadeIn', delay: 0 };
       const result = getEntryAnimationAttributes(entry);
       expect(result).toEqual({
-        'data-aos': 'animate__fadeIn',
-        'data-aos-duration': '1000',
-        'data-aos-once': 'true',
+        'data-np-entry': 'fadeIn',
+        'data-np-entry-duration': '1000',
+        'data-np-entry-once': 'true',
       });
     });
 
@@ -155,9 +155,9 @@ describe('Animation Presets', () => {
       const entry: EntryAnimation = { name: 'fadeIn', once: false };
       const result = getEntryAnimationAttributes(entry);
       expect(result).toEqual({
-        'data-aos': 'animate__fadeIn',
-        'data-aos-duration': '1000',
-        'data-aos-once': 'false',
+        'data-np-entry': 'fadeIn',
+        'data-np-entry-duration': '1000',
+        'data-np-entry-once': 'false',
       });
     });
   });

@@ -11,6 +11,8 @@ export type BlockCategory = 'basic' | 'media' | 'layout' | 'advanced' | 'post';
 export interface BlockComponentProps {
   value: BlockConfig;
   onChange: (updated: BlockConfig) => void;
+  /** Propagate nested child updates to the page tree (container/group/columns). */
+  onNestedBlockChange?: (updated: BlockConfig) => void;
   isPreview?: boolean;
   isSelected?: boolean;
 }

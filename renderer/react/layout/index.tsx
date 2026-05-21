@@ -3,6 +3,14 @@ import type { JSX } from "react";
 import type { BlockData } from "../block-types";
 import { BLOCK_COMPONENTS } from "../block-components";
 import { buildFlexRowColumnStyle } from "@shared/columns-flex-style";
+import {
+	getBlockSiblingFlexItemStyles,
+	getContainerChildrenStackStyle,
+	getContainerOuterShellStyle,
+	getContainerParentDisplayMode,
+	getContainerSiblingStackDirection,
+	readContainerLayoutFromBlock,
+} from "@shared/block-container-placement";
 
 /**
  * Columns Block Component
@@ -223,27 +231,47 @@ export function ContainerBlock(props: BlockData) {
     | "aside";
 
   const mergedClassName = ["wp-block-container", className].filter(Boolean).join(" ");
+  const layout = readContainerLayoutFromBlock({ styles: style });
+  const parentDisplay = getContainerParentDisplayMode(layout);
+  const stackDirection = getContainerSiblingStackDirection(layout);
+  const isHorizontal = parentDisplay === "flex" && layout.flexDirection === "row";
+  const innerStackStyle = getContainerChildrenStackStyle(layout, {
+    shellStyles: style,
+    children: children?.map((child) => ({ styles: child.style })),
+  });
+  const outerStyle = getContainerOuterShellStyle(style, {
+    children: children?.map((child) => ({ styles: child.style })),
+  });
 
-  const renderChild = (child: BlockData): React.ReactNode => {
+  const renderChild = (child: BlockData, index: number): React.ReactNode => {
     const ChildComponent = BLOCK_COMPONENTS[child.blockName];
     if (!ChildComponent) {
       return null;
     }
-    return <ChildComponent {...child} />;
+    const childKey = `${child.blockName}-${index}`;
+    return (
+      <div
+        key={childKey}
+        style={{
+          minWidth: 0,
+          flex: isHorizontal ? "1 1 auto" : undefined,
+          ...getBlockSiblingFlexItemStyles(child.style, stackDirection),
+        }}
+      >
+        <ChildComponent {...child} />
+      </div>
+    );
   };
 
   if (children && children.length > 0) {
     return (
       <Tag
         className={mergedClassName || undefined}
-        style={{ ...style, boxSizing: "border-box" }}
+        style={outerStyle}
         {...attributes}
       >
-        <div className="wp-block-container__inner">
-          {children.map((child, index) => {
-            const childKey = `${child.blockName}-${index}`;
-            return <React.Fragment key={childKey}>{renderChild(child)}</React.Fragment>;
-          })}
+        <div className="wp-block-container__inner" style={innerStackStyle}>
+          {children.map((child, index) => renderChild(child, index))}
         </div>
       </Tag>
     );
@@ -252,10 +280,10 @@ export function ContainerBlock(props: BlockData) {
   return (
     <Tag
       className={mergedClassName || undefined}
-      style={{ ...style, boxSizing: "border-box" }}
+      style={outerStyle}
       {...attributes}
     >
-      <div className="wp-block-container__inner">{/* Empty container */}</div>
+      <div className="wp-block-container__inner" style={innerStackStyle}>{/* Empty container */}</div>
     </Tag>
   );
 }

@@ -11,10 +11,15 @@ import {
   getBlockSiblingFlexItemStyles,
   stripBlockContainerPlacementStyles,
   getBlockStackLayerWrapperStyles,
+  readContainerLayoutFromBlock,
+  getContainerChildrenStackStyle,
+  getContainerOuterShellStyle,
+  getContainerSiblingStackDirection,
   type BlockStackDirection,
 } from "@shared/block-container-placement";
 import { generateBlockModifierCSS, resolveTokenMap } from "@/lib/tailwind-tokens";
 import { IconRenderer } from "@/components/PageBuilder/blocks/shared/IconRenderer";
+import { sanitizeHtml } from "@/components/PageBuilder/utils";
 import type { IconReference } from "@/lib/icon-indexes";
 
 type PublicBlockRendererProps = {
@@ -223,6 +228,20 @@ function getTextContent(content: BlockContent): string {
 
 function getStructuredData(content: BlockContent): Record<string, unknown> {
   return content?.kind === "structured" && content.data ? content.data : {};
+}
+
+/** HTML blocks may use canonical `{ kind: "html", value }` or legacy editor `{ content }`. */
+function getHtmlContent(content: BlockContent | undefined): string {
+  if (content?.kind === "html") {
+    return content.value;
+  }
+  if (content && typeof content === "object" && "content" in content) {
+    const legacy = content as { content?: string };
+    if (typeof legacy.content === "string") {
+      return legacy.content;
+    }
+  }
+  return "";
 }
 
 /** Icon blocks may be structured (`data`) or legacy flat `{ icon, link, ... }`. */
@@ -530,14 +549,23 @@ function renderContainerBlock(block: BlockConfig, styles: CSSProperties) {
   const content = block.content as Record<string, unknown> | undefined;
   const tagName = typeof content?.tagName === "string" ? content.tagName : "div";
   const Tag = tagName as keyof JSX.IntrinsicElements;
+  const layout = readContainerLayoutFromBlock({ styles: block.styles, content });
+  const stackDirection = getContainerSiblingStackDirection(layout);
+  const outerStyle = getContainerOuterShellStyle(block.styles, { children: block.children });
+  const innerStyle = getContainerChildrenStackStyle(layout, {
+    shellStyles: block.styles,
+    children: block.children,
+  });
   return (
     <Tag
       className={["wp-block-container", typeof content?.className === "string" ? content.className : ""]
         .filter(Boolean)
         .join(" ")}
-      style={{ ...styles, boxSizing: "border-box" }}
+      style={outerStyle}
     >
-      <div className="wp-block-container__inner">{renderNestedBlocks(block.children, "column")}</div>
+      <div className="wp-block-container__inner" style={innerStyle}>
+        {renderNestedBlocks(block.children, stackDirection)}
+      </div>
     </Tag>
   );
 }
@@ -715,8 +743,7 @@ function renderMarkdownBlock(block: BlockConfig, styles: CSSProperties) {
 }
 
 function renderHtmlBlock(block: BlockConfig, styles: CSSProperties) {
-  const content = block.content;
-  const html = content?.kind === "html" ? content.value : "";
+  const html = sanitizeHtml(getHtmlContent(block.content));
   return <div className="wp-block-html" style={styles} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 

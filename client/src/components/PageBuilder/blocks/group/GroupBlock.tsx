@@ -149,9 +149,17 @@ interface GroupRendererProps {
   styles?: React.CSSProperties;
   children?: BlockConfig[];
   isPreview?: boolean;
+  onNestedBlockChange?: (updated: BlockConfig) => void;
 }
 
-function GroupRenderer({ hostBlock, content, styles, children, isPreview }: GroupRendererProps) {
+function GroupRenderer({
+  hostBlock,
+  content,
+  styles,
+  children,
+  isPreview,
+  onNestedBlockChange,
+}: GroupRendererProps) {
   const tagName = content?.tagName || 'div';
   const className = [
     'wp-block-group',
@@ -213,7 +221,11 @@ function GroupRenderer({ hostBlock, content, styles, children, isPreview }: Grou
       style={containerStyle}
     >
       <div className="wp-block-group__inner-container">
-        <ContainerChildren block={blockForChildren} isPreview={isPreview ?? false} />
+        <ContainerChildren
+          block={blockForChildren}
+          isPreview={isPreview ?? false}
+          onBlockChange={onNestedBlockChange}
+        />
       </div>
     </TagName>
   );
@@ -226,6 +238,7 @@ function GroupRenderer({ hostBlock, content, styles, children, isPreview }: Grou
 export function GroupBlockComponent({
   value,
   onChange,
+  onNestedBlockChange,
   isPreview,
 }: BlockComponentProps) {
   const { content, styles } = useBlockState<GroupContent>({
@@ -241,6 +254,7 @@ export function GroupBlockComponent({
       styles={styles}
       children={value.children}
       isPreview={isPreview}
+      onNestedBlockChange={onNestedBlockChange}
     />
   );
 }

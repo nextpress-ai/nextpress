@@ -4,6 +4,7 @@ import { Loader2, AlertCircle } from "lucide-react";
 import type { Post, Template } from "@shared/schema-types";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
 import BlockRenderer from "@/components/PageBuilder/BlockRenderer";
+import { BlockAnimationRuntime } from "@/components/PageBuilder/BlockAnimationRuntime";
 import { getGoogleFontUrl } from "@shared/google-fonts";
 import { getBlockSiblingFlexItemStyles } from "@shared/block-container-placement";
 
@@ -42,15 +43,21 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
 
   // Error state
   if (error || !data) {
+    const isUnauthorized =
+      error instanceof Error && error.message.startsWith('401:');
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-400" />
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Preview Not Available</h1>
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            {isUnauthorized ? 'Sign in required' : 'Preview Not Available'}
+          </h1>
           <p className="text-gray-600">
-            {error 
-              ? 'Failed to load content for preview.' 
-              : 'The requested content could not be found.'}
+            {isUnauthorized
+              ? 'Preview is only available to signed-in users.'
+              : error
+                ? 'Failed to load content for preview.'
+                : 'The requested content could not be found.'}
           </p>
         </div>
       </div>
@@ -129,6 +136,7 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
           </div>
         ) : (
           <div className="flex flex-col items-stretch w-full">
+            <BlockAnimationRuntime contentKey={`${contentType}-${contentId}-${blocks.length}`} />
             {blocks.map((block) => (
               <div
                 key={block.id}

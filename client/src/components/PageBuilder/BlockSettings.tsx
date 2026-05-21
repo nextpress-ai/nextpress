@@ -265,6 +265,9 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
     ...(accessor?.getStyles() as Record<string, unknown> | undefined),
   });
 
+  const getResolvedPlacementStyles = (): Record<string, unknown> =>
+    getResolvedStylesForSpacing();
+
   /** Writes one padding/margin side as raw CSS, clears conflicting tokenMap entry, drops shorthand `padding`/`margin` when needed. */
   const commitSpacingSide = (cssKey: keyof CSSProperties, fullValue: string | null) => {
     purgeTokenMapKeys([String(cssKey)]);
@@ -643,7 +646,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               { value: "right", label: "Right", icon: AlignRight },
             ]}
             value={
-              (block.styles?.contentAlignHorizontal ??
+              (getResolvedPlacementStyles().contentAlignHorizontal ??
                 "__unset") as string
             }
             onChange={(v) =>
@@ -666,7 +669,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               { value: "bottom", label: "Bottom", icon: ChevronDown },
             ]}
             value={
-              (block.styles?.contentAlignVertical ?? "__unset") as string
+              (getResolvedPlacementStyles().contentAlignVertical ?? "__unset") as string
             }
             onChange={(v) =>
               updateStyles({
@@ -692,6 +695,18 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                     if (val === "auto") updateStyles({ width: "auto" });
                     else if (val === "fill") updateStyles({ width: "100%" });
                     else if (val === "fit") updateStyles({ width: "fit-content" });
+                    else if (val === "custom") {
+                      const current = block.styles?.width;
+                      const isAlreadyCustom =
+                        current != null &&
+                        current !== "" &&
+                        current !== "auto" &&
+                        current !== "100%" &&
+                        current !== "fit-content";
+                      updateStyles({
+                        width: isAlreadyCustom ? String(current) : "200px",
+                      });
+                    }
                   }}
                 >
                   <SelectTrigger
@@ -881,6 +896,18 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                       if (val === "auto") updateStyles({ height: "auto" });
                       else if (val === "min-content") updateStyles({ height: "min-content" });
                       else if (val === "max-content") updateStyles({ height: "max-content" });
+                      else if (val === "custom") {
+                        const current = block.styles?.height;
+                        const isAlreadyCustom =
+                          current != null &&
+                          current !== "" &&
+                          current !== "auto" &&
+                          current !== "min-content" &&
+                          current !== "max-content";
+                        updateStyles({
+                          height: isAlreadyCustom ? String(current) : "200px",
+                        });
+                      }
                     }}
                   >
                     <SelectTrigger
