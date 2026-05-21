@@ -1,35 +1,38 @@
 import { Router } from 'express';
 import type { Deps } from './shared/deps';
 import { asyncHandler } from './shared/async-handler';
-import { safeTryAsync } from '../utils';
+import { safeTryAsync, normalizePageSlug, isPageSlugConflictError } from '../utils';
 import { coerceDates } from './shared/date-coerce';
 
 /**
- * Validates that a slug is unique within a site (application-level check)
- * Complements database unique constraint for better error messages
+ * Validates that a slug is unique (application-level check before insert).
+ * Complements the database unique constraint with clearer errors.
  * @param models - Models dependency
- * @param siteId - The site ID to check uniqueness within
  * @param slug - The slug to validate
  * @param excludePageId - Optional page ID to exclude from check (for updates)
- * @returns true if unique, throws error if not
+ * @returns Normalized slug when unique, throws when taken
  */
 async function validateSlugUniqueness(
 	models: any,
-	siteId: string,
 	slug: string,
 	excludePageId?: string
 ) {
-	const existingPage = await models.pages.findBySiteAndSlug(siteId, slug);
-	
-	if (existingPage) {
-		// If updating, exclude the current page
-		if (excludePageId && existingPage.id === excludePageId) {
-			return true;
-		}
-		throw new Error(`Slug "${slug}" already exists for this site`);
+	const normalizedSlug = normalizePageSlug(slug);
+	if (!normalizedSlug) {
+		throw new Error('URL slug is required');
 	}
-	
-	return true;
+
+	// Slug is globally unique in the database — check by slug, not site scope.
+	const existingPage = await models.pages.findBySlug(normalizedSlug);
+
+	if (existingPage) {
+		if (excludePageId && existingPage.id === excludePageId) {
+			return normalizedSlug;
+		}
+		throw new Error(`Slug "${normalizedSlug}" already exists`);
+	}
+
+	return normalizedSlug;
 }
 
 /**
@@ -166,17 +169,17 @@ export function createPagesRoutes(deps: Deps): Router {
           throw new Error('Title is required and must be a string');
         }
 
+        const rawSlug =
+          typeof parsedData.slug === 'string' && parsedData.slug.trim() !== ''
+            ? parsedData.slug
+            : title;
+        const normalizedSlug = await validateSlugUniqueness(models, rawSlug);
+
         const pageData = {
           ...parsedData,
           title: String(title),
-          slug: parsedData.slug || title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, ''),
+          slug: normalizedSlug,
         };
-
-        // Validate slug uniqueness per site
-        await validateSlugUniqueness(models, siteId, pageData.slug);
 
         const page = await models.pages.create(pageData);
         hooks.doAction('save_post', page);
@@ -190,7 +193,17 @@ export function createPagesRoutes(deps: Deps): Router {
 
       if (err) {
         console.error('Error creating page:', err);
-        return res.status(500).json({ message: 'Failed to create page' });
+        const message = err instanceof Error ? err.message : 'Failed to create page';
+        if (isPageSlugConflictError(err)) {
+          return res.status(409).json({
+            message: 'This page already exists. Choose a different URL slug.',
+            code: 'PAGE_SLUG_EXISTS',
+          });
+        }
+        if (message.includes('not authenticated')) {
+          return res.status(401).json({ message: 'You must be signed in to create pages.' });
+        }
+        return res.status(500).json({ message: 'Failed to create page. Please try again.' });
       }
 
       res.status(201).json(result);
@@ -224,17 +237,14 @@ export function createPagesRoutes(deps: Deps): Router {
 
         const existingHistory = Array.isArray(existingPage.history) ? existingPage.history : [];
         
-        // Determine siteId and slug for validation
-        const siteId = parsed.siteId || existingPage.siteId;
-        const slug = parsed.slug || existingPage.slug;
-
-        // Validate slug uniqueness per site (only if slug changed)
+        let nextSlug = existingPage.slug;
         if (parsed.slug && parsed.slug !== existingPage.slug) {
-          await validateSlugUniqueness(models, siteId, slug, id);
+          nextSlug = await validateSlugUniqueness(models, parsed.slug, id);
         }
 
         const pageData = {
           ...parsed,
+          slug: nextSlug,
           version: (existingPage.version ?? 0) + 1,
           history: [previousSnapshot, ...existingHistory], // append previous snapshot to existing history
         };

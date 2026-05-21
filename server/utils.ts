@@ -53,6 +53,56 @@ export async function safeTryAsync<T>(
  * @param errorMessage - Optional error message
  * @returns True if handled, false if caller should continue
  */
+/** Normalizes a page slug to the canonical URL-safe form used on insert. */
+export function normalizePageSlug(value: string): string {
+	return value
+		.toLowerCase()
+		.trim()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "");
+}
+
+/** Walks error.cause chains so Drizzle/Postgres details are not lost. */
+export function collectErrorText(error: unknown): string {
+	const parts: string[] = [];
+	const seen = new Set<unknown>();
+	let current: unknown = error;
+
+	while (current && typeof current === "object" && !seen.has(current)) {
+		seen.add(current);
+		const err = current as {
+			message?: string;
+			code?: string | number;
+			cause?: unknown;
+		};
+		if (typeof err.message === "string" && err.message.trim() !== "") {
+			parts.push(err.message);
+		}
+		if (err.code !== undefined && err.code !== null && err.code !== "") {
+			parts.push(String(err.code));
+		}
+		current = err.cause;
+	}
+
+	if (typeof error === "string" && error.trim() !== "") {
+		parts.push(error);
+	}
+
+	return parts.join(" ");
+}
+
+/** Detects duplicate page slug failures from app checks or database constraints. */
+export function isPageSlugConflictError(error: unknown): boolean {
+	const text = collectErrorText(error);
+	return (
+		/already exists/i.test(text) ||
+		/pages_slug_unique/i.test(text) ||
+		/duplicate key/i.test(text) ||
+		/\b23505\b/.test(text) ||
+		(/unique/i.test(text) && /slug/i.test(text))
+	);
+}
+
 export function handleSafeTryResult<T>(
 	safeResult: SafeTryResult<T>,
 	res: any,

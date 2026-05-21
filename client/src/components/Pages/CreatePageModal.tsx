@@ -21,7 +21,11 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ImageDropzone } from "@/components/ui/image-dropzone";
 import { useLocation } from "wouter";
-import { useToast } from "@/hooks/use-toast";
+import {
+  showErrorToast,
+  showSuccessToast,
+  resolveCreatePageError,
+} from "@/lib/sonner-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useContentLists } from "@/hooks/useContentLists";
 import { FilePlus } from "lucide-react";
@@ -75,7 +79,6 @@ export function CreatePageModal({
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
 
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { pages, templates } = useContentLists();
 
@@ -177,10 +180,7 @@ export function CreatePageModal({
       return await response.json();
     },
     onSuccess: (newPage: Page) => {
-      toast({
-        title: "Success",
-        description: "Page created successfully",
-      });
+      showSuccessToast("Page created successfully");
 
       // Invalidate queries to refresh lists
       queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
@@ -194,13 +194,7 @@ export function CreatePageModal({
       onOpenChange(false);
     },
     onError: (error: unknown) => {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create page";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      showErrorToast(resolveCreatePageError(error));
     },
   });
 
@@ -210,23 +204,14 @@ export function CreatePageModal({
   const handleSubmit = () => {
     // Validation
     if (!formData.title.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter a title",
-        variant: "destructive",
-      });
+      showErrorToast("Please enter a title");
       return;
     }
 
     // Validate slug format if provided
     const slugToValidate = formData.slug || generateSlug(formData.title);
     if (slugToValidate && !/^[a-z0-9-]+$/.test(slugToValidate)) {
-      toast({
-        title: "Invalid Slug",
-        description:
-          "Slug can only contain lowercase letters, numbers, and hyphens",
-        variant: "destructive",
-      });
+      showErrorToast("Slug can only contain lowercase letters, numbers, and hyphens");
       return;
     }
 
@@ -262,24 +247,14 @@ export function CreatePageModal({
   const handleImageSelect = (file: File) => {
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Invalid File",
-        description: "Please select an image file",
-        variant: "destructive",
-      });
+      showErrorToast("Please select an image file");
       return;
     }
 
     // Validate file size (10MB max)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast({
-        title: "File Too Large",
-        description: `File size must be less than ${Math.round(
-          maxSize / 1024 / 1024
-        )}MB`,
-        variant: "destructive",
-      });
+      showErrorToast(`File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`);
       return;
     }
 
