@@ -7,7 +7,7 @@ A self-hostable WordPress-compatible CMS built in JavaScript/TypeScript.
 Get started quickly with local development:
 
 ```bash
-git clone https://github.com/pabloh3/nextpress1 nextpress
+git clone https://github.com/nextpress-ai/nextpress nextpress
 pnpm install
 pnpm dev
 ```
@@ -21,7 +21,7 @@ This uses [PGlite](https://pglite.dev/) (embedded PostgreSQL) for development, s
 Install NextPress from the GitHub repo with one command. The installer adds the standalone **`nextpress`** command, provisions the server, and leaves the command available for install, upgrade, status, logs, restart, reload, and uninstall operations.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pabloh3/nextpress1/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nextpress-ai/nextpress/main/install.sh | bash
 ```
 
 The installer checks for Docker Compose v2, installs the **`nextpress`** command into **`/usr/local/bin`**, verifies the command, and runs **`nextpress install`** before finishing.
