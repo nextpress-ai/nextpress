@@ -4,7 +4,7 @@ import { useBlockState } from '../useBlockState';
 import { getBlockStateAccessor } from '../blockStateRegistry';
 import type { BlockDefinition, BlockComponentProps } from '../types';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { Label } from '@/components/ui/label';
+import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -114,23 +114,23 @@ function CommentEntry({
     allowReplies && comment.replies && comment.replies.length > 0;
 
   return (
-    <div className={depth > 0 ? 'ml-8 pl-4 border-l-2 border-gray-200' : ''}>
+    <div className={depth > 0 ? 'ml-8 pl-4 border-l-2 border-npb-border-default' : ''}>
       <div className="flex items-start gap-3 py-3">
-        <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-semibold text-gray-600">
+        <div className="w-9 h-9 rounded-full bg-npb-surface-inset flex items-center justify-center flex-shrink-0">
+          <span className="text-xs font-semibold text-npb-text-secondary">
             {getInitials(comment.author)}
           </span>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-semibold text-gray-800">
+            <span className="text-sm font-semibold text-npb-text-primary">
               {comment.author}
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-npb-text-muted">
               {formatDate(comment.date)}
             </span>
           </div>
-          <p className="text-sm text-gray-600 leading-relaxed">
+          <p className="text-sm text-npb-text-secondary leading-relaxed">
             {comment.content}
           </p>
         </div>
@@ -153,8 +153,8 @@ function CommentEntry({
 /** Renders the "Leave a Comment" form with name, email, and comment fields. */
 function CommentForm({ isPreview }: { isPreview?: boolean }) {
   return (
-    <div className="mt-6 pt-6 border-t border-gray-200">
-      <h3 className="text-base font-semibold text-gray-800 mb-4">
+    <div className="mt-6 pt-6 border-t border-npb-divider">
+      <h3 className="text-base font-semibold text-npb-text-primary mb-4">
         Leave a Comment
       </h3>
       <div className="space-y-3">
@@ -246,7 +246,7 @@ function PostCommentsRenderer({
   if (isLoading)
     return (
       <div className={wrapperClass} style={styles}>
-        <p className="text-sm text-gray-400 py-8 text-center">
+        <p className="text-sm text-npb-text-muted py-8 text-center">
           Loading comments…
         </p>
       </div>
@@ -254,7 +254,7 @@ function PostCommentsRenderer({
   if (isError)
     return (
       <div className={wrapperClass} style={styles}>
-        <p className="text-sm text-red-400 py-8 text-center">
+        <p className="text-sm text-npb-status-error py-8 text-center">
           {error instanceof Error ? error.message : 'Failed to load comments'}
         </p>
       </div>
@@ -263,19 +263,19 @@ function PostCommentsRenderer({
   return (
     <div className={wrapperClass} style={styles}>
       {cfg.showCount && (
-        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-npb-text-primary mb-4 flex items-center gap-2">
           <MessageSquare className="w-5 h-5" />
           {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
         </h2>
       )}
       {comments.length === 0 && !cfg.showForm && (
-        <div className="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded">
+        <div className="text-center text-npb-text-muted py-8 border-2 border-dashed border-npb-border-strong rounded">
           <MessageSquare className="w-10 h-10 mx-auto mb-2" />
           <p>No comments yet</p>
         </div>
       )}
       {comments.length > 0 && (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-npb-surface-inset">
           {comments.map((comment) => (
             <CommentEntry
               key={comment.id}
@@ -338,7 +338,7 @@ function PostCommentsSettings({
       <CollapsibleCard title="Display" icon={Settings} defaultOpen>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label htmlFor="pc-show-form">Show comment form</Label>
+            <SettingsLabel htmlFor="pc-show-form">Show comment form</SettingsLabel>
             <Switch
               id="pc-show-form"
               checked={content.showForm ?? true}
@@ -346,7 +346,7 @@ function PostCommentsSettings({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="pc-show-count">Show comment count</Label>
+            <SettingsLabel htmlFor="pc-show-count">Show comment count</SettingsLabel>
             <Switch
               id="pc-show-count"
               checked={content.showCount ?? true}
@@ -354,7 +354,7 @@ function PostCommentsSettings({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="pc-allow-replies">Allow replies</Label>
+            <SettingsLabel htmlFor="pc-allow-replies">Allow replies</SettingsLabel>
             <Switch
               id="pc-allow-replies"
               checked={content.allowReplies ?? true}
@@ -362,7 +362,7 @@ function PostCommentsSettings({
             />
           </div>
           <div>
-            <Label htmlFor="pc-per-page">Comments per page</Label>
+            <SettingsLabel htmlFor="pc-per-page">Comments per page</SettingsLabel>
             <Input
               id="pc-per-page"
               type="number"
@@ -382,7 +382,7 @@ function PostCommentsSettings({
 
       <CollapsibleCard title="Post" icon={Settings} defaultOpen={false}>
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Post ID</Label>
+          <SettingsLabel>Post ID</SettingsLabel>
           {content?.postId ? (
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-mono text-xs truncate">
@@ -390,7 +390,7 @@ function PostCommentsSettings({
               </Badge>
               <button
                 onClick={() => updateContent({ postId: '' })}
-                className="text-xs text-gray-400 hover:text-red-500">
+                className="text-xs text-npb-text-muted hover:text-npb-status-error">
                 clear
               </button>
             </div>
@@ -407,8 +407,6 @@ function PostCommentsSettings({
     </div>
   );
 }
-
-// --- Legacy Renderer ---
 
 // --- Block Definition ---
 

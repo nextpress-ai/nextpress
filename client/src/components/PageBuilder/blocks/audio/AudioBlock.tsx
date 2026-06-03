@@ -11,6 +11,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { AudioLines as AudioIcon, Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { SettingsLabel } from '../../shared';
 
 // ============================================================================
 // TYPES
@@ -165,7 +166,7 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
       <CollapsibleCard title="Content" icon={AudioIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="audio-src" className="text-sm font-medium text-gray-700">Audio URL</Label>
+            <SettingsLabel htmlFor="audio-src">Audio URL</SettingsLabel>
             <div className="flex items-center gap-2 mt-1">
               <Input
                 id="audio-src"
@@ -185,7 +186,7 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
           </div>
           
           <div>
-            <Label htmlFor="audio-caption" className="text-sm font-medium text-gray-700">Caption</Label>
+            <SettingsLabel htmlFor="audio-caption">Caption</SettingsLabel>
             <Input
               id="audio-caption"
               value={content?.caption || ''}
@@ -201,7 +202,7 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor="audio-controls" className="text-sm font-medium text-gray-700">Show Controls</Label>
+            <SettingsLabel htmlFor="audio-controls">Show Controls</SettingsLabel>
             <Switch
               id="audio-controls"
               checked={(content?.controls ?? true) !== false}
@@ -210,7 +211,7 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
           </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor="audio-autoplay" className="text-sm font-medium text-gray-700">Autoplay</Label>
+            <SettingsLabel htmlFor="audio-autoplay">Autoplay</SettingsLabel>
             <Switch
               id="audio-autoplay"
               checked={Boolean(content?.autoplay)}
@@ -219,7 +220,7 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
           </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor="audio-loop" className="text-sm font-medium text-gray-700">Loop</Label>
+            <SettingsLabel htmlFor="audio-loop">Loop</SettingsLabel>
             <Switch
               id="audio-loop"
               checked={Boolean(content?.loop)}
@@ -228,7 +229,7 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
           </div>
           
           <div>
-            <Label htmlFor="audio-preload" className="text-sm font-medium text-gray-700">Preload</Label>
+            <SettingsLabel htmlFor="audio-preload">Preload</SettingsLabel>
             <Select
               value={content?.preload || 'none'}
               onValueChange={(value) => updateContent({ preload: value })}
@@ -245,7 +246,7 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
             </div>
           
           <div>
-            <Label htmlFor="audio-align" className="text-sm font-medium text-gray-700">Alignment</Label>
+            <SettingsLabel htmlFor="audio-align">Alignment</SettingsLabel>
             <Select
               value={content?.align || 'default'}
               onValueChange={(value) => updateContent({ align: value === 'default' ? undefined : value as any })}
@@ -267,10 +268,6 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

@@ -2,12 +2,12 @@ import React from "react";
 import type { JSX } from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { Settings, List as ListIcon } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -160,7 +160,7 @@ function ListSettings({ block, onUpdate }: ListSettingsProps) {
     <div className="space-y-4">
       <CollapsibleCard title="Content" icon={ListIcon} defaultOpen={true}>
         <div className="space-y-2">
-          <Label htmlFor="list-items">Items (one per line)</Label>
+          <SettingsLabel htmlFor="list-items">Items (one per line)</SettingsLabel>
           <Textarea
             id="list-items"
             aria-label="List items, one per line"
@@ -179,7 +179,7 @@ function ListSettings({ block, onUpdate }: ListSettingsProps) {
       <CollapsibleCard title="List options" icon={Settings} defaultOpen={true}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="list-type">List Type</Label>
+            <SettingsLabel htmlFor="list-type">List Type</SettingsLabel>
             <Select
               value={isOrdered ? 'ordered' : 'unordered'}
               onValueChange={(value) => updateContent({ ordered: value === 'ordered' })}
@@ -195,7 +195,7 @@ function ListSettings({ block, onUpdate }: ListSettingsProps) {
           </div>
           {isOrdered ? (
             <div className="space-y-2">
-              <Label htmlFor="list-start">Start</Label>
+              <SettingsLabel htmlFor="list-start">Start</SettingsLabel>
               <Input
                 type="number"
                 className="h-9"
@@ -208,7 +208,7 @@ function ListSettings({ block, onUpdate }: ListSettingsProps) {
             </div>
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="list-type-unordered">Bullet Style</Label>
+              <SettingsLabel htmlFor="list-type-unordered">Bullet Style</SettingsLabel>
               <Select
                 value={content?.type ?? 'default'}
                 onValueChange={(value) => updateContent({ type: value === 'default' ? undefined : value })}
@@ -227,7 +227,7 @@ function ListSettings({ block, onUpdate }: ListSettingsProps) {
           )}
           {isOrdered && (
             <div className="space-y-2">
-              <Label htmlFor="list-reversed">Reversed</Label>
+              <SettingsLabel htmlFor="list-reversed">Reversed</SettingsLabel>
               <div className="flex items-center gap-2">
                 <Switch
                   id="list-reversed"
@@ -240,7 +240,7 @@ function ListSettings({ block, onUpdate }: ListSettingsProps) {
           )}
           {isOrdered && (
             <div className="space-y-2">
-              <Label htmlFor="list-type-ordered">Numbering Type</Label>
+              <SettingsLabel htmlFor="list-type-ordered">Numbering Type</SettingsLabel>
               <Select
                 value={content?.type ?? 'default'}
                 onValueChange={(value) => updateContent({ type: value === 'default' ? undefined : value })}
@@ -264,10 +264,6 @@ function ListSettings({ block, onUpdate }: ListSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

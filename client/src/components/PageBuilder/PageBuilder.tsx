@@ -257,6 +257,11 @@ export default function PageBuilder({
   const redoRef = useRef(redo);
   redoRef.current = redo;
 
+  // Refs for block-level shortcut handlers (defined later in the component).
+  // Assigned below their definitions so the mount-only listener stays stable.
+  const handleDeleteRef = useRef<(id: string) => void>(() => {});
+  const handleDuplicateRef = useRef<(id: string) => void>(() => {});
+
   useMountEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMod = e.ctrlKey || e.metaKey;
@@ -267,14 +272,44 @@ export default function PageBuilder({
         // End coalesce window so next edit after undo creates a new entry
         isCoalescingRef.current = false;
         undoRef.current();
-      } else if (isMod && ((e.shiftKey && key === 'z') || key === 'y')) {
+        return;
+      }
+      if (isMod && ((e.shiftKey && key === 'z') || key === 'y')) {
         e.preventDefault();
         // End coalesce window so next edit after redo creates a new entry
         isCoalescingRef.current = false;
         redoRef.current();
-      } else if (isMod && key === 's') {
+        return;
+      }
+      if (isMod && key === 's') {
         e.preventDefault();
         handleSaveRef.current();
+        return;
+      }
+
+      // Block-level shortcuts must never hijack keys while the user is typing
+      // in a field or editing inline block text (contentEditable).
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        !!target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+      if (isEditable) return;
+
+      const selectedId = selectedBlockIdRef.current;
+      if (!selectedId) return;
+
+      if (key === 'escape') {
+        e.preventDefault();
+        setSelectedBlockId(null);
+      } else if (key === 'delete' || key === 'backspace') {
+        e.preventDefault();
+        handleDeleteRef.current(selectedId);
+      } else if (isMod && key === 'd') {
+        e.preventDefault();
+        handleDuplicateRef.current(selectedId);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -337,6 +372,10 @@ export default function PageBuilder({
     },
     [blocks, commitBlocks, selectedBlockId, setActiveTab],
   );
+
+  // Keep keyboard-shortcut refs current (handlers defined above the listener)
+  handleDeleteRef.current = handleDelete;
+  handleDuplicateRef.current = handleDuplicate;
 
   const toggleSidebar = () => {
     setSidebarVisible(!sidebarVisible);

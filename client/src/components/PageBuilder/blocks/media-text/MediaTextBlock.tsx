@@ -17,6 +17,7 @@ import {
   PLACEHOLDER_IMAGE_ALT,
   PLACEHOLDER_IMAGE_URL,
 } from "@shared/placeholder-image";
+import { SettingsLabel } from '../../shared';
 
 // ============================================================================
 // TYPES
@@ -221,7 +222,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
       <CollapsibleCard title="Content" icon={ImageIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="media-url" className="text-sm font-medium text-gray-700">Media URL</Label>
+            <SettingsLabel htmlFor="media-url">Media URL</SettingsLabel>
             <div className="flex items-center gap-2 mt-1">
               <Input
                 id="media-url"
@@ -248,7 +249,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
             />
           </div>
           <div>
-            <Label htmlFor="media-alt" className="text-sm font-medium text-gray-700">Alt Text</Label>
+            <SettingsLabel htmlFor="media-alt">Alt Text</SettingsLabel>
             <Input
               id="media-alt"
               value={blockData?.mediaAlt || ''}
@@ -258,7 +259,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
             />
           </div>
           <div>
-            <Label htmlFor="text-content" className="text-sm font-medium text-gray-700">Text Content (HTML)</Label>
+            <SettingsLabel htmlFor="text-content">Text Content (HTML)</SettingsLabel>
             <Textarea
               id="text-content"
               value={blockData?.content || ''}
@@ -274,7 +275,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
       <CollapsibleCard title="Layout" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="media-position" className="text-sm font-medium text-gray-700">Media Position</Label>
+            <SettingsLabel htmlFor="media-position">Media Position</SettingsLabel>
             <Select
               value={blockData?.mediaPosition || 'left'}
               onValueChange={(value) => updateContent({ mediaPosition: value as any })}
@@ -290,7 +291,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
           </div>
           
           <div>
-            <Label htmlFor="media-width" className="text-sm font-medium text-gray-700">Media Width (%)</Label>
+            <SettingsLabel htmlFor="media-width">Media Width (%)</SettingsLabel>
             <Input
               id="media-width"
               type="number"
@@ -303,7 +304,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
           </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor="stacked-mobile" className="text-sm font-medium text-gray-700">Stack on mobile</Label>
+            <SettingsLabel htmlFor="stacked-mobile">Stack on mobile</SettingsLabel>
             <Switch
               id="stacked-mobile"
               checked={Boolean(blockData?.isStackedOnMobile)}
@@ -312,7 +313,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
             </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor="image-fill" className="text-sm font-medium text-gray-700">Image fill</Label>
+            <SettingsLabel htmlFor="image-fill">Image fill</SettingsLabel>
             <Switch
               id="image-fill"
               checked={Boolean(blockData?.imageFill)}
@@ -321,7 +322,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
           </div>
           
           <div>
-            <Label htmlFor="vertical-align" className="text-sm font-medium text-gray-700">Vertical alignment</Label>
+            <SettingsLabel htmlFor="vertical-align">Vertical alignment</SettingsLabel>
             <Select
               value={blockData?.verticalAlignment || 'center'}
               onValueChange={(value) => updateContent({ verticalAlignment: value as any })}
@@ -342,7 +343,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
       <CollapsibleCard title="Link Settings" icon={Link} defaultOpen={false}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="media-link" className="text-sm font-medium text-gray-700">Media Link</Label>
+            <SettingsLabel htmlFor="media-link">Media Link</SettingsLabel>
             <Input
               id="media-link"
               value={blockData?.href || ''}
@@ -353,7 +354,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
           </div>
           
           <div>
-            <Label htmlFor="media-target" className="text-sm font-medium text-gray-700">Link Target</Label>
+            <SettingsLabel htmlFor="media-target">Link Target</SettingsLabel>
             <Select
               value={blockData?.linkTarget || '_self'}
               onValueChange={(value) => updateContent({ linkTarget: value as any })}
@@ -369,7 +370,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
           </div>
           
           <div>
-            <Label htmlFor="media-rel" className="text-sm font-medium text-gray-700">Rel</Label>
+            <SettingsLabel htmlFor="media-rel">Rel</SettingsLabel>
             <Input
               id="media-rel"
               value={blockData?.rel || ''}
@@ -380,7 +381,7 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
           </div>
           
           <div>
-            <Label htmlFor="media-title" className="text-sm font-medium text-gray-700">Title</Label>
+            <SettingsLabel htmlFor="media-title">Title</SettingsLabel>
             <Input
               id="media-title"
               value={blockData?.title || ''}
@@ -394,10 +395,6 @@ function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

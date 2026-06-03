@@ -14,6 +14,7 @@ import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
 import { sanitizeHtml } from "../../utils";
+import { SettingsLabel } from '../../shared';
 
 // ============================================================================
 // TYPES
@@ -255,7 +256,7 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
       <CollapsibleCard title="Content" icon={CoverIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="cover-content" className="text-sm font-medium text-gray-700">Cover Content</Label>
+            <SettingsLabel htmlFor="cover-content">Cover Content</SettingsLabel>
             <Textarea
               id="cover-content"
               value={blockData?.innerContent || '<p>Write title…</p>'}
@@ -267,7 +268,7 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="cover-background-type" className="text-sm font-medium text-gray-700">Background Type</Label>
+            <SettingsLabel htmlFor="cover-background-type">Background Type</SettingsLabel>
             <Select
               value={blockData?.backgroundType || 'image'}
               onValueChange={(value) => updateContent({ backgroundType: value as any })}
@@ -283,7 +284,7 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="cover-media" className="text-sm font-medium text-gray-700">Background {blockData?.backgroundType === 'video' ? 'Video' : 'Image'}</Label>
+            <SettingsLabel htmlFor="cover-media">Background {blockData?.backgroundType === 'video' ? 'Video' : 'Image'}</SettingsLabel>
             <div className="flex items-center gap-2 mt-1">
               <Input
                 id="cover-media"
@@ -316,7 +317,7 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
 
           {blockData?.backgroundType === 'image' && (
             <div>
-              <Label htmlFor="cover-alt" className="text-sm font-medium text-gray-700">Alt Text</Label>
+              <SettingsLabel htmlFor="cover-alt">Alt Text</SettingsLabel>
               <Input
                 id="cover-alt"
                 value={blockData?.alt || ''}
@@ -333,7 +334,7 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
         <div className="space-y-4">
           {blockData?.backgroundType === 'image' && (
             <div className="flex items-center justify-between">
-              <Label htmlFor="cover-parallax" className="text-sm font-medium text-gray-700">Fixed Background</Label>
+              <SettingsLabel htmlFor="cover-parallax">Fixed Background</SettingsLabel>
               <Switch
                 id="cover-parallax"
                 checked={blockData?.hasParallax || false}
@@ -343,7 +344,7 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
           )}
 
           <div>
-            <Label htmlFor="cover-min-height" className="text-sm font-medium text-gray-700">Minimum Height (px)</Label>
+            <SettingsLabel htmlFor="cover-min-height">Minimum Height (px)</SettingsLabel>
             <Input
               id="cover-min-height"
               type="number"
@@ -354,7 +355,7 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="cover-content-position" className="text-sm font-medium text-gray-700">Content Position</Label>
+            <SettingsLabel htmlFor="cover-content-position">Content Position</SettingsLabel>
             <Select
               value={blockData?.contentPosition || 'center center'}
               onValueChange={(value) => updateContent({ contentPosition: value })}
@@ -377,7 +378,7 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="cover-overlay-opacity" className="text-sm font-medium text-gray-700">Overlay Opacity (%)</Label>
+            <SettingsLabel htmlFor="cover-overlay-opacity">Overlay Opacity (%)</SettingsLabel>
             <div className="flex items-center space-x-4 mt-1">
               <Slider
                 aria-label="Overlay opacity percentage"
@@ -401,14 +402,14 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="cover-overlay-color" className="text-sm font-medium text-gray-700">Overlay Color</Label>
+            <SettingsLabel htmlFor="cover-overlay-color">Overlay Color</SettingsLabel>
             <div className="flex gap-3 mt-1">
               <Input
                 id="cover-overlay-color"
                 type="color"
                 value={blockData?.customOverlayColor || '#000000'}
                 onChange={(e) => updateContent({ customOverlayColor: e.target.value })}
-                className="w-12 h-9 p-1 border-gray-200"
+                className="w-12 h-9 p-1 border-npb-border-default"
               />
               <Input
                 value={blockData?.customOverlayColor || '#000000'}
@@ -425,10 +426,6 @@ function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

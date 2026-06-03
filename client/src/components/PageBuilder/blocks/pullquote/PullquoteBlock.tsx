@@ -1,11 +1,11 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { Quote as QuoteIcon, Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -164,7 +164,7 @@ function PullquoteSettings({ block, onUpdate }: PullquoteSettingsProps) {
       <CollapsibleCard title="Content" icon={QuoteIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="pullquote-content" className="text-sm font-medium text-gray-700">Quote Content</Label>
+            <SettingsLabel htmlFor="pullquote-content">Quote Content</SettingsLabel>
             <Textarea
               id="pullquote-content"
               value={content?.value || ''}
@@ -176,7 +176,7 @@ function PullquoteSettings({ block, onUpdate }: PullquoteSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="pullquote-citation" className="text-sm font-medium text-gray-700">Citation</Label>
+            <SettingsLabel htmlFor="pullquote-citation">Citation</SettingsLabel>
             <Input
               id="pullquote-citation"
               value={content?.citation || ''}
@@ -192,7 +192,7 @@ function PullquoteSettings({ block, onUpdate }: PullquoteSettingsProps) {
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="pullquote-align" className="text-sm font-medium text-gray-700">Text Align</Label>
+            <SettingsLabel htmlFor="pullquote-align">Text Align</SettingsLabel>
             <Select
               value={content?.textAlign || 'center'}
               onValueChange={(value) => updateContent({ textAlign: value as 'left' | 'center' | 'right' })}
@@ -210,14 +210,14 @@ function PullquoteSettings({ block, onUpdate }: PullquoteSettingsProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="pullquote-bg-color" className="text-sm font-medium text-gray-700">Background Color</Label>
+              <SettingsLabel htmlFor="pullquote-bg-color">Background Color</SettingsLabel>
               <div className="flex gap-3 mt-1">
                 <Input
                   id="pullquote-bg-color"
                   type="color"
                   value={styles?.backgroundColor || "#f8f9fa"}
                   onChange={(e) => updateStyles({ backgroundColor: e.target.value })}
-                  className="w-12 h-9 p-1 border-gray-200"
+                  className="w-12 h-9 p-1 border-npb-border-default"
                 />
                 <Input
                   value={styles?.backgroundColor || "#f8f9fa"}
@@ -229,14 +229,14 @@ function PullquoteSettings({ block, onUpdate }: PullquoteSettingsProps) {
             </div>
 
             <div>
-              <Label htmlFor="pullquote-text-color" className="text-sm font-medium text-gray-700">Text Color</Label>
+              <SettingsLabel htmlFor="pullquote-text-color">Text Color</SettingsLabel>
               <div className="flex gap-3 mt-1">
                 <Input
                   id="pullquote-text-color"
                   type="color"
                   value={styles?.color || "#000000"}
                   onChange={(e) => updateStyles({ color: e.target.value })}
-                  className="w-12 h-9 p-1 border-gray-200"
+                  className="w-12 h-9 p-1 border-npb-border-default"
                 />
                 <Input
                   value={styles?.color || "#000000"}
@@ -252,10 +252,6 @@ function PullquoteSettings({ block, onUpdate }: PullquoteSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

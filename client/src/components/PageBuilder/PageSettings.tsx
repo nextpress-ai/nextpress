@@ -349,14 +349,12 @@ export default function PageSettingsModal({
               </div>
 
               {contentType === 'page' && !isTemplate && (
-                <div className="flex items-center justify-between rounded-md border border-gray-200 p-3">
+                <div className="flex items-center justify-between rounded-md border border-npb-border-default p-3">
                   <div className="space-y-0.5">
                     <Label htmlFor="setAsHomepage">Homepage</Label>
-                    <p className="text-xs text-gray-500">
-                      {isCurrentHomepage
-                        ? 'This page is currently used for the domain root.'
-                        : 'Use this published page as the domain homepage.'}
-                    </p>
+<p className="text-xs text-npb-text-muted">
+                    Prevent search engines from indexing this page
+                  </p>
                   </div>
                   <Switch
                     id="setAsHomepage"
@@ -517,8 +515,8 @@ export default function PageSettingsModal({
                 </div>
 
                 {/* Icon Settings */}
-                <div className="pt-4 border-t border-gray-200">
-                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Icons</h4>
+                <div className="pt-4 border-t border-npb-border-default">
+                  <h4 className="text-sm font-semibold text-npb-text-primary mb-3">Icons</h4>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -532,7 +530,7 @@ export default function PageSettingsModal({
                           <SelectItem value="all">All Sets</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-gray-500">
+<p className="text-xs text-npb-text-muted">
                         Default icon set for new Icon and Button blocks on this page
                       </p>
                     </div>
@@ -549,7 +547,7 @@ export default function PageSettingsModal({
                           max={200}
                           className="w-24 h-9"
                         />
-                        <span className="text-sm text-gray-500">px</span>
+                        <span className="text-xs text-npb-text-muted">px</span>
                       </div>
                     </div>
                   </div>
@@ -578,7 +576,7 @@ export default function PageSettingsModal({
                   placeholder="Brief description for search results"
                   rows={3}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-npb-text-muted">
                   {metaDescription.length} / 160 characters
                 </p>
               </div>
@@ -596,9 +594,9 @@ export default function PageSettingsModal({
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="noIndex">Hide from Search Engines</Label>
-                  <p className="text-xs text-gray-500">
-                    Prevent search engines from indexing this page
-                  </p>
+<p className="text-xs text-npb-text-muted">
+                      Default icon set for new Icon and Button blocks on this page
+                    </p>
                 </div>
                 <Switch id="noIndex" checked={noIndex} onCheckedChange={setNoIndex} />
               </div>

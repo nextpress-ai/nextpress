@@ -11,6 +11,7 @@ import { File as FileIcon, Download, Settings } from "lucide-react";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { SettingsLabel } from '../../shared';
 
 // ============================================================================
 // TYPES
@@ -94,7 +95,7 @@ function FileRenderer({ content, styles }: FileRendererProps) {
   if (!url) {
     return (
       <div className={className} style={styles}>
-        <div className="file-placeholder text-center text-gray-400 p-8 border-2 border-dashed border-gray-300 rounded">
+        <div className="file-placeholder text-center text-npb-text-muted p-8 border-2 border-dashed border-npb-border-default rounded">
           <FileIcon className="w-12 h-12 mx-auto mb-2" />
           <p>File Block</p>
           <small>Add a file for users to download</small>
@@ -109,7 +110,7 @@ function FileRenderer({ content, styles }: FileRendererProps) {
         {displayPreview && (
           <div className="wp-block-file__preview">
             <div className="file-info" style={{ display: 'flex', alignItems: 'center', marginBottom: '1em' }}>
-              <FileIcon className="w-8 h-8 mr-3 text-gray-600" />
+              <FileIcon className="w-8 h-8 mr-3 text-npb-text-secondary" />
               <div>
                 <div className="file-name font-medium">
                   <a 
@@ -121,7 +122,7 @@ function FileRenderer({ content, styles }: FileRendererProps) {
                   </a>
                 </div>
                 {(fileExtension || fileSize) && (
-                  <div className="file-details text-sm text-gray-500">
+                  <div className="file-details text-sm text-npb-text-muted">
                     {fileExtension && <span>{fileExtension}</span>}
                     {fileExtension && fileSize && <span> • </span>}
                     {fileSize && <span>{fileSize}</span>}
@@ -237,7 +238,7 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
       <CollapsibleCard title="Content" icon={FileIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="file-url" className="text-sm font-medium text-gray-700">File URL</Label>
+            <SettingsLabel htmlFor="file-url">File URL</SettingsLabel>
             <div className="flex items-center gap-2 mt-1">
               <Input
                 id="file-url"
@@ -271,7 +272,7 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="file-name" className="text-sm font-medium text-gray-700">File Name</Label>
+            <SettingsLabel htmlFor="file-name">File Name</SettingsLabel>
             <Input
               id="file-name"
               value={blockData?.fileName || ''}
@@ -282,7 +283,7 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="file-size" className="text-sm font-medium text-gray-700">File Size (optional)</Label>
+            <SettingsLabel htmlFor="file-size">File Size (optional)</SettingsLabel>
             <Input
               id="file-size"
               value={blockData?.fileSize || ''}
@@ -298,7 +299,7 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor="file-show-preview" className="text-sm font-medium text-gray-700">Show file preview</Label>
+            <SettingsLabel htmlFor="file-show-preview">Show file preview</SettingsLabel>
             <Switch
               id="file-show-preview"
               checked={blockData?.displayPreview !== false}
@@ -307,7 +308,7 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="file-show-download" className="text-sm font-medium text-gray-700">Show download button</Label>
+            <SettingsLabel htmlFor="file-show-download">Show download button</SettingsLabel>
             <Switch
               id="file-show-download"
               checked={blockData?.showDownloadButton !== false}
@@ -317,7 +318,7 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
 
           {blockData?.showDownloadButton !== false && (
             <div>
-              <Label htmlFor="file-button-text" className="text-sm font-medium text-gray-700">Download Button Text</Label>
+              <SettingsLabel htmlFor="file-button-text">Download Button Text</SettingsLabel>
               <Input
                 id="file-button-text"
                 value={blockData?.downloadButtonText || 'Download'}
@@ -329,7 +330,7 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
           )}
 
           <div>
-            <Label htmlFor="file-link-target" className="text-sm font-medium text-gray-700">Link Target</Label>
+            <SettingsLabel htmlFor="file-link-target">Link Target</SettingsLabel>
             <Select
               value={blockData?.textLinkTarget || '_self'}
               onValueChange={(value) => updateContent({ textLinkTarget: value as '_self' | '_blank' })}
@@ -350,10 +351,6 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

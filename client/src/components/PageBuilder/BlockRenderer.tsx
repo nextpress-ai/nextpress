@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Copy, Trash2, GripVertical } from 'lucide-react';
 import type { BlockConfig } from '@shared/schema-types';
 import { blockRegistry } from './blocks';
-import { Droppable, Draggable } from '@/lib/dnd';
+import { Droppable, Draggable, DropPlaceholder } from '@/lib/dnd';
 import { useBlockActions } from './BlockActionsContext';
 import { resolveTokenMap, generateBlockModifierCSS } from '@/lib/tailwind-tokens';
 import { generateBlockAnimationCSS, getEntryAnimationAttributes } from '@/lib/animation-presets';
@@ -155,8 +155,9 @@ export function ContainerChildren({
           }}>
           {children.length > 0 ? (
             children.map((child: BlockConfig, childIndex: number) => (
+              <React.Fragment key={child.id}>
+              {snapshot.placeholderIndex === childIndex && <DropPlaceholder />}
               <Draggable
-                key={child.id}
                 draggableId={child.id}
                 index={childIndex}>
                 {(dragProvided, dragSnapshot) => (
@@ -183,12 +184,14 @@ export function ContainerChildren({
                   </div>
                 )}
               </Draggable>
+              </React.Fragment>
             ))
           ) : (
             <div className="text-center text-gray-400 p-8">
               <small>Drag blocks here</small>
             </div>
           )}
+          {children.length > 0 && snapshot.placeholderIndex === children.length && <DropPlaceholder />}
           {provided.placeholder}
         </div>
       )}

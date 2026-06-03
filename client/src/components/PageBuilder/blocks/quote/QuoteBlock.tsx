@@ -1,11 +1,11 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { Quote as QuoteIcon, Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -149,7 +149,7 @@ function QuoteSettings({ block, onUpdate }: QuoteSettingsProps) {
       <CollapsibleCard title="Content" icon={QuoteIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="quote-text" className="text-sm font-medium text-gray-700">Quote</Label>
+            <SettingsLabel htmlFor="quote-text">Quote</SettingsLabel>
             <Textarea
               id="quote-text"
               value={(() => {
@@ -176,7 +176,7 @@ function QuoteSettings({ block, onUpdate }: QuoteSettingsProps) {
             />
           </div>
           <div>
-            <Label htmlFor="quote-author" className="text-sm font-medium text-gray-700">Citation</Label>
+            <SettingsLabel htmlFor="quote-author">Citation</SettingsLabel>
             <Input
               id="quote-author"
               value={content?.citation ?? content?.author ?? ''}
@@ -193,7 +193,7 @@ function QuoteSettings({ block, onUpdate }: QuoteSettingsProps) {
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="quote-text-align" className="text-sm font-medium text-gray-700">Text Align</Label>
+            <SettingsLabel htmlFor="quote-text-align">Text Align</SettingsLabel>
             <Select
               value={content?.textAlign ?? 'default'}
               onValueChange={(value) => updateContent({ textAlign: value === 'default' ? undefined : (value as 'left' | 'center' | 'right') })}
@@ -210,7 +210,7 @@ function QuoteSettings({ block, onUpdate }: QuoteSettingsProps) {
             </Select>
           </div>
           <div>
-            <Label htmlFor="quote-align" className="text-sm font-medium text-gray-700">Width</Label>
+            <SettingsLabel htmlFor="quote-align">Width</SettingsLabel>
             <Select
               value={content?.align ?? 'default'}
               onValueChange={(value) => updateContent({ align: value === 'default' ? undefined : (value as 'wide' | 'full') })}
@@ -230,10 +230,6 @@ function QuoteSettings({ block, onUpdate }: QuoteSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

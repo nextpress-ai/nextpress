@@ -1,10 +1,10 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { Code as CodeIcon, Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -120,7 +120,7 @@ function CodeSettings({ block, onUpdate }: CodeSettingsProps) {
       <CollapsibleCard title="Content" icon={CodeIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="code-content" className="text-sm font-medium text-gray-700">Code</Label>
+            <SettingsLabel htmlFor="code-content">Code</SettingsLabel>
             <Textarea
               id="code-content"
               value={content?.content || ''}
@@ -141,7 +141,7 @@ function CodeSettings({ block, onUpdate }: CodeSettingsProps) {
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="code-language" className="text-sm font-medium text-gray-700">Language (optional)</Label>
+            <SettingsLabel htmlFor="code-language">Language (optional)</SettingsLabel>
             <Input
               id="code-language"
               value={content?.language || ''}
@@ -157,10 +157,6 @@ function CodeSettings({ block, onUpdate }: CodeSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

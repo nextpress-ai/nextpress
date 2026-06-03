@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { Type } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -132,7 +133,7 @@ function TextSettings({ block, onUpdate }: TextSettingsProps) {
       >
         <div className="space-y-4">
           <div>
-            <Label htmlFor="text-content">Text Content</Label>
+            <SettingsLabel htmlFor="text-content">Text Content</SettingsLabel>
             <Textarea
               id="text-content"
               aria-label="Text content"
@@ -145,7 +146,7 @@ function TextSettings({ block, onUpdate }: TextSettingsProps) {
           </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor="paragraph-dropcap">Drop cap</Label>
+            <SettingsLabel htmlFor="paragraph-dropcap">Drop cap</SettingsLabel>
             <Switch
               id="paragraph-dropcap"
               checked={Boolean(content?.dropCap)}

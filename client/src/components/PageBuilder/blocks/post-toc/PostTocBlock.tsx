@@ -1,9 +1,8 @@
-// blocks/post-toc/PostTocBlock.tsx
 import * as React from 'react';
 import { ListOrdered, Settings, Type } from 'lucide-react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { Label } from '@/components/ui/label';
+import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
@@ -161,32 +160,21 @@ function PostTocRenderer({ content, styles, isPreview }: PostTocRendererProps) {
     <nav
       className={containerClassName}
       style={{
-        border: '1px solid #e2e8f0',
-        borderRadius: '0.5rem',
+        border: '1px solid var(--npb-border-default)',
+        borderRadius: 'var(--npb-radius-input)',
         padding: '1.25rem 1.5rem',
-        backgroundColor: '#fafbfc',
+        backgroundColor: 'var(--npb-surface-raised)',
         ...styles,
       }}
       aria-label="Table of contents">
       {title && (
-        <p
-          style={{
-            fontWeight: 600,
-            fontSize: '0.95rem',
-            marginBottom: '0.75rem',
-            color: '#334155',
-          }}>
+        <p className="font-semibold text-sm mb-3 text-npb-text-primary">
           {title}
         </p>
       )}
 
       {entries.length === 0 ? (
-        <p
-          style={{
-            color: '#94a3b8',
-            fontSize: '0.875rem',
-            fontStyle: 'italic',
-          }}>
+        <p className="text-sm text-npb-text-muted italic">
           No headings found.
         </p>
       ) : (
@@ -201,16 +189,12 @@ function PostTocRenderer({ content, styles, isPreview }: PostTocRendererProps) {
               {isPreview ? (
                 <a
                   href={`#${entry.id}`}
-                  style={{
-                    color: '#2563eb',
-                    textDecoration: 'none',
-                    fontSize: '0.875rem',
-                  }}>
+                  className="text-npb-accent no-underline text-sm hover:underline">
                   {ordered ? `${numbering[idx]} ` : ''}
                   {entry.text}
                 </a>
               ) : (
-                <span style={{ color: '#475569', fontSize: '0.875rem' }}>
+                <span className="text-sm text-npb-text-secondary">
                   {ordered ? `${numbering[idx]} ` : '• '}
                   {entry.text}
                 </span>
@@ -278,11 +262,7 @@ function PostTocSettings({ block, onUpdate }: PostTocSettingsProps) {
       {/* Content Section */}
       <CollapsibleCard title="Content" icon={Type} defaultOpen>
         <div>
-          <Label
-            htmlFor="toc-title"
-            className="text-sm font-medium text-gray-700">
-            Title
-          </Label>
+          <SettingsLabel htmlFor="toc-title">Title</SettingsLabel>
           <Input
             id="toc-title"
             aria-label="TOC title"
@@ -299,11 +279,7 @@ function PostTocSettings({ block, onUpdate }: PostTocSettingsProps) {
         <div className="space-y-4">
           {/* Max Depth */}
           <div>
-            <Label
-              htmlFor="toc-depth"
-              className="text-sm font-medium text-gray-700">
-              Max Heading Depth
-            </Label>
+            <SettingsLabel htmlFor="toc-depth">Max Heading Depth</SettingsLabel>
             <Select
               value={String(content?.maxDepth ?? 3)}
               onValueChange={(val) => updateContent({ maxDepth: Number(val) })}>
@@ -322,11 +298,7 @@ function PostTocSettings({ block, onUpdate }: PostTocSettingsProps) {
 
           {/* Ordered Toggle */}
           <div className="flex items-center justify-between">
-            <Label
-              htmlFor="toc-ordered"
-              className="text-sm font-medium text-gray-700">
-              Numbered List
-            </Label>
+            <SettingsLabel htmlFor="toc-ordered">Numbered List</SettingsLabel>
             <Switch
               id="toc-ordered"
               checked={content?.ordered ?? false}
@@ -338,10 +310,6 @@ function PostTocSettings({ block, onUpdate }: PostTocSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

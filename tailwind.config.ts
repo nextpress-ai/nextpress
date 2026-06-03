@@ -53,16 +53,59 @@ export default {
   				'4': 'var(--chart-4)',
   				'5': 'var(--chart-5)'
   			},
-  			sidebar: {
-  				DEFAULT: 'hsl(var(--sidebar-background))',
-  				foreground: 'hsl(var(--sidebar-foreground))',
-  				primary: 'hsl(var(--sidebar-primary))',
-  				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-  				accent: 'hsl(var(--sidebar-accent))',
-  				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-  				border: 'hsl(var(--sidebar-border))',
-  				ring: 'hsl(var(--sidebar-ring))'
-  			}
+sidebar: {
+				DEFAULT: 'hsl(var(--sidebar-background))',
+				foreground: 'hsl(var(--sidebar-foreground))',
+				primary: 'hsl(var(--sidebar-primary))',
+				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+				accent: 'hsl(var(--sidebar-accent))',
+				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+				border: 'hsl(var(--sidebar-border))',
+				ring: 'hsl(var(--sidebar-ring))'
+			},
+			npb: {
+				surface: {
+					base: 'var(--npb-surface-base)',
+					raised: 'var(--npb-surface-raised)',
+					inset: 'var(--npb-surface-inset)',
+					overlay: 'var(--npb-surface-overlay)',
+					header: 'var(--npb-surface-header)',
+				},
+				text: {
+					primary: 'var(--npb-text-primary)',
+					secondary: 'var(--npb-text-secondary)',
+					muted: 'var(--npb-text-muted)',
+					inverse: 'var(--npb-text-inverse)',
+				},
+				border: {
+					default: 'var(--npb-border-default)',
+					subtle: 'var(--npb-border-subtle)',
+					strong: 'var(--npb-border-strong)',
+				},
+				divider: 'var(--npb-divider)',
+				interactive: {
+					bg: 'var(--npb-interactive-bg)',
+					'bg-hover': 'var(--npb-interactive-bg-hover)',
+					'bg-active': 'var(--npb-interactive-bg-active)',
+					text: 'var(--npb-interactive-text)',
+					'text-active': 'var(--npb-interactive-text-active)',
+				},
+				canvas: {
+					bg: 'var(--npb-canvas-bg)',
+					page: 'var(--npb-canvas-page)',
+				},
+				accent: {
+					DEFAULT: 'var(--npb-accent)',
+					hover: 'var(--npb-accent-hover)',
+				},
+				focus: 'var(--npb-focus-ring)',
+				status: {
+					success: 'var(--npb-status-success)',
+					warning: 'var(--npb-status-warning)',
+					error: 'var(--npb-status-error)',
+					info: 'var(--npb-status-info)',
+				},
+			}
   		},
   		keyframes: {
   			'accordion-down': {

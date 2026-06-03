@@ -42,7 +42,10 @@ export async function setupVite(app: Express, server: Server) {
 
   const serverOptions = {
     middlewareMode: true,
-    hmr: { server },
+    // Share the HTTP server for HMR, but pin an explicit clientPort so the
+    // injected Vite client connects to a defined port. Without this the client
+    // can emit `ws://localhost:undefined` when port inference fails.
+    hmr: { server, clientPort: parseInt(process.env.PORT || "5000", 10) },
     allowedHosts: true as const,
     watch,
   };

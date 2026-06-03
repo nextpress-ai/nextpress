@@ -2,7 +2,7 @@
 import * as React from 'react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { Label } from '@/components/ui/label';
+import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -163,11 +163,7 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
       {/* Content */}
       <CollapsibleCard title="Content" icon={FileText} defaultOpen>
         <div>
-          <Label
-            htmlFor="excerpt-text"
-            className="text-sm font-medium text-gray-700">
-            Excerpt Text
-          </Label>
+          <SettingsLabel htmlFor="excerpt-text">Excerpt Text</SettingsLabel>
           <Textarea
             id="excerpt-text"
             value={content?.text || ''}
@@ -185,10 +181,8 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
           {/* Max Length Slider */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-gray-700">
-                Max Length
-              </Label>
-              <span className="text-xs text-gray-500">
+            <SettingsLabel>Max Length</SettingsLabel>
+              <span className="text-xs text-npb-text-muted">
                 {currentMaxLength} chars
               </span>
             </div>
@@ -203,11 +197,7 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
 
           {/* Show Read More Toggle */}
           <div className="flex items-center justify-between">
-            <Label
-              htmlFor="show-read-more"
-              className="text-sm font-medium text-gray-700">
-              Show "Read More"
-            </Label>
+            <SettingsLabel htmlFor="show-read-more">Show "Read More"</SettingsLabel>
             <Switch
               id="show-read-more"
               checked={currentShowReadMore}
@@ -220,11 +210,7 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
           {/* Read More Text Input (visible only when toggle is on) */}
           {currentShowReadMore && (
             <div>
-              <Label
-                htmlFor="read-more-text"
-                className="text-sm font-medium text-gray-700">
-                Read More Text
-              </Label>
+            <SettingsLabel htmlFor="read-more-text">Read More Text</SettingsLabel>
               <Input
                 id="read-more-text"
                 value={currentReadMoreText}
@@ -242,13 +228,7 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
   );
 }
 
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
-
-// ============================================================================
 // BLOCK DEFINITION
-// ============================================================================
 
 /**
  * Post Excerpt block definition for the PageBuilder.

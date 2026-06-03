@@ -5,6 +5,7 @@ import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { OptionButton, OptionGroup, SettingsLabel } from '../../shared';
 import * as React from "react";
 import type { JSX } from "react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
@@ -87,18 +88,6 @@ function buildHeadingClassName(content: HeadingContent): string {
   }
 
   return classes.filter(Boolean).join(" ");
-}
-
-/**
- * Get button className for option buttons (levels, alignments, etc.)
- */
-function getOptionButtonClassName(isActive: boolean): string {
-  const base = "h-9 px-3 text-sm font-semibold rounded-md transition-all";
-  const active = "bg-gray-200 text-gray-800 hover:bg-gray-300";
-  const inactive =
-    "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300";
-
-  return `${base} ${isActive ? active : inactive}`;
 }
 
 // ============================================================================
@@ -194,12 +183,7 @@ function LegacyHeadingSettings({ block, onUpdate }: HeadingSettingsProps) {
         defaultOpen={SETTINGS_SECTIONS.content.defaultOpen}
       >
         <div>
-          <Label
-            htmlFor="heading-text"
-            className="text-sm font-medium text-gray-700"
-          >
-            Heading Text
-          </Label>
+          <SettingsLabel htmlFor="heading-text">Heading Text</SettingsLabel>
           <Input
             id="heading-text"
             aria-label="Heading text"
@@ -219,35 +203,29 @@ function LegacyHeadingSettings({ block, onUpdate }: HeadingSettingsProps) {
         icon={SETTINGS_SECTIONS.settings.icon}
         defaultOpen={SETTINGS_SECTIONS.settings.defaultOpen}
       >
-        <div className="space-y-3">
-          <Label className="text-sm font-medium text-gray-700">
-            Heading Level
-          </Label>
-          <div className="flex flex-wrap gap-2">
-            {HEADING_LEVELS.map((level) => (
-              <button
-                key={level}
-                type="button"
-                onClick={() => {
-                  updateContent({ level });
-                  if (!accessor) {
-                    onUpdate({
-                      styles: {
-                        ...block.styles,
-                        fontSize: HEADING_FONT_SIZES[level],
-                        fontWeight: HEADING_FONT_WEIGHTS[level],
-                      },
-                    });
-                  }
-                }}
-                className={getOptionButtonClassName(currentLevel === level)}
-                aria-label={`Heading level ${level}`}
-              >
-                H{level}
-              </button>
-            ))}
-          </div>
-        </div>
+        <OptionGroup label="Heading Level">
+          {HEADING_LEVELS.map((level) => (
+            <OptionButton
+              key={level}
+              isActive={currentLevel === level}
+              onClick={() => {
+                updateContent({ level });
+                if (!accessor) {
+                  onUpdate({
+                    styles: {
+                      ...block.styles,
+                      fontSize: HEADING_FONT_SIZES[level],
+                      fontWeight: HEADING_FONT_WEIGHTS[level],
+                    },
+                  });
+                }
+              }}
+              ariaLabel={`Heading level ${level}`}
+            >
+              H{level}
+            </OptionButton>
+          ))}
+        </OptionGroup>
       </CollapsibleCard>
     </div>
   );

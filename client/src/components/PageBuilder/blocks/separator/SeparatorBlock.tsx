@@ -1,9 +1,9 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { Minus as SeparatorIcon, Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -127,14 +127,14 @@ function SeparatorSettings({ block, onUpdate }: SeparatorSettingsProps) {
       <CollapsibleCard title="Content" icon={SeparatorIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="separator-color" className="text-sm font-medium text-gray-700">Color</Label>
+            <SettingsLabel htmlFor="separator-color">Color</SettingsLabel>
             <div className="flex gap-3 mt-1">
               <Input
                 id="separator-color"
                 type="color"
                 value={styles?.color || "#000000"}
                 onChange={(e) => updateStyles({ color: e.target.value })}
-                className="w-12 h-9 p-1 border-gray-200"
+                className="w-12 h-9 p-1 border-npb-border-default"
               />
               <Input
                 value={styles?.color || "#000000"}
@@ -151,7 +151,7 @@ function SeparatorSettings({ block, onUpdate }: SeparatorSettingsProps) {
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="separator-width" className="text-sm font-medium text-gray-700">Width</Label>
+            <SettingsLabel htmlFor="separator-width">Width</SettingsLabel>
             <Input
               id="separator-width"
               value={
@@ -171,10 +171,6 @@ function SeparatorSettings({ block, onUpdate }: SeparatorSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

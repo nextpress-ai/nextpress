@@ -4,7 +4,7 @@ import { useBlockState } from '../useBlockState';
 import { getBlockStateAccessor } from '../blockStateRegistry';
 import type { BlockDefinition, BlockComponentProps } from '../types';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { Label } from '@/components/ui/label';
+import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -169,13 +169,13 @@ function PostListRenderer({
   if (isLoading)
     return (
       <div className={wrapperClass} style={styles}>
-        <p className="text-sm text-gray-400 py-8 text-center">Loading posts…</p>
+        <p className="text-sm text-npb-text-muted py-8 text-center">Loading posts…</p>
       </div>
     );
   if (isError)
     return (
       <div className={wrapperClass} style={styles}>
-        <p className="text-sm text-red-400 py-8 text-center">
+        <p className="text-sm text-npb-status-error py-8 text-center">
           {error instanceof Error ? error.message : 'Failed to load posts'}
         </p>
       </div>
@@ -184,7 +184,7 @@ function PostListRenderer({
   if (posts.length === 0) {
     return (
       <div className={wrapperClass} style={styles}>
-        <div className="text-center text-gray-400 p-8 border-2 border-dashed border-gray-300 rounded">
+        <div className="text-center text-npb-text-muted p-8 border-2 border-dashed border-npb-border-strong rounded">
           <LayoutList className="w-10 h-10 mx-auto mb-2" />
           <p>No posts found</p>
         </div>
@@ -257,7 +257,7 @@ function PostCard({
       className="absolute inset-0 bg-black/0 hover:bg-black/5 flex items-center justify-center opacity-0 hover:opacity-100 transition-all cursor-pointer z-10 rounded-lg"
       onClick={handleEditClick}
       title="Click to edit this post">
-      <span className="bg-white/90 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full shadow flex items-center gap-1.5">
+      <span className="bg-white/90 text-npb-text-secondary text-xs font-medium px-3 py-1.5 rounded-full shadow flex items-center gap-1.5">
         <Pencil className="w-3 h-3" /> Edit Post
       </span>
     </div>
@@ -265,7 +265,7 @@ function PostCard({
 
   const imagePlaceholder = (size: string) => (
     <div
-      className={`${size} flex-shrink-0 rounded bg-gray-100 overflow-hidden flex items-center justify-center`}>
+      className={`${size} flex-shrink-0 rounded bg-npb-surface-inset overflow-hidden flex items-center justify-center`}>
       {post.featuredImage ? (
         <img
           src={post.featuredImage}
@@ -273,7 +273,7 @@ function PostCard({
           className="w-full h-full object-cover"
         />
       ) : (
-        <ImageIcon className="w-6 h-6 text-gray-300" />
+        <ImageIcon className="w-6 h-6 text-npb-text-muted" />
       )}
     </div>
   );
@@ -284,7 +284,7 @@ function PostCard({
         {editOverlay}
         <Wrapper
           {...wrapperProps}
-          className="flex items-start gap-4 p-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+          className="flex items-start gap-4 p-3 rounded-lg border border-npb-border-default hover:border-npb-border-strong transition-colors"
           style={{ textDecoration: 'none', color: 'inherit' }}>
           {cfg.showFeaturedImage && imagePlaceholder('w-24 h-24')}
           <div className="flex-1 min-w-0">
@@ -292,7 +292,7 @@ function PostCard({
               {post.title}
             </h3>
             {cfg.showExcerpt && post.excerpt && (
-              <p className="text-sm text-gray-500 line-clamp-2">
+              <p className="text-sm text-npb-text-muted line-clamp-2">
                 {post.excerpt}
               </p>
             )}
@@ -308,11 +308,11 @@ function PostCard({
       {editOverlay}
       <Wrapper
         {...wrapperProps}
-        className="flex flex-col rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors"
+        className="flex flex-col rounded-lg border border-npb-border-default overflow-hidden hover:border-npb-border-strong transition-colors"
         style={{ textDecoration: 'none', color: 'inherit' }}>
         {cfg.showFeaturedImage && (
           <div
-            className="w-full bg-gray-100 flex items-center justify-center"
+            className="w-full bg-npb-surface-inset flex items-center justify-center"
             style={{ height: layout === 'cards' ? 180 : 140 }}>
             {post.featuredImage ? (
               <img
@@ -321,7 +321,7 @@ function PostCard({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <ImageIcon className="w-8 h-8 text-gray-300" />
+              <ImageIcon className="w-8 h-8 text-npb-text-muted" />
             )}
           </div>
         )}
@@ -330,7 +330,7 @@ function PostCard({
             {post.title}
           </h3>
           {cfg.showExcerpt && post.excerpt && (
-            <p className="text-sm text-gray-500 line-clamp-3 mb-2">
+            <p className="text-sm text-npb-text-muted line-clamp-3 mb-2">
               {post.excerpt}
             </p>
           )}
@@ -368,7 +368,7 @@ function PostMeta({
   }
   if (parts.length === 0) return null;
   return (
-    <div className="flex items-center gap-3 text-xs text-gray-400 mt-auto pt-2">
+    <div className="flex items-center gap-3 text-xs text-npb-text-muted mt-auto pt-2">
       {parts}
     </div>
   );
@@ -421,7 +421,7 @@ function PostListSettings({
       <CollapsibleCard title="Layout" icon={LayoutList} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="pl-layout">Layout</Label>
+            <SettingsLabel htmlFor="pl-layout">Layout</SettingsLabel>
             <Select
               value={content.layout ?? 'grid'}
               onValueChange={(v) => updateContent({ layout: v as any })}>
@@ -436,7 +436,7 @@ function PostListSettings({
             </Select>
           </div>
           <div>
-            <Label htmlFor="pl-count">Posts per page</Label>
+            <SettingsLabel htmlFor="pl-count">Posts per page</SettingsLabel>
             <Input
               id="pl-count"
               type="number"
@@ -457,7 +457,7 @@ function PostListSettings({
       <CollapsibleCard title="Display" icon={Settings} defaultOpen={true}>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label htmlFor="pl-excerpt">Show excerpt</Label>
+            <SettingsLabel htmlFor="pl-excerpt">Show excerpt</SettingsLabel>
             <Switch
               id="pl-excerpt"
               checked={content.showExcerpt ?? true}
@@ -465,7 +465,7 @@ function PostListSettings({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="pl-image">Show featured image</Label>
+            <SettingsLabel htmlFor="pl-image">Show featured image</SettingsLabel>
             <Switch
               id="pl-image"
               checked={content.showFeaturedImage ?? true}
@@ -473,7 +473,7 @@ function PostListSettings({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="pl-date">Show date</Label>
+            <SettingsLabel htmlFor="pl-date">Show date</SettingsLabel>
             <Switch
               id="pl-date"
               checked={content.showDate ?? true}
@@ -481,7 +481,7 @@ function PostListSettings({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="pl-author">Show author</Label>
+            <SettingsLabel htmlFor="pl-author">Show author</SettingsLabel>
             <Switch
               id="pl-author"
               checked={content.showAuthor ?? true}
@@ -494,7 +494,7 @@ function PostListSettings({
       <CollapsibleCard title="Query" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="pl-blog">Blog ID (optional)</Label>
+            <SettingsLabel htmlFor="pl-blog">Blog ID (optional)</SettingsLabel>
             <Input
               id="pl-blog"
               className="h-9"
@@ -504,7 +504,7 @@ function PostListSettings({
             />
           </div>
           <div>
-            <Label htmlFor="pl-orderby">Order by</Label>
+            <SettingsLabel htmlFor="pl-orderby">Order by</SettingsLabel>
             <Select
               value={content.orderBy ?? 'date'}
               onValueChange={(v) => updateContent({ orderBy: v as any })}>
@@ -518,7 +518,7 @@ function PostListSettings({
             </Select>
           </div>
           <div>
-            <Label htmlFor="pl-order">Order</Label>
+            <SettingsLabel htmlFor="pl-order">Order</SettingsLabel>
             <Select
               value={content.order ?? 'desc'}
               onValueChange={(v) => updateContent({ order: v as any })}>
@@ -536,10 +536,6 @@ function PostListSettings({
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

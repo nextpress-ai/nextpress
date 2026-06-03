@@ -11,6 +11,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Video as VideoIcon, AlignCenter, Maximize, Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { SettingsLabel } from '../../shared';
 
 // ============================================================================
 // TYPES
@@ -300,7 +301,7 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
         <div className="space-y-4">
           {/* Video URL */}
           <div>
-            <Label htmlFor="video-src">Video URL</Label>
+            <SettingsLabel htmlFor="video-src">Video URL</SettingsLabel>
             <div className="flex items-center gap-2">
               <Input
                 id="video-src"
@@ -322,7 +323,7 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
 
           {/* Poster Image */}
           <div>
-            <Label htmlFor="video-poster">Poster Image URL</Label>
+            <SettingsLabel htmlFor="video-poster">Poster Image URL</SettingsLabel>
             <div className="flex items-center gap-2">
               <Input
                 id="video-poster"
@@ -342,7 +343,7 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
 
           {/* Caption */}
           <div>
-            <Label htmlFor="video-caption">Caption</Label>
+            <SettingsLabel htmlFor="video-caption">Caption</SettingsLabel>
             <Input
               id="video-caption"
               value={content?.caption || ''}
@@ -358,7 +359,7 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
           {/* Player Controls */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="video-controls">Show Controls</Label>
+              <SettingsLabel htmlFor="video-controls">Show Controls</SettingsLabel>
               <Switch
                 id="video-controls"
                 checked={(content?.controls ?? true) !== false}
@@ -366,7 +367,7 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="video-autoplay">Autoplay</Label>
+              <SettingsLabel htmlFor="video-autoplay">Autoplay</SettingsLabel>
               <Switch
                 id="video-autoplay"
                 checked={Boolean(content?.autoplay)}
@@ -377,7 +378,7 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="video-loop">Loop</Label>
+              <SettingsLabel htmlFor="video-loop">Loop</SettingsLabel>
               <Switch
                 id="video-loop"
                 checked={Boolean(content?.loop)}
@@ -385,7 +386,7 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="video-muted">Muted</Label>
+              <SettingsLabel htmlFor="video-muted">Muted</SettingsLabel>
               <Switch
                 id="video-muted"
                 checked={Boolean(content?.muted)}
@@ -396,7 +397,7 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="video-playsinline">Plays Inline</Label>
+              <SettingsLabel htmlFor="video-playsinline">Plays Inline</SettingsLabel>
               <Switch
                 id="video-playsinline"
                 checked={(content?.playsInline ?? true) !== false}
@@ -404,7 +405,7 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="video-preload">Preload</Label>
+              <SettingsLabel htmlFor="video-preload">Preload</SettingsLabel>
               <Select
                 value={content?.preload || 'metadata'}
                 onValueChange={(value) => updateContent({ preload: value })}
@@ -426,8 +427,8 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
       <CollapsibleCard title="Figure layout" icon={Maximize} defaultOpen={false}>
         <div className="space-y-3">
           <div>
-            <Label>Figure width</Label>
-            <p className="text-xs text-gray-600 mt-1 mb-2">
+            <SettingsLabel>Figure width</SettingsLabel>
+            <p className="text-xs text-npb-text-muted mt-1 mb-2">
               Wide and full presets. Use the sidebar <span className="font-semibold">Style</span> tab for exact width
               and height.
             </p>
@@ -444,8 +445,8 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
                     }
                     className={`flex items-center gap-2 p-3 text-sm font-medium rounded-lg border transition-colors ${
                       currentAlign === option.value
-                        ? "bg-gray-200 text-gray-800 border-gray-200 hover:bg-gray-300"
-                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                        ? "bg-npb-interactive-bg-active text-npb-interactive-text-active border-npb-interactive-bg-active"
+                        : "bg-npb-interactive-bg text-npb-interactive-text border-npb-border-default hover:bg-npb-interactive-bg-hover"
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -460,10 +461,6 @@ function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

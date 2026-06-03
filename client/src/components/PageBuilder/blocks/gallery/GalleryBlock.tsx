@@ -12,6 +12,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { SettingsLabel } from '../../shared';
 
 // ============================================================================
 // TYPES
@@ -87,7 +88,7 @@ function GalleryRenderer({ content, styles }: GalleryRendererProps) {
   if (images.length === 0) {
     return (
       <div className={className} style={styles}>
-        <div className="gallery-placeholder text-center text-gray-400 p-8 border-2 border-dashed border-gray-300 rounded">
+        <div className="gallery-placeholder text-center text-npb-text-muted p-8 border-2 border-dashed border-npb-border-default rounded">
           <ImageIcon className="w-12 h-12 mx-auto mb-2" />
           <p>Gallery</p>
           <small>Add images to create a gallery</small>
@@ -131,7 +132,7 @@ function GalleryRenderer({ content, styles }: GalleryRendererProps) {
             <div key={image.id || index} className="wp-block-image">
               {linkContent}
               {image.caption && (
-                <div className="blocks-gallery-item__caption text-sm text-gray-500 mt-1">
+                <div className="blocks-gallery-item__caption text-sm text-npb-text-muted mt-1">
                   {image.caption}
                 </div>
               )}
@@ -386,10 +387,6 @@ function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

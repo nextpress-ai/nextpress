@@ -16,15 +16,12 @@ import {
   PLACEHOLDER_IMAGE_ALT,
   PLACEHOLDER_IMAGE_URL,
 } from "@shared/placeholder-image";
+import { SettingsLabel } from '../../shared';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-/**
- * Image block content type. Extends the 'media' variant of BlockContent
- * with image-specific properties for alignment, sizing, and linking.
- */
 type ImageContent = {
   kind: 'media';
   url: string;
@@ -59,6 +56,17 @@ const DEFAULT_CONTENT: ImageContent = {
   title: '',
   className: '',
 };
+
+// ============================================================================
+// UTILITIES
+// ============================================================================
+
+const getAlignmentButtonClass = (isActive: boolean) =>
+  `flex items-center gap-2 p-3 h-9 text-sm font-medium rounded-lg border transition-colors ${
+    isActive
+      ? 'bg-npb-interactive-bg-active text-npb-interactive-text-active border-npb-interactive-bg-active'
+      : 'bg-npb-interactive-bg text-npb-interactive-text border-npb-border-default hover:bg-npb-interactive-bg-hover'
+  }`;
 
 // ============================================================================
 // RENDERER
@@ -283,7 +291,7 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
           {imageUrl && (
             <div>
               <Label>Preview</Label>
-              <div className="mt-2 inline-block border border-dashed border-gray-300 p-2 rounded-lg" style={{ maxWidth: '100%' }}>
+              <div className="mt-2 inline-block border border-dashed border-npb-border-strong p-2 rounded-lg" style={{ maxWidth: '100%' }}>
                 <img
                   src={imageUrl}
                   alt={content?.alt || ''}
@@ -295,8 +303,8 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
 
           {/* Image URL */}
           <div>
-            <Label htmlFor="image-src">Image URL</Label>
-            <div className="flex items-center gap-2">
+            <SettingsLabel htmlFor="image-src">Image URL</SettingsLabel>
+            <div className="flex items-center gap-2 mt-1">
               <Input
                 id="image-src"
                 value={imageUrl}
@@ -324,7 +332,7 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
 
           {/* Alt Text */}
           <div>
-            <Label htmlFor="image-alt">Alt Text</Label>
+            <SettingsLabel htmlFor="image-alt">Alt Text</SettingsLabel>
             <Input
               id="image-alt"
               aria-label="Alt text"
@@ -337,7 +345,7 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
 
           {/* Caption */}
           <div>
-            <Label htmlFor="image-caption">Caption</Label>
+            <SettingsLabel htmlFor="image-caption">Caption</SettingsLabel>
             <Input
               id="image-caption"
               value={content?.caption || ''}
@@ -356,8 +364,8 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
         <div className="space-y-4">
           {/* Block width in the editor (use Style → Position in container for flex placement) */}
           <div>
-            <Label className="text-sm font-semibold text-gray-800">Figure width</Label>
-            <p className="text-xs text-gray-600 mt-1 mb-2">
+            <SettingsLabel htmlFor="figure-width">Figure width</SettingsLabel>
+            <p className="text-xs text-npb-text-muted mt-1 mb-2">
               How wide the image sits in the layout. This is not text alignment; use{" "}
               <span className="font-semibold">Style → Position in container</span> to nudge the block left, center, or
               right among siblings.
@@ -369,11 +377,7 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
                   <button
                     key={option.value}
                     onClick={() => updateContent({ align: option.value as any })}
-                    className={`flex items-center gap-2 p-3 h-9 text-sm font-medium rounded-lg border transition-colors ${
-                      currentAlign === option.value
-                        ? 'bg-gray-200 text-gray-800 border-gray-200 hover:bg-gray-300'
-                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                    }`}
+                    className={getAlignmentButtonClass(currentAlign === option.value)}
                     aria-label={`Figure width ${option.label}`}
                   >
                     <Icon className="w-4 h-4" />
@@ -386,17 +390,13 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
 
           {/* Image Size */}
           <div>
-            <Label>Image Size</Label>
+            <SettingsLabel htmlFor="image-size">Image Size</SettingsLabel>
             <div className="grid grid-cols-2 gap-2 mt-2">
               {sizeOptions.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => updateContent({ sizeSlug: option.value as any })}
-                  className={`flex items-center justify-center p-3 text-sm font-medium rounded-lg border transition-colors ${
-                    currentSize === option.value
-                      ? 'bg-gray-200 text-gray-800 border-gray-200 hover:bg-gray-300'
-                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                  }`}
+                  className={getAlignmentButtonClass(currentSize === option.value)}
                 >
                   {option.label}
                 </button>
@@ -404,7 +404,7 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
             </div>
           </div>
 
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-npb-text-muted">
             Width, height, max size, and object fit live under the sidebar <span className="font-semibold">Style</span>{" "}
             tab (Layout &amp; Dimensions).
           </p>
@@ -419,7 +419,7 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
         <div className="space-y-4">
           {/* Link Destination */}
           <div>
-            <Label htmlFor="image-link-destination-select">Link To</Label>
+            <SettingsLabel htmlFor="image-link-destination-select">Link To</SettingsLabel>
             <Select
               value={content?.linkDestination || 'none'}
               onValueChange={(value) => updateContent({ linkDestination: value as any })}
@@ -439,7 +439,7 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
           {/* Custom Link URL */}
           {(content?.linkDestination === 'custom') && (
             <div>
-              <Label htmlFor="image-link-url">Custom Link URL</Label>
+              <SettingsLabel htmlFor="image-link-url">Custom Link URL</SettingsLabel>
               <Input
                 id="image-link-url"
                 value={content?.href || ''}
@@ -451,7 +451,7 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
 
           {/* Link Target */}
           <div>
-            <Label htmlFor="image-link-target-select">Link Target</Label>
+            <SettingsLabel htmlFor="image-link-target-select">Link Target</SettingsLabel>
             <Select
               value={(content?.linkTarget || content?.target || '_self')}
               onValueChange={(value) => updateContent({ linkTarget: value as any, target: undefined })}
@@ -467,15 +467,9 @@ function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
           </div>
         </div>
       </CollapsibleCard>
-
-
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

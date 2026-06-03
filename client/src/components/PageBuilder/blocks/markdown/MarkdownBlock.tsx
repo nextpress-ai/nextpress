@@ -51,7 +51,7 @@ function MarkdownRenderer({ content, styles, isPreview, onChange }: MarkdownRend
   // Edit Mode: show embeddable markdown editor
   return (
     <div className={className} style={styles} data-color-mode="light">
-      <div className="overflow-hidden rounded-md border border-transparent transition-colors hover:border-gray-200 focus-within:border-wp-blue">
+      <div className="overflow-hidden rounded-md border border-npb-border-default bg-npb-surface-base transition-colors hover:border-npb-border-strong focus-within:ring-2 focus-within:ring-npb-focus focus-within:ring-offset-1">
         <MDEditor
           value={markdownText}
           onChange={(val) => onChange?.(val || "")}

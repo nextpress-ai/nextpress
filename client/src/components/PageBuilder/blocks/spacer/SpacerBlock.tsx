@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { Space as SpaceIcon, Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -106,7 +107,7 @@ function SpacerSettings({ block, onUpdate }: SpacerSettingsProps) {
       <CollapsibleCard title="Content" icon={SpaceIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="spacer-height" className="text-sm font-medium text-gray-700">Height (px)</Label>
+            <SettingsLabel htmlFor="spacer-height">Height (px)</SettingsLabel>
             <div className="flex items-center space-x-4">
               <Slider
                 aria-label="Spacer height in pixels"
@@ -131,7 +132,7 @@ function SpacerSettings({ block, onUpdate }: SpacerSettingsProps) {
 
       {/* Settings Card (future extensibility) */}
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
-        <div className="text-gray-500 text-xs">No additional settings.</div>
+        <div className="text-npb-text-muted text-xs">No additional settings.</div>
       </CollapsibleCard>
     </div>
   );

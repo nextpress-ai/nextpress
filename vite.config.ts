@@ -36,5 +36,9 @@ export default defineConfig({
   },
   optimizeDeps: {
     force: true, // Force re-optimization when cache is cleared
+    // Pre-bundle these in the first optimize pass. Without this they are
+    // discovered lazily mid-load, triggering a second pass whose chunks
+    // reference a different React instance → "Invalid hook call" in dev.
+    include: ["react-markdown", "remark-gfm"],
   },
 });

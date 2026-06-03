@@ -1,11 +1,11 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { Plus, Trash2, Table as TableIcon, Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -78,7 +78,7 @@ function TableRenderer({ content, styles }: TableRendererProps) {
   if (body.length === 0) {
     return (
       <div className={className} style={styles}>
-        <div className="table-placeholder text-center text-gray-400 p-8 border-2 border-dashed border-gray-300 rounded">
+        <div className="table-placeholder text-center text-npb-text-muted p-8 border-2 border-dashed border-npb-border-strong rounded">
           <TableIcon className="w-12 h-12 mx-auto mb-2" />
           <p>Table</p>
           <small>Add a table to display data</small>
@@ -313,7 +313,7 @@ function TableSettings({ block, onUpdate }: TableSettingsProps) {
       <div className="space-y-4">
         <CollapsibleCard title="Content" icon={TableIcon} defaultOpen={true}>
           <div>
-            <Label className="text-sm font-medium text-gray-700">Create Table</Label>
+            <SettingsLabel>Create Table</SettingsLabel>
             <div className="flex gap-2 items-center mt-2">
               <Button onClick={() => createTable(3, 3)} variant="outline" size="sm">3x3</Button>
               <Button onClick={() => createTable(4, 4)} variant="outline" size="sm">4x4</Button>
@@ -343,8 +343,8 @@ function TableSettings({ block, onUpdate }: TableSettingsProps) {
 
           {/* Table Body Editor */}
           <div>
-            <Label className="text-sm font-medium text-gray-700">Table Body</Label>
-            <div className="border rounded p-2 space-y-2 max-h-64 overflow-y-auto">
+            <SettingsLabel>Table Body</SettingsLabel>
+            <div className="border border-npb-border-default rounded p-2 space-y-2 max-h-64 overflow-y-auto">
               {body.map((row, rowIndex) => (
                 <div key={rowIndex} className="flex items-center gap-1">
                   <div className="flex-1 grid gap-1" style={{ gridTemplateColumns: `repeat(${row.cells.length}, 1fr)` }}>
@@ -372,7 +372,7 @@ function TableSettings({ block, onUpdate }: TableSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="table-caption" className="text-sm font-medium text-gray-700">Table Caption</Label>
+            <SettingsLabel htmlFor="table-caption">Table Caption</SettingsLabel>
             <Input
               id="table-caption"
               value={tableData?.caption || ''}
@@ -388,7 +388,7 @@ function TableSettings({ block, onUpdate }: TableSettingsProps) {
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor="table-header" className="text-sm font-medium text-gray-700">Header section</Label>
+            <SettingsLabel htmlFor="table-header">Header section</SettingsLabel>
             <Switch
               id="table-header"
               checked={head.length > 0}
@@ -408,8 +408,8 @@ function TableSettings({ block, onUpdate }: TableSettingsProps) {
 
           {head.length > 0 && (
             <div>
-              <Label className="text-sm font-medium text-gray-700">Table Header</Label>
-              <div className="border rounded p-2 space-y-2 mt-1">
+              <SettingsLabel>Table Header</SettingsLabel>
+              <div className="border border-npb-border-default rounded p-2 space-y-2 mt-1">
                 {head.map((row, rowIndex) => (
                   <div key={rowIndex} className="flex items-center gap-1">
                     <div className="flex-1 grid gap-1" style={{ gridTemplateColumns: `repeat(${row.cells.length}, 1fr)` }}>
@@ -430,7 +430,7 @@ function TableSettings({ block, onUpdate }: TableSettingsProps) {
           )}
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="table-footer" className="text-sm font-medium text-gray-700">Footer section</Label>
+            <SettingsLabel htmlFor="table-footer">Footer section</SettingsLabel>
             <Switch
               id="table-footer"
               checked={foot.length > 0}
@@ -449,7 +449,7 @@ function TableSettings({ block, onUpdate }: TableSettingsProps) {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="table-fixed" className="text-sm font-medium text-gray-700">Fixed width table cells</Label>
+            <SettingsLabel htmlFor="table-fixed">Fixed width table cells</SettingsLabel>
             <Switch
               id="table-fixed"
               checked={tableData?.hasFixedLayout || false}
@@ -461,10 +461,6 @@ function TableSettings({ block, onUpdate }: TableSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

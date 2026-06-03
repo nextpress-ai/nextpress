@@ -1,10 +1,9 @@
-// blocks/post-progress/PostProgressBlock.tsx
 import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { BarChart3, Palette, Settings } from 'lucide-react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { Label } from '@/components/ui/label';
+import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
@@ -159,7 +158,7 @@ function PostProgressRenderer({
           backgroundColor,
           borderRadius: 2,
           overflow: 'hidden',
-          border: '1px solid #e2e8f0',
+          border: '1px solid var(--npb-border-default)',
         }}>
         <div
           style={{
@@ -177,16 +176,10 @@ function PostProgressRenderer({
           alignItems: 'center',
           marginTop: 6,
         }}>
-        <span
-          style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>
+        <span className="text-xs text-npb-text-secondary font-medium">
           Reading Progress Bar
         </span>
-        <span
-          style={{
-            fontSize: '0.675rem',
-            color: '#94a3b8',
-            fontStyle: 'italic',
-          }}>
+        <span className="text-xs text-npb-text-muted italic">
           Fixed to viewport when published
         </span>
       </div>
@@ -255,18 +248,14 @@ function PostProgressSettings({
       <CollapsibleCard title="Appearance" icon={Palette} defaultOpen>
         <div className="space-y-4">
           <div>
-            <Label
-              htmlFor="progress-color"
-              className="text-sm font-medium text-gray-700">
-              Bar Color
-            </Label>
+            <SettingsLabel htmlFor="progress-color">Bar Color</SettingsLabel>
             <div className="flex items-center gap-2 mt-1">
               <input
                 id="progress-color"
                 type="color"
                 value={content?.color ?? DEFAULT_CONTENT.color}
                 onChange={(e) => updateContent({ color: e.target.value })}
-                className="h-9 w-9 cursor-pointer rounded border border-gray-200 p-0.5"
+                className="h-9 w-9 cursor-pointer rounded border border-npb-border-default p-0.5"
               />
               <Input
                 value={content?.color ?? DEFAULT_CONTENT.color}
@@ -278,11 +267,7 @@ function PostProgressSettings({
           </div>
 
           <div>
-            <Label
-              htmlFor="progress-bg"
-              className="text-sm font-medium text-gray-700">
-              Background Color
-            </Label>
+            <SettingsLabel htmlFor="progress-bg">Background Color</SettingsLabel>
             <div className="flex items-center gap-2 mt-1">
               <input
                 id="progress-bg"
@@ -295,7 +280,7 @@ function PostProgressSettings({
                 onChange={(e) =>
                   updateContent({ backgroundColor: e.target.value })
                 }
-                className="h-9 w-9 cursor-pointer rounded border border-gray-200 p-0.5"
+                className="h-9 w-9 cursor-pointer rounded border border-npb-border-default p-0.5"
               />
               <Input
                 value={
@@ -312,11 +297,7 @@ function PostProgressSettings({
           </div>
 
           <div>
-            <Label
-              htmlFor="progress-height"
-              className="text-sm font-medium text-gray-700">
-              Height (px)
-            </Label>
+            <SettingsLabel htmlFor="progress-height">Height (px)</SettingsLabel>
             <Input
               id="progress-height"
               type="number"
@@ -337,11 +318,7 @@ function PostProgressSettings({
       <CollapsibleCard title="Behavior" icon={Settings} defaultOpen>
         <div className="space-y-4">
           <div>
-            <Label
-              htmlFor="progress-position"
-              className="text-sm font-medium text-gray-700">
-              Position
-            </Label>
+            <SettingsLabel htmlFor="progress-position">Position</SettingsLabel>
             <Select
               value={content?.position ?? DEFAULT_CONTENT.position}
               onValueChange={(val) =>
@@ -360,11 +337,9 @@ function PostProgressSettings({
           </div>
 
           <div className="flex items-center justify-between">
-            <Label
-              htmlFor="progress-percentage"
-              className="text-sm font-medium text-gray-700">
+            <SettingsLabel htmlFor="progress-percentage">
               Show Percentage
-            </Label>
+            </SettingsLabel>
             <Switch
               id="progress-percentage"
               checked={content?.showPercentage ?? false}
@@ -378,10 +353,6 @@ function PostProgressSettings({
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

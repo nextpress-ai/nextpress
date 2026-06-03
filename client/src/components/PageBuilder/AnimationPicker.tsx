@@ -80,8 +80,8 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
         onClick={() => onSelect(undefined)}
         className={`w-full text-left px-2 py-1.5 text-xs border rounded-none transition-colors ${
           !selected
-            ? "bg-gray-200 text-gray-800 border-gray-300"
-            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+            ? "bg-npb-interactive-bg-active text-npb-interactive-text-active border-npb-border-strong"
+            : "bg-npb-interactive-bg text-npb-interactive-text border-npb-border-default hover:bg-npb-interactive-bg-hover"
         }`}
       >
         None
@@ -96,8 +96,8 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
             onMouseEnter={() => onHover?.(preset.name)}
             className={`px-2 py-1.5 text-xs border rounded-none transition-colors text-left truncate ${
               selected === preset.name
-                ? "bg-gray-800 text-white border-gray-800"
-                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                ? "bg-npb-interactive-bg-active text-npb-interactive-text-active border-npb-border-strong"
+                : "bg-npb-interactive-bg text-npb-text-secondary border-npb-border-default hover:bg-npb-interactive-bg-hover hover:border-npb-border-strong"
             }`}
             title={preset.label}
           >
@@ -138,10 +138,10 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
 
         {/* Entry options (only if entry is selected) */}
         {animation?.entry && (
-          <div className="space-y-3 mt-3 pt-3 border-t border-gray-200">
+          <div className="space-y-3 mt-3 pt-3 border-t border-npb-border-default">
             {/* Duration */}
             <div>
-              <Label className="text-xs text-gray-600">Duration: {animation.entry.duration ?? 1000}ms</Label>
+              <Label className="text-xs text-npb-text-secondary">Duration: {animation.entry.duration ?? 1000}ms</Label>
               <Slider
                 value={[animation.entry.duration ?? 1000]}
                 onValueChange={([v]) => {
@@ -161,7 +161,7 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
 
             {/* Delay */}
             <div>
-              <Label className="text-xs text-gray-600">Delay</Label>
+              <Label className="text-xs text-npb-text-secondary">Delay</Label>
               <Input
                 type="number"
                 value={animation.entry.delay ?? 0}
@@ -179,7 +179,7 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
                 min={0}
                 max={3000}
                 step={50}
-                className="h-8 text-xs border-gray-200 rounded-none mt-1"
+                className="h-8 text-xs border-npb-border-default rounded-none mt-1"
                 placeholder="0ms"
               />
             </div>
@@ -194,9 +194,9 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
                     entry: { ...animation.entry!, once: e.target.checked },
                   })
                 }
-                className="rounded-none border-gray-300"
+                className="rounded-none border-npb-border-strong"
               />
-              <span className="text-xs text-gray-700">Play once only</span>
+              <span className="text-xs text-npb-text-secondary">Play once only</span>
             </label>
 
             {/* Preview button */}
@@ -208,7 +208,7 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
                   animation.entry!.delay ?? 0,
                 )
               }
-              className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-none bg-white text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+              className="w-full px-2 py-1.5 text-xs border border-npb-border-default rounded-none bg-npb-interactive-bg text-npb-text-secondary hover:bg-npb-interactive-bg-hover transition-colors flex items-center justify-center gap-1"
             >
               <Eye className="w-3 h-3" /> Preview
             </button>

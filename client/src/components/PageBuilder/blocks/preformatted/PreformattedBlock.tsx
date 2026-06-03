@@ -1,10 +1,10 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { FileText as PreformattedIcon, Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -137,7 +137,7 @@ function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
       <CollapsibleCard title="Content" icon={PreformattedIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="preformatted-content" className="text-sm font-medium text-gray-700">Preformatted Text</Label>
+            <SettingsLabel htmlFor="preformatted-content">Preformatted Text</SettingsLabel>
             <Textarea
               id="preformatted-content"
               value={content?.content || ''}
@@ -150,7 +150,7 @@ function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
                 fontSize: '14px',
               }}
             />
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-sm text-npb-text-muted mt-2">
               This text will preserve whitespace and line breaks exactly as you type them.
             </p>
           </div>
@@ -161,14 +161,14 @@ function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="preformatted-bg-color" className="text-sm font-medium text-gray-700">Background Color</Label>
+            <SettingsLabel htmlFor="preformatted-bg-color">Background Color</SettingsLabel>
             <div className="flex gap-3 mt-1">
               <Input
                 id="preformatted-bg-color"
                 type="color"
                 value={styles?.backgroundColor || "#f8f9fa"}
                 onChange={(e) => updateStyles({ backgroundColor: e.target.value })}
-                className="w-12 h-9 p-1 border-gray-200"
+                className="w-12 h-9 p-1 border-npb-border-default"
               />
               <Input
                 value={styles?.backgroundColor || "#f8f9fa"}
@@ -180,14 +180,14 @@ function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="preformatted-text-color" className="text-sm font-medium text-gray-700">Text Color</Label>
+            <SettingsLabel htmlFor="preformatted-text-color">Text Color</SettingsLabel>
             <div className="flex gap-3 mt-1">
               <Input
                 id="preformatted-text-color"
                 type="color"
                 value={styles?.color || "#000000"}
                 onChange={(e) => updateStyles({ color: e.target.value })}
-                className="w-12 h-9 p-1 border-gray-200"
+                className="w-12 h-9 p-1 border-npb-border-default"
               />
               <Input
                 value={styles?.color || "#000000"}
@@ -199,7 +199,7 @@ function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="preformatted-font-size" className="text-sm font-medium text-gray-700">Font Size</Label>
+            <SettingsLabel htmlFor="preformatted-font-size">Font Size</SettingsLabel>
             <Input
               id="preformatted-font-size"
               value={
@@ -217,10 +217,6 @@ function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

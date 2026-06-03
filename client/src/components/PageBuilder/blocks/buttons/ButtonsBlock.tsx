@@ -1,7 +1,6 @@
 import React from 'react';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -12,6 +11,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
+import { SettingsLabel } from '../../shared';
 import { Plus, Trash2, SquareMousePointer, Settings } from 'lucide-react';
 import { getBlockStateAccessor } from '../blockStateRegistry';
 import { useBlockState } from '../useBlockState';
@@ -242,7 +242,7 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
       <CollapsibleCard title="Content" icon={SquareMousePointer} defaultOpen={true}>
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <Label className="text-sm font-medium text-gray-700">Buttons</Label>
+            <SettingsLabel>Buttons</SettingsLabel>
             <Button type="button" variant="outline" size="sm" onClick={addButton}>
               <Plus className="w-4 h-4 mr-1" />
               Add Button
@@ -250,9 +250,9 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
           </div>
 
           {buttons.map((button, index) => (
-            <div key={button.id || index} className="border rounded p-4 space-y-3 bg-gray-50">
+            <div key={button.id || index} className="border border-npb-border-default rounded p-4 space-y-3 bg-npb-surface-raised">
               <div className="flex justify-between items-center">
-                <Label className="text-sm font-medium text-gray-700">Button {index + 1}</Label>
+                <SettingsLabel>Button {index + 1}</SettingsLabel>
                 <Button
                   type="button"
                   variant="ghost"
@@ -264,7 +264,7 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
               </div>
 
               <div>
-                <Label htmlFor={`btn-text-${index}`} className="text-sm font-medium text-gray-700">Button Text</Label>
+                <SettingsLabel htmlFor={`btn-text-${index}`}>Button Text</SettingsLabel>
                 <Input
                   id={`btn-text-${index}`}
                   value={button.text}
@@ -275,7 +275,7 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
               </div>
 
               <div>
-                <Label htmlFor={`btn-url-${index}`} className="text-sm font-medium text-gray-700">URL</Label>
+                <SettingsLabel htmlFor={`btn-url-${index}`}>URL</SettingsLabel>
                 <Input
                   id={`btn-url-${index}`}
                   value={button.url}
@@ -286,7 +286,7 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
               </div>
 
               <div>
-                <Label htmlFor={`btn-target-${index}`} className="text-sm font-medium text-gray-700">Link Target</Label>
+                <SettingsLabel htmlFor={`btn-target-${index}`}>Link Target</SettingsLabel>
                 <Select
                   value={button.linkTarget || '_self'}
                   onValueChange={(value: '_self' | '_blank') =>
@@ -309,7 +309,7 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="buttons-layout" className="text-sm font-medium text-gray-700">Layout</Label>
+            <SettingsLabel htmlFor="buttons-layout">Layout</SettingsLabel>
             <Select
               value={buttonsData?.layout || 'flex-start'}
               onValueChange={(value) => updateContent({ layout: value })}>
@@ -326,7 +326,7 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
           </div>
 
           <div>
-            <Label htmlFor="buttons-orientation" className="text-sm font-medium text-gray-700">Orientation</Label>
+            <SettingsLabel htmlFor="buttons-orientation">Orientation</SettingsLabel>
             <Select
               value={buttonsData?.orientation || 'horizontal'}
               onValueChange={(value) => updateContent({ orientation: value as any })}>
@@ -346,10 +346,6 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

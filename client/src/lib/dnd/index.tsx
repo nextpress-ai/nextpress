@@ -211,6 +211,8 @@ export interface DroppableStateSnapshot {
   draggingOverWith: string | null;
   draggingFromThisWith: string | null;
   isUsingPlaceholder: boolean;
+  /** Insertion index where the dragged block would land, or -1 when not over. */
+  placeholderIndex: number;
 }
 
 export interface DroppableProps {
@@ -247,14 +249,70 @@ export function Droppable({ droppableId, children, direction = 'vertical', isDro
     placeholder: null,
   };
 
+  const isOver = context.isDraggingOver(droppableId);
   const snapshot: DroppableStateSnapshot = {
-    isDraggingOver: context.isDraggingOver(droppableId),
-    draggingOverWith: context.isDraggingOver(droppableId) ? context.currentDrag.draggingId : null,
+    isDraggingOver: isOver,
+    draggingOverWith: isOver ? context.currentDrag.draggingId : null,
     draggingFromThisWith: context.currentDrag.sourceDroppableId === droppableId ? context.currentDrag.draggingId : null,
     isUsingPlaceholder: false,
+    placeholderIndex: isOver ? context.getOverIndex(droppableId) : -1,
   };
 
   return <>{children(provided, snapshot)}</>;
+}
+
+// ---------------------------------------------------------------------------
+// Auto-scroll while dragging near a scroll container's edges.
+// ---------------------------------------------------------------------------
+const AUTO_SCROLL_EDGE = 80; // px from edge that triggers scrolling
+const AUTO_SCROLL_SPEED = 14; // px per animation frame
+
+/** Nearest scrollable ancestor (vertical) of `el`, or null to fall back to window. */
+function findScrollableAncestor(el: HTMLElement | null): HTMLElement | null {
+  let node: HTMLElement | null = el;
+  while (node && node !== document.body) {
+    const style = window.getComputedStyle(node);
+    const overflowY = style.overflowY;
+    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
+
+/** Scrolls the container (or window) when the pointer sits near the top/bottom edge. */
+function performAutoScroll(clientX: number, clientY: number) {
+  const pointEl = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+  const scrollable = findScrollableAncestor(pointEl);
+  if (scrollable) {
+    const rect = scrollable.getBoundingClientRect();
+    if (clientY < rect.top + AUTO_SCROLL_EDGE) {
+      scrollable.scrollTop -= AUTO_SCROLL_SPEED;
+    } else if (clientY > rect.bottom - AUTO_SCROLL_EDGE) {
+      scrollable.scrollTop += AUTO_SCROLL_SPEED;
+    }
+    return;
+  }
+  const vh = window.innerHeight;
+  if (clientY < AUTO_SCROLL_EDGE) {
+    window.scrollBy(0, -AUTO_SCROLL_SPEED);
+  } else if (clientY > vh - AUTO_SCROLL_EDGE) {
+    window.scrollBy(0, AUTO_SCROLL_SPEED);
+  }
+}
+
+/**
+ * Drop placeholder bar: a visual insertion indicator rendered by Droppable
+ * consumers at `snapshot.placeholderIndex` while a block is dragged over them.
+ */
+export function DropPlaceholder() {
+  return (
+    <div
+      aria-hidden="true"
+      className="my-1 h-12 w-full rounded border-2 border-dashed border-npb-accent bg-npb-accent/10"
+    />
+  );
 }
 
 // Draggable component
@@ -323,6 +381,17 @@ export function Draggable({ draggableId, index, children, isDragDisabled = false
 
     const startPoint = getPoint(e);
 
+    // Auto-scroll: run a frame loop that scrolls the active container when the
+    // pointer hovers near its top/bottom edge (works even when the cursor is
+    // held still at the edge, unlike a move-only handler).
+    let latestPoint = startPoint;
+    let autoScrollRaf: number | null = null;
+    const autoScrollTick = () => {
+      performAutoScroll(latestPoint.x, latestPoint.y);
+      autoScrollRaf = requestAnimationFrame(autoScrollTick);
+    };
+    autoScrollRaf = requestAnimationFrame(autoScrollTick);
+
     // Resolve source droppable
     let parent = elementRef.current?.parentElement;
     while (parent && !parent.hasAttribute('data-rfd-droppable-id')) {
@@ -354,6 +423,7 @@ export function Draggable({ draggableId, index, children, isDragDisabled = false
       }
       const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : (moveEvent as MouseEvent).clientX;
       const clientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : (moveEvent as MouseEvent).clientY;
+      latestPoint = { x: clientX, y: clientY };
       context.updateOverlay({ x: clientX, y: clientY });
       const { droppableUnder, underId } = computeDroppableAtPoint(clientX, clientY);
       if (import.meta.env?.DEBUG_BUILDER) {
@@ -380,6 +450,11 @@ export function Draggable({ draggableId, index, children, isDragDisabled = false
     // Handle drag end (recompute destination)
     const handleEnd = (endEvent: MouseEvent | TouchEvent) => {
       setIsDragging(false);
+
+      if (autoScrollRaf !== null) {
+        cancelAnimationFrame(autoScrollRaf);
+        autoScrollRaf = null;
+      }
 
       if (typeof document !== 'undefined' && document.body) {
         document.body.classList.remove('npb-dragging');

@@ -11,8 +11,11 @@ import {
   Palette,
   RotateCcw,
   RotateCw,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { PagesMenu, BlogMenu, DesignMenu } from "@/components/PageBuilder/EditorBar";
+import { useTheme } from "@/components/ThemeProvider";
 
 export function BuilderTopBar({
   data,
@@ -41,8 +44,9 @@ export function BuilderTopBar({
   canRedo?: boolean;
   onPageSettingsClick?: () => void;
 }) {
+  const { isDark, toggleTheme } = useTheme();
   return (
-    <div className="bg-white border-b border-gray-200 p-4">
+    <div className="bg-npb-surface-base border-b border-npb-border-default p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {!sidebarVisible && (
@@ -53,7 +57,7 @@ export function BuilderTopBar({
                 onClick={onToggleSidebar}
                 className="p-1 h-auto"
               >
-                <Sidebar className="w-5 h-5 text-black" />
+                <Sidebar className="w-5 h-5 text-npb-text-primary" />
               </Button>
               <Separator orientation="vertical" className="h-6" />
             </>
@@ -91,7 +95,21 @@ export function BuilderTopBar({
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-500">{blocks.length} blocks</div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="p-1.5 h-auto"
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? (
+              <Sun className="w-4 h-4 text-zinc-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-zinc-600" />
+            )}
+          </Button>
+
+          <div className="text-sm text-npb-text-muted">{blocks.length} blocks</div>
 
           <BlogMenu currentPostId={data?.id} blogId={data?.blogId ?? undefined}>
             <Button variant="outline" size="sm" className="gap-2">

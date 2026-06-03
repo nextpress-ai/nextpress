@@ -4,7 +4,7 @@ import { useBlockState } from '../useBlockState';
 import { getBlockStateAccessor } from '../blockStateRegistry';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { Label } from '@/components/ui/label';
+import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -118,7 +118,7 @@ function PostNavigationRenderer({
   if (!hasPrev && !hasNext) {
     return (
       <div className={className} style={styles}>
-        <p className="text-sm text-gray-400 text-center py-4">
+        <p className="text-sm text-npb-text-muted text-center py-4">
           No adjacent posts found.
         </p>
       </div>
@@ -190,9 +190,9 @@ function NavigationLink({
     <div className={`flex items-center gap-3 ${flexDirection}`}>
       {/* Directional arrow */}
       {isPrev ? (
-        <ChevronLeft className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        <ChevronLeft className="w-5 h-5 text-npb-text-muted flex-shrink-0" />
       ) : (
-        <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        <ChevronRight className="w-5 h-5 text-npb-text-muted flex-shrink-0" />
       )}
 
       {/* Thumbnail */}
@@ -207,11 +207,11 @@ function NavigationLink({
       {/* Text content */}
       <div className={alignment}>
         {showLabel && (
-          <span className="block text-xs text-gray-500 uppercase tracking-wide mb-0.5">
+          <span className="block text-xs text-npb-text-muted uppercase tracking-wide mb-0.5">
             {label}
           </span>
         )}
-        <span className="block text-sm font-medium text-gray-800 leading-snug">
+        <span className="block text-sm font-medium text-npb-text-primary leading-snug">
           {post.title}
         </span>
       </div>
@@ -219,7 +219,7 @@ function NavigationLink({
   );
 
   const sharedClassName =
-    'flex-1 p-3 rounded-md border border-gray-200 transition-colors hover:border-gray-300 hover:bg-gray-50';
+    'flex-1 p-3 rounded-md border border-npb-border-default hover:border-npb-border-strong hover:bg-npb-surface-raised transition-colors';
 
   // Preview mode: render as real links
   if (isPreview) {
@@ -299,11 +299,9 @@ function PostNavigationSettings({
       <CollapsibleCard title="Display" icon={Eye} defaultOpen>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label
-              htmlFor="nav-show-thumbnail"
-              className="text-sm font-medium text-gray-700">
+            <SettingsLabel htmlFor="nav-show-thumbnail">
               Show Thumbnail
-            </Label>
+            </SettingsLabel>
             <Switch
               id="nav-show-thumbnail"
               checked={currentShowThumbnail}
@@ -313,11 +311,7 @@ function PostNavigationSettings({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label
-              htmlFor="nav-show-label"
-              className="text-sm font-medium text-gray-700">
-              Show Label
-            </Label>
+            <SettingsLabel htmlFor="nav-show-label">Show Label</SettingsLabel>
             <Switch
               id="nav-show-label"
               checked={currentShowLabel}
@@ -333,11 +327,7 @@ function PostNavigationSettings({
       <CollapsibleCard title="Labels" icon={Tag} defaultOpen={false}>
         <div className="space-y-4">
           <div>
-            <Label
-              htmlFor="nav-prev-label"
-              className="text-sm font-medium text-gray-700">
-              Previous Label
-            </Label>
+            <SettingsLabel htmlFor="nav-prev-label">Previous Label</SettingsLabel>
             <Input
               id="nav-prev-label"
               value={content?.prevLabel || ''}
@@ -347,11 +337,7 @@ function PostNavigationSettings({
             />
           </div>
           <div>
-            <Label
-              htmlFor="nav-next-label"
-              className="text-sm font-medium text-gray-700">
-              Next Label
-            </Label>
+            <SettingsLabel htmlFor="nav-next-label">Next Label</SettingsLabel>
             <Input
               id="nav-next-label"
               value={content?.nextLabel || ''}
@@ -366,7 +352,7 @@ function PostNavigationSettings({
       {/* Post */}
       <CollapsibleCard title="Post" icon={Tag} defaultOpen={false}>
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Post ID</Label>
+          <SettingsLabel>Post ID</SettingsLabel>
           {content?.postId ? (
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-mono text-xs truncate">
@@ -374,7 +360,7 @@ function PostNavigationSettings({
               </Badge>
               <button
                 onClick={() => updateContent({ postId: '' })}
-                className="text-xs text-gray-400 hover:text-red-500">
+                className="text-xs text-npb-text-muted hover:text-npb-status-error">
                 clear
               </button>
             </div>
@@ -391,10 +377,6 @@ function PostNavigationSettings({
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

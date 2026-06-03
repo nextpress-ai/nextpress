@@ -1,9 +1,9 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { MousePointer, ExternalLink, Type, Link, Smile, X } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -204,7 +204,7 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
       <CollapsibleCard title="Content" icon={Type} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="button-text" className="text-sm font-medium text-gray-700">Button Text</Label>
+            <SettingsLabel htmlFor="button-text">Button Text</SettingsLabel>
             <Input
               id="button-text"
               value={content?.kind === 'text' ? content.value : ''}
@@ -215,7 +215,7 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
           </div>
           
           <div>
-            <Label htmlFor="button-url" className="text-sm font-medium text-gray-700">Link URL</Label>
+            <SettingsLabel htmlFor="button-url">Link URL</SettingsLabel>
             <Input
               id="button-url"
               value={content?.url || ''}
@@ -230,17 +230,17 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
       <CollapsibleCard title="Icon" icon={Smile} defaultOpen={!!currentIcon}>
         <div className="space-y-4">
           <div>
-            <Label className="text-sm font-medium text-gray-700">Button Icon</Label>
+            <SettingsLabel>Button Icon</SettingsLabel>
             <div className="mt-1 flex min-w-0 items-center gap-2">
               {currentIcon ? (
                 <>
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-gray-50">
+                  <div className="npb-settings-panel flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-npb-border-default bg-npb-surface-raised">
                     <IconRenderer icon={currentIcon} size={16} />
                   </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span
-                        className="min-w-0 flex-1 cursor-default text-xs text-gray-500"
+                        className="min-w-0 flex-1 cursor-default text-xs text-npb-text-muted"
                         title={iconRefFullLabel}>
                         {iconRefDisplayLabel}
                       </span>
@@ -252,7 +252,7 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
                   <button
                     type="button"
                     onClick={handleRemoveIcon}
-                    className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    className="shrink-0 rounded p-1 text-npb-text-muted hover:bg-npb-interactive-bg-hover hover:text-npb-text-secondary"
                     title="Remove icon"
                   >
                     <X className="h-3 w-3" />
@@ -280,7 +280,7 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
           {currentIcon && (
             <>
               <div>
-                <Label className="text-sm font-medium text-gray-700">Position</Label>
+                <SettingsLabel>Position</SettingsLabel>
                 <div className="flex gap-2 mt-1">
                   {[
                     { value: 'left' as const, label: 'Left' },
@@ -290,9 +290,9 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
                       key={pos.value}
                       onClick={() => updateContent({ iconPosition: pos.value })}
                       className={`h-8 px-3 text-xs font-medium rounded-md transition-all ${
-                        (content?.iconPosition || 'left') === pos.value
-                          ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                          (content?.iconPosition || 'left') === pos.value
+                            ? 'bg-npb-interactive-bg-active text-npb-interactive-text-active hover:bg-npb-interactive-bg-active'
+                            : 'bg-npb-surface-base text-npb-text-secondary border border-npb-border-default hover:bg-npb-interactive-bg-hover hover:border-npb-border-strong'
                       }`}
                     >
                       {pos.label}
@@ -302,7 +302,7 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-gray-700">Mode</Label>
+                <SettingsLabel>Mode</SettingsLabel>
                 <div className="flex gap-2 mt-1">
                   {[
                     { value: false, label: 'With Text' },
@@ -312,9 +312,9 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
                       key={String(mode.value)}
                       onClick={() => updateContent({ iconOnly: mode.value })}
                       className={`h-8 px-3 text-xs font-medium rounded-md transition-all ${
-                        (content?.iconOnly || false) === mode.value
-                          ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                          (content?.iconOnly || false) === mode.value
+                            ? 'bg-npb-interactive-bg-active text-npb-interactive-text-active hover:bg-npb-interactive-bg-active'
+                            : 'bg-npb-surface-base text-npb-text-secondary border border-npb-border-default hover:bg-npb-interactive-bg-hover hover:border-npb-border-strong'
                       }`}
                     >
                       {mode.label}
@@ -329,7 +329,7 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
       
       <CollapsibleCard title="Link Settings" icon={Link} defaultOpen={true}>
         <div className="space-y-3">
-          <Label className="text-sm font-medium text-gray-700">Link Target</Label>
+          <SettingsLabel>Link Target</SettingsLabel>
           <div className="flex flex-wrap gap-2">
             {[
               { value: '_self', label: 'Same Window' },
@@ -340,8 +340,8 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
                 onClick={() => updateContent({ linkTarget: target.value as '_self' | '_blank', target: undefined })}
                 className={`h-8 px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
                   (content?.linkTarget || content?.target || '_self') === target.value
-                    ? "bg-gray-200 text-gray-800 hover:bg-gray-300" 
-                    : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                    ? "bg-npb-interactive-bg-active text-npb-interactive-text-active hover:bg-npb-interactive-bg-active" 
+                    : "bg-npb-surface-base text-npb-text-secondary border border-npb-border-default hover:bg-npb-interactive-bg-hover hover:border-npb-border-strong"
                 }`}
               >
                 {target.icon && <target.icon className="w-3 h-3" />}

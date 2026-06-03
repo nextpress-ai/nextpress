@@ -1,9 +1,8 @@
-// blocks/post-author-box/PostAuthorBoxBlock.tsx
 import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { Label } from '@/components/ui/label';
+import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -128,7 +127,7 @@ function PostAuthorBoxRenderer({
 
   const avatarElement = showAvatar && (
     <div
-      className="flex-shrink-0 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center"
+      className="flex-shrink-0 rounded-full bg-npb-surface-inset overflow-hidden flex items-center justify-center"
       style={{ width: avatarSize, height: avatarSize }}>
       {displayData.avatar ? (
         <img
@@ -138,7 +137,7 @@ function PostAuthorBoxRenderer({
         />
       ) : (
         <UserCircle
-          className="text-gray-400"
+          className="text-npb-text-muted"
           style={{ width: avatarSize * 0.6, height: avatarSize * 0.6 }}
         />
       )}
@@ -153,7 +152,7 @@ function PostAuthorBoxRenderer({
         </p>
       )}
       {showBio && (
-        <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+        <p className="text-sm text-npb-text-secondary mt-1 leading-relaxed">
           {displayData.bio || 'No bio available.'}
         </p>
       )}
@@ -242,11 +241,7 @@ function PostAuthorBoxSettings({
         <div className="space-y-4">
           {/* Author ID */}
           <div>
-            <Label
-              htmlFor="author-id"
-              className="text-sm font-medium text-gray-700">
-              Author ID
-            </Label>
+            <SettingsLabel htmlFor="author-id">Author ID</SettingsLabel>
             <Input
               id="author-id"
               value={content?.authorId || ''}
@@ -258,7 +253,7 @@ function PostAuthorBoxSettings({
 
           {/* Layout Select */}
           <div>
-            <Label className="text-sm font-medium text-gray-700">Layout</Label>
+            <SettingsLabel>Layout</SettingsLabel>
             <Select
               value={currentLayout}
               onValueChange={(val) =>
@@ -279,11 +274,7 @@ function PostAuthorBoxSettings({
 
           {/* Avatar Size */}
           <div>
-            <Label
-              htmlFor="avatar-size"
-              className="text-sm font-medium text-gray-700">
-              Avatar Size (px)
-            </Label>
+            <SettingsLabel htmlFor="avatar-size">Avatar Size (px)</SettingsLabel>
             <Input
               id="avatar-size"
               type="number"
@@ -326,11 +317,9 @@ function PostAuthorBoxSettings({
             },
           ].map((toggle) => (
             <div key={toggle.id} className="flex items-center justify-between">
-              <Label
-                htmlFor={toggle.id}
-                className="text-sm font-medium text-gray-700">
+              <SettingsLabel htmlFor={toggle.id}>
                 {toggle.label}
-              </Label>
+              </SettingsLabel>
               <Switch
                 id={toggle.id}
                 checked={toggle.value}
@@ -346,7 +335,7 @@ function PostAuthorBoxSettings({
       {/* Post */}
       <CollapsibleCard title="Post" icon={Wrench} defaultOpen={false}>
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Post ID</Label>
+          <SettingsLabel>Post ID</SettingsLabel>
           {content?.postId ? (
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-mono text-xs truncate">
@@ -354,7 +343,7 @@ function PostAuthorBoxSettings({
               </Badge>
               <button
                 onClick={() => updateContent({ postId: '' })}
-                className="text-xs text-gray-400 hover:text-red-500">
+                className="text-xs text-npb-text-muted hover:text-npb-status-error">
                 clear
               </button>
             </div>
@@ -371,10 +360,6 @@ function PostAuthorBoxSettings({
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

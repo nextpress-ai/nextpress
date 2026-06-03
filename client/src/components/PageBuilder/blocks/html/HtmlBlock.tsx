@@ -1,10 +1,9 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { Code2 as HtmlIcon } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -131,7 +130,7 @@ function HtmlSettings({ block, onUpdate }: HtmlSettingsProps) {
       <CollapsibleCard title="Content" icon={HtmlIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="html-content" className="text-sm font-medium text-gray-700">Custom HTML</Label>
+            <SettingsLabel htmlFor="html-content">Custom HTML</SettingsLabel>
             <Textarea
               id="html-content"
               value={content?.content || ''}
@@ -144,7 +143,7 @@ function HtmlSettings({ block, onUpdate }: HtmlSettingsProps) {
                 fontSize: '14px',
               }}
             />
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-sm text-npb-text-muted mt-2">
               Be careful when adding custom HTML. Make sure it's from a trusted source and won't break your site.
             </p>
           </div>
@@ -155,10 +154,6 @@ function HtmlSettings({ block, onUpdate }: HtmlSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

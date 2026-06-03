@@ -1,9 +1,8 @@
-// blocks/post-info/PostInfoBlock.tsx
 import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { Label } from '@/components/ui/label';
+import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -181,7 +180,7 @@ interface PostInfoRendererProps {
 /** Renders a small pill/badge for categories and tags. */
 function CategoryBadge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+    <span className="inline-block rounded-full bg-npb-surface-inset px-2.5 py-0.5 text-xs font-medium text-npb-text-secondary">
       {children}
     </span>
   );
@@ -208,7 +207,7 @@ function PostInfoRenderer({
     items.push(
       <span
         key="date"
-        className="flex items-center gap-1.5 text-sm text-gray-600">
+        className="flex items-center gap-1.5 text-sm text-npb-text-secondary">
         <Calendar className="h-3.5 w-3.5" />
         {formatDate(meta.publishedAt, dateFormat)}
       </span>,
@@ -219,7 +218,7 @@ function PostInfoRenderer({
     items.push(
       <span
         key="categories"
-        className="flex items-center gap-1.5 text-sm text-gray-600">
+        className="flex items-center gap-1.5 text-sm text-npb-text-secondary">
         <Folder className="h-3.5 w-3.5" />
         <span className="flex flex-wrap gap-1">
           {meta.categories.map((cat) => (
@@ -234,7 +233,7 @@ function PostInfoRenderer({
     items.push(
       <span
         key="tags"
-        className="flex items-center gap-1.5 text-sm text-gray-600">
+        className="flex items-center gap-1.5 text-sm text-npb-text-secondary">
         <Tag className="h-3.5 w-3.5" />
         <span className="flex flex-wrap gap-1">
           {meta.tags.map((tag) => (
@@ -249,7 +248,7 @@ function PostInfoRenderer({
     items.push(
       <span
         key="readtime"
-        className="flex items-center gap-1.5 text-sm text-gray-600">
+        className="flex items-center gap-1.5 text-sm text-npb-text-secondary">
         <Clock className="h-3.5 w-3.5" />
         {computeReadTime(meta.wordCount)}
       </span>,
@@ -260,7 +259,7 @@ function PostInfoRenderer({
   if (items.length === 0) {
     return (
       <div className={className} style={styles}>
-        <p className="text-sm text-gray-400 italic">
+        <p className="text-sm text-npb-text-muted italic">
           No post info items enabled
         </p>
       </div>
@@ -273,7 +272,7 @@ function PostInfoRenderer({
         <div className="flex flex-wrap items-center gap-3">
           {items.map((item, idx) => (
             <React.Fragment key={itemKeys[idx]}>
-              {idx > 0 && <span className="text-gray-300">·</span>}
+              {idx > 0 && <span className="text-npb-text-muted">·</span>}
               {item}
             </React.Fragment>
           ))}
@@ -366,11 +365,9 @@ function PostInfoSettings({ block, onUpdate }: PostInfoSettingsProps) {
         <div className="space-y-4">
           {toggles.map((toggle) => (
             <div key={toggle.id} className="flex items-center justify-between">
-              <Label
-                htmlFor={toggle.id}
-                className="text-sm font-medium text-gray-700">
+              <SettingsLabel htmlFor={toggle.id}>
                 {toggle.label}
-              </Label>
+              </SettingsLabel>
               <Switch
                 id={toggle.id}
                 checked={toggle.value}
@@ -386,9 +383,7 @@ function PostInfoSettings({ block, onUpdate }: PostInfoSettingsProps) {
       <CollapsibleCard title="Format" icon={Settings} defaultOpen>
         <div className="space-y-4">
           <div>
-            <Label className="text-sm font-medium text-gray-700">
-              Date Format
-            </Label>
+            <SettingsLabel>Date Format</SettingsLabel>
             <Select
               value={content?.dateFormat ?? 'long'}
               onValueChange={(val) =>
@@ -409,7 +404,7 @@ function PostInfoSettings({ block, onUpdate }: PostInfoSettingsProps) {
             </Select>
           </div>
           <div>
-            <Label className="text-sm font-medium text-gray-700">Layout</Label>
+            <SettingsLabel>Layout</SettingsLabel>
             <Select
               value={content?.layout ?? 'inline'}
               onValueChange={(val) =>
@@ -432,7 +427,7 @@ function PostInfoSettings({ block, onUpdate }: PostInfoSettingsProps) {
 
       <CollapsibleCard title="Post" icon={Settings} defaultOpen={false}>
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Post ID</Label>
+          <SettingsLabel>Post ID</SettingsLabel>
           {content?.postId ? (
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-mono text-xs truncate">
@@ -440,7 +435,7 @@ function PostInfoSettings({ block, onUpdate }: PostInfoSettingsProps) {
               </Badge>
               <button
                 onClick={() => updateContent({ postId: '' })}
-                className="text-xs text-gray-400 hover:text-red-500">
+                className="text-xs text-npb-text-muted hover:text-npb-status-error">
                 clear
               </button>
             </div>
@@ -457,10 +452,6 @@ function PostInfoSettings({ block, onUpdate }: PostInfoSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

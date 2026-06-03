@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
-import { Label } from '@/components/ui/label';
+import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -37,33 +37,6 @@ const DEFAULT_CONTENT: PostFeaturedImageContent = {
   className: '',
 };
 
-// Shared inline-input styles used in the editor overlay / placeholder
-const urlInputStyle: React.CSSProperties = {
-  flex: 1,
-  padding: '6px 10px',
-  fontSize: '0.8rem',
-  border: '1px solid #d1d5db',
-  borderRadius: '6px',
-  outline: 'none',
-};
-const setButtonStyle: React.CSSProperties = {
-  padding: '6px 12px',
-  fontSize: '0.8rem',
-  fontWeight: 500,
-  backgroundColor: '#3b82f6',
-  color: '#fff',
-  border: 'none',
-  borderRadius: '6px',
-  cursor: 'pointer',
-};
-const urlRowStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '6px',
-  padding: '0 16px',
-  width: '100%',
-  maxWidth: '400px',
-};
-
 // ============================================================================
 // URL INPUT ROW — reused in placeholder and hover overlay
 // ============================================================================
@@ -83,25 +56,23 @@ function UrlInputRow({
   dark?: boolean;
 }) {
   return (
-    <div style={urlRowStyle}>
+    <div className="flex gap-1.5 px-4 w-full max-w-md">
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && onApply()}
         placeholder={placeholder}
-        style={
+        className={
           dark
-            ? {
-                ...urlInputStyle,
-                border: '1px solid rgba(255,255,255,0.3)',
-                backgroundColor: 'rgba(255,255,255,0.15)',
-                color: '#fff',
-              }
-            : urlInputStyle
+            ? 'flex-1 px-2.5 py-1.5 text-sm bg-white/15 border border-white/30 text-white rounded-md outline-none placeholder:text-white/50'
+            : 'flex-1 px-2.5 py-1.5 text-sm border border-npb-border-strong bg-npb-surface-base rounded-md outline-none placeholder:text-npb-text-muted'
         }
       />
-      <button type="button" onClick={onApply} style={setButtonStyle}>
+      <button
+        type="button"
+        onClick={onApply}
+        className="px-3 py-1.5 text-sm font-medium bg-npb-accent text-npb-text-inverse border-none rounded-md cursor-pointer">
         Set
       </button>
     </div>
@@ -157,26 +128,15 @@ function PostFeaturedImageRenderer({
     return (
       <figure className={wrapperClass} style={styles}>
         <div
-          style={{
-            aspectRatio,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: '8px',
-            border: '2px dashed #d1d5db',
-            borderRadius: '8px',
-            backgroundColor: '#f9fafb',
-            color: '#6b7280',
-            cursor: isEditor ? 'pointer' : 'default',
-            width: '100%',
-          }}>
-          <ImageIcon style={{ width: 32, height: 32, opacity: 0.5 }} />
-          <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>
-            Set Featured Image
-          </span>
+          className={
+            `flex flex-col items-center justify-center gap-2 border-2 border-dashed border-npb-border-default rounded-lg bg-npb-surface-raised text-npb-text-muted ` +
+            (isEditor ? 'cursor-pointer' : 'cursor-default')
+          }
+          style={{ aspectRatio, width: '100%' }}>
+          <ImageIcon className="w-8 h-8 opacity-50" />
+          <span className="text-sm font-medium">Set Featured Image</span>
           {isEditor && (
-            <div style={{ marginTop: 4 }}>
+            <div className="mt-1">
               <UrlInputRow
                 value={editUrl}
                 onChange={setEditUrl}
@@ -194,38 +154,20 @@ function PostFeaturedImageRenderer({
   return (
     <figure className={wrapperClass} style={styles}>
       <div
-        style={{ position: 'relative', width: '100%', aspectRatio }}
+        className="relative w-full"
+        style={{ aspectRatio }}
         onMouseEnter={() => isEditor && setIsHovered(true)}
         onMouseLeave={() => isEditor && setIsHovered(false)}>
         <img
           src={url}
           alt={alt}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit,
-            borderRadius: '4px',
-            display: 'block',
-          }}
+          className="w-full h-full block rounded"
+          style={{ objectFit }}
         />
 
         {isEditor && isHovered && (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              backgroundColor: 'rgba(0,0,0,0.55)',
-              borderRadius: '4px',
-            }}>
-            <span
-              style={{ color: '#fff', fontSize: '0.875rem', fontWeight: 600 }}>
-              Change Image
-            </span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55 rounded">
+            <span className="text-sm font-semibold text-white">Change Image</span>
             <UrlInputRow
               value={editUrl}
               onChange={setEditUrl}
@@ -238,14 +180,7 @@ function PostFeaturedImageRenderer({
       </div>
 
       {caption && (
-        <figcaption
-          className="wp-element-caption"
-          style={{
-            textAlign: 'center',
-            marginTop: '8px',
-            color: '#6b7280',
-            fontSize: '0.875rem',
-          }}>
+        <figcaption className="wp-element-caption text-center mt-2 text-npb-text-muted text-sm">
           {caption}
         </figcaption>
       )}
@@ -308,7 +243,7 @@ function PostFeaturedImageSettings({
       <CollapsibleCard title="Image" icon={ImageIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="fi-url">Image URL</Label>
+            <SettingsLabel htmlFor="fi-url">Image URL</SettingsLabel>
             <Input
               id="fi-url"
               value={content?.url || ''}
@@ -318,7 +253,7 @@ function PostFeaturedImageSettings({
             />
           </div>
           <div>
-            <Label htmlFor="fi-alt">Alt Text</Label>
+            <SettingsLabel htmlFor="fi-alt">Alt Text</SettingsLabel>
             <Input
               id="fi-alt"
               value={content?.alt || ''}
@@ -328,7 +263,7 @@ function PostFeaturedImageSettings({
             />
           </div>
           <div>
-            <Label htmlFor="fi-caption">Caption</Label>
+            <SettingsLabel htmlFor="fi-caption">Caption</SettingsLabel>
             <Input
               id="fi-caption"
               value={content?.caption || ''}
@@ -343,7 +278,7 @@ function PostFeaturedImageSettings({
       <CollapsibleCard title="Display" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="fi-object-fit">Object Fit</Label>
+            <SettingsLabel htmlFor="fi-object-fit">Object Fit</SettingsLabel>
             <Select
               value={content?.objectFit || 'cover'}
               onValueChange={(v) =>
@@ -362,7 +297,7 @@ function PostFeaturedImageSettings({
             </Select>
           </div>
           <div>
-            <Label htmlFor="fi-aspect-ratio">Aspect Ratio</Label>
+            <SettingsLabel htmlFor="fi-aspect-ratio">Aspect Ratio</SettingsLabel>
             <Select
               value={content?.aspectRatio || '16/9'}
               onValueChange={(v) => updateContent({ aspectRatio: v })}>
@@ -384,10 +319,6 @@ function PostFeaturedImageSettings({
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

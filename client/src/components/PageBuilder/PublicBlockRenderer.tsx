@@ -20,6 +20,8 @@ import {
 import { generateBlockModifierCSS, resolveTokenMap } from "@/lib/tailwind-tokens";
 import { IconRenderer } from "@/components/PageBuilder/blocks/shared/IconRenderer";
 import { sanitizeHtml } from "@/components/PageBuilder/utils";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { IconReference } from "@/lib/icon-indexes";
 
 type PublicBlockRendererProps = {
@@ -244,6 +246,20 @@ function getHtmlContent(content: BlockContent | undefined): string {
   return "";
 }
 
+/** Markdown blocks may use canonical `{ kind: "markdown" | "text", value }` or legacy editor `{ content }`. */
+function getMarkdownContent(content: BlockContent | undefined): string {
+  if (content?.kind === "markdown" || content?.kind === "text") {
+    return content.value;
+  }
+  if (content && typeof content === "object" && "content" in content) {
+    const legacy = content as { content?: string };
+    if (typeof legacy.content === "string") {
+      return legacy.content;
+    }
+  }
+  return "";
+}
+
 /** Icon blocks may be structured (`data`) or legacy flat `{ icon, link, ... }`. */
 function getIconBlockPayload(content: BlockContent): Record<string, unknown> {
   if (content?.kind === "structured" && content.data && typeof content.data === "object") {
@@ -435,7 +451,7 @@ function renderButtonsBlock(block: BlockConfig, styles: CSSProperties) {
               rel={button.rel}
               title={iconOnly && icon ? button.title || button.text : button.title}
               style={{
-                backgroundColor: "#007cba",
+                backgroundColor: "var(--npb-accent)",
                 border: "none",
                 borderRadius: "4px",
                 color: "#ffffff",
@@ -735,9 +751,13 @@ function renderPreformattedBlock(block: BlockConfig, styles: CSSProperties) {
 }
 
 function renderMarkdownBlock(block: BlockConfig, styles: CSSProperties) {
+  // react-markdown renders to React elements (no dangerouslySetInnerHTML) and
+  // ignores raw HTML by default, so it is XSS-safe. remark-gfm adds tables,
+  // strikethrough, task lists, and autolinks for parity with the editor.
+  const markdownText = getMarkdownContent(block.content);
   return (
-    <div className="wp-block-markdown whitespace-pre-wrap" style={styles}>
-      {getTextContent(block.content)}
+    <div className="wp-block-markdown" style={styles}>
+      <Markdown remarkPlugins={[remarkGfm]}>{markdownText}</Markdown>
     </div>
   );
 }
@@ -925,7 +945,7 @@ function renderFileBlock(block: BlockConfig, styles: CSSProperties) {
                   <a
                     href={textLinkHref}
                     rel={textLinkTarget === "_blank" ? "noopener noreferrer" : undefined}
-                    style={{ color: "#007cba", textDecoration: "none" }}
+                    style={{ color: "var(--npb-accent)", textDecoration: "none" }}
                     target={textLinkTarget}
                   >
                     {fileName || "Download File"}
@@ -951,7 +971,7 @@ function renderFileBlock(block: BlockConfig, styles: CSSProperties) {
               href={url}
               style={{
                 alignItems: "center",
-                backgroundColor: "#007cba",
+                backgroundColor: "var(--npb-accent)",
                 borderRadius: "4px",
                 color: "#ffffff",
                 display: "inline-flex",

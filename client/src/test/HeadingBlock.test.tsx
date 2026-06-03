@@ -218,9 +218,11 @@ describe('HeadingBlock', () => {
       const textInput = screen.getByDisplayValue('Current Text')
       expect(textInput).toBeInTheDocument()
       
-      // Check that H3 button is selected (has different styling)
+      // Check that H3 button is selected (has different styling).
+      // Heading settings migrated to design tokens in the theming migration:
+      // the selected state now uses the `bg-npb-interactive-bg-active` token.
       const h3Button = screen.getByLabelText('Heading level 3')
-      expect(h3Button).toHaveClass('bg-gray-200') // Selected state class
+      expect(h3Button).toHaveClass('bg-npb-interactive-bg-active') // Selected state class
       
       // Note: Anchor ID and CSS Classes are now handled centrally by BlockSettings Advanced tab,
       // not by individual block settings components

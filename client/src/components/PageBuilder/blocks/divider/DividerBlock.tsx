@@ -1,11 +1,11 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { Minus as MinusIcon, Settings } from "lucide-react";
 import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
@@ -108,7 +108,7 @@ function DividerSettings({ block, onUpdate }: DividerSettingsProps) {
       <CollapsibleCard title="Content" icon={MinusIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="divider-style" className="text-sm font-medium text-gray-700">Line Style</Label>
+            <SettingsLabel htmlFor="divider-style">Line Style</SettingsLabel>
             <Select
               value={content?.style || 'solid'}
               onValueChange={(value) => updateContent({ style: value })}
@@ -124,14 +124,14 @@ function DividerSettings({ block, onUpdate }: DividerSettingsProps) {
             </Select>
           </div>
           <div>
-            <Label htmlFor="divider-color" className="text-sm font-medium text-gray-700">Color</Label>
+            <SettingsLabel htmlFor="divider-color">Color</SettingsLabel>
             <div className="flex gap-3 mt-1">
               <Input
                 id="divider-color"
                 type="color"
                 value={content?.color || '#cccccc'}
                 onChange={(e) => updateContent({ color: e.target.value })}
-                className="w-12 h-9 p-1 border-gray-200"
+                className="w-12 h-9 p-1 border-npb-border-default"
               />
               <Input
                 value={content?.color || '#cccccc'}
@@ -148,7 +148,7 @@ function DividerSettings({ block, onUpdate }: DividerSettingsProps) {
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="divider-width" className="text-sm font-medium text-gray-700">Width (%)</Label>
+            <SettingsLabel htmlFor="divider-width">Width (%)</SettingsLabel>
             <div className="flex items-center space-x-4 mt-1">
               <Slider
                 aria-label="Divider width percentage"
@@ -173,10 +173,6 @@ function DividerSettings({ block, onUpdate }: DividerSettingsProps) {
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION

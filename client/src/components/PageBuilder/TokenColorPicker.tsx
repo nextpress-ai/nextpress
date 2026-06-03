@@ -77,9 +77,9 @@ export default function TokenColorPicker({ property, currentEntry, currentStyleV
         <button
           onClick={() => setShowCustom(!showCustom)}
           className={`text-xs px-2 py-1 border rounded-none transition-colors ${
-            showCustom 
-              ? "bg-gray-200 text-gray-800 border-gray-300" 
-              : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+            showCustom
+              ? "bg-npb-interactive-bg-active text-npb-interactive-text-active border-npb-border-strong"
+              : "bg-npb-interactive-bg text-npb-interactive-text border-npb-border-default hover:bg-npb-interactive-bg-hover"
           }`}
         >
           {showCustom ? "← Tokens" : "Custom"}
@@ -93,13 +93,13 @@ export default function TokenColorPicker({ property, currentEntry, currentStyleV
             type="color"
             value={currentCustomValue}
             onChange={(e) => handleCustomChange(e.target.value)}
-            className="w-10 h-8 p-1 border-gray-200 rounded-none"
+            className="w-10 h-8 p-1 border-npb-border-default rounded-none"
           />
           <Input
             value={currentCustomValue}
             onChange={(e) => handleCustomChange(e.target.value)}
             placeholder="#000000"
-            className="flex-1 h-8 text-xs border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="flex-1 h-8 text-xs border-npb-border-default rounded-none focus:outline-none focus:ring-1 focus:ring-npb-border-strong"
           />
         </div>
       ) : (
@@ -116,14 +116,14 @@ export default function TokenColorPicker({ property, currentEntry, currentStyleV
                   onClick={() => handleTokenSelect(name, null, hex)}
                   className={`w-6 h-6 border transition-all ${
                     isSelected(name, null)
-                      ? "ring-2 ring-blue-500 ring-offset-1 border-blue-400"
-                      : "border-gray-300 hover:border-gray-400"
+                      ? "ring-2 ring-npb-focus ring-offset-1 border-npb-border-strong"
+                      : "border-npb-border-default hover:border-npb-border-strong"
                   }`}
                   style={{ backgroundColor: hex === "transparent" ? "transparent" : hex }}
                   title={name}
                 >
                   {hex === "transparent" && (
-                    <span className="text-xs text-gray-400 leading-none">∅</span>
+                    <span className="text-xs text-npb-text-muted leading-none">∅</span>
                   )}
                 </button>
               )
@@ -146,7 +146,7 @@ export default function TokenColorPicker({ property, currentEntry, currentStyleV
                         onClick={() => handleTokenSelect(family, shade, hex)}
                         className={`w-4 h-4 flex-shrink-0 transition-all ${
                           isSelected(family, shade)
-                            ? "ring-2 ring-blue-500 ring-offset-1 scale-125 z-10"
+                            ? "ring-2 ring-npb-focus ring-offset-1 scale-125 z-10"
                             : "hover:scale-110"
                         }`}
                         style={{ backgroundColor: hex }}

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { Label } from '@/components/ui/label';
+import { OptionButton, OptionGroup, SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { Type, Settings } from 'lucide-react';
@@ -41,17 +41,6 @@ function buildTitleClassName(content: PostTitleContent): string {
   return ['wp-block-post-title', content?.className || '']
     .filter(Boolean)
     .join(' ');
-}
-
-/**
- * Get button className for tag-level toggle buttons.
- */
-function getTagButtonClassName(isActive: boolean): string {
-  const base = 'h-9 px-3 text-sm font-semibold rounded-md transition-all';
-  const active = 'bg-gray-200 text-gray-800 hover:bg-gray-300';
-  const inactive =
-    'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300';
-  return `${base} ${isActive ? active : inactive}`;
 }
 
 // ============================================================================
@@ -127,11 +116,7 @@ function PostTitleSettings({ block, onUpdate }: PostTitleSettingsProps) {
       {/* Content */}
       <CollapsibleCard title="Content" icon={Type} defaultOpen>
         <div>
-          <Label
-            htmlFor="post-title-text"
-            className="text-sm font-medium text-gray-700">
-            Title Text
-          </Label>
+          <SettingsLabel htmlFor="post-title-text">Title Text</SettingsLabel>
           <Input
             id="post-title-text"
             value={content?.text || ''}
@@ -145,30 +130,23 @@ function PostTitleSettings({ block, onUpdate }: PostTitleSettingsProps) {
       {/* Heading Tag Level */}
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen>
         <div className="space-y-3">
-          <Label className="text-sm font-medium text-gray-700">
-            Heading Level
-          </Label>
-          <div className="flex flex-wrap gap-2">
+          <SettingsLabel>Heading Level</SettingsLabel>
+          <OptionGroup>
             {HEADING_TAG_OPTIONS.map((option) => (
-              <button
+              <OptionButton
                 key={option.value}
-                type="button"
+                isActive={currentTag === option.value}
                 onClick={() => updateContent({ tag: option.value })}
-                className={getTagButtonClassName(currentTag === option.value)}
-                aria-label={`Use ${option.label} tag`}>
+                ariaLabel={`Use ${option.label} tag`}>
                 {option.label}
-              </button>
+              </OptionButton>
             ))}
-          </div>
+          </OptionGroup>
         </div>
       </CollapsibleCard>
     </div>
   );
 }
-
-// ============================================================================
-// LEGACY RENDERER (Backward Compatibility)
-// ============================================================================
 
 // ============================================================================
 // BLOCK DEFINITION
