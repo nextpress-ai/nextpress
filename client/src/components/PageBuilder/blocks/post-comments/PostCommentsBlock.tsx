@@ -1,102 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 import { useBlockState } from '../useBlockState';
-import { getBlockStateAccessor } from '../blockStateRegistry';
 import type { BlockDefinition, BlockComponentProps } from '../types';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { CollapsibleCard } from '@/components/ui/collapsible-card';
-import { MessageSquare, Settings } from 'lucide-react';
-
-// --- Types ---
-
-export type PostCommentsContent = {
-  postId?: string;
-  showForm?: boolean;
-  showCount?: boolean;
-  commentsPerPage?: number;
-  allowReplies?: boolean;
-  className?: string;
-};
-
-type CommentItem = {
-  id: number;
-  author: string;
-  email?: string;
-  date: string;
-  content: string;
-  replies?: CommentItem[];
-};
-
-const DEFAULT_CONTENT: PostCommentsContent = {
-  postId: '',
-  showForm: true,
-  showCount: true,
-  commentsPerPage: 10,
-  allowReplies: true,
-  className: '',
-};
-
-// --- Helpers ---
-
-/** Generates placeholder comments for the editor preview. */
-function buildPlaceholderComments(): CommentItem[] {
-  return [
-    {
-      id: 1,
-      author: 'Jane Doe',
-      date: new Date(Date.now() - 86400000 * 2).toISOString(),
-      content:
-        'Great article! I really enjoyed reading this. The points you made about architecture were spot on.',
-      replies: [
-        {
-          id: 4,
-          author: 'Author',
-          date: new Date(Date.now() - 86400000).toISOString(),
-          content: 'Thank you, Jane! Glad you found it useful.',
-        },
-      ],
-    },
-    {
-      id: 2,
-      author: 'John Smith',
-      date: new Date(Date.now() - 86400000 * 5).toISOString(),
-      content:
-        'Very insightful. Would love to see a follow-up post diving deeper into the topic.',
-    },
-    {
-      id: 3,
-      author: 'Alice Lee',
-      date: new Date(Date.now() - 86400000 * 7).toISOString(),
-      content: 'Thanks for sharing this. Bookmarked for future reference!',
-    },
-  ];
-}
-
-/** Formats an ISO date string to a human-readable locale date. */
-function formatDate(iso: string): string {
-  if (!iso) return '';
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-/** Generates initials from an author name for the avatar circle. */
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { MessageSquare } from 'lucide-react';
+import {
+  type PostCommentsContent,
+  type CommentItem,
+  DEFAULT_CONTENT,
+  buildPlaceholderComments,
+  formatDate,
+  getInitials,
+} from './post-comments-model';
+import { PostCommentsSettings } from './post-comments-settings';
 
 // --- Comment Entry ---
 
@@ -308,103 +226,6 @@ export function PostCommentsBlockComponent({
       styles={styles}
       isPreview={isPreview}
     />
-  );
-}
-
-// --- Settings ---
-
-/** Sidebar settings panel for the post comments block. */
-function PostCommentsSettings({
-  block,
-  onUpdate,
-}: {
-  block: BlockConfig;
-  onUpdate?: (updates: Partial<BlockConfig>) => void;
-}) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as PostCommentsContent) || DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostCommentsContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({ content: { ...updated } as BlockContent });
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <CollapsibleCard title="Display" icon={Settings} defaultOpen>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <SettingsLabel htmlFor="pc-show-form">Show comment form</SettingsLabel>
-            <Switch
-              id="pc-show-form"
-              checked={content.showForm ?? true}
-              onCheckedChange={(v) => updateContent({ showForm: v })}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <SettingsLabel htmlFor="pc-show-count">Show comment count</SettingsLabel>
-            <Switch
-              id="pc-show-count"
-              checked={content.showCount ?? true}
-              onCheckedChange={(v) => updateContent({ showCount: v })}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <SettingsLabel htmlFor="pc-allow-replies">Allow replies</SettingsLabel>
-            <Switch
-              id="pc-allow-replies"
-              checked={content.allowReplies ?? true}
-              onCheckedChange={(v) => updateContent({ allowReplies: v })}
-            />
-          </div>
-          <div>
-            <SettingsLabel htmlFor="pc-per-page">Comments per page</SettingsLabel>
-            <Input
-              id="pc-per-page"
-              type="number"
-              min={1}
-              max={100}
-              className="h-9"
-              value={content.commentsPerPage ?? 10}
-              onChange={(e) =>
-                updateContent({
-                  commentsPerPage: Math.max(1, Number(e.target.value) || 1),
-                })
-              }
-            />
-          </div>
-        </div>
-      </CollapsibleCard>
-
-      <CollapsibleCard title="Post" icon={Settings} defaultOpen={false}>
-        <div className="space-y-2">
-          <SettingsLabel>Post ID</SettingsLabel>
-          {content?.postId ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="font-mono text-xs truncate">
-                {content.postId}
-              </Badge>
-              <button
-                onClick={() => updateContent({ postId: '' })}
-                className="text-xs text-npb-text-muted hover:text-npb-status-error">
-                clear
-              </button>
-            </div>
-          ) : (
-            <Input
-              value={content?.postId || ''}
-              onChange={(e) => updateContent({ postId: e.target.value })}
-              placeholder="Auto-set when added to a post"
-              className="h-9 text-sm"
-            />
-          )}
-        </div>
-      </CollapsibleCard>
-    </div>
   );
 }
 

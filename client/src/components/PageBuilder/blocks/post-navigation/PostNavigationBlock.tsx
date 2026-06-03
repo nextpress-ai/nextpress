@@ -1,60 +1,20 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useBlockState } from '../useBlockState';
-import { getBlockStateAccessor } from '../blockStateRegistry';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { SettingsLabel } from '../../shared';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import {
   ArrowLeftRight,
   ChevronLeft,
   ChevronRight,
-  Eye,
-  Tag,
 } from 'lucide-react';
-
-// ============================================================================
-// TYPES & CONSTANTS
-// ============================================================================
-
-export type PostNavigationContent = {
-  postId?: string;
-  showThumbnail?: boolean;
-  showLabel?: boolean;
-  prevLabel?: string;
-  nextLabel?: string;
-  className?: string;
-};
-
-type AdjacentPost = {
-  id: string;
-  title: string;
-  slug: string;
-  featuredImage?: string;
-};
-type AdjacentPostsData = { prev?: AdjacentPost; next?: AdjacentPost };
-
-const DEFAULT_CONTENT: PostNavigationContent = {
-  postId: '',
-  showThumbnail: false,
-  showLabel: true,
-  prevLabel: 'Previous Post',
-  nextLabel: 'Next Post',
-  className: '',
-};
-
-const PLACEHOLDER_ADJACENT: AdjacentPostsData = {
-  prev: {
-    id: 'prev-placeholder',
-    title: 'Previous Post Title',
-    slug: 'previous-post',
-  },
-  next: { id: 'next-placeholder', title: 'Next Post Title', slug: 'next-post' },
-};
+import {
+  type PostNavigationContent,
+  type AdjacentPost,
+  type AdjacentPostsData,
+  DEFAULT_CONTENT,
+  PLACEHOLDER_ADJACENT,
+} from './post-navigation-model';
+import { PostNavigationSettings } from './post-navigation-settings';
 
 // ============================================================================
 // DATA HOOK
@@ -257,124 +217,6 @@ export function PostNavigationBlockComponent({
       styles={styles}
       isPreview={isPreview}
     />
-  );
-}
-
-// ============================================================================
-// SETTINGS COMPONENT
-// ============================================================================
-
-interface PostNavigationSettingsProps {
-  block: BlockConfig;
-  onUpdate?: (updates: Partial<BlockConfig>) => void;
-}
-
-/** Sidebar settings panel for the post navigation block. */
-function PostNavigationSettings({
-  block,
-  onUpdate,
-}: PostNavigationSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as PostNavigationContent) || DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostNavigationContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...updated,
-        } as unknown as BlockContent,
-      });
-    }
-  };
-
-  const currentShowThumbnail = content?.showThumbnail ?? false;
-  const currentShowLabel = content?.showLabel ?? true;
-
-  return (
-    <div className="space-y-4">
-      {/* Display Settings */}
-      <CollapsibleCard title="Display" icon={Eye} defaultOpen>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <SettingsLabel htmlFor="nav-show-thumbnail">
-              Show Thumbnail
-            </SettingsLabel>
-            <Switch
-              id="nav-show-thumbnail"
-              checked={currentShowThumbnail}
-              onCheckedChange={(checked) =>
-                updateContent({ showThumbnail: checked })
-              }
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <SettingsLabel htmlFor="nav-show-label">Show Label</SettingsLabel>
-            <Switch
-              id="nav-show-label"
-              checked={currentShowLabel}
-              onCheckedChange={(checked) =>
-                updateContent({ showLabel: checked })
-              }
-            />
-          </div>
-        </div>
-      </CollapsibleCard>
-
-      {/* Label Text */}
-      <CollapsibleCard title="Labels" icon={Tag} defaultOpen={false}>
-        <div className="space-y-4">
-          <div>
-            <SettingsLabel htmlFor="nav-prev-label">Previous Label</SettingsLabel>
-            <Input
-              id="nav-prev-label"
-              value={content?.prevLabel || ''}
-              onChange={(e) => updateContent({ prevLabel: e.target.value })}
-              placeholder="Previous Post"
-              className="mt-1 h-9 text-sm"
-            />
-          </div>
-          <div>
-            <SettingsLabel htmlFor="nav-next-label">Next Label</SettingsLabel>
-            <Input
-              id="nav-next-label"
-              value={content?.nextLabel || ''}
-              onChange={(e) => updateContent({ nextLabel: e.target.value })}
-              placeholder="Next Post"
-              className="mt-1 h-9 text-sm"
-            />
-          </div>
-        </div>
-      </CollapsibleCard>
-
-      {/* Post */}
-      <CollapsibleCard title="Post" icon={Tag} defaultOpen={false}>
-        <div className="space-y-2">
-          <SettingsLabel>Post ID</SettingsLabel>
-          {content?.postId ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="font-mono text-xs truncate">
-                {content.postId}
-              </Badge>
-              <button
-                onClick={() => updateContent({ postId: '' })}
-                className="text-xs text-npb-text-muted hover:text-npb-status-error">
-                clear
-              </button>
-            </div>
-          ) : (
-            <Input
-              value={content?.postId || ''}
-              onChange={(e) => updateContent({ postId: e.target.value })}
-              placeholder="Auto-set when added to a post"
-              className="h-9 text-sm"
-            />
-          )}
-        </div>
-      </CollapsibleCard>
-    </div>
   );
 }
 

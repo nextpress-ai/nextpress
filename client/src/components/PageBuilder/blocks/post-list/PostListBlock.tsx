@@ -1,96 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 import { useBlockState } from '../useBlockState';
-import { getBlockStateAccessor } from '../blockStateRegistry';
 import type { BlockDefinition, BlockComponentProps } from '../types';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import { SettingsLabel } from '../../shared';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import {
   LayoutList,
-  Settings,
   Calendar,
   User,
   Image as ImageIcon,
   Pencil,
 } from 'lucide-react';
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
-export type PostListContent = {
-  layout?: 'grid' | 'list' | 'cards';
-  postsPerPage?: number;
-  showExcerpt?: boolean;
-  showFeaturedImage?: boolean;
-  showDate?: boolean;
-  showAuthor?: boolean;
-  blogId?: string;
-  orderBy?: 'date' | 'title';
-  order?: 'asc' | 'desc';
-  className?: string;
-};
-
-type PostItem = {
-  id: string | number;
-  title: string;
-  slug: string;
-  excerpt?: string;
-  featuredImage?: string;
-  publishedAt?: string;
-  author?: { name: string };
-};
-
-const DEFAULT_CONTENT: PostListContent = {
-  layout: 'cards',
-  postsPerPage: 6,
-  showExcerpt: true,
-  showFeaturedImage: true,
-  showDate: true,
-  showAuthor: true,
-  blogId: '',
-  orderBy: 'date',
-  order: 'desc',
-  className: '',
-};
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-/** Generates placeholder posts for the editor preview. */
-function buildPlaceholderPosts(count: number): PostItem[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i + 1,
-    title: `Post Title ${i + 1}`,
-    slug: `post-title-${i + 1}`,
-    excerpt:
-      'This is a sample excerpt for the post. It gives readers a quick preview of the content.',
-    featuredImage: '',
-    publishedAt: new Date().toISOString(),
-    author: { name: 'Author Name' },
-  }));
-}
-
-/** Formats an ISO date string to a readable locale date. */
-function formatDate(iso?: string): string {
-  if (!iso) return '';
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+import {
+  type PostListContent,
+  type PostItem,
+  DEFAULT_CONTENT,
+  buildPlaceholderPosts,
+  formatDate,
+} from './post-list-model';
+import { PostListSettings } from './post-list-settings';
 
 // ============================================================================
 // RENDERER
@@ -390,150 +316,6 @@ export function PostListBlockComponent({
   });
   return (
     <PostListRenderer content={content} styles={styles} isPreview={isPreview} />
-  );
-}
-
-// ============================================================================
-// SETTINGS
-// ============================================================================
-
-function PostListSettings({
-  block,
-  onUpdate,
-}: {
-  block: BlockConfig;
-  onUpdate?: (updates: Partial<BlockConfig>) => void;
-}) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as unknown as PostListContent) ?? DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostListContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({ content: { ...updated } as BlockContent });
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <CollapsibleCard title="Layout" icon={LayoutList} defaultOpen={true}>
-        <div className="space-y-4">
-          <div>
-            <SettingsLabel htmlFor="pl-layout">Layout</SettingsLabel>
-            <Select
-              value={content.layout ?? 'grid'}
-              onValueChange={(v) => updateContent({ layout: v as any })}>
-              <SelectTrigger id="pl-layout" className="h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="grid">Grid (3 columns)</SelectItem>
-                <SelectItem value="list">List</SelectItem>
-                <SelectItem value="cards">Cards (2 columns)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <SettingsLabel htmlFor="pl-count">Posts per page</SettingsLabel>
-            <Input
-              id="pl-count"
-              type="number"
-              min={1}
-              max={50}
-              className="h-9"
-              value={content.postsPerPage ?? 6}
-              onChange={(e) =>
-                updateContent({
-                  postsPerPage: Math.max(1, Number(e.target.value) || 1),
-                })
-              }
-            />
-          </div>
-        </div>
-      </CollapsibleCard>
-
-      <CollapsibleCard title="Display" icon={Settings} defaultOpen={true}>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <SettingsLabel htmlFor="pl-excerpt">Show excerpt</SettingsLabel>
-            <Switch
-              id="pl-excerpt"
-              checked={content.showExcerpt ?? true}
-              onCheckedChange={(v) => updateContent({ showExcerpt: v })}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <SettingsLabel htmlFor="pl-image">Show featured image</SettingsLabel>
-            <Switch
-              id="pl-image"
-              checked={content.showFeaturedImage ?? true}
-              onCheckedChange={(v) => updateContent({ showFeaturedImage: v })}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <SettingsLabel htmlFor="pl-date">Show date</SettingsLabel>
-            <Switch
-              id="pl-date"
-              checked={content.showDate ?? true}
-              onCheckedChange={(v) => updateContent({ showDate: v })}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <SettingsLabel htmlFor="pl-author">Show author</SettingsLabel>
-            <Switch
-              id="pl-author"
-              checked={content.showAuthor ?? true}
-              onCheckedChange={(v) => updateContent({ showAuthor: v })}
-            />
-          </div>
-        </div>
-      </CollapsibleCard>
-
-      <CollapsibleCard title="Query" icon={Settings} defaultOpen={false}>
-        <div className="space-y-4">
-          <div>
-            <SettingsLabel htmlFor="pl-blog">Blog ID (optional)</SettingsLabel>
-            <Input
-              id="pl-blog"
-              className="h-9"
-              value={content.blogId ?? ''}
-              onChange={(e) => updateContent({ blogId: e.target.value })}
-              placeholder="Filter by blog ID"
-            />
-          </div>
-          <div>
-            <SettingsLabel htmlFor="pl-orderby">Order by</SettingsLabel>
-            <Select
-              value={content.orderBy ?? 'date'}
-              onValueChange={(v) => updateContent({ orderBy: v as any })}>
-              <SelectTrigger id="pl-orderby" className="h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date">Date</SelectItem>
-                <SelectItem value="title">Title</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <SettingsLabel htmlFor="pl-order">Order</SettingsLabel>
-            <Select
-              value={content.order ?? 'desc'}
-              onValueChange={(v) => updateContent({ order: v as any })}>
-              <SelectTrigger id="pl-order" className="h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">Newest first</SelectItem>
-                <SelectItem value="asc">Oldest first</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </CollapsibleCard>
-    </div>
   );
 }
 
