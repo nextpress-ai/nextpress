@@ -5,6 +5,38 @@
 
 ---
 
+## Resolution Status (updated 2026-06-04)
+
+Much of this audit has been actioned by the global theming migration (Phases 1–6) and
+Phase 7 (see `task.md`, commit `08bc367`). Status of the original findings:
+
+| Finding | Status |
+|---|---|
+| Auto-save "completely missing" / README claim FALSE | ✅ **Was already implemented** (parent-level debounced `queueDraftSave` + restore-on-reload). README claim is true. |
+| Block deselection on settings interaction | ✅ **Fixed** — `PageBuilder` derives `blocks = currentState` directly (no dual state / sync effect). |
+| `post-new` orphan block | ✅ **Removed** (moved to `/trash`). |
+| `TokenSpacingPicker` dead code | ✅ **Deleted** — freeform CSS + `UnitToggle` is the chosen spacing pattern. |
+| Dual state management in `PageBuilder` | ✅ **Resolved** — single source of truth (`currentState`). |
+| Block library search/filter missing | ✅ **Added** (label/description/category filter). |
+| Keyboard shortcuts (Delete/Esc/Ctrl+D) missing | ✅ **Added** (guarded against text inputs). |
+| `PublicBlockRenderer`: hardcoded `#007cba`, unparsed markdown | ✅ **Fixed** — `var(--npb-accent)` + `react-markdown`/`remark-gfm`. |
+| Visual drop placeholders + auto-scroll missing | ✅ **Added** (DnD `placeholderIndex` + rAF auto-scroll). _Visual QA pending._ |
+| Debug `console.log` in `useDragAndDropHandler` | ✅ **Removed** (kept the `console.error`). |
+| `post-featured-image` inline styles | ✅ **Resolved** (Phase 5a); remaining inline styles are runtime-dynamic (`aspectRatio`/`objectFit`). |
+| Hardcoded Tailwind colors across blocks/shell | ✅ **Migrated** to `npb-*` tokens (Phases 1–5). |
+| Oversized: columns / group / container | ✅ **Split** into model + settings + block files (< 400 LOC each). |
+| README block counts (42/32/4) | ✅ **Corrected** (25 basic + 1 icon + 10 post = 36; added missing `Container`). |
+| Oversized: post-list, post-info, image, table, video, cover, media-text, post-comments, gallery, post-navigation, post-featured-image, post-author-box | ⬜ **Open** — still > 400 LOC. |
+| Settings pattern divergence (A vs B) → `useSettingsState` | ⬜ **Open.** |
+| Reusability: `createBlockDefinition`, `BlockShell`, `LinkSettings`, `MediaUrlField` | ⬜ **Open.** |
+| Renderer dual type system (`BlockConfig` vs `BlockData`) | ⬜ **Open.** |
+| README Known Issues statuses (posts save, columns fit) | ⬜ **Open** — pending behavioral in-app verification. |
+| Responsive per-device styles, copy/paste, undo structural sharing | ⬜ **Open** (roadmap). |
+
+Inline markers below: **✅ RESOLVED** tags annotate individual findings; unmarked items remain open.
+
+---
+
 ## Table of Contents
 
 1. [Executive Summary](#executive-summary)
@@ -25,6 +57,8 @@
 
 **36 blocks registered** (26 core + 10 post), not 42 as README claims. 1 orphan block (`post-new`) exists but is unreachable. All blocks use `useBlockState` hook consistently, but settings implementations diverge into two incompatible patterns. The page builder delivers most README-claimed features except **auto-save** (completely missing). The biggest systemic issues are: duplicated settings boilerplate across 36 blocks, a dead `TokenSpacingPicker` component, and a parallel renderer with its own type system.
 
+> ✅ **Update (2026-06-04)**: README counts corrected; `post-new` deleted; `TokenSpacingPicker` deleted; auto-save was actually present (claim is true). Remaining systemic issues: settings-boilerplate duplication and the parallel renderer type system. See [Resolution Status](#resolution-status-updated-2026-06-04).
+
 **Overall UX Score: 6.5/10** — Solid foundation, significant gaps in polish and consistency.
 
 ---
@@ -40,9 +74,9 @@
 | **Block settings** (styles, spacing, colors, link URLs) | `BlockSettings.tsx` (1244 LOC) — 3 tabs: Content, Style, Advanced. Typography, colors, spacing, borders, position, layout, animations | **Full** |
 | **Live preview of changes** | Canvas IS the live preview. Changes reflect immediately via `commitBlocks → currentState → re-render` | **Full** |
 | **Undo/redo functionality** | `useUndoRedo` hook — 300ms coalesce, 50-state limit, Ctrl+Z/Shift+Z/Y. Full snapshot storage (memory heavy) | **Full** |
-| **Auto-save to prevent lost work** | **DOES NOT EXIST.** `pageDraftStorage.ts` provides localStorage drafts but only written on explicit Ctrl+S. No timer, no debounce, no periodic writes | **FALSE** |
-| **Columns do not fit content properly** | Known issue. `columns` block is 754 LOC, most complex block. useEffect for columnLayout sync is a state derivation anti-pattern | **Still broken** |
-| **Posts do not save content or slug** | Known issue tracked in README. Block deselection on settings interaction (documented in `post-blocks-report.md`) | **Still broken** |
+| **Auto-save to prevent lost work** | ✅ **CORRECTION (2026-06-04): it DOES exist** — at the parent level (`PageBuilderEditor.queueDraftSave`, debounced) with restore-on-reload via `loadPageDraft`. The original audit missed it. | ~~FALSE~~ → **True** |
+| **Columns do not fit content properly** | Block **split** into model+settings+block files (< 400 LOC), but the `columnLayout` `useEffect` and fit-content behavior were moved verbatim — not behaviorally changed | **Refactored; behavior unverified** |
+| **Posts do not save content or slug** | Root cause (block deselection on settings interaction) is **fixed** — posts should now save. End-to-end save not yet re-verified in-app | **Likely fixed; verify in-app** |
 
 ### Block Count Discrepancy
 
@@ -318,6 +352,8 @@ Two incompatible settings patterns coexist:
 
 ## Inconsistencies & Broken Functionality
 
+> ✅ **Update (2026-06-04)**: Critical 1–4, medium 6/7/9/10, and low 11–13/16/17 are **resolved** — see [Resolution Status](#resolution-status-updated-2026-06-04). Medium 8 is **partial** (columns/group/container split; other oversized blocks still open). Items 5, 14, 15 remain open.
+
 ### Critical Issues
 
 1. **Auto-save is completely missing** — README claims it exists. Browser crash between manual saves = work lost. `pageDraftStorage.ts` has localStorage infrastructure but it's only written on explicit Ctrl+S.
@@ -482,18 +518,18 @@ The renderer (`renderer/`) is a **separate server-side rendering pipeline** with
 
 ### Immediate (This Sprint)
 
-1. **Fix auto-save** — Add debounced localStorage write on `commitBlocks`. 30min task.
-2. **Fix block deselection** — Apply fix from `post-blocks-report.md`. Only deselect when block IDs fundamentally change.
-3. **Register or delete `post-new`** — Decision needed, then 5min fix.
-4. **Remove debug `console.log`** from `useDragAndDropHandler`.
+1. ✅ **RESOLVED** — **Fix auto-save**: already implemented (parent-level debounced draft save + restore-on-reload).
+2. ✅ **RESOLVED** — **Fix block deselection**: `PageBuilder` derives `blocks = currentState` directly; only deselects when the selected block no longer exists.
+3. ✅ **RESOLVED** — **`post-new`**: deleted (moved to `/trash`).
+4. ✅ **RESOLVED** — **Remove debug `console.log`** from `useDragAndDropHandler` (kept the `console.error`).
 
 ### Short-term (Next 2 Weeks)
 
-5. **Extract `useSettingsState(block)` hook** — Unify settings patterns A and B.
-6. **Split oversized blocks** — columns, group, container, post-list, post-info using 3-file pattern.
-7. **Wire or delete `TokenSpacingPicker`** — Decision needed.
-8. **Add block library search** — Filter by label/description/category.
-9. **Add missing keyboard shortcuts** — Delete, Escape, Ctrl+D.
+5. ⬜ **Extract `useSettingsState(block)` hook** — Unify settings patterns A and B.
+6. 🟡 **PARTIAL** — **Split oversized blocks**: columns, group, container ✅ done (3-file split). post-list, post-info, and others still open.
+7. ✅ **RESOLVED** — **`TokenSpacingPicker`**: deleted (freeform + `UnitToggle` is the chosen pattern).
+8. ✅ **RESOLVED** — **Block library search** added (label/description/category).
+9. ✅ **RESOLVED** — **Keyboard shortcuts** added (Delete, Escape, Ctrl+D; guarded vs text inputs).
 
 ### Medium-term (Next Month)
 
@@ -501,7 +537,7 @@ The renderer (`renderer/`) is a **separate server-side rendering pipeline** with
 11. **Extract `BlockShell` wrapper** — Shared rendering shell for all blocks.
 12. **Extract shared `LinkSettings` and `MediaUrlField`** — Reduce duplication.
 13. **Unify renderer types** — Bridge `BlockConfig` and `BlockData` or merge them.
-14. **Fix `PublicBlockRenderer`** — Button colors, markdown parsing.
+14. ✅ **RESOLVED** — **Fix `PublicBlockRenderer`**: button colors → `var(--npb-accent)`; markdown parsed via `react-markdown` + `remark-gfm`.
 
 ### Long-term (Roadmap)
 

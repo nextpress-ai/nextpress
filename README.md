@@ -46,11 +46,11 @@ Nextpress comes with a growing collection of blocks for building pages and posts
 
 | Category | Count | Status |
 |----------|-------|--------|
-| Basic | 32 | Stable |
-| Icon  Sets | 4 | Experimental |
+| Basic | 25 | Stable |
+| Icon | 1 | Experimental |
 | Post | 10 | Stable |
 
-**Basic blocks (32) - Ready to use**
+**Basic blocks (25) - Ready to use**
 
 - [x] Heading
 - [x] Paragraph
@@ -65,6 +65,7 @@ Nextpress comes with a growing collection of blocks for building pages and posts
 - [x] Divider
 - [x] Columns
 - [x] Group
+- [x] Container
 - [x] Quote
 - [x] Pullquote
 - [x] List

@@ -170,23 +170,12 @@ export function useDragAndDropHandler(
           : destination.index;
 
         if (isFromLibrary) {
-          console.log('[DND-DEBUG] Inserting from library:', {
-            draggableId,
-            destParentId,
-            destIndexGlobal,
-            blocksCount: blocks.length,
-          });
           const inserted = insertNewBlock(
             blocks,
             destParentId,
             destIndexGlobal,
             draggableId,
           );
-          console.log('[DND-DEBUG] insertNewBlock result:', {
-            same: inserted.blocks === blocks,
-            newId: inserted.newId,
-            newCount: inserted.blocks.length,
-          });
           if (inserted.blocks === blocks) {
             toast({
               title: 'Failed to add block',
@@ -254,17 +243,8 @@ export function useDragAndDropHandler(
                 )
               : blocksWithPostId;
 
-          console.log(
-            '[DND-DEBUG] Calling setBlocks with',
-            withAssignment.length,
-            'blocks',
-          );
           setBlocks(withAssignment);
           if (inserted.newId) {
-            console.log(
-              '[DND-DEBUG] Setting selectedBlockId to',
-              inserted.newId,
-            );
             setSelectedBlockId(inserted.newId);
             setActiveTab('settings');
           }
