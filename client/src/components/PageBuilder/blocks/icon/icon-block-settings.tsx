@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Smile, Link as LinkIcon, Type, ExternalLink, Palette } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
+import { useSettingsState } from "../useSettingsState";
 import { IconRenderer } from "../shared/IconRenderer";
 import { IconPickerButton } from "../../IconPicker/IconPickerButton";
 import {
@@ -87,8 +87,7 @@ export type IconBlockSettingsProps = {
  * while sharing the same `npb-settings-*` chrome as container / global block settings.
  */
 export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
   const [iconSizeDraft, setIconSizeDraft] = React.useState<NumericWithUnitValue | null>(
     null,
   );
@@ -114,7 +113,7 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
     if (accessor) {
       const current = accessor.getContent() as unknown as IconContent;
       accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       onUpdate({
         content: serializeIconContent({
@@ -129,7 +128,7 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
     if (accessor) {
       const current = accessor.getStyles() || {};
       accessor.setStyles({ ...current, ...styleUpdates });
-      setUpdateTrigger((n) => n + 1);
+      rerender();
     } else if (onUpdate) {
       onUpdate({
         styles: { ...block.styles, ...styleUpdates },
@@ -144,7 +143,7 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
       if (!("padding" in current)) return;
       const { padding: _removed, ...rest } = current;
       accessor.setStyles(rest);
-      setUpdateTrigger((n) => n + 1);
+      rerender();
     } else if (onUpdate) {
       const prev = block.styles || {};
       if (!("padding" in prev)) return;
@@ -164,7 +163,7 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
         },
       },
     });
-    setUpdateTrigger((n) => n + 1);
+    rerender();
   };
 
   const clearStyleWhileToken = (key: "backgroundColor" | "color") => {
@@ -174,7 +173,7 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
         const next = { ...current };
         delete next[key];
         accessor.setStyles(next);
-        setUpdateTrigger((n) => n + 1);
+        rerender();
       }
     } else if (onUpdate && block.styles && key in block.styles) {
       const next = { ...block.styles };

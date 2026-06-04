@@ -27,7 +27,7 @@ Phase 7 (see `task.md`, commit `08bc367`). Status of the original findings:
 | Oversized: columns / group / container | ✅ **Split** into model + settings + block files (< 400 LOC each). |
 | README block counts (42/32/4) | ✅ **Corrected** (25 basic + 1 icon + 10 post = 36; added missing `Container`). |
 | Oversized: post-list, image, table, video, post-info, cover, media-text, post-comments, gallery, post-navigation | ✅ **Split** into model + settings + block files (all main files < 400 LOC). post-author-box (385) and post-featured-image (340) dropped under 400 during the theming migration — no split needed. |
-| Settings pattern divergence (A vs B) → `useSettingsState` | ⬜ **Open.** |
+| Settings pattern divergence (A vs B) → `useSettingsState` | ✅ **Resolved** — `useSettingsState` hook unifies all settings panels (35 components migrated; flat-content blocks use it fully, bespoke blocks use it for accessor+rerender and keep their token/layout/data logic). `markdown` excluded (no settings). |
 | Reusability: `createBlockDefinition`, `BlockShell`, `LinkSettings`, `MediaUrlField` | ⬜ **Open.** |
 | Renderer dual type system (`BlockConfig` vs `BlockData`) | ⬜ **Open.** |
 | README Known Issues statuses (posts save, columns fit) | ⬜ **Open** — pending behavioral in-app verification. |
@@ -352,7 +352,7 @@ Two incompatible settings patterns coexist:
 
 ## Inconsistencies & Broken Functionality
 
-> ✅ **Update (2026-06-04)**: Critical 1–4, medium 6/7/8/9/10, and low 11–13/16/17 are **resolved** — see [Resolution Status](#resolution-status-updated-2026-06-04). Medium 8 (oversized blocks) is now fully resolved — all blocks split to < 400 LOC main files. Items 5, 14, 15 remain open.
+> ✅ **Update (2026-06-04)**: Critical 1–4, medium 6/7/8/9/10, and low 11–13/16/17 are **resolved** — see [Resolution Status](#resolution-status-updated-2026-06-04). Medium 8 (oversized blocks) and 5 (settings unification) are now resolved. Items 14, 15 remain open (undo memory; per-device styles).
 
 ### Critical Issues
 
@@ -525,7 +525,7 @@ The renderer (`renderer/`) is a **separate server-side rendering pipeline** with
 
 ### Short-term (Next 2 Weeks)
 
-5. ⬜ **Extract `useSettingsState(block)` hook** — Unify settings patterns A and B.
+5. ✅ **RESOLVED** — **`useSettingsState(block)` hook** unifies patterns A and B; all 35 settings components migrated (markdown has no settings).
 6. ✅ **RESOLVED** — **Split oversized blocks**: all blocks split to 3-file pattern with main files < 400 LOC (columns, group, container, post-list, image, table, video, post-info, cover, media-text, post-comments, gallery, post-navigation).
 7. ✅ **RESOLVED** — **`TokenSpacingPicker`**: deleted (freeform + `UnitToggle` is the chosen pattern).
 8. ✅ **RESOLVED** — **Block library search** added (label/description/category).

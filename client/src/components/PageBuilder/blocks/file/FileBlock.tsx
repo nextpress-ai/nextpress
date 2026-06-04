@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { File as FileIcon, Download, Settings } from "lucide-react";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
-import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 
 // ============================================================================
@@ -189,8 +189,7 @@ interface FileSettingsProps {
 }
 
 function FileSettings({ block, onUpdate }: FileSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
   const [isPickerOpen, setPickerOpen] = useState(false);
 
   // Get current state
@@ -215,7 +214,7 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
           ...updates,
         },
       } as FileContent);
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       const currentData = block.content?.kind === 'structured' 
         ? (block.content.data as FileData) 

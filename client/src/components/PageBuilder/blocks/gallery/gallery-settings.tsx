@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { BlockConfig, BlockContent, Media } from "@shared/schema-types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Plus, Trash2, Image as ImageIcon } from "lucide-react";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Settings } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
+import { useSettingsState } from "../useSettingsState";
 import {
   type GalleryContent,
   type GalleryData,
@@ -28,8 +28,7 @@ interface GallerySettingsProps {
 }
 
 export function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
   const [isPickerOpen, setPickerOpen] = useState(false);
 
   // Get current state
@@ -55,7 +54,7 @@ export function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
           ...updates,
         },
       } as GalleryContent);
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       const currentData = block.content?.kind === 'structured'
         ? (block.content.data as GalleryData)

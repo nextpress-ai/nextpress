@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Maximize, Settings, Link } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
+import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 import { type ImageContent, DEFAULT_CONTENT, getAlignmentButtonClass } from "./image-model";
 
@@ -17,8 +17,7 @@ interface ImageSettingsProps {
 }
 
 export function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
   const [isPickerOpen, setPickerOpen] = useState(false);
 
   // Get current state
@@ -31,7 +30,7 @@ export function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
     if (accessor) {
       const current = accessor.getContent() as ImageContent;
       accessor.setContent({ ...current, ...updates } as ImageContent);
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       onUpdate({
         content: {

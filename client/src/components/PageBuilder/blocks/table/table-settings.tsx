@@ -1,4 +1,3 @@
-import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Plus, Trash2, Table as TableIcon, Settings } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
+import { useSettingsState } from "../useSettingsState";
 import {
   type TableContent,
   type TableData,
@@ -21,8 +20,7 @@ interface TableSettingsProps {
 }
 
 export function TableSettings({ block, onUpdate }: TableSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
 
   // Get current state
   const content = accessor
@@ -50,7 +48,7 @@ export function TableSettings({ block, onUpdate }: TableSettingsProps) {
           ...updates,
         },
       } as TableContent);
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       onUpdate({
         content: {

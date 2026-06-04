@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from "../../shared";
 import { Settings, Layout } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
+import { useSettingsState } from "../useSettingsState";
 import { type GroupContent, DEFAULT_CONTENT, LAYOUT_PRESETS } from "./group-model";
 
 export interface GroupSettingsProps {
@@ -14,8 +14,7 @@ export interface GroupSettingsProps {
 }
 
 export function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
 
   // Get current state
   const content = accessor
@@ -27,7 +26,7 @@ export function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
     if (accessor) {
       const current = accessor.getContent() as GroupContent;
       accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       onUpdate({
         content: {

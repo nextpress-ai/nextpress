@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Layout, Palette, Ruler } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
+import { useSettingsState } from "../useSettingsState";
 import { cn } from "@/lib/utils";
 import TokenColorPicker from "../../TokenColorPicker";
 import {
@@ -71,8 +71,7 @@ function UnitToggle({
 }
 
 export function ContainerSettings({ block, onUpdate }: ContainerSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
 
   const content = accessor
     ? (accessor.getContent() as ContainerContent)
@@ -83,7 +82,7 @@ export function ContainerSettings({ block, onUpdate }: ContainerSettingsProps) {
     if (accessor) {
       const current = accessor.getContent() as ContainerContent;
       accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((n) => n + 1);
+      rerender();
     } else if (onUpdate) {
       onUpdate({
         content: { ...DEFAULT_CONTENT, ...block.content, ...updates } as BlockContent,
@@ -95,7 +94,7 @@ export function ContainerSettings({ block, onUpdate }: ContainerSettingsProps) {
     if (accessor) {
       const current = accessor.getStyles() || {};
       accessor.setStyles({ ...current, ...styleUpdates });
-      setUpdateTrigger((n) => n + 1);
+      rerender();
     } else if (onUpdate) {
       onUpdate({
         styles: { ...block.styles, ...styleUpdates },
@@ -108,7 +107,7 @@ export function ContainerSettings({ block, onUpdate }: ContainerSettingsProps) {
       const current = accessor.getStyles() || {};
       const { backgroundColor: _b, ...rest } = current;
       accessor.setStyles(rest);
-      setUpdateTrigger((n) => n + 1);
+      rerender();
     } else if (onUpdate && block.styles?.backgroundColor != null) {
       const { backgroundColor: _b, ...rest } = block.styles;
       onUpdate({ styles: rest });

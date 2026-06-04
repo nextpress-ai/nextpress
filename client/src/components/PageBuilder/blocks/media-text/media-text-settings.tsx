@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { Image as ImageIcon, Settings, Link } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
+import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 import { type MediaTextContent, type MediaTextData, DEFAULT_CONTENT, DEFAULT_DATA } from './media-text-model';
 
@@ -18,8 +18,7 @@ interface MediaTextSettingsProps {
 }
 
 export function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
   const [isPickerOpen, setPickerOpen] = useState(false);
 
   // Get current state
@@ -43,7 +42,7 @@ export function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
           ...updates,
         },
       } as MediaTextContent);
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       const currentData = block.content?.kind === 'structured'
         ? (block.content.data as MediaTextData)

@@ -13,8 +13,8 @@ import { Button } from '@/components/ui/button';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { SettingsLabel } from '../../shared';
 import { Plus, Trash2, SquareMousePointer, Settings } from 'lucide-react';
-import { getBlockStateAccessor } from '../blockStateRegistry';
 import { useBlockState } from '../useBlockState';
+import { useSettingsState } from '../useSettingsState';
 
 // ============================================================================
 // TYPES
@@ -165,8 +165,7 @@ interface ButtonsSettingsProps {
 }
 
 function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
 
   // Get current state
   const content = accessor
@@ -191,7 +190,7 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
           ...updates,
         },
       } as ButtonsContent);
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       const currentData = block.content?.kind === 'structured' 
         ? (block.content.data as ButtonsData) 

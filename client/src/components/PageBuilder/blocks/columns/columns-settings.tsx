@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { generateBlockId } from "../../utils";
-import { getBlockStateAccessor } from "../blockStateRegistry";
+import { useSettingsState } from "../useSettingsState";
 import {
   type ColumnLayout,
   type ColumnsContent,
@@ -35,8 +35,7 @@ export interface ColumnsSettingsProps {
 }
 
 export function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
 
   // Get current state
   const content = accessor
@@ -58,7 +57,7 @@ export function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
       const current = accessor.getContent() as ColumnsContent;
       const currentData = readColumnsData(current);
       accessor.setContent(writeColumnsData(current, { ...currentData, ...contentUpdates }) as ColumnsContent);
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       onUpdate({ content: writeColumnsData(block.content, contentUpdates) });
     }
@@ -84,7 +83,7 @@ export function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
         ...existing,
         ...settingsUpdates,
       });
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       onUpdate({
         settings: {
@@ -122,7 +121,7 @@ export function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
       },
       children: nextChildren,
     });
-    setUpdateTrigger((prev) => prev + 1);
+    rerender();
   };
 
   const updateColumn = (index: number, updates: Partial<ColumnLayout>) => {

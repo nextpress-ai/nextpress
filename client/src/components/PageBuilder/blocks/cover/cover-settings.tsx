@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Square as CoverIcon, Settings } from "lucide-react";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
-import { getBlockStateAccessor } from "../blockStateRegistry";
+import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 import { type CoverContent, type CoverData, DEFAULT_CONTENT, DEFAULT_DATA } from './cover-model';
 
@@ -19,8 +19,7 @@ interface CoverSettingsProps {
 }
 
 export function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { accessor, rerender } = useSettingsState({ block, onUpdate });
   const [isPickerOpen, setPickerOpen] = useState(false);
 
   // Get current state
@@ -45,7 +44,7 @@ export function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
           ...updates,
         },
       } as CoverContent);
-      setUpdateTrigger((prev) => prev + 1);
+      rerender();
     } else if (onUpdate) {
       const currentData = block.content?.kind === 'structured'
         ? (block.content.data as CoverData)
