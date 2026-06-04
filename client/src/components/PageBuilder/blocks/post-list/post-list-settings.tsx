@@ -1,6 +1,6 @@
-import { getBlockStateAccessor } from '../blockStateRegistry';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
+import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
+import { useSettingsState } from '../useSettingsState';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -21,17 +21,11 @@ export function PostListSettings({
   block: BlockConfig;
   onUpdate?: (updates: Partial<BlockConfig>) => void;
 }) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as unknown as PostListContent) ?? DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostListContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({ content: { ...updated } as BlockContent });
-    }
-  };
+  const { content, updateContent } = useSettingsState<PostListContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   return (
     <div className="space-y-4">
