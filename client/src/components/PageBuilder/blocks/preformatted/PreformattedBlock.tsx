@@ -1,13 +1,13 @@
 import React from "react";
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import type { BlockConfig } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { FileText as PreformattedIcon, Settings } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
 // TYPES
@@ -89,47 +89,11 @@ interface PreformattedSettingsProps {
 }
 
 function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as PreformattedContent)
-    : (block.content as PreformattedContent) || DEFAULT_CONTENT;
-  const styles = accessor
-    ? accessor.getStyles()
-    : block.styles;
-
-  // Update handlers
-  const updateContent = (updates: Partial<PreformattedContent>) => {
-    if (accessor) {
-      const current = accessor.getContent() as PreformattedContent;
-      accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...block.content,
-          ...updates,
-        } as BlockContent,
-      });
-    }
-  };
-
-  const updateStyles = (styleUpdates: Partial<React.CSSProperties>) => {
-    if (accessor) {
-      const current = accessor.getStyles() || {};
-      accessor.setStyles({ ...current, ...styleUpdates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        styles: {
-          ...block.styles,
-          ...styleUpdates,
-        },
-      });
-    }
-  };
+  const { content, styles, updateContent, updateStyles } = useSettingsState<PreformattedContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   return (
     <div className="space-y-4">

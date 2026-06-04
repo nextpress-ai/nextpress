@@ -1,7 +1,7 @@
 // blocks/post-excerpt/PostExcerptBlock.tsx
 import * as React from 'react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
+import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -9,7 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { FileText, Settings } from 'lucide-react';
-import { getBlockStateAccessor } from '../blockStateRegistry';
+import { useSettingsState } from '../useSettingsState';
 import { useBlockState } from '../useBlockState';
 
 // ============================================================================
@@ -137,21 +137,11 @@ interface PostExcerptSettingsProps {
  * Controls max character length, "Read More" toggle/text, and CSS classes.
  */
 function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as PostExcerptContent) || DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostExcerptContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...updated,
-        } as unknown as BlockContent,
-      });
-    }
-  };
+  const { content, updateContent } = useSettingsState<PostExcerptContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   const currentMaxLength =
     content?.maxLength ?? DEFAULT_CONTENT.maxLength!;

@@ -7,8 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Type } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
 // TYPES
@@ -100,29 +100,11 @@ interface TextSettingsProps {
 }
 
 function TextSettings({ block, onUpdate }: TextSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as TextBlockContent)
-    : (block.content as TextBlockContent) || DEFAULT_CONTENT;
-
-  // Update handlers
-  const updateContent = (updates: Partial<TextBlockContent>) => {
-    if (accessor) {
-      const current = accessor.getContent() as TextBlockContent;
-      accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...block.content,
-          ...updates,
-        } as BlockContent,
-      });
-    }
-  };
+  const { content, updateContent } = useSettingsState<TextBlockContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   return (
     <div className="space-y-4">

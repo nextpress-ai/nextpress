@@ -1,5 +1,5 @@
 import React from "react";
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import type { BlockConfig } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Quote as QuoteIcon, Settings } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
 // ============================================================================
@@ -119,29 +119,11 @@ interface QuoteSettingsProps {
 }
 
 function QuoteSettings({ block, onUpdate }: QuoteSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as QuoteContent)
-    : (block.content as QuoteContent) || DEFAULT_CONTENT;
-
-  // Update handlers
-  const updateContent = (updates: Partial<QuoteContent>) => {
-    if (accessor) {
-      const current = accessor.getContent() as QuoteContent;
-      accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...block.content,
-          ...updates,
-        } as BlockContent,
-      });
-    }
-  };
+  const { content, updateContent } = useSettingsState<QuoteContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   return (
     <div className="space-y-4">

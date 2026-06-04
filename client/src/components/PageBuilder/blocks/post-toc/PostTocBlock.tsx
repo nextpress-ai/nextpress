@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ListOrdered, Settings, Type } from 'lucide-react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
+import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getBlockStateAccessor } from '../blockStateRegistry';
+import { useSettingsState } from '../useSettingsState';
 import { useBlockState } from '../useBlockState';
 
 // ============================================================================
@@ -241,21 +241,11 @@ interface PostTocSettingsProps {
  * Exposes title, max heading depth, ordered/unordered toggle, and CSS class.
  */
 function PostTocSettings({ block, onUpdate }: PostTocSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as PostTocContent) || DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostTocContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...updated,
-        } as unknown as BlockContent,
-      });
-    }
-  };
+  const { content, updateContent } = useSettingsState<PostTocContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   return (
     <div className="space-y-4">

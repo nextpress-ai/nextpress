@@ -1,5 +1,5 @@
-import { getBlockStateAccessor } from '../blockStateRegistry';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
+import { useSettingsState } from '../useSettingsState';
+import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -22,21 +22,11 @@ export function PostNavigationSettings({
   block,
   onUpdate,
 }: PostNavigationSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as PostNavigationContent) || DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostNavigationContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...updated,
-        } as unknown as BlockContent,
-      });
-    }
-  };
+  const { content, updateContent } = useSettingsState<PostNavigationContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   const currentShowThumbnail = content?.showThumbnail ?? false;
   const currentShowLabel = content?.showLabel ?? true;

@@ -1,11 +1,11 @@
 import * as React from 'react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
+import type { BlockConfig } from '@shared/schema-types';
 import { OptionButton, OptionGroup, SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { Type, Settings } from 'lucide-react';
-import { getBlockStateAccessor } from '../blockStateRegistry';
+import { useSettingsState } from '../useSettingsState';
 import { useBlockState } from '../useBlockState';
 
 // ============================================================================
@@ -93,21 +93,11 @@ interface PostTitleSettingsProps {
  * Allows choosing the heading tag level (h1-h3) and adding custom CSS classes.
  */
 function PostTitleSettings({ block, onUpdate }: PostTitleSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as PostTitleContent) || DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostTitleContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...updated,
-        } as unknown as BlockContent,
-      });
-    }
-  };
+  const { content, updateContent } = useSettingsState<PostTitleContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   const currentTag = content?.tag || 'h1';
 

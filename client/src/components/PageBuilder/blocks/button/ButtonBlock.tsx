@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { MousePointer, ExternalLink, Type, Link, Smile, X } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { useSettingsState } from "../useSettingsState";
 import { IconRenderer } from "../shared/IconRenderer";
 import { IconPickerButton } from "../../IconPicker/IconPickerButton";
 import { formatIconReferenceLabel, type IconReference } from "@/lib/icon-indexes";
@@ -158,13 +158,11 @@ interface ButtonSettingsProps {
 }
 
 function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as ButtonContent)
-    : (block.content as ButtonContent) || DEFAULT_CONTENT;
+  const { content, updateContent } = useSettingsState<ButtonContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   const currentIcon = content?.icon as IconReference | undefined;
   const iconRefFullLabel = currentIcon ? formatIconReferenceLabel(currentIcon) : '';
@@ -174,22 +172,6 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
         maxChars: NPB_ICON_REFERENCE_ROW_MAX_CHARS,
       })
     : '';
-
-  // Update handlers
-  const updateContent = (updates: Partial<ButtonContent>) => {
-    if (accessor) {
-      const current = accessor.getContent() as ButtonContent;
-      accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...block.content,
-          ...updates,
-        } as BlockContent,
-      });
-    }
-  };
 
   const handleIconSelect = (icon: IconReference) => {
     updateContent({ icon });

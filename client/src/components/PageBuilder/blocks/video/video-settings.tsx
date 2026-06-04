@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import { useState } from "react";
+import type { BlockConfig } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Video as VideoIcon, AlignCenter, Maximize, Settings } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
+import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 import { type VideoContent, DEFAULT_CONTENT } from "./video-model";
 
@@ -17,31 +17,13 @@ interface VideoSettingsProps {
 }
 
 export function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { content, updateContent } = useSettingsState<VideoContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
   const [isPickerOpen, setPickerOpen] = useState(false);
   const [isPosterPickerOpen, setPosterPickerOpen] = useState(false);
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as VideoContent)
-    : (block.content as VideoContent) || DEFAULT_CONTENT;
-
-  // Update handlers
-  const updateContent = (updates: Partial<VideoContent>) => {
-    if (accessor) {
-      const current = accessor.getContent() as VideoContent;
-      accessor.setContent({ ...current, ...updates } as VideoContent);
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...block.content,
-          ...updates,
-        } as BlockContent,
-      });
-    }
-  };
 
   const alignmentOptions = [
     { value: 'default', label: 'Default', icon: AlignCenter },

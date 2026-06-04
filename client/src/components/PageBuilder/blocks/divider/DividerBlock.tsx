@@ -1,5 +1,5 @@
 import React from "react";
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import type { BlockConfig } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,8 +7,8 @@ import { Slider } from "@/components/ui/slider";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Minus as MinusIcon, Settings } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
 // TYPES
@@ -78,29 +78,11 @@ interface DividerSettingsProps {
 }
 
 function DividerSettings({ block, onUpdate }: DividerSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as DividerContent)
-    : (block.content as DividerContent) || DEFAULT_CONTENT;
-
-  // Update handlers
-  const updateContent = (updates: Partial<DividerContent>) => {
-    if (accessor) {
-      const current = accessor.getContent() as DividerContent;
-      accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...block.content,
-          ...updates,
-        } as BlockContent,
-      });
-    }
-  };
+  const { content, updateContent } = useSettingsState<DividerContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   return (
     <div className="space-y-4">

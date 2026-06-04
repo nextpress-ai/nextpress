@@ -1,12 +1,12 @@
 import React from "react";
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import type { BlockConfig } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Minus as SeparatorIcon, Settings } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
 // TYPES
@@ -79,47 +79,11 @@ interface SeparatorSettingsProps {
 }
 
 function SeparatorSettings({ block, onUpdate }: SeparatorSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as SeparatorContent)
-    : (block.content as SeparatorContent) || DEFAULT_CONTENT;
-  const styles = accessor
-    ? accessor.getStyles()
-    : block.styles;
-
-  // Update handlers
-  const updateContent = (updates: Partial<SeparatorContent>) => {
-    if (accessor) {
-      const current = accessor.getContent() as SeparatorContent;
-      accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...block.content,
-          ...updates,
-        } as BlockContent,
-      });
-    }
-  };
-
-  const updateStyles = (styleUpdates: Partial<React.CSSProperties>) => {
-    if (accessor) {
-      const current = accessor.getStyles() || {};
-      accessor.setStyles({ ...current, ...styleUpdates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        styles: {
-          ...block.styles,
-          ...styleUpdates,
-        },
-      });
-    }
-  };
+  const { styles, updateStyles } = useSettingsState<SeparatorContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   return (
     <div className="space-y-4">

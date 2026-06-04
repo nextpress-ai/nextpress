@@ -27,10 +27,11 @@ export function useSettingsState<TContent>(args: {
   const [, force] = useState(0);
   const rerender = () => force((n) => n + 1);
 
+  // Read: live accessor when present, else the block's own content, falling back
+  // to defaults only when there is none. Does NOT merge defaults over existing
+  // content — that would inject default fields into the saved `onUpdate` payload.
   const content = (
-    accessor
-      ? accessor.getContent()
-      : { ...((defaultContent ?? {}) as object), ...(block.content as object | undefined) }
+    accessor ? accessor.getContent() : (block.content ?? defaultContent)
   ) as TContent;
 
   const styles = accessor ? accessor.getStyles() : block.styles;
@@ -42,7 +43,7 @@ export function useSettingsState<TContent>(args: {
       accessor.setContent({ ...current, ...updates });
       rerender();
     } else if (onUpdate) {
-      onUpdate({ content: { ...(content as object), ...updates } as unknown as BlockContent });
+      onUpdate({ content: { ...(block.content as object), ...updates } as unknown as BlockContent });
     }
   };
 

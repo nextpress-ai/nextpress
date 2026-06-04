@@ -1,5 +1,5 @@
-import { getBlockStateAccessor } from '../blockStateRegistry';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
+import { useSettingsState } from '../useSettingsState';
+import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -16,17 +16,11 @@ export function PostCommentsSettings({
   block: BlockConfig;
   onUpdate?: (updates: Partial<BlockConfig>) => void;
 }) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as PostCommentsContent) || DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostCommentsContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({ content: { ...updated } as BlockContent });
-    }
-  };
+  const { content, updateContent } = useSettingsState<PostCommentsContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   return (
     <div className="space-y-4">

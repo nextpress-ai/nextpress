@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
+import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { UserCircle, Settings, Wrench } from 'lucide-react';
-import { getBlockStateAccessor } from '../blockStateRegistry';
+import { useSettingsState } from '../useSettingsState';
 import { useBlockState } from '../useBlockState';
 
 // ============================================================================
@@ -212,21 +212,11 @@ function PostAuthorBoxSettings({
   block,
   onUpdate,
 }: PostAuthorBoxSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as PostAuthorBoxContent) || DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostAuthorBoxContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...updated,
-        } as unknown as BlockContent,
-      });
-    }
-  };
+  const { content, updateContent } = useSettingsState<PostAuthorBoxContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   const currentLayout = content?.layout ?? 'horizontal';
   const currentAvatarSize = content?.avatarSize ?? 64;

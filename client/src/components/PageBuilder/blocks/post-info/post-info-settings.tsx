@@ -1,4 +1,4 @@
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
+import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { Settings } from 'lucide-react';
-import { getBlockStateAccessor } from '../blockStateRegistry';
+import { useSettingsState } from '../useSettingsState';
 import {
   type PostInfoContent,
   DEFAULT_CONTENT,
@@ -27,19 +27,11 @@ interface PostInfoSettingsProps {
 
 /** Sidebar settings panel for the post info block. */
 export function PostInfoSettings({ block, onUpdate }: PostInfoSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as PostInfoContent) || DEFAULT_CONTENT;
-
-  const updateContent = (updates: Partial<PostInfoContent>) => {
-    const updated = { ...content, ...updates };
-    if (accessor) {
-      accessor.setContent(updated);
-    } else if (onUpdate) {
-      onUpdate({
-        content: { ...updated } as unknown as BlockContent,
-      });
-    }
-  };
+  const { content, updateContent } = useSettingsState<PostInfoContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   const toggles = [
     {

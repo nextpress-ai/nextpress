@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart3, Palette, Settings } from 'lucide-react';
 import type { BlockDefinition, BlockComponentProps } from '../types.ts';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
+import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getBlockStateAccessor } from '../blockStateRegistry';
+import { useSettingsState } from '../useSettingsState';
 import { useBlockState } from '../useBlockState';
 
 // ============================================================================
@@ -223,24 +223,11 @@ function PostProgressSettings({
   block: BlockConfig;
   onUpdate?: (updates: Partial<BlockConfig>) => void;
 }) {
-  const accessor = getBlockStateAccessor(block.id);
-  const content = (block.content as PostProgressContent) || DEFAULT_CONTENT;
-
-  const updateContent = useCallback(
-    (updates: Partial<PostProgressContent>) => {
-      const updated = { ...content, ...updates };
-      if (accessor) {
-        accessor.setContent(updated);
-      } else if (onUpdate) {
-        onUpdate({
-          content: {
-            ...updated,
-          } as unknown as BlockContent,
-        });
-      }
-    },
-    [accessor, content, onUpdate],
-  );
+  const { content, updateContent } = useSettingsState<PostProgressContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   return (
     <div className="space-y-4">

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import type { BlockConfig } from "@shared/schema-types";
 import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { AudioLines as AudioIcon, Settings } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 
 // ============================================================================
@@ -133,30 +133,12 @@ interface AudioSettingsProps {
 }
 
 function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
+  const { content, updateContent } = useSettingsState<AudioContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
   const [isPickerOpen, setPickerOpen] = useState(false);
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as AudioContent)
-    : (block.content as AudioContent) || DEFAULT_CONTENT;
-
-  // Update handlers
-  const updateContent = (updates: Partial<AudioContent>) => {
-    if (accessor) {
-      const current = accessor.getContent() as AudioContent;
-      accessor.setContent({ ...current, ...updates } as AudioContent);
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...block.content,
-          ...updates,
-        } as BlockContent,
-      });
-    }
-  };
 
   const audioUrl = content?.kind === 'media' ? content.url : '';
 

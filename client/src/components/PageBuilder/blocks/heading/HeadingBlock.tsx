@@ -8,8 +8,8 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { OptionButton, OptionGroup, SettingsLabel } from '../../shared';
 import * as React from "react";
 import type { JSX } from "react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
 import { useBlockState } from "../useBlockState";
+import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
 // TYPES
@@ -146,29 +146,11 @@ interface HeadingSettingsProps {
 }
 
 function LegacyHeadingSettings({ block, onUpdate }: HeadingSettingsProps) {
-  const accessor = getBlockStateAccessor(block.id);
-  const [, setUpdateTrigger] = React.useState(0);
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as HeadingContent)
-    : (block.content as HeadingContent) || DEFAULT_CONTENT;
-
-  // Update handlers
-  const updateContent = (updates: Partial<HeadingContent>) => {
-    if (accessor) {
-      const current = accessor.getContent() as HeadingContent;
-      accessor.setContent({ ...current, ...updates });
-      setUpdateTrigger((prev) => prev + 1);
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          ...block.content,
-          ...updates,
-        } as BlockContent,
-      });
-    }
-  };
+  const { accessor, content, updateContent } = useSettingsState<HeadingContent>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_CONTENT,
+  });
 
   // Derived data
   const textValue = content?.kind === "text" ? content.value : "";
