@@ -28,8 +28,10 @@ Phase 7 (see `task.md`, commit `08bc367`). Status of the original findings:
 | README block counts (42/32/4) | ✅ **Corrected** (25 basic + 1 icon + 10 post = 36; added missing `Container`). |
 | Oversized: post-list, image, table, video, post-info, cover, media-text, post-comments, gallery, post-navigation | ✅ **Split** into model + settings + block files (all main files < 400 LOC). post-author-box (385) and post-featured-image (340) dropped under 400 during the theming migration — no split needed. |
 | Settings pattern divergence (A vs B) → `useSettingsState` | ✅ **Resolved** — `useSettingsState` hook unifies all settings panels (35 components migrated; flat-content blocks use it fully, bespoke blocks use it for accessor+rerender and keep their token/layout/data logic). `markdown` excluded (no settings). |
-| Reusability: `createBlockDefinition`, `BlockShell`, `LinkSettings`, `MediaUrlField` | ⬜ **Open.** |
-| Renderer dual type system (`BlockConfig` vs `BlockData`) | ⬜ **Open.** |
+| Reusability: `createBlockDefinition` | ✅ **Built** (opt-in factory; absorbs `useBlockState` wiring + optional content parse/serialize). Rollout to pure blocks in progress; bespoke-component blocks (extra hooks/effects) keep custom components. |
+| Reusability: `BlockShell` | ✅ **Decided: not building** — `block-${id}` wrapper already centralized in `BlockRenderer`; per-block `wp-block-*` class+tag is intrinsic → a shell would be indirection without dedup. |
+| Reusability: `LinkSettings` / `MediaUrlField` | ✅ **Decided: skip** — heterogeneous data shapes (`url` vs `href`, flat vs nested `data`, chip vs select) → a shared component would be a forced abstraction worse than the shallow duplication. |
+| Renderer dual type system (`BlockConfig` vs `BlockData`) | 🗓️ **Planned as its own phase** — see [`phase8-renderer-unification.md`](phase8-renderer-unification.md). |
 | README Known Issues statuses (posts save, columns fit) | ⬜ **Open** — pending behavioral in-app verification. |
 | Responsive per-device styles, copy/paste, undo structural sharing | ⬜ **Open** (roadmap). |
 
