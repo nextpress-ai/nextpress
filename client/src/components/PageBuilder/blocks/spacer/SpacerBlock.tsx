@@ -1,13 +1,12 @@
 import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Space as SpaceIcon, Settings } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -48,23 +47,6 @@ function SpacerRenderer({ content, styles }: SpacerRendererProps) {
       aria-hidden="true"
     />
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function SpacerBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<SpacerContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <SpacerRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -124,22 +106,20 @@ function SpacerSettings({ block, onUpdate }: SpacerSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const SpacerBlock: BlockDefinition = {
+const SpacerBlock = createBlockDefinition<SpacerContent>({
   id: 'core/spacer',
   label: 'Spacer',
   icon: SpaceIcon,
   description: 'Add vertical spacing',
   category: 'layout',
-  defaultContent: {
-    height: 100,
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     padding: '0px',
     margin: '0px',
   },
-  component: SpacerBlockComponent,
   settings: SpacerSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <SpacerRenderer content={content} styles={styles} />,
+});
 
 export default SpacerBlock;

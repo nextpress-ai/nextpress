@@ -1,13 +1,12 @@
 import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Minus as MinusIcon, Settings } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -49,23 +48,6 @@ function DividerRenderer({ content, styles }: DividerRendererProps) {
       />
     </div>
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function DividerBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<DividerContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <DividerRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -160,23 +142,19 @@ function DividerSettings({ block, onUpdate }: DividerSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const DividerBlock: BlockDefinition = {
+const DividerBlock = createBlockDefinition<DividerContent>({
   id: 'core/divider',
   label: 'Divider',
   icon: MinusIcon,
   description: 'Add a horizontal line',
   category: 'layout',
-  defaultContent: {
-    style: 'solid',
-    width: 100,
-    color: '#cccccc',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     padding: '20px 0px',
   },
-  component: DividerBlockComponent,
   settings: DividerSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <DividerRenderer content={content} styles={styles} />,
+});
 
 export default DividerBlock;
