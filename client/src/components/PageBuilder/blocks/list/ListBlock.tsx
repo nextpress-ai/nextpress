@@ -1,7 +1,6 @@
 import React from "react";
 import type { JSX } from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Settings, List as ListIcon } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -92,23 +91,6 @@ function ListRenderer({ content, styles }: ListRendererProps) {
   }
 
   return <ListTag {...commonProps} />;
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function ListBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<ListContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <ListRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -251,25 +233,17 @@ function ListSettings({ block, onUpdate }: ListSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const ListBlock: BlockDefinition = {
+const ListBlock = createBlockDefinition<ListContent>({
   id: 'core/list',
   label: 'List',
   icon: ListIcon,
   description: 'Add a bulleted or numbered list',
   category: 'advanced',
-  defaultContent: {
-    ordered: false,
-    values: '<li>List item 1</li><li>List item 2</li><li>List item 3</li>',
-    start: undefined,
-    reversed: undefined,
-    type: undefined,
-    anchor: '',
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: { margin: '1em 0' },
-  component: ListBlockComponent,
   settings: ListSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <ListRenderer content={content} styles={styles} />,
+});
 
 export default ListBlock;

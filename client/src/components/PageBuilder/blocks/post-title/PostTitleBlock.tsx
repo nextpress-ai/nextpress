@@ -1,12 +1,11 @@
 import * as React from 'react';
-import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import type { BlockConfig } from '@shared/schema-types';
 import { OptionButton, OptionGroup, SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { Type, Settings } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
-import { useBlockState } from '../useBlockState';
+import { createBlockDefinition } from '../createBlockDefinition';
 
 // ============================================================================
 // TYPES
@@ -66,20 +65,6 @@ function PostTitleRenderer({ content, styles }: PostTitleRendererProps) {
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function PostTitleComponent({ value, onChange }: BlockComponentProps) {
-  const { content, styles } = useBlockState<PostTitleContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <PostTitleRenderer content={content} styles={styles} />;
-}
-
-// ============================================================================
 // SETTINGS COMPONENT
 // ============================================================================
 
@@ -120,8 +105,7 @@ function PostTitleSettings({ block, onUpdate }: PostTitleSettingsProps) {
       {/* Heading Tag Level */}
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen>
         <div className="space-y-3">
-          <SettingsLabel>Heading Level</SettingsLabel>
-          <OptionGroup>
+          <OptionGroup label="Heading Level">
             {HEADING_TAG_OPTIONS.map((option) => (
               <OptionButton
                 key={option.value}
@@ -148,7 +132,7 @@ function PostTitleSettings({ block, onUpdate }: PostTitleSettingsProps) {
  * In editor mode the title is inline-editable; in preview mode it renders
  * as a static heading.
  */
-const PostTitleBlock: BlockDefinition = {
+const PostTitleBlock = createBlockDefinition<PostTitleContent>({
   id: 'post/title',
   label: 'Post Title',
   icon: Type,
@@ -156,9 +140,9 @@ const PostTitleBlock: BlockDefinition = {
   category: 'post',
   defaultContent: DEFAULT_CONTENT,
   defaultStyles: { margin: '0 0 1em 0' },
-  component: PostTitleComponent,
   settings: PostTitleSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <PostTitleRenderer content={content} styles={styles} />,
+});
 
 export default PostTitleBlock;

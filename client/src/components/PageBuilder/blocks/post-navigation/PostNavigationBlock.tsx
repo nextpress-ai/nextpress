@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useBlockState } from '../useBlockState';
-import type { BlockDefinition, BlockComponentProps } from '../types.ts';
+import { createBlockDefinition } from '../createBlockDefinition';
 import {
   ArrowLeftRight,
   ChevronLeft,
@@ -197,30 +196,6 @@ function NavigationLink({
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function PostNavigationBlockComponent({
-  value,
-  onChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<PostNavigationContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return (
-    <PostNavigationRenderer
-      content={content}
-      styles={styles}
-      isPreview={isPreview}
-    />
-  );
-}
-
-// ============================================================================
 // BLOCK DEFINITION
 // ============================================================================
 
@@ -228,7 +203,7 @@ export function PostNavigationBlockComponent({
  * Post Navigation block definition for the PageBuilder.
  * Displays previous/next post navigation links with optional thumbnails and labels.
  */
-const PostNavigationBlock: BlockDefinition = {
+const PostNavigationBlock = createBlockDefinition<PostNavigationContent>({
   id: 'post/navigation',
   label: 'Post Navigation',
   icon: ArrowLeftRight,
@@ -236,9 +211,11 @@ const PostNavigationBlock: BlockDefinition = {
   category: 'post',
   defaultContent: DEFAULT_CONTENT,
   defaultStyles: { margin: '2em 0' },
-  component: PostNavigationBlockComponent,
   settings: PostNavigationSettings,
   hasSettings: true,
-};
+  render: ({ content, styles, isPreview }) => (
+    <PostNavigationRenderer content={content} styles={styles} isPreview={isPreview} />
+  ),
+});
 
 export default PostNavigationBlock;

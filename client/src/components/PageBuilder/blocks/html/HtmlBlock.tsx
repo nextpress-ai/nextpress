@@ -1,11 +1,10 @@
 import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Textarea } from "@/components/ui/textarea";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Code2 as HtmlIcon } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -19,7 +18,7 @@ type HtmlContent = {
 };
 
 const DEFAULT_CONTENT: HtmlContent = {
-  content: '',
+  content: '<div class="custom-element">\n  <!-- Your HTML here -->\n</div>',
   className: '',
 };
 
@@ -73,24 +72,6 @@ function HtmlRenderer({ content, styles, isPreview }: HtmlRendererProps) {
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function HtmlBlockComponent({
-  value,
-  onChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<HtmlContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <HtmlRenderer content={content} styles={styles} isPreview={isPreview} />;
-}
-
-// ============================================================================
 // SETTINGS COMPONENT
 // ============================================================================
 
@@ -141,22 +122,21 @@ function HtmlSettings({ block, onUpdate }: HtmlSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const HtmlBlock: BlockDefinition = {
+const HtmlBlock = createBlockDefinition<HtmlContent>({
   id: 'core/html',
   label: 'Custom HTML',
   icon: HtmlIcon,
   description: 'Add custom HTML code',
   category: 'advanced',
-  defaultContent: {
-    content: '<div class="custom-element">\n  <!-- Your HTML here -->\n</div>',
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     margin: '1em 0',
   },
-  component: HtmlBlockComponent,
   settings: HtmlSettings,
   hasSettings: true,
-};
+  render: ({ content, styles, isPreview }) => (
+    <HtmlRenderer content={content} styles={styles} isPreview={isPreview} />
+  ),
+});
 
 export default HtmlBlock;

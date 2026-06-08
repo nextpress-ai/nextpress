@@ -1,8 +1,7 @@
 import React from "react";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Square as CoverIcon } from "lucide-react";
-import { useBlockState } from "../useBlockState";
 import { sanitizeHtml } from "../../utils";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { type CoverContent, type CoverData, DEFAULT_CONTENT, DEFAULT_DATA } from './cover-model';
 import { CoverSettings } from './cover-settings';
 
@@ -130,52 +129,20 @@ function CoverRenderer({ content, styles }: CoverRendererProps) {
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function CoverBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<CoverContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <CoverRenderer content={content} styles={styles} />;
-}
-
-// ============================================================================
 // BLOCK DEFINITION
 // ============================================================================
 
-const CoverBlock: BlockDefinition = {
+const CoverBlock = createBlockDefinition<CoverContent>({
   id: 'core/cover',
   label: 'Cover',
   icon: CoverIcon,
   description: 'Add an image or video with a text overlay',
   category: 'media',
-  defaultContent: {
-    kind: 'structured',
-    data: {
-      url: '',
-      alt: '',
-      hasParallax: false,
-      dimRatio: 50,
-      minHeight: 400,
-      contentPosition: 'center center',
-      customOverlayColor: '#000000',
-      backgroundType: 'image',
-      focalPoint: { x: 0.5, y: 0.5 },
-      innerContent: '<p style="font-size: 2.5em; font-weight: bold;">Write title…</p>',
-      className: '',
-    },
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {},
-  component: CoverBlockComponent,
   settings: CoverSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <CoverRenderer content={content} styles={styles} />,
+});
 
 export default CoverBlock;

@@ -1,13 +1,12 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Type } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -74,23 +73,6 @@ function TextRenderer({ content, styles }: TextRendererProps) {
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function TextBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, setContent, styles } = useBlockState<TextBlockContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <TextRenderer content={content} styles={styles} />;
-}
-
-// ============================================================================
 // SETTINGS COMPONENT
 // ============================================================================
 
@@ -145,28 +127,21 @@ function TextSettings({ block, onUpdate }: TextSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const TextBlock: BlockDefinition = {
+const TextBlock = createBlockDefinition<TextBlockContent>({
   id: 'core/paragraph',
   label: 'Paragraph',
   icon: Type,
   description: 'Add a paragraph of text',
   category: 'basic',
-  defaultContent: {
-    kind: 'text',
-    value: 'Add your text content here. You can edit this text and customize its appearance.',
-    textAlign: 'left',
-    dropCap: false,
-    anchor: '',
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     fontSize: '16px',
     lineHeight: '1.6',
     color: '#333333',
   },
-  component: TextBlockComponent,
   settings: TextSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <TextRenderer content={content} styles={styles} />,
+});
 
 export default TextBlock;

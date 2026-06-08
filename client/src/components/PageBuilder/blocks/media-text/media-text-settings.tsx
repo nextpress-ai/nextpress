@@ -82,7 +82,7 @@ export function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
               onSelect={(m) => {
                 const type = m.mimeType?.startsWith("video/") ? "video" : "image";
                 updateContent({
-                  mediaId: m.id,
+                  mediaId: m.id ? Number(m.id) : undefined,
                   mediaUrl: m.url,
                   mediaType: type,
                   mediaAlt: blockData?.mediaAlt || m.alt || m.originalName || m.filename,

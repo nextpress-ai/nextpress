@@ -1,13 +1,12 @@
 import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Quote as QuoteIcon, Settings } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -90,23 +89,6 @@ function QuoteRenderer({ content, styles }: QuoteRendererProps) {
       )}
     </blockquote>
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function QuoteBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<QuoteContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <QuoteRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -217,24 +199,17 @@ function QuoteSettings({ block, onUpdate }: QuoteSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const QuoteBlock: BlockDefinition = {
+const QuoteBlock = createBlockDefinition<QuoteContent>({
   id: 'core/quote',
   label: 'Quote',
   icon: QuoteIcon,
   description: 'Add a blockquote',
   category: 'advanced',
-  defaultContent: {
-    value: '<p>Add a quote</p>',
-    citation: '',
-    textAlign: undefined,
-    align: undefined,
-    anchor: '',
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: { margin: '1em 0' },
-  component: QuoteBlockComponent,
   settings: QuoteSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <QuoteRenderer content={content} styles={styles} />,
+});
 
 export default QuoteBlock;

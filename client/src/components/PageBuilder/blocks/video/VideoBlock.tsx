@@ -1,7 +1,6 @@
 import React from "react";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Video as VideoIcon } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import {
   type VideoContent,
   DEFAULT_CONTENT,
@@ -128,53 +127,20 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function VideoBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<VideoContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <VideoRenderer content={content} styles={styles} />;
-}
-
-// ============================================================================
 // BLOCK DEFINITION
 // ============================================================================
 
-const VideoBlock: BlockDefinition = {
+const VideoBlock = createBlockDefinition<VideoContent>({
   id: 'core/video',
   label: 'Video',
   icon: VideoIcon,
   description: 'Add a video player',
   category: 'media',
-  defaultContent: {
-    kind: 'media',
-    mediaType: 'video',
-    url: '',
-    id: undefined,
-    poster: '',
-    autoplay: false,
-    controls: true,
-    loop: false,
-    muted: false,
-    playsInline: true,
-    preload: 'metadata',
-    align: undefined,
-    caption: '',
-    anchor: '',
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: { width: '100%' },
-  component: VideoBlockComponent,
   settings: VideoSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <VideoRenderer content={content} styles={styles} />,
+});
 
 export default VideoBlock;

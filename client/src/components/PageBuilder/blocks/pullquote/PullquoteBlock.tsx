@@ -1,13 +1,12 @@
 import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Quote as QuoteIcon, Settings } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -87,23 +86,6 @@ function PullquoteRenderer({ content, styles }: PullquoteRendererProps) {
       )}
     </figure>
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function PullquoteBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<PullquoteContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <PullquoteRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -221,25 +203,20 @@ function PullquoteSettings({ block, onUpdate }: PullquoteSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const PullquoteBlock: BlockDefinition = {
+const PullquoteBlock = createBlockDefinition<PullquoteContent>({
   id: 'core/pullquote',
   label: 'Pullquote',
   icon: QuoteIcon,
   description: 'Give special visual emphasis to a quote from your text',
   category: 'advanced',
-  defaultContent: {
-    value: '<p>Add a quote that stands out from the rest of your content.</p>',
-    citation: '',
-    textAlign: 'center',
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     backgroundColor: '#f8f9fa',
     color: '#000000',
   },
-  component: PullquoteBlockComponent,
   settings: PullquoteSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <PullquoteRenderer content={content} styles={styles} />,
+});
 
 export default PullquoteBlock;

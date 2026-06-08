@@ -1,14 +1,12 @@
 import React from "react";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Table as TableIcon } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { sanitizeHtml } from "../../utils";
 import {
   type TableContent,
   type TableData,
   type TableRow,
   DEFAULT_DATA,
-  DEFAULT_CONTENT,
 } from "./table-model";
 import { TableSettings } from "./table-settings";
 
@@ -123,27 +121,10 @@ function TableRenderer({ content, styles }: TableRendererProps) {
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function TableBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<TableContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <TableRenderer content={content} styles={styles} />;
-}
-
-// ============================================================================
 // BLOCK DEFINITION
 // ============================================================================
 
-const TableBlock: BlockDefinition = {
+const TableBlock = createBlockDefinition<TableContent>({
   id: 'core/table',
   label: 'Table',
   icon: TableIcon,
@@ -168,9 +149,9 @@ const TableBlock: BlockDefinition = {
   defaultStyles: {
     margin: '1em 0',
   },
-  component: TableBlockComponent,
   settings: TableSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <TableRenderer content={content} styles={styles} />,
+});
 
 export default TableBlock;

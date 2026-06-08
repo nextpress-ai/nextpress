@@ -1,6 +1,5 @@
 // blocks/post-excerpt/PostExcerptBlock.tsx
 import * as React from 'react';
-import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
@@ -10,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { FileText, Settings } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
-import { useBlockState } from '../useBlockState';
+import { createBlockDefinition } from '../createBlockDefinition';
 
 // ============================================================================
 // TYPES
@@ -107,20 +106,6 @@ function PostExcerptRenderer({ content, styles }: PostExcerptRendererProps) {
       )}
     </div>
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function PostExcerptComponent({ value, onChange }: BlockComponentProps) {
-  const { content, styles } = useBlockState<PostExcerptContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <PostExcerptRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -225,7 +210,7 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
  * Displays a configurable post excerpt with truncation and optional "Read More" link.
  * Content is edited via the sidebar settings panel.
  */
-const PostExcerptBlock: BlockDefinition = {
+const PostExcerptBlock = createBlockDefinition<PostExcerptContent>({
   id: 'post/excerpt',
   label: 'Post Excerpt',
   icon: FileText,
@@ -233,9 +218,9 @@ const PostExcerptBlock: BlockDefinition = {
   category: 'post',
   defaultContent: DEFAULT_CONTENT,
   defaultStyles: { margin: '0 0 1em 0' },
-  component: PostExcerptComponent,
   settings: PostExcerptSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <PostExcerptRenderer content={content} styles={styles} />,
+});
 
 export default PostExcerptBlock;

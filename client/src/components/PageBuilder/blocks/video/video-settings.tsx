@@ -59,7 +59,7 @@ export function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
               onOpenChange={setPickerOpen}
               kind="video"
               onSelect={(m) => {
-                updateContent({ id: m.id, url: m.url } as VideoContent);
+                updateContent({ id: m.id ? Number(m.id) : undefined, url: m.url });
               }}
             />
           </div>

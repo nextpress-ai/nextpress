@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { AudioLines as AudioIcon, Settings } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 
@@ -104,23 +103,6 @@ function AudioRenderer({ content, styles }: AudioRendererProps) {
       ) : null}
     </figure>
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function AudioBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<AudioContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <AudioRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -255,30 +237,17 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const AudioBlock: BlockDefinition = {
+const AudioBlock = createBlockDefinition<AudioContent>({
   id: 'core/audio',
   label: 'Audio',
   icon: AudioIcon,
   description: 'Add an audio player',
   category: 'media',
-  defaultContent: {
-    kind: 'media',
-    url: '',
-    mediaType: 'audio',
-    id: undefined,
-    autoplay: false,
-    controls: true,
-    loop: false,
-    preload: 'none',
-    align: undefined,
-    caption: '',
-    anchor: '',
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: { width: '100%' },
-  component: AudioBlockComponent,
   settings: AudioSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <AudioRenderer content={content} styles={styles} />,
+});
 
 export default AudioBlock;

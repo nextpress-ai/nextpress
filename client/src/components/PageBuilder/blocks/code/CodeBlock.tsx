@@ -1,12 +1,11 @@
 import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Code as CodeIcon, Settings } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -61,23 +60,6 @@ function CodeRenderer({ content, styles }: CodeRendererProps) {
       </pre>
     </div>
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function CodeBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<CodeContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <CodeRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -144,23 +126,19 @@ function CodeSettings({ block, onUpdate }: CodeSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const CodeBlock: BlockDefinition = {
+const CodeBlock = createBlockDefinition<CodeContent>({
   id: 'core/code',
   label: 'Code',
   icon: CodeIcon,
   description: 'Display code with syntax highlighting',
   category: 'advanced',
-  defaultContent: {
-    content: '// Write your code here\nfunction hello() {\n  console.log("Hello, World!");\n}',
-    language: '',
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     margin: '1em 0',
   },
-  component: CodeBlockComponent,
   settings: CodeSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <CodeRenderer content={content} styles={styles} />,
+});
 
 export default CodeBlock;

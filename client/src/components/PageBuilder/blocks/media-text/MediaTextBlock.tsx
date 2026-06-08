@@ -1,12 +1,7 @@
 import React from "react";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Image as ImageIcon } from "lucide-react";
-import { useBlockState } from "../useBlockState";
 import { sanitizeHtml } from "../../utils";
-import {
-  PLACEHOLDER_IMAGE_ALT,
-  PLACEHOLDER_IMAGE_URL,
-} from "@shared/placeholder-image";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { type MediaTextContent, type MediaTextData, DEFAULT_CONTENT, DEFAULT_DATA } from './media-text-model';
 import { MediaTextSettings } from './media-text-settings';
 
@@ -89,57 +84,20 @@ function MediaTextRenderer({ content, styles }: MediaTextRendererProps) {
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function MediaTextBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<MediaTextContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <MediaTextRenderer content={content} styles={styles} />;
-}
-
-// ============================================================================
 // BLOCK DEFINITION
 // ============================================================================
 
-const MediaTextBlock: BlockDefinition = {
+const MediaTextBlock = createBlockDefinition<MediaTextContent>({
   id: 'core/media-text',
   label: 'Media & Text',
   icon: ImageIcon,
   description: 'Display media and text side by side',
   category: 'media',
-  defaultContent: {
-    kind: 'structured',
-    data: {
-      mediaId: undefined,
-      mediaUrl: PLACEHOLDER_IMAGE_URL,
-      mediaType: 'image',
-      mediaAlt: PLACEHOLDER_IMAGE_ALT,
-      mediaPosition: 'left',
-      mediaWidth: 50,
-      isStackedOnMobile: false,
-      imageFill: false,
-      verticalAlignment: 'center',
-      href: '',
-      linkTarget: '_self',
-      rel: '',
-      title: '',
-      content: '<p>Add your content…</p>',
-      anchor: '',
-      className: '',
-    },
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: { margin: '1em 0' },
-  component: MediaTextBlockComponent,
   settings: MediaTextSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <MediaTextRenderer content={content} styles={styles} />,
+});
 
 export default MediaTextBlock;

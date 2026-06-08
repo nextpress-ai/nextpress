@@ -1,10 +1,9 @@
 import React from "react";
 import type { JSX } from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { ContainerChildren } from "../../BlockRenderer";
 import { Package as GroupIcon } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { type GroupContent, DEFAULT_CONTENT } from "./group-model";
 import { GroupSettings } from "./group-settings";
 
@@ -101,22 +100,24 @@ function GroupRenderer({
 }
 
 // ============================================================================
-// MAIN COMPONENT
+// BLOCK DEFINITION
 // ============================================================================
 
-export function GroupBlockComponent({
-  value,
-  onChange,
-  onNestedBlockChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<GroupContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return (
+const GroupBlock = createBlockDefinition<GroupContent>({
+  id: 'core/group',
+  label: 'Group',
+  icon: GroupIcon,
+  description: 'Gather blocks in a layout container',
+  category: 'layout',
+  isContainer: true,
+  handlesOwnChildren: true,
+  defaultContent: DEFAULT_CONTENT,
+  defaultStyles: {
+    padding: '1.25em 2.375em',
+  },
+  settings: GroupSettings,
+  hasSettings: true,
+  render: ({ content, styles, value, isPreview, onNestedBlockChange }) => (
     <GroupRenderer
       hostBlock={value}
       content={content}
@@ -125,36 +126,7 @@ export function GroupBlockComponent({
       isPreview={isPreview}
       onNestedBlockChange={onNestedBlockChange}
     />
-  );
-}
-
-// ============================================================================
-// BLOCK DEFINITION
-// ============================================================================
-
-const GroupBlock: BlockDefinition = {
-  id: 'core/group',
-  label: 'Group',
-  icon: GroupIcon,
-  description: 'Gather blocks in a layout container',
-  category: 'layout',
-  isContainer: true,
-  handlesOwnChildren: true,
-  defaultContent: {
-    tagName: 'div',
-    className: '',
-    display: 'block',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-    gap: '0px',
-  },
-  defaultStyles: {
-    padding: '1.25em 2.375em',
-  },
-  component: GroupBlockComponent,
-  settings: GroupSettings,
-  hasSettings: true,
-};
+  ),
+});
 
 export default GroupBlock;

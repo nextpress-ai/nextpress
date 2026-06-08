@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
-import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
@@ -16,7 +15,7 @@ import {
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { UserCircle, Settings, Wrench } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
-import { useBlockState } from '../useBlockState';
+import { createBlockDefinition } from '../createBlockDefinition';
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -171,30 +170,6 @@ function PostAuthorBoxRenderer({
         {textElement}
       </div>
     </div>
-  );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function PostAuthorBoxComponent({
-  value,
-  onChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<PostAuthorBoxContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return (
-    <PostAuthorBoxRenderer
-      content={content}
-      styles={styles}
-      isPreview={isPreview}
-    />
   );
 }
 
@@ -359,7 +334,7 @@ function PostAuthorBoxSettings({
  * Post Author Box block definition for the PageBuilder.
  * Displays the post author's avatar, name, and bio in a configurable layout.
  */
-const PostAuthorBoxBlock: BlockDefinition = {
+const PostAuthorBoxBlock = createBlockDefinition<PostAuthorBoxContent>({
   id: 'post/author-box',
   label: 'Post Author Box',
   icon: UserCircle,
@@ -367,9 +342,11 @@ const PostAuthorBoxBlock: BlockDefinition = {
   category: 'post',
   defaultContent: DEFAULT_CONTENT,
   defaultStyles: { margin: '0 0 1em 0' },
-  component: PostAuthorBoxComponent,
   settings: PostAuthorBoxSettings,
   hasSettings: true,
-};
+  render: ({ content, styles, isPreview }) => (
+    <PostAuthorBoxRenderer content={content} styles={styles} isPreview={isPreview} />
+  ),
+});
 
 export default PostAuthorBoxBlock;

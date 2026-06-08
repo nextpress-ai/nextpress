@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { File as FileIcon, Download, Settings } from "lucide-react";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 
@@ -160,23 +159,6 @@ function FileRenderer({ content, styles }: FileRendererProps) {
       </div>
     </div>
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function FileBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<FileContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <FileRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -355,32 +337,19 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const FileBlock: BlockDefinition = {
+const FileBlock = createBlockDefinition<FileContent>({
   id: 'core/file',
   label: 'File',
   icon: FileIcon,
   description: 'Add a link to a downloadable file',
   category: 'media',
-  defaultContent: {
-    kind: 'structured',
-    data: {
-      href: '',
-      fileName: '',
-      textLinkHref: '',
-      textLinkTarget: '_self',
-      showDownloadButton: true,
-      downloadButtonText: 'Download',
-      displayPreview: true,
-      fileSize: '',
-      className: '',
-    },
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     margin: '1em 0',
   },
-  component: FileBlockComponent,
   settings: FileSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <FileRenderer content={content} styles={styles} />,
+});
 
 export default FileBlock;

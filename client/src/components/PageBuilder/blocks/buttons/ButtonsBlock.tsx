@@ -1,6 +1,5 @@
 import React from 'react';
 import type { BlockConfig, BlockContent } from '@shared/schema-types';
-import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -13,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { SettingsLabel } from '../../shared';
 import { Plus, Trash2, SquareMousePointer, Settings } from 'lucide-react';
-import { useBlockState } from '../useBlockState';
+import { createBlockDefinition } from '../createBlockDefinition';
 import { useSettingsState } from '../useSettingsState';
 
 // ============================================================================
@@ -136,23 +135,6 @@ function ButtonsRenderer({ content, styles }: ButtonsRendererProps) {
       })}
     </div>
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function ButtonsBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<ButtonsContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <ButtonsRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -350,36 +332,18 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const ButtonsBlock: BlockDefinition = {
+const ButtonsBlock = createBlockDefinition<ButtonsContent>({
   id: 'core/buttons',
   label: 'Buttons',
   icon: SquareMousePointer,
   description:
     'Prompt visitors to take action with a group of button-style links',
   category: 'basic',
-  defaultContent: {
-    kind: 'structured',
-    data: {
-      buttons: [
-        {
-          id: 'btn-1',
-          text: 'Click Me',
-          url: '#',
-          linkTarget: '_self',
-          rel: '',
-          title: '',
-          className: '',
-        },
-      ],
-      layout: 'flex-start',
-      orientation: 'horizontal',
-      className: '',
-    },
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: { margin: '1em 0' },
-  component: ButtonsBlockComponent,
   settings: ButtonsSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <ButtonsRenderer content={content} styles={styles} />,
+});
 
 export default ButtonsBlock;

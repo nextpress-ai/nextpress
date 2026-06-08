@@ -1,11 +1,10 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { MousePointer, ExternalLink, Type, Link, Smile, X } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 import { IconRenderer } from "../shared/IconRenderer";
 import { IconPickerButton } from "../../IconPicker/IconPickerButton";
@@ -125,26 +124,6 @@ function ButtonRenderer({ content, styles, isPreview }: ButtonRendererProps) {
         {iconElement && iconPosition === 'right' && iconElement}
       </a>
     </div>
-  );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function ButtonBlockComponent({
-  value,
-  onChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<ButtonContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return (
-    <ButtonRenderer content={content} styles={styles} isPreview={isPreview} />
   );
 }
 
@@ -341,21 +320,13 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const ButtonBlock: BlockDefinition = {
+const ButtonBlock = createBlockDefinition<ButtonContent>({
   id: 'core/button',
   label: 'Button',
   icon: MousePointer,
   description: 'Add a clickable button',
   category: 'basic',
-  defaultContent: {
-    kind: 'text',
-    value: 'Click Me',
-    url: '#',
-    linkTarget: '_self',
-    rel: '',
-    title: '',
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     backgroundColor: '#007cba',
     color: '#ffffff',
@@ -367,9 +338,11 @@ const ButtonBlock: BlockDefinition = {
     display: 'inline-block',
     cursor: 'pointer',
   },
-  component: ButtonBlockComponent,
   settings: ButtonSettings,
   hasSettings: true,
-};
+  render: ({ content, styles, isPreview }) => (
+    <ButtonRenderer content={content} styles={styles} isPreview={isPreview} />
+  ),
+});
 
 export default ButtonBlock;

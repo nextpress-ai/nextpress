@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
-import { useBlockState } from '../useBlockState';
-import type { BlockDefinition, BlockComponentProps } from '../types';
+import { createBlockDefinition } from '../createBlockDefinition';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -208,27 +207,6 @@ function PostCommentsRenderer({
   );
 }
 
-// --- Main Component ---
-
-export function PostCommentsBlockComponent({
-  value,
-  onChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<PostCommentsContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-  return (
-    <PostCommentsRenderer
-      content={content}
-      styles={styles}
-      isPreview={isPreview}
-    />
-  );
-}
-
 // --- Block Definition ---
 
 /**
@@ -236,7 +214,7 @@ export function PostCommentsBlockComponent({
  * Displays a comment list and submission form. Editor mode shows placeholders;
  * preview mode fetches real comments from the API.
  */
-const PostCommentsBlock: BlockDefinition = {
+const PostCommentsBlock = createBlockDefinition<PostCommentsContent>({
   id: 'post/comments',
   label: 'Post Comments',
   icon: MessageSquare,
@@ -244,9 +222,11 @@ const PostCommentsBlock: BlockDefinition = {
   category: 'post',
   defaultContent: DEFAULT_CONTENT,
   defaultStyles: { margin: '1em 0' },
-  component: PostCommentsBlockComponent,
   settings: PostCommentsSettings,
   hasSettings: true,
-};
+  render: ({ content, styles, isPreview }) => (
+    <PostCommentsRenderer content={content} styles={styles} isPreview={isPreview} />
+  ),
+});
 
 export default PostCommentsBlock;

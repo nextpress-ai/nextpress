@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import type { BlockConfig } from '@shared/schema-types';
-import type { BlockDefinition, BlockComponentProps } from '../types.ts';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +12,7 @@ import {
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { Image as ImageIcon, Settings } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
-import { useBlockState } from '../useBlockState';
+import { createBlockDefinition } from '../createBlockDefinition';
 
 // ============================================================================
 // TYPES
@@ -189,32 +188,6 @@ function PostFeaturedImageRenderer({
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function PostFeaturedImageComponent({
-  value,
-  onChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, setContent, styles } =
-    useBlockState<PostFeaturedImageContent>({
-      value,
-      getDefaultContent: () => DEFAULT_CONTENT,
-      onChange,
-    });
-
-  return (
-    <PostFeaturedImageRenderer
-      content={content}
-      styles={styles}
-      isEditor={!isPreview}
-      onChangeUrl={(url) => setContent((prev) => ({ ...prev, url }))}
-    />
-  );
-}
-
-// ============================================================================
 // SETTINGS COMPONENT
 // ============================================================================
 
@@ -317,17 +290,24 @@ function PostFeaturedImageSettings({
 // BLOCK DEFINITION
 // ============================================================================
 
-const PostFeaturedImageBlock: BlockDefinition = {
+const PostFeaturedImageBlock = createBlockDefinition<PostFeaturedImageContent>({
   id: 'post/featured-image',
   label: 'Featured Image',
   icon: ImageIcon,
   description: 'Display and set the post featured image',
   category: 'post',
-  defaultContent: { ...DEFAULT_CONTENT },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: { width: '100%' },
-  component: PostFeaturedImageComponent,
   settings: PostFeaturedImageSettings,
   hasSettings: true,
-};
+  render: ({ content, styles, setContent, isPreview }) => (
+    <PostFeaturedImageRenderer
+      content={content}
+      styles={styles}
+      isEditor={!isPreview}
+      onChangeUrl={(url) => setContent((prev) => ({ ...prev, url }))}
+    />
+  ),
+});
 
 export default PostFeaturedImageBlock;

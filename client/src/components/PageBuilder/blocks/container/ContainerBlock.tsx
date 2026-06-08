@@ -1,11 +1,10 @@
 import React from "react";
 import type { JSX } from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { ContainerChildren } from "../../BlockRenderer";
 import { getContainerOuterShellStyle } from "@shared/block-container-placement";
 import { Box } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { type ContainerContent, DEFAULT_CONTENT } from "./container-model";
 import { ContainerSettings } from "./container-settings";
 
@@ -59,38 +58,10 @@ function ContainerRenderer({
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function ContainerBlockComponent({
-  value,
-  onChange,
-  onNestedBlockChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<ContainerContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return (
-    <ContainerRenderer
-      host={value}
-      content={content}
-      styles={styles}
-      children={value.children}
-      isPreview={isPreview}
-      onNestedBlockChange={onNestedBlockChange}
-    />
-  );
-}
-
-// ============================================================================
 // BLOCK DEFINITION
 // ============================================================================
 
-const ContainerBlock: BlockDefinition = {
+const ContainerBlock = createBlockDefinition<ContainerContent>({
   id: "core/container",
   label: "Container",
   icon: Box,
@@ -107,9 +78,18 @@ const ContainerBlock: BlockDefinition = {
     backgroundColor: "#f8fafc",
     borderRadius: "8px",
   },
-  component: ContainerBlockComponent,
   settings: ContainerSettings,
   hasSettings: true,
-};
+  render: ({ content, styles, value, isPreview, onNestedBlockChange }) => (
+    <ContainerRenderer
+      host={value}
+      content={content}
+      styles={styles}
+      children={value.children}
+      isPreview={isPreview}
+      onNestedBlockChange={onNestedBlockChange}
+    />
+  ),
+});
 
 export default ContainerBlock;

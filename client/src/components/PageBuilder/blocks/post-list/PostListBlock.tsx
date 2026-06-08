@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
-import { useBlockState } from '../useBlockState';
-import type { BlockDefinition, BlockComponentProps } from '../types';
+import { createBlockDefinition } from '../createBlockDefinition';
 import {
   LayoutList,
   Calendar,
@@ -301,29 +300,10 @@ function PostMeta({
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function PostListBlockComponent({
-  value,
-  onChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<PostListContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-  return (
-    <PostListRenderer content={content} styles={styles} isPreview={isPreview} />
-  );
-}
-
-// ============================================================================
 // BLOCK DEFINITION
 // ============================================================================
 
-const PostListBlock: BlockDefinition = {
+const PostListBlock = createBlockDefinition<PostListContent>({
   id: 'post/list',
   label: 'Post List',
   icon: LayoutList,
@@ -331,9 +311,11 @@ const PostListBlock: BlockDefinition = {
   category: 'post',
   defaultContent: DEFAULT_CONTENT,
   defaultStyles: { margin: '1em 0' },
-  component: PostListBlockComponent,
   settings: PostListSettings,
   hasSettings: true,
-};
+  render: ({ content, styles, isPreview }) => (
+    <PostListRenderer content={content} styles={styles} isPreview={isPreview} />
+  ),
+});
 
 export default PostListBlock;

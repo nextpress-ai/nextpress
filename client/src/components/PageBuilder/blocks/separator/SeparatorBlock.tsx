@@ -1,11 +1,10 @@
 import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Minus as SeparatorIcon, Settings } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -50,23 +49,6 @@ function SeparatorRenderer({ content, styles }: SeparatorRendererProps) {
       }}
     />
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function SeparatorBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<SeparatorContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <SeparatorRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -140,23 +122,21 @@ function SeparatorSettings({ block, onUpdate }: SeparatorSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const SeparatorBlock: BlockDefinition = {
+const SeparatorBlock = createBlockDefinition<SeparatorContent>({
   id: 'core/separator',
   label: 'Separator',
   icon: SeparatorIcon,
   description: 'Create a break between ideas or sections',
   category: 'layout',
-  defaultContent: {
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     color: '#000000',
     width: '100px',
     margin: '2.5em auto',
   },
-  component: SeparatorBlockComponent,
   settings: SeparatorSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <SeparatorRenderer content={content} styles={styles} />,
+});
 
 export default SeparatorBlock;

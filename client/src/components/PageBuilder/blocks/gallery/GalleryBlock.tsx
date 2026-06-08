@@ -1,7 +1,6 @@
 import React from "react";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Image as ImageIcon } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import {
   type GalleryContent,
   type GalleryData,
@@ -106,48 +105,20 @@ function GalleryRenderer({ content, styles }: GalleryRendererProps) {
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function GalleryBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<GalleryContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <GalleryRenderer content={content} styles={styles} />;
-}
-
-// ============================================================================
 // BLOCK DEFINITION
 // ============================================================================
 
-const GalleryBlock: BlockDefinition = {
+const GalleryBlock = createBlockDefinition<GalleryContent>({
   id: 'core/gallery',
   label: 'Gallery',
   icon: ImageIcon,
   description: 'Display multiple images in a rich gallery',
   category: 'media',
-  defaultContent: {
-    kind: 'structured',
-    data: {
-      images: [],
-      columns: 3,
-      imageCrop: true,
-      linkTo: 'none',
-      sizeSlug: 'large',
-      caption: '',
-      className: '',
-    },
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: { width: '100%', margin: '1em 0' },
-  component: GalleryBlockComponent,
   settings: GallerySettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <GalleryRenderer content={content} styles={styles} />,
+});
 
 export default GalleryBlock;

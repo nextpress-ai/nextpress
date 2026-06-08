@@ -1,12 +1,11 @@
 import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { FileText as PreformattedIcon, Settings } from "lucide-react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -60,23 +59,6 @@ function PreformattedRenderer({ content, styles }: PreformattedRendererProps) {
       {textContent}
     </pre>
   );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function PreformattedBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<PreformattedContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <PreformattedRenderer content={content} styles={styles} />;
 }
 
 // ============================================================================
@@ -186,24 +168,21 @@ function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const PreformattedBlock: BlockDefinition = {
+const PreformattedBlock = createBlockDefinition<PreformattedContent>({
   id: 'core/preformatted',
   label: 'Preformatted',
   icon: PreformattedIcon,
   description: 'Add text that respects your spacing and tabs',
   category: 'advanced',
-  defaultContent: {
-    content: 'This is preformatted text.\nIt preserves    spacing   and\n\teven\ttabs!',
-    className: '',
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     backgroundColor: '#f8f9fa',
     color: '#000000',
     fontSize: '14px',
   },
-  component: PreformattedBlockComponent,
   settings: PreformattedSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <PreformattedRenderer content={content} styles={styles} />,
+});
 
 export default PreformattedBlock;

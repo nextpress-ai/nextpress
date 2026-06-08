@@ -1,6 +1,5 @@
 // blocks/heading/HeadingBlock.tsx
 import { Heading1, Type, Settings } from "lucide-react";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { OptionButton, OptionGroup, SettingsLabel } from '../../shared';
 import * as React from "react";
 import type { JSX } from "react";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -28,7 +27,7 @@ type HeadingContent = BlockContent & {
 
 const DEFAULT_CONTENT: HeadingContent = {
   kind: "text",
-  value: "",
+  value: "Your heading here",
   level: 2,
   textAlign: "left",
   anchor: "",
@@ -120,23 +119,6 @@ function HeadingRenderer({ content, styles }: HeadingRendererProps) {
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function HeadingBlockComponent({
-  value,
-  onChange,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<HeadingContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  return <HeadingRenderer content={content} styles={styles} />;
-}
-
-// ============================================================================
 // SETTINGS COMPONENT
 // ============================================================================
 
@@ -193,7 +175,7 @@ function LegacyHeadingSettings({ block, onUpdate }: HeadingSettingsProps) {
               onClick={() => {
                 updateContent({ level });
                 if (!accessor) {
-                  onUpdate({
+                  onUpdate?.({
                     styles: {
                       ...block.styles,
                       fontSize: HEADING_FONT_SIZES[level],
@@ -217,27 +199,20 @@ function LegacyHeadingSettings({ block, onUpdate }: HeadingSettingsProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-export const HeadingBlock: BlockDefinition = {
+export const HeadingBlock = createBlockDefinition<HeadingContent>({
   id: "core/heading",
   label: "Heading",
   icon: Heading1,
   description: "Add a heading text",
   category: "basic",
-  defaultContent: {
-    kind: "text",
-    value: "Your heading here",
-    level: 2,
-    textAlign: "left",
-    anchor: "",
-    className: "",
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     fontWeight: "700",
     margin: "1rem 0",
   },
-  component: HeadingBlockComponent,
   settings: LegacyHeadingSettings,
   hasSettings: true,
-};
+  render: ({ content, styles }) => <HeadingRenderer content={content} styles={styles} />,
+});
 
 export default HeadingBlock;
