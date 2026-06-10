@@ -1,39 +1,48 @@
 import { renderBlocksToHtml, getHydrationScript } from "./to-html";
 import { PageTemplate } from "./templates/page";
-import type { BlockData } from "./react/block-types";
+import type { BlockConfig } from "@shared/schema-types";
 
 /**
- * Get test blocks data
+ * Get test blocks data using BlockConfig directly
  */
-export function getTestBlocks(): BlockData[] {
+export function getTestBlocks(): BlockConfig[] {
 	return [
 		{
-			blockName: "core/heading",
-			content: "Welcome to the Demo Page",
-			level: 1,
-			className: "text-4xl font-bold",
-			interactive: false, // Static block
+			id: "test-1",
+			name: "core/heading",
+			type: "block",
+			parentId: null,
+			content: { kind: "text", value: "Welcome to the Demo Page", level: 1 },
 		},
 		{
-			blockName: "core/heading",
-			content: "This is a static heading",
-			level: 2,
-			// interactive undefined = static
+			id: "test-2",
+			name: "core/heading",
+			type: "block",
+			parentId: null,
+			content: { kind: "text", value: "This is a static heading" },
 		},
 		{
-			blockName: "core/counter",
-			initialCount: 5,
-			interactive: true, // Interactive block - will show loading placeholder
+			id: "test-3",
+			name: "core/counter",
+			type: "block",
+			parentId: null,
+			content: { kind: "structured", data: { initialCount: 5 } },
+			isReactive: true,
 		},
 		{
-			blockName: "core/heading",
-			content: "Another static heading after interactive block",
-			level: 3,
+			id: "test-4",
+			name: "core/heading",
+			type: "block",
+			parentId: null,
+			content: { kind: "text", value: "Another static heading after interactive block" },
 		},
 		{
-			blockName: "core/counter",
-			initialCount: 10,
-			interactive: true, // Another interactive block
+			id: "test-5",
+			name: "core/counter",
+			type: "block",
+			parentId: null,
+			content: { kind: "structured", data: { initialCount: 10 } },
+			isReactive: true,
 		},
 	];
 }

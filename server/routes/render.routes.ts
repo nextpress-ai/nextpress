@@ -5,13 +5,12 @@ import { safeTryAsync } from "../utils";
 import path from "path";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
-import { adaptBlockConfigToBlockData, collectBlockModifierCSS } from "../../renderer/adapt-block-config";
+import { collectBlockModifierCSS } from "@shared/token-resolution";
 import { renderBlocksToHtml, getHydrationScript } from "../../renderer/to-html";
 import { PageTemplate } from "../../renderer/templates/page";
 import type { PageRenderOptions } from "../../renderer/templates/page";
 import type { BlockConfig } from "@shared/schema-types";
 import type { BlockAnimation } from "@shared/schema-types";
-import type { BlockData } from "../../renderer/react/block-types";
 
 import { generateBlockAnimationCSS, getEntryAnimationBaseCSS } from "@shared/animation-utils";
 
@@ -283,13 +282,8 @@ export function createRenderRoutes(deps: Deps): Router {
 					Array.isArray(page.blocks) ? page.blocks : []
 				) as BlockConfig[];
 
-				// Adapt BlockConfig to BlockData
-				const adaptedBlocks = blocks
-					.map((block) => adaptBlockConfigToBlockData(block))
-					.filter((block): block is BlockData => block !== null);
-
-				// Render blocks to HTML
-				const blockContentHtml = renderBlocksToHtml(adaptedBlocks);
+				// Render blocks to HTML directly (no adapter needed)
+				const blockContentHtml = renderBlocksToHtml(blocks);
 
 				// Collect all custom CSS from blocks
 				const allCustomCss = blocks

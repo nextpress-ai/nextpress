@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type React from "react";
-import type { BlockConfig } from "@shared/schema-types";
+import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { nanoid } from "nanoid";
 import {
 	registerBlockState,
@@ -15,7 +15,7 @@ function useMountEffect(effect: () => void | (() => void)) {
 /**
  * WHY: `updateBlockDeep` deep-merges `styles`; keys missing from the patch keep old values.
  * Callers often build the next sheet by spreading `prev` and **dropping** cleared keys.
- * Emitting explicit `null` for those keys matches `deepMerge`’s clear contract (see `treeUtils.ts`).
+ * Emitting explicit `null` for those keys matches `deepMerge`'s clear contract (see `treeUtils.ts`).
  */
 function withNullsForRemovedStyleKeys(
 	prev: React.CSSProperties | undefined,
@@ -25,7 +25,7 @@ function withNullsForRemovedStyleKeys(
 		return undefined;
 	}
 	const merged: Record<string, string | number | null | undefined> = {
-		...(next as Record<string, string | number | null | undefined>),
+		...(next as Record<string, string, number | null | undefined>),
 	};
 	if (!prev) {
 		return merged as React.CSSProperties;
@@ -43,20 +43,10 @@ interface UseBlockStateOptions<TContent> {
 	value: BlockConfig;
 	getDefaultContent: () => TContent;
 	onChange: (block: BlockConfig) => void;
-}
-
-interface UseBlockStateResult<TContent> {
-	clientId: string;
-	content: TContent;
-	setContent: React.Dispatch<React.SetStateAction<TContent>>;
-	styles: React.CSSProperties | undefined;
-	setStyles: React.Dispatch<
-		React.SetStateAction<React.CSSProperties | undefined>
-	>;
-	settings: Record<string, any> | undefined;
-	setSettings: React.Dispatch<
-		React.SetStateAction<Record<string, any> | undefined>
-	>;
+	/** Parse persisted BlockContent into the editor model. Unwraps `kind: "structured"` by default. */
+	parseContent?: (raw: BlockConfig["content"]) => TContent;
+	/** Serialize the editor model back to persisted BlockContent. Wraps plain objects as `kind: "structured"` by default. */
+	serializeContent?: (content: TContent) => BlockContent;
 }
 
 /**
@@ -69,16 +59,23 @@ interface UseBlockStateResult<TContent> {
  *   the "Effect-Ref Debt Spiral" (Rule 6). We're using refs for stable event
  *   handler identity, not to patch a broken effect.
  * - Registry is updated synchronously every render, cleanup via useMountEffect
+ * - parseContent/serializeContent handle the structured ↔ plain-object boundary
+ *   so components always work with TContent and storage always conforms to BlockContent
  */
 export function useBlockState<TContent>({
 	value,
 	getDefaultContent,
 	onChange,
+	parseContent,
+	serializeContent,
 }: UseBlockStateOptions<TContent>): UseBlockStateResult<TContent> {
 	const [clientId] = useState(() => value.id || nanoid());
 
 	// Derive state from props — Rule 1
-	const content = (value.content as TContent) ?? getDefaultContent();
+	// parseContent unwraps structured content; without it, content passes through as-is
+	const content = parseContent
+		? parseContent(value.content) ?? getDefaultContent()
+		: (value.content as TContent) ?? getDefaultContent();
 	const styles = value.styles;
 	const settings = value.settings;
 
@@ -103,6 +100,7 @@ export function useBlockState<TContent>({
 	 * Stable setter for content — empty deps means identity never changes.
 	 * Reads from refs inside to get the latest value and onChange.
 	 * Follows "Parent Notification" pattern: calls onChange procedurally.
+	 * serializeContent wraps plain objects as structured; without it, content passes through
 	 */
 	const setContent = useCallback(
 		(update: TContent | ((prev: TContent) => TContent)) => {
@@ -114,14 +112,17 @@ export function useBlockState<TContent>({
 			// Eagerly update refs so getters return fresh values immediately,
 			// preventing stale content when settings components force re-render
 			contentRef.current = next;
+			const serialized = serializeContent
+				? serializeContent(next)
+				: (next as BlockContent);
 			const updatedBlock = {
 				...valueRef.current,
-				content: next as BlockConfig["content"],
+				content: serialized,
 			};
 			valueRef.current = updatedBlock;
 			onChangeRef.current(updatedBlock);
 		},
-		[],
+		[serializeContent],
 	);
 
 	/** Stable setter for styles. */
@@ -208,4 +209,18 @@ export function useBlockState<TContent>({
 		settings,
 		setSettings,
 	};
+}
+
+interface UseBlockStateResult<TContent> {
+	clientId: string;
+	content: TContent;
+	setContent: React.Dispatch<React.SetStateAction<TContent>>;
+	styles: React.CSSProperties | undefined;
+	setStyles: React.Dispatch<
+		React.SetStateAction<React.CSSProperties | undefined>
+	>;
+	settings: Record<string, any> | undefined;
+	setSettings: React.Dispatch<
+		React.SetStateAction<Record<string, any> | undefined>
+	>;
 }

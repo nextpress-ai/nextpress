@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { useSettingsState } from '../useSettingsState';
 import { useBlockState } from '../useBlockState';
+import { defaultParseContent, defaultSerializeContent } from '../createBlockDefinition';
 
 // ============================================================================
 // TYPES
@@ -200,6 +201,8 @@ export function PostProgressBlockComponent({
     value,
     getDefaultContent: () => DEFAULT_CONTENT,
     onChange,
+    parseContent: defaultParseContent,
+    serializeContent: defaultSerializeContent,
   });
 
   return (
@@ -227,6 +230,8 @@ function PostProgressSettings({
     block,
     onUpdate,
     defaultContent: DEFAULT_CONTENT,
+    parseContent: defaultParseContent,
+    serializeContent: defaultSerializeContent,
   });
 
   return (
@@ -360,6 +365,8 @@ const PostProgressBlock: BlockDefinition = {
   component: PostProgressBlockComponent,
   settings: PostProgressSettings,
   hasSettings: true,
+  parseContent: defaultParseContent,
+  serializeContent: defaultSerializeContent,
 };
 
 export default PostProgressBlock;

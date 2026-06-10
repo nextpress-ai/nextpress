@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { CSSProperties } from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { getBlockStateAccessor } from "./blockStateRegistry";
+import { defaultParseContent, defaultSerializeContent } from "./createBlockDefinition";
 
 /**
  * Unifies the settings-panel state boilerplate that every block's settings
@@ -16,22 +17,31 @@ import { getBlockStateAccessor } from "./blockStateRegistry";
  *
  * Replaces the per-block "Pattern A" (`setUpdateTrigger`) and "Pattern B"
  * (stale `block.content` reads) with one source of truth.
+ *
+ * parseContent/serializeContent handle the structured ↔ plain-object boundary
+ * so settings components always work with TContent and storage conforms to BlockContent.
  */
 export function useSettingsState<TContent>(args: {
   block: BlockConfig;
   onUpdate?: (updates: Partial<BlockConfig>) => void;
   defaultContent?: TContent;
+  /** Parse persisted BlockContent into the editor model. Defaults to structured unwrap. */
+  parseContent?: (raw: BlockConfig["content"]) => TContent;
+  /** Serialize the editor model back to persisted BlockContent. Defaults to structured wrap. */
+  serializeContent?: (content: TContent) => BlockContent;
 }) {
-  const { block, onUpdate, defaultContent } = args;
+  const { block, onUpdate, defaultContent, parseContent, serializeContent } = args;
+  const parse = parseContent ?? defaultParseContent<TContent>;
+  const serialize = serializeContent ?? defaultSerializeContent<TContent>;
   const accessor = getBlockStateAccessor(block.id);
   const [, force] = useState(0);
   const rerender = () => force((n) => n + 1);
 
-  // Read: live accessor when present, else the block's own content, falling back
-  // to defaults only when there is none. Does NOT merge defaults over existing
-  // content — that would inject default fields into the saved `onUpdate` payload.
+  // Read: live accessor when present, else parse the block's own content,
+  // falling back to defaults only when there is none. Does NOT merge defaults
+  // over existing content — that would inject default fields into the saved payload.
   const content = (
-    accessor ? accessor.getContent() : (block.content ?? defaultContent)
+    accessor ? accessor.getContent() : parse(block.content) ?? defaultContent
   ) as TContent;
 
   const styles = accessor ? accessor.getStyles() : block.styles;
@@ -43,7 +53,9 @@ export function useSettingsState<TContent>(args: {
       accessor.setContent({ ...current, ...updates });
       rerender();
     } else if (onUpdate) {
-      onUpdate({ content: { ...(block.content as object), ...updates } as unknown as BlockContent });
+      const parsed = parse(block.content);
+      const merged = { ...parsed, ...updates };
+      onUpdate({ content: serialize(merged as TContent) });
     }
   };
 

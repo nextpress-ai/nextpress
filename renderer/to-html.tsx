@@ -2,7 +2,8 @@
 import * as React from "react";
 import * as ReactDOMServer from "react-dom/server";
 import { BLOCK_COMPONENTS } from "./react/block-components";
-import type { BlockData } from "./react/block-types";
+import type { BlockConfig } from "@shared/schema-types";
+import { collectBlockModifierCSS } from "@shared/token-resolution";
 
 const HYDRATION_CONTAINER_ID = "react-island-";
 
@@ -44,21 +45,20 @@ function getLoadingPlaceholder(blockName: string): string {
 }
 
 /**
- * Renders an array of block configuration objects into HTML string.
+ * Renders an array of BlockConfig objects into HTML string.
  * Interactive blocks are wrapped in hydration containers with loading placeholders.
- * @param blocks An array of BlockData objects with optional `interactive` flag.
+ * @param blocks An array of BlockConfig objects with optional `isReactive` flag.
  * @returns A single string of HTML with hydration islands for interactive blocks.
  */
-export function renderBlocksToHtml(blocks: BlockData[]): string {
+export function renderBlocksToHtml(blocks: BlockConfig[]): string {
   let fullHtml = "";
 
   for (const block of blocks) {
-    const { blockName } = block;
+    const { name: blockName } = block;
 
     // Handle HTML override (if other.html is set)
-    const blockWithOverride = block as BlockData & { htmlOverride?: string };
-    if (blockWithOverride.htmlOverride) {
-      fullHtml += blockWithOverride.htmlOverride;
+    if (block.other?.html) {
+      fullHtml += block.other.html;
       continue;
     }
 
@@ -72,7 +72,7 @@ export function renderBlocksToHtml(blocks: BlockData[]): string {
 
     try {
       // 2. Check if block is interactive via the flag
-      const blockIsInteractive = block.interactive === true;
+      const blockIsInteractive = block.isReactive === true;
 
       if (blockIsInteractive) {
         // Interactive block: Create hydration island

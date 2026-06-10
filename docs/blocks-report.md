@@ -17,22 +17,25 @@ Phase 7 (see `task.md`, commit `08bc367`). Status of the original findings:
 | `post-new` orphan block | ✅ **Removed** (moved to `/trash`). |
 | `TokenSpacingPicker` dead code | ✅ **Deleted** — freeform CSS + `UnitToggle` is the chosen spacing pattern. |
 | Dual state management in `PageBuilder` | ✅ **Resolved** — single source of truth (`currentState`). |
-| Block library search/filter missing | ✅ **Added** (label/description/category filter). |
-| Keyboard shortcuts (Delete/Esc/Ctrl+D) missing | ✅ **Added** (guarded against text inputs). |
-| `PublicBlockRenderer`: hardcoded `#007cba`, unparsed markdown | ✅ **Fixed** — `var(--npb-accent)` + `react-markdown`/`remark-gfm`. |
-| Visual drop placeholders + auto-scroll missing | ✅ **Added** (DnD `placeholderIndex` + rAF auto-scroll). _Visual QA pending._ |
+| Block library search/filter missing | ✅ **Added** (label/description/category filter). Verified in `BlockLibrary.tsx`. |
+| Keyboard shortcuts (Delete/Esc/Ctrl+D) missing | ✅ **Added** (guarded against text inputs). Verified in `PageBuilder.tsx`. |
+| `PublicBlockRenderer`: hardcoded `#007cba`, unparsed markdown | ✅ **Fixed** — `var(--npb-accent)` + `react-markdown`/`remark-gfm`. Post SSR renderers also migrated to `var(--npb-*)` tokens. |
+| Visual drop placeholders + auto-scroll missing | ✅ **Added** (DnD `placeholderIndex` + rAF auto-scroll). Verified in `dnd/index.tsx`. |
 | Debug `console.log` in `useDragAndDropHandler` | ✅ **Removed** (kept the `console.error`). |
-| `post-featured-image` inline styles | ✅ **Resolved** (Phase 5a); remaining inline styles are runtime-dynamic (`aspectRatio`/`objectFit`). |
+| `post-featured-image` inline styles | ✅ **Resolved** (Phase 5a + theming migration); uses Tailwind + `npb-*` tokens. Only data-driven inline styles remain (`aspectRatio`/`objectFit`). |
 | Hardcoded Tailwind colors across blocks/shell | ✅ **Migrated** to `npb-*` tokens (Phases 1–5). |
 | Oversized: columns / group / container | ✅ **Split** into model + settings + block files (< 400 LOC each). |
 | README block counts (42/32/4) | ✅ **Corrected** (25 basic + 1 icon + 10 post = 36; added missing `Container`). |
 | Oversized: post-list, image, table, video, post-info, cover, media-text, post-comments, gallery, post-navigation | ✅ **Split** into model + settings + block files (all main files < 400 LOC). post-author-box (385) and post-featured-image (340) dropped under 400 during the theming migration — no split needed. |
 | Settings pattern divergence (A vs B) → `useSettingsState` | ✅ **Resolved** — `useSettingsState` hook unifies all settings panels (35 components migrated; flat-content blocks use it fully, bespoke blocks use it for accessor+rerender and keep their token/layout/data logic). `markdown` excluded (no settings). |
 | Reusability: `createBlockDefinition` | ✅ **Built** (opt-in factory; absorbs `useBlockState` wiring + optional content parse/serialize). Rollout to pure blocks in progress; bespoke-component blocks (extra hooks/effects) keep custom components. |
-| Reusability: `BlockShell` | ✅ **Decided: not building** — `block-${id}` wrapper already centralized in `BlockRenderer`; per-block `wp-block-*` class+tag is intrinsic → a shell would be indirection without dedup. |
-| Reusability: `LinkSettings` / `MediaUrlField` | ✅ **Decided: skip** — heterogeneous data shapes (`url` vs `href`, flat vs nested `data`, chip vs select) → a shared component would be a forced abstraction worse than the shallow duplication. |
-| Renderer dual type system (`BlockConfig` vs `BlockData`) | 🗓️ **Planned as its own phase** — see [`phase8-renderer-unification.md`](phase8-renderer-unification.md). |
+| Reusability: `BlockShell` | 🗓️ **Planned** — extract shared rendering shell for all blocks. |
+| Reusability: `LinkSettings` / `MediaUrlField` | 🗓️ **Planned** — extract shared components to reduce duplication across 6–7 blocks. |
+| Renderer dual type system (`BlockConfig` vs `BlockData`) | ✅ **Resolved** — Phase 8 unified on `BlockConfig`. `BlockData` type + `adapt-block-config.ts` adapter deleted. Renderer components consume `BlockConfig` directly. `PublicBlockRenderer` replaced with 82 LOC wrapper. ~1900 LOC net deleted. |
 | README Known Issues statuses (posts save, columns fit) | ⬜ **Open** — pending behavioral in-app verification. |
+| Animation System | ✅ **Implemented** — Full system: editor UI (`AnimationPicker`), preview, SSR injection, custom IntersectionObserver entry animations (not AOS). Entry/hover/loop all working. |
+| Template system SSR wiring | ❌ **Not implemented** — `renderTemplateBlocks()`, `buildRenderContext()`, `shouldRenderTemplate()` defined but zero call sites in routes. |
+| `createBlockDefinition` factory rollout | ⚠️ **89% complete** — 33/37 blocks use factory. 4 still raw: columns, icon, markdown, image. |
 | Responsive per-device styles, copy/paste, undo structural sharing | ⬜ **Open** (roadmap). |
 
 Inline markers below: **✅ RESOLVED** tags annotate individual findings; unmarked items remain open.
@@ -436,7 +439,7 @@ Two incompatible settings patterns coexist:
 | `useSettingsState(block)` hook | ~20 lines/block | All 36 with settings |
 | `LinkSettings` shared component | ~200 LOC saved | 6+ blocks |
 | `MediaUrlField` shared component | ~150 LOC saved | 7+ blocks |
-| Content→props mapping in `BlockDefinition` | Eliminates 240-line switch in renderer | All blocks |
+| Content→props mapping in `BlockDefinition` | ✅ **Resolved** — `parseContent`/`serializeContent` on `BlockDefinition`. Renderer components parse their own content. 240-line `extractContentProps` switch deleted. |
 
 ---
 
@@ -538,7 +541,7 @@ The renderer (`renderer/`) is a **separate server-side rendering pipeline** with
 10. **Create `createBlockDefinition()` factory** — Reduce boilerplate across all blocks.
 11. **Extract `BlockShell` wrapper** — Shared rendering shell for all blocks.
 12. **Extract shared `LinkSettings` and `MediaUrlField`** — Reduce duplication.
-13. **Unify renderer types** — Bridge `BlockConfig` and `BlockData` or merge them.
+13. ✅ **RESOLVED** — **Unify renderer types** — Phase 8 bridged `BlockConfig` and `BlockData` by eliminating `BlockData` entirely. Single type system, single component set.
 14. ✅ **RESOLVED** — **Fix `PublicBlockRenderer`**: button colors → `var(--npb-accent)`; markdown parsed via `react-markdown` + `remark-gfm`.
 
 ### Long-term (Roadmap)

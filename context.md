@@ -134,3 +134,74 @@ Build green; full suite **453/453**. Fixed one stale theming-migration assertion
 - **HMR client port is now pinned**: `server/vite.ts` sets `hmr: { server, clientPort: parseInt(process.env.PORT||"5000",10) }` (mirrors the listen port in `server/index.ts:81`). Previously `hmr: { server }` alone could inject `ws://localhost:undefined`.
 - **Adding a new React-using dep** (e.g. `react-markdown`) that isn't in `optimizeDeps.include` gets discovered lazily mid-load → a 2nd optimize pass → mismatched `?v=` chunk hashes → `Cannot read properties of null (reading 'useEffect')` app-wide (dev only; prod build dedupes fine). Fix: add it to `optimizeDeps.include` in `vite.config.ts` (react-markdown + remark-gfm already added).
 - **Debugging tip**: `agent-browser` reproduced this — `open <url>` then `errors --json` / `console` surfaced the broken HMR ws + null-React stack pointing at `node_modules/.vite/deps/*` chunks with differing `?v=` hashes.
+
+---
+
+## 2026-06-10 — Phase 8: Renderer Unification (COMPLETE)
+
+Full spec: [`docs/phase8-renderer-unification.md`](docs/phase8-renderer-unification.md). Tracker: `task.md`.
+
+### What Changed
+
+- **`BlockData` type deleted** — renderer now uses `BlockConfig` directly (single type system)
+- **`adapt-block-config.ts` deleted** (427 LOC) — 240-line `extractContentProps` switch eliminated
+- **`PublicBlockRenderer` replaced** — 1001 LOC → 82 LOC thin wrapper delegating to `renderer/react/*` components
+- **Post block content** — all 10 post blocks wrap content as `{ kind: "structured", data }`, zero `as unknown as BlockContent` casts in shared infrastructure
+- **Token resolution unified** — `resolveTokenMapForSSR` + `collectBlockModifierCSS` moved to `shared/token-resolution.ts`
+- **7 post block SSR renderers** — static placeholder components in `renderer/react/post/index.tsx`
+- **Lazy loading** — `react-markdown`, `remark-gfm`, icon libraries loaded via `React.lazy()` only when blocks render
+- **~1900 LOC net deleted**
+
+### Architecture (After)
+
+```
+BlockConfig[] (single type)
+    ├── SSR: renderBlocksToHtml() → renderer/react/* → HTML string
+    ├── Client: PublicPageView → PublicBlockRenderer (82 LOC) → renderer/react/* → React elements
+    └── (future) themeManager → same components
+```
+
+### Key Patterns
+
+- **`createBlockDefinition`** factory: `defaultParseContent`/`defaultSerializeContent` handle structured wrapping transparently. Components work with plain objects.
+- **`getRenderProps(block)`** in `renderer/react/render-helpers.tsx`: common transformation (token resolution, style merge, className, animation attrs, children recursion)
+- **Content parsers**: `parseTextContent`, `parseMediaContent`, `parseStructuredContent`, `parseHtmlContent`, `parseMarkdownContent` — each component calls its own parser
+- **`BLOCK_COMPONENTS`** registry in `renderer/react/block-components.tsx`: maps 36 block names (26 core + 10 post) to components
+- **`CLIENT_COMPONENTS`** override in `PublicBlockRenderer`: client-specific components (e.g., `ClientIconBlock` with lazy loading)
+
+### Files Created
+
+| File | LOC | Purpose |
+|---|---|---|
+| `renderer/react/render-helpers.tsx` | 200 | `getRenderProps`, content parsers, `renderChildBlocks` |
+| `shared/token-resolution.ts` | 102 | SSR token resolution + modifier CSS (shared between SSR and client) |
+| `renderer/react/post/index.tsx` | 274 | 7 post block static SSR renderers |
+| `client/src/components/PageBuilder/blocks/ClientIconBlock.tsx` | ~50 | Lazy-loaded icon block for client |
+
+### Files Deleted
+
+| File | LOC | Reason |
+|---|---|---|
+| `renderer/adapt-block-config.ts` | 427 | Adapter eliminated |
+| `renderer/react/block-types.ts` | 288 | `BlockData` union eliminated |
+| `client/src/test/adapt-block-config.test.ts` | 479 | Adapter tests eliminated |
+
+### Deferred (not in Phase 8 scope)
+
+- **Template system SSR wiring**: `renderTemplateBlocks()`, `buildRenderContext()` into Express routes. Functions defined in `server/templates/` but zero call sites in routes. Architecture leaves clean extension point.
+- **Legacy themeManager migration**: Architecture supports future adoption of `renderer/react/*` components.
+
+### Already Implemented (verified 2026-06-10)
+
+- **Animation system**: Full implementation — editor UI (`AnimationPicker`), preview, SSR injection, custom IntersectionObserver entry animations (not AOS). Entry/hover/loop all working. Spec in `docs/animation-system-spec.md` is implemented (with deviations: custom IntersectionObserver instead of AOS, `data-np-entry*` instead of `data-aos*`).
+- **Block library search/filter**: Implemented in `BlockLibrary.tsx` — search input, filter by label/description/category, clear button, empty state.
+- **Keyboard shortcuts**: All wired in `PageBuilder.tsx` — Escape (deselect), Delete/Backspace (delete block), Ctrl+D (duplicate), Ctrl+Z (undo), Ctrl+Shift+Z/Y (redo), Ctrl+S (save). Guarded against INPUT/TEXTAREA/SELECT/contentEditable.
+- **Visual drop placeholders + auto-scroll**: `DropPlaceholder` component + `placeholderIndex` propagation + rAF auto-scroll loop in `dnd/index.tsx`.
+- **`post-featured-image` inline styles**: Migrated to Tailwind + `npb-*` tokens. Only data-driven inline styles remain (`aspectRatio`, `objectFit`).
+- **Markdown rendering**: `react-markdown` + `remark-gfm` lazy-loaded in `MarkdownBlock.tsx`.
+
+### Docs Cleanup
+
+- 8 outdated docs archived to `/trash/docs-archive-20260610/` (report-1/2/4, my-notes, phase7-tasks, templates-enhancement-plan, homepage-admin-routing-task, client/plan)
+- 5 root docs moved to `docs/internal/` (intent, task, COPYWRITING, design-taste, documentation-guidelines)
+- Only `AGENTS.md` and `context.md` remain at root

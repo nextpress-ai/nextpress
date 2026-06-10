@@ -13,6 +13,7 @@ import {
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { Settings } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
+import { defaultParseContent, defaultSerializeContent } from '../createBlockDefinition';
 import {
   type PostInfoContent,
   DEFAULT_CONTENT,
@@ -31,6 +32,8 @@ export function PostInfoSettings({ block, onUpdate }: PostInfoSettingsProps) {
     block,
     onUpdate,
     defaultContent: DEFAULT_CONTENT,
+    parseContent: defaultParseContent,
+    serializeContent: defaultSerializeContent,
   });
 
   const toggles = [

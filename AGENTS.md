@@ -164,9 +164,9 @@ Sub-agents start with zero context. Without explicit instructions they will:
 | Docs, README, comments | documentation-engineer | Their specialty |
 | Testing, verification | qa-engineer | Their specialty |
 | Security, reliability review | security-reliability-engineer | Their specialty |
-| Quick lookups, simple edits | fast-agent | Cheap and fast |
+| Quick lookups, simple edits | fast-agent | Cheap and fast — **NOT for codebase exploration** |
 | Visual analysis, screenshots, images | multimodal-agent | Has vision — **only for multimodal tasks** |
-| Codebase exploration, context gathering | fast-agent or explore | Cheaper than you, no vision needed |
+| Codebase exploration, context gathering | explore or documentation-engineer | Purpose-built for reading/tracing code. **Never use fast-agent for exploration.** |
 | Documentation lookup, library docs | documentation-engineer or explore | Text-only, no vision needed |
 
 **Default to delegation. Only do it yourself when genuinely no one else can.**
@@ -176,9 +176,9 @@ Sub-agents start with zero context. Without explicit instructions they will:
 **multimodal-agent is for images, screenshots, and visual analysis only.** Never use it for text-only tasks like codebase exploration, context gathering, or documentation lookup. It's expensive and wasteful when no vision is needed.
 
 For text-only tasks, use:
-- **fast-agent** — quick lookups, simple edits, lightweight tasks
-- **explore** — codebase exploration, context gathering, documentation lookup
-- **documentation-engineer** — writing docs, library docs lookup
+- **fast-agent** — quick lookups, simple edits, lightweight tasks. **Never for codebase exploration or context gathering.**
+- **explore** — codebase exploration, context gathering, tracing call chains
+- **documentation-engineer** — writing docs, library docs lookup, codebase reading
 - **backend-engineer / frontend-engineer** — implementation work in their domain
 
 Only reach for multimodal-agent when you need to analyze an image, screenshot, or visual output.

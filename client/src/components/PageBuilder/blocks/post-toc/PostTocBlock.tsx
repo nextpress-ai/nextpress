@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { useSettingsState } from '../useSettingsState';
 import { useBlockState } from '../useBlockState';
+import { defaultParseContent, defaultSerializeContent } from '../createBlockDefinition';
 
 // ============================================================================
 // TYPES
@@ -220,6 +221,8 @@ export function PostTocComponent({
     value,
     getDefaultContent: () => DEFAULT_CONTENT,
     onChange,
+    parseContent: defaultParseContent,
+    serializeContent: defaultSerializeContent,
   });
 
   return (
@@ -245,6 +248,8 @@ function PostTocSettings({ block, onUpdate }: PostTocSettingsProps) {
     block,
     onUpdate,
     defaultContent: DEFAULT_CONTENT,
+    parseContent: defaultParseContent,
+    serializeContent: defaultSerializeContent,
   });
 
   return (
@@ -322,6 +327,8 @@ const PostTocBlock: BlockDefinition = {
   component: PostTocComponent,
   settings: PostTocSettings,
   hasSettings: true,
+  parseContent: defaultParseContent,
+  serializeContent: defaultSerializeContent,
 };
 
 export default PostTocBlock;

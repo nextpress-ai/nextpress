@@ -189,11 +189,20 @@ export function useDragAndDropHandler(
           let blocksWithPostId = inserted.blocks;
           if (currentPostId && inserted.newId) {
             const blockDef = blockRegistry[draggableId];
+            // Check for postId in defaultContent — handles both flat objects
+            // and structured { kind: "structured", data: { postId } } wrapping
+            const hasPostId = blockDef?.defaultContent && typeof blockDef.defaultContent === 'object' && (
+              'postId' in (blockDef.defaultContent as Record<string, unknown>)
+              || (
+                (blockDef.defaultContent as Record<string, unknown>).kind === 'structured'
+                && typeof (blockDef.defaultContent as Record<string, unknown>).data === 'object'
+                && 'postId' in ((blockDef.defaultContent as Record<string, unknown>).data as Record<string, unknown>)
+              )
+            );
             if (
               blockDef &&
               blockDef.category === 'post' &&
-              blockDef.defaultContent &&
-              'postId' in blockDef.defaultContent
+              hasPostId
             ) {
               blocksWithPostId = structuredClone(
                 inserted.blocks,
@@ -202,10 +211,13 @@ export function useDragAndDropHandler(
               while (stack.length) {
                 const b = stack.shift()!;
                 if (b.id === inserted.newId) {
-                  b.content = {
-                    ...b.content,
-                    postId: currentPostId,
-                  } as unknown as typeof b.content;
+                  // Inject postId into structured or flat content
+                  const c = b.content as Record<string, unknown>;
+                  if (c?.kind === 'structured' && typeof c.data === 'object' && c.data !== null) {
+                    (c.data as Record<string, unknown>).postId = currentPostId;
+                  } else {
+                    b.content = { ...c, postId: currentPostId } as BlockConfig['content'];
+                  }
                   break;
                 }
                 if (Array.isArray(b.children)) stack.push(...b.children);

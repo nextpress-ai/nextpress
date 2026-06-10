@@ -9,6 +9,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useBlockState } from '../useBlockState';
+import { defaultParseContent, defaultSerializeContent } from '../createBlockDefinition';
 import {
   type PostInfoContent,
   type PostMeta,
@@ -184,6 +185,8 @@ export function PostInfoBlockComponent({
     value,
     getDefaultContent: () => DEFAULT_CONTENT,
     onChange,
+    parseContent: defaultParseContent,
+    serializeContent: defaultSerializeContent,
   });
   return (
     <PostInfoRenderer content={content} styles={styles} isPreview={isPreview} />
@@ -209,6 +212,8 @@ const PostInfoBlock: BlockDefinition = {
   component: PostInfoBlockComponent,
   settings: PostInfoSettings,
   hasSettings: true,
+  parseContent: defaultParseContent,
+  serializeContent: defaultSerializeContent,
 };
 
 export default PostInfoBlock;

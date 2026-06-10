@@ -1,5 +1,6 @@
 import resolveConfig from 'tailwindcss/resolveConfig'
 import tailwindConfig from '../../../tailwind.config'
+import { camelToKebab, STATE_MODIFIER_MAP } from '@shared/token-resolution'
 
 const fullConfig = resolveConfig(tailwindConfig)
 
@@ -69,17 +70,8 @@ export const propertyAliasMap: Record<string, string> = {
   gap: "gap",
 }
 
-/** Maps modifier names to CSS pseudo-selectors */
-export const stateModifierMap: Record<string, string> = {
-  hover: ":hover",
-  focus: ":focus",
-  active: ":active",
-  "focus-within": ":focus-within",
-  "focus-visible": ":focus-visible",
-  disabled: ":disabled",
-  first: ":first-child",
-  last: ":last-child",
-}
+/** Maps modifier names to CSS pseudo-selectors — re-exported from shared */
+export { STATE_MODIFIER_MAP as stateModifierMap } from '@shared/token-resolution'
 
 /**
  * Resolves a token entry's value/variant to an actual CSS value
@@ -171,12 +163,8 @@ export function resolveTokenMap(
   return { style: inlineStyle, modifierEntries }
 }
 
-/**
- * Converts camelCase CSS property to kebab-case for use in CSS rules.
- */
-export function camelToKebab(str: string): string {
-  return str.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)
-}
+/** Converts camelCase CSS property to kebab-case — re-exported from shared */
+export { camelToKebab } from '@shared/token-resolution'
 
 /**
  * Generates a CSS rule for a modifier entry.
@@ -194,8 +182,8 @@ export function resolveModifierEntry(
   const selector = `.block-${blockId}`
 
   // State modifier: hover, focus, active, etc.
-  if (stateModifierMap[entry.modifier]) {
-    const pseudo = stateModifierMap[entry.modifier]
+  if (STATE_MODIFIER_MAP[entry.modifier]) {
+    const pseudo = STATE_MODIFIER_MAP[entry.modifier]
     return `${selector}${pseudo} { ${cssProp}: ${resolvedValue}; }`
   }
 

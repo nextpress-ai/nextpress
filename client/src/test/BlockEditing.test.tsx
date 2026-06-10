@@ -165,7 +165,7 @@ describe('Block Editing', () => {
         name: 'core/spacer',
         type: 'block',
         parentId: null,
-        content: { height: 100 } as any,
+        content: { kind: 'structured', data: { height: 100 } },
         styles: {},
         children: [],
         settings: {},
@@ -179,8 +179,9 @@ describe('Block Editing', () => {
 
       expect(mockOnUpdate).toHaveBeenCalledWith({
         content: {
-          height: 150,
-        } as any,
+          kind: 'structured',
+          data: { height: 150 },
+        },
       });
     });
   });

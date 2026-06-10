@@ -1,5 +1,5 @@
 // client/src/components/PageBuilder/blocks/types.ts
-import type { BlockConfig } from "@shared/schema-types";
+import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type React from "react";
 
 export type BlockCategory = 'basic' | 'media' | 'layout' | 'advanced' | 'post';
@@ -28,6 +28,11 @@ export interface BlockDefinition {
   isContainer?: boolean; // identifies blocks that can contain children
   handlesOwnChildren?: boolean; // renderer manages its own children
   hasSettings?: boolean; // indicates if the block has settings UI
+
+  /** Parse persisted BlockContent into the editor model. Unwraps `kind: "structured"` by default. */
+  parseContent?: (raw: BlockConfig["content"]) => unknown;
+  /** Serialize the editor model back to persisted BlockContent. Wraps plain objects as `kind: "structured"` by default. */
+  serializeContent?: (content: unknown) => BlockContent;
   
    // New component pattern (preferred)
    component?: React.ComponentType<BlockComponentProps>;

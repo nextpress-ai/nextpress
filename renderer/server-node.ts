@@ -4,41 +4,51 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { renderBlocksToHtml, getHydrationScript } from "./to-html";
 import { PageTemplate } from "./templates/page";
-import type { BlockData } from "./react/block-types";
+import type { BlockConfig } from "@shared/schema-types";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const PORT = 3001;
 
-// Sample blocks data
-function getTestBlocks(): BlockData[] {
+// Sample blocks data using BlockConfig directly
+function getTestBlocks(): BlockConfig[] {
 	return [
 		{
-			blockName: "core/heading",
-			content: "Welcome to the Demo Page",
-			level: 1,
-			className: "text-4xl font-bold",
-			interactive: false,
+			id: "test-1",
+			name: "core/heading",
+			type: "block",
+			parentId: null,
+			content: { kind: "text", value: "Welcome to the Demo Page", level: 1 },
 		},
 		{
-			blockName: "core/heading",
-			content: "This is a static heading",
-			level: 2,
+			id: "test-2",
+			name: "core/heading",
+			type: "block",
+			parentId: null,
+			content: { kind: "text", value: "This is a static heading" },
 		},
 		{
-			blockName: "core/counter",
-			initialCount: 5,
-			interactive: true,
+			id: "test-3",
+			name: "core/counter",
+			type: "block",
+			parentId: null,
+			content: { kind: "structured", data: { initialCount: 5 } },
+			isReactive: true,
 		},
 		{
-			blockName: "core/heading",
-			content: "Another static heading after interactive block",
-			level: 3,
+			id: "test-4",
+			name: "core/heading",
+			type: "block",
+			parentId: null,
+			content: { kind: "text", value: "Another static heading after interactive block" },
 		},
 		{
-			blockName: "core/counter",
-			initialCount: 10,
-			interactive: true,
+			id: "test-5",
+			name: "core/counter",
+			type: "block",
+			parentId: null,
+			content: { kind: "structured", data: { initialCount: 10 } },
+			isReactive: true,
 		},
 	];
 }
@@ -164,4 +174,3 @@ server.listen(PORT, () => {
 	console.log(`🚀 Renderer test server running on http://localhost:${PORT}`);
 	console.log(`📄 Test page: http://localhost:${PORT}/test`);
 });
-

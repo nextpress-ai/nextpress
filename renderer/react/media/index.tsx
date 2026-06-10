@@ -1,421 +1,474 @@
 import * as React from "react";
-import type { BlockData } from "../block-types";
+import type { BlockConfig } from "@shared/schema-types";
+import { getRenderProps, parseMediaContent, parseStructuredContent, renderChildBlocks } from "../render-helpers";
 
 /**
  * Image Block Component
  * Renders an image with optional caption, width, height, and object-fit
  */
-export function ImageBlock(props: BlockData) {
-  const {
-    url,
-    alt,
-    caption,
-    width,
-    height,
-    objectFit,
-    className,
-    style,
-    attributes,
-    href,
-    linkTarget,
-    linkDestination,
-    rel,
-    title,
-  } = props as Extract<BlockData, { blockName: "core/image" }> & {
-    href?: string;
-    linkTarget?: string;
-    linkDestination?: string;
-    rel?: string;
-    title?: string;
-  };
+export function ImageBlock(block: BlockConfig) {
+	const { style, className, attributes } = getRenderProps(block);
+	const content = parseMediaContent(block.content);
 
-  if (!url) {
-    return null;
-  }
+	const url = content.url as string;
+	const alt = (content.alt as string) || "";
+	const caption = content.caption as string | undefined;
+	const width = content.width as number | string | undefined;
+	const height = content.height as number | string | undefined;
+	const objectFit = content.objectFit as string | undefined;
+	const href = content.href as string | undefined;
+	const linkTarget = (content.linkTarget as string) || (content.target as string) || undefined;
+	const linkDestination = content.linkDestination as string | undefined;
+	const rel = content.rel as string | undefined;
+	const title = content.title as string | undefined;
 
-  const mergedClassName = ["wp-block-image", className]
-    .filter(Boolean)
-    .join(" ");
+	if (!url) {
+		return null;
+	}
 
-  const imageStyle: React.CSSProperties = {
-    ...style,
-    ...(width ? { width } : {}),
-    ...(height ? { height } : {}),
-    ...(objectFit ? { objectFit } : {}),
-  };
+	const mergedClassName = ["wp-block-image", className]
+		.filter(Boolean)
+		.join(" ");
 
-  const image = <img src={url} alt={alt || ""} style={imageStyle} />;
+	const imageStyle: React.CSSProperties = {
+		...style,
+		...(width ? { width } : {}),
+		...(height ? { height } : {}),
+		...(objectFit ? { objectFit } : {}),
+	};
 
-  // Determine link href based on linkDestination
-  const linkHref =
-    linkDestination === "custom" && href
-      ? href
-      : linkDestination === "media"
-      ? url
-      : undefined;
+	const image = <img src={url} alt={alt || ""} style={imageStyle} />;
 
-  // Wrap image in <a> if there's a link
-  const imageContent = linkHref ? (
-    <a
-      href={linkHref}
-      target={linkTarget}
-      rel={linkTarget === "_blank" ? rel || "noopener noreferrer" : rel}
-      title={title}
-    >
-      {image}
-    </a>
-  ) : (
-    image
-  );
+	// Determine link href based on linkDestination
+	const linkHref =
+		linkDestination === "custom" && href
+			? href
+			: linkDestination === "media"
+			? url
+			: undefined;
 
-  if (caption) {
-    return (
-      <figure
-        className={mergedClassName || undefined}
-        style={style}
-        {...attributes}
-      >
-        {imageContent}
-        <figcaption>{caption}</figcaption>
-      </figure>
-    );
-  }
+	// Wrap image in <a> if there's a link
+	const imageContent = linkHref ? (
+		<a
+			href={linkHref}
+			target={linkTarget}
+			rel={linkTarget === "_blank" ? rel || "noopener noreferrer" : rel}
+			title={title}
+		>
+			{image}
+		</a>
+	) : (
+		image
+	);
 
-  return (
-    <div className={mergedClassName || undefined} style={style} {...attributes}>
-      {imageContent}
-    </div>
-  );
+	if (caption) {
+		return (
+			<figure
+				className={mergedClassName || undefined}
+				style={style}
+				{...attributes}
+			>
+				{imageContent}
+				<figcaption>{caption}</figcaption>
+			</figure>
+		);
+	}
+
+	return (
+		<div className={mergedClassName || undefined} style={style} {...attributes}>
+			{imageContent}
+		</div>
+	);
 }
 
 /**
  * Video Block Component
  * Renders a video element with optional controls, autoplay, loop, and poster
  */
-export function VideoBlock(props: BlockData) {
-  const {
-    url,
-    alt,
-    caption,
-    autoplay,
-    loop,
-    controls,
-    poster,
-    className,
-    style,
-    attributes,
-  } = props as Extract<BlockData, { blockName: "core/video" }>;
+export function VideoBlock(block: BlockConfig) {
+	const { style, className, attributes } = getRenderProps(block);
+	const content = parseMediaContent(block.content);
 
-  if (!url) {
-    return null;
-  }
+	const url = content.url as string;
+	const alt = (content.alt as string) || "";
+	const caption = content.caption as string | undefined;
+	const autoplay = content.autoplay as boolean | undefined;
+	const loop = content.loop as boolean | undefined;
+	const controls = content.controls as boolean | undefined;
+	const poster = content.poster as string | undefined;
 
-  const mergedClassName = ["wp-block-video", className]
-    .filter(Boolean)
-    .join(" ");
+	if (!url) {
+		return null;
+	}
 
-  const video = (
-    <video
-      src={url}
-      controls={controls !== false}
-      autoPlay={autoplay}
-      loop={loop}
-      poster={poster}
-      style={style}
-      {...attributes}
-    >
-      {alt && <track kind="captions" label={alt} />}
-    </video>
-  );
+	const mergedClassName = ["wp-block-video", className]
+		.filter(Boolean)
+		.join(" ");
 
-  if (caption) {
-    return (
-      <figure className={mergedClassName || undefined}>
-        {video}
-        <figcaption>{caption}</figcaption>
-      </figure>
-    );
-  }
+	const video = (
+		<video
+			src={url}
+			controls={controls !== false}
+			autoPlay={autoplay}
+			loop={loop}
+			poster={poster}
+			style={style}
+			{...attributes}
+		>
+			{alt && <track kind="captions" label={alt} />}
+		</video>
+	);
 
-  return (
-    <div className={mergedClassName || undefined} style={style} {...attributes}>
-      {video}
-    </div>
-  );
+	if (caption) {
+		return (
+			<figure className={mergedClassName || undefined}>
+				{video}
+				<figcaption>{caption}</figcaption>
+			</figure>
+		);
+	}
+
+	return (
+		<div className={mergedClassName || undefined} style={style} {...attributes}>
+			{video}
+		</div>
+	);
 }
 
 /**
  * Audio Block Component
  * Renders an audio element with optional controls, autoplay, and loop
  */
-export function AudioBlock(props: BlockData) {
-  const {
-    url,
-    alt,
-    caption,
-    autoplay,
-    loop,
-    controls,
-    className,
-    style,
-    attributes,
-  } = props as Extract<BlockData, { blockName: "core/audio" }>;
+export function AudioBlock(block: BlockConfig) {
+	const { style, className, attributes } = getRenderProps(block);
+	const content = parseMediaContent(block.content);
 
-  if (!url) {
-    return null;
-  }
+	const url = content.url as string;
+	const alt = (content.alt as string) || "";
+	const caption = content.caption as string | undefined;
+	const autoplay = content.autoplay as boolean | undefined;
+	const loop = content.loop as boolean | undefined;
+	const controls = content.controls as boolean | undefined;
 
-  const mergedClassName = ["wp-block-audio", className]
-    .filter(Boolean)
-    .join(" ");
+	if (!url) {
+		return null;
+	}
 
-  const audio = (
-    <audio
-      src={url}
-      controls={controls !== false}
-      autoPlay={autoplay}
-      loop={loop}
-      style={style}
-      {...attributes}
-    >
-      {alt && <track kind="captions" label={alt} />}
-    </audio>
-  );
+	const mergedClassName = ["wp-block-audio", className]
+		.filter(Boolean)
+		.join(" ");
 
-  if (caption) {
-    return (
-      <figure className={mergedClassName || undefined}>
-        {audio}
-        <figcaption>{caption}</figcaption>
-      </figure>
-    );
-  }
+	const audio = (
+		<audio
+			src={url}
+			controls={controls !== false}
+			autoPlay={autoplay}
+			loop={loop}
+			style={style}
+			{...attributes}
+		>
+			{alt && <track kind="captions" label={alt} />}
+		</audio>
+	);
 
-  return (
-    <div className={mergedClassName || undefined} style={style} {...attributes}>
-      {audio}
-    </div>
-  );
+	if (caption) {
+		return (
+			<figure className={mergedClassName || undefined}>
+				{audio}
+				<figcaption>{caption}</figcaption>
+			</figure>
+		);
+	}
+
+	return (
+		<div className={mergedClassName || undefined} style={style} {...attributes}>
+			{audio}
+		</div>
+	);
 }
 
 /**
  * Gallery Block Component
  * Renders a grid of images
  */
-export function GalleryBlock(props: BlockData) {
-  const { images, columns, className, style, attributes } = props as Extract<
-    BlockData,
-    { blockName: "core/gallery" }
-  >;
+export function GalleryBlock(block: BlockConfig) {
+	const { style, className, attributes } = getRenderProps(block);
+	const content = parseMediaContent(block.content);
+	const data = parseStructuredContent(block.content);
 
-  if (!images || images.length === 0) {
-    return null;
-  }
+	const images = ((content.images || data.images) as Array<{ url: string; alt?: string; caption?: string }>) || [];
+	const columns = (content.columns || data.columns) as number | undefined;
 
-  const mergedClassName = [
-    "wp-block-gallery",
-    columns ? `columns-${columns}` : "",
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
+	if (!images || images.length === 0) {
+		return null;
+	}
 
-  const galleryStyle: React.CSSProperties = {
-    ...style,
-    ...(columns ? { gridTemplateColumns: `repeat(${columns}, 1fr)` } : {}),
-  };
+	const mergedClassName = [
+		"wp-block-gallery",
+		columns ? `columns-${columns}` : "",
+		className,
+	]
+		.filter(Boolean)
+		.join(" ");
 
-  return (
-    <figure
-      className={mergedClassName || undefined}
-      style={galleryStyle}
-      {...attributes}
-    >
-      {images.map((image, index) => {
-        // Use image URL + index as key for stability
-        const imageKey = `${image.url || ""}-${index}`;
-        return (
-          <figure key={imageKey} className="wp-block-gallery-item">
-            <img src={image.url} alt={image.alt || ""} />
-            {image.caption && <figcaption>{image.caption}</figcaption>}
-          </figure>
-        );
-      })}
-    </figure>
-  );
+	const galleryStyle: React.CSSProperties = {
+		...style,
+		...(columns ? { gridTemplateColumns: `repeat(${columns}, 1fr)` } : {}),
+	};
+
+	return (
+		<figure
+			className={mergedClassName || undefined}
+			style={galleryStyle}
+			{...attributes}
+		>
+			{images.map((image, index) => {
+				const imageKey = `${image.url || ""}-${index}`;
+				return (
+					<figure key={imageKey} className="wp-block-gallery-item">
+						<img src={image.url} alt={image.alt || ""} />
+						{image.caption && <figcaption>{image.caption}</figcaption>}
+					</figure>
+				);
+			})}
+		</figure>
+	);
 }
 
 /**
  * Cover Block Component
  * Renders an image with overlay and optional text content
  */
-export function CoverBlock(props: BlockData) {
-  const {
-    url,
-    alt,
-    caption,
-    overlayColor,
-    overlayOpacity,
-    minHeight,
-    className,
-    style,
-    attributes,
-    children,
-  } = props as Extract<BlockData, { blockName: "core/cover" }>;
+export function CoverBlock(block: BlockConfig) {
+	const { style, className, attributes, children } = getRenderProps(block);
+	const content = parseMediaContent(block.content);
 
-  if (!url) {
-    return null;
-  }
+	const url = content.url as string;
+	const alt = (content.alt as string) || "";
+	const caption = content.caption as string | undefined;
+	const overlayColor = content.overlayColor as string | undefined;
+	const overlayOpacity = content.overlayOpacity as number | undefined;
+	const minHeight = content.minHeight as string | undefined;
 
-  const mergedClassName = ["wp-block-cover", className]
-    .filter(Boolean)
-    .join(" ");
+	if (!url) {
+		return null;
+	}
 
-  const coverStyle: React.CSSProperties = {
-    ...style,
-    ...(minHeight ? { minHeight } : {}),
-    backgroundImage: `url(${url})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    position: "relative",
-  };
+	const mergedClassName = ["wp-block-cover", className]
+		.filter(Boolean)
+		.join(" ");
 
-  const overlayStyle: React.CSSProperties = {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: overlayColor || "rgba(0, 0, 0, 0.5)",
-    opacity: overlayOpacity !== undefined ? overlayOpacity : 0.5,
-  };
+	const coverStyle: React.CSSProperties = {
+		...style,
+		...(minHeight ? { minHeight } : {}),
+		backgroundImage: `url(${url})`,
+		backgroundSize: "cover",
+		backgroundPosition: "center",
+		position: "relative",
+	};
 
-  return (
-    <div
-      className={mergedClassName || undefined}
-      style={coverStyle}
-      {...attributes}
-    >
-      <div style={overlayStyle} />
-      <div style={{ position: "relative", zIndex: 1 }}>
-        {children && children.length > 0 ? (
-          // Render children blocks if present
-          <div>{/* Children will be rendered by parent renderer */}</div>
-        ) : (
-          <div>{caption || alt || ""}</div>
-        )}
-      </div>
-    </div>
-  );
+	const overlayStyle: React.CSSProperties = {
+		position: "absolute",
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		backgroundColor: overlayColor || "rgba(0, 0, 0, 0.5)",
+		opacity: overlayOpacity !== undefined ? overlayOpacity : 0.5,
+	};
+
+	return (
+		<div
+			className={mergedClassName || undefined}
+			style={coverStyle}
+			{...attributes}
+		>
+			<div style={overlayStyle} />
+			<div style={{ position: "relative", zIndex: 1 }}>
+				{block.children && block.children.length > 0 ? (
+					children
+				) : (
+					<div>{caption || alt || ""}</div>
+				)}
+			</div>
+		</div>
+	);
 }
 
 /**
  * File Block Component
- * Renders a file download link
+ * Renders a rich file download link with preview and download button.
+ * Matches the legacy PublicBlockRenderer output for visual parity.
  */
-export function FileBlock(props: BlockData) {
-  const { url, filename, fileSize, className, style, attributes } =
-    props as Extract<BlockData, { blockName: "core/file" }>;
+export function FileBlock(block: BlockConfig) {
+	const { style, className, attributes } = getRenderProps(block);
+	const data = parseStructuredContent(block.content);
 
-  if (!url) {
-    return null;
-  }
+	const url = (data.href as string) || (data.url as string) || "";
+	const fileName = (data.fileName as string) || (data.filename as string) || "";
+	const textLinkHref = (data.textLinkHref as string) || url;
+	const textLinkTarget = (data.textLinkTarget as string) || "_self";
+	const showDownloadButton = data.showDownloadButton !== false;
+	const downloadButtonText = (data.downloadButtonText as string) || "Download";
+	const displayPreview = data.displayPreview !== false;
+	const fileSize = (data.fileSize as string) || "";
 
-  const mergedClassName = ["wp-block-file", className]
-    .filter(Boolean)
-    .join(" ");
+	if (!url) {
+		return null;
+	}
 
-  return (
-    <div className={mergedClassName || undefined} style={style} {...attributes}>
-      <a href={url} download={filename} className="wp-block-file__link">
-        {filename || url.split("/").pop() || "Download"}
-      </a>
-      {fileSize && <span className="wp-block-file__size">({fileSize})</span>}
-    </div>
-  );
-}
+	const mergedClassName = ["wp-block-file", className]
+		.filter(Boolean)
+		.join(" ");
+
+	const fileExtension = fileName ? fileName.split(".").pop()?.toUpperCase() : "";
+
+	const fileIconSvg = (
+		<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginRight: "12px" }}>
+			<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+			<polyline points="14 2 14 8 20 8" />
+		</svg>
+	);
+
+	const downloadIconSvg = (
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+			<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+			<polyline points="7 10 12 15 17 10" />
+			<line x1="12" y1="15" x2="12" y2="3" />
+		</svg>
+	);
+
+	return (
+		<div className={mergedClassName || undefined} style={style} {...attributes}>
+			<div className="wp-block-file__content-wrapper">
+				{displayPreview ? (
+					<div className="wp-block-file__preview">
+						<div style={{ alignItems: "center", display: "flex", marginBottom: "1em" }}>
+							{fileIconSvg}
+							<div>
+								<div className="file-name font-medium">
+									<a
+										href={textLinkHref}
+										rel={textLinkTarget === "_blank" ? "noopener noreferrer" : undefined}
+										style={{ color: "var(--npb-accent)", textDecoration: "none" }}
+										target={textLinkTarget}
+									>
+										{fileName || "Download File"}
+									</a>
+									</div>
+									{(fileExtension || fileSize) && (
+										<div className="file-details text-sm text-gray-500">
+											{fileExtension ? <span>{fileExtension}</span> : null}
+											{fileExtension && fileSize ? <span> • </span> : null}
+											{fileSize ? <span>{fileSize}</span> : null}
+										</div>
+									)}
+								</div>
+							</div>
+						</div>
+					) : null}
+
+					{showDownloadButton ? (
+						<div className="wp-block-file__button-container">
+							<a
+								className="wp-block-file__button"
+								download={fileName}
+								href={url}
+								style={{
+									alignItems: "center",
+									backgroundColor: "var(--npb-accent)",
+									borderRadius: "4px",
+									color: "#ffffff",
+									display: "inline-flex",
+									fontSize: "16px",
+									fontWeight: "600",
+									gap: "8px",
+									padding: "12px 24px",
+									textDecoration: "none",
+								}}
+							>
+								{downloadIconSvg}
+								{downloadButtonText}
+							</a>
+						</div>
+					) : null}
+				</div>
+			</div>
+		);
+	}
 
 /**
  * Media Text Block Component
  * Renders media (image/video) alongside text content
  */
-export function MediaTextBlock(props: BlockData) {
-  const {
-    url,
-    alt,
-    caption,
-    mediaPosition,
-    verticalAlignment,
-    className,
-    style,
-    attributes,
-    children,
-    href,
-    linkTarget,
-    rel,
-    title,
-  } = props as Extract<BlockData, { blockName: "core/media-text" }> & {
-    href?: string;
-    linkTarget?: string;
-    rel?: string;
-    title?: string;
-  };
+export function MediaTextBlock(block: BlockConfig) {
+	const { style, className, attributes, children } = getRenderProps(block);
+	const content = parseMediaContent(block.content);
 
-  if (!url) {
-    return null;
-  }
+	const url = content.url as string;
+	const alt = (content.alt as string) || "";
+	const caption = content.caption as string | undefined;
+	const mediaPosition = (content.mediaPosition as string) || "left";
+	const verticalAlignment = content.verticalAlignment as string | undefined;
+	const href = content.href as string | undefined;
+	const linkTarget = (content.linkTarget as string) || (content.target as string) || undefined;
+	const rel = content.rel as string | undefined;
+	const title = content.title as string | undefined;
 
-  const mergedClassName = [
-    "wp-block-media-text",
-    mediaPosition === "right" ? "has-media-on-the-right" : "",
-    verticalAlignment ? `is-vertically-aligned-${verticalAlignment}` : "",
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
+	if (!url) {
+		return null;
+	}
 
-  const mediaStyle: React.CSSProperties = {
-    backgroundImage: `url(${url})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  };
+	const mergedClassName = [
+		"wp-block-media-text",
+		mediaPosition === "right" ? "has-media-on-the-right" : "",
+		verticalAlignment ? `is-vertically-aligned-${verticalAlignment}` : "",
+		className,
+	]
+		.filter(Boolean)
+		.join(" ");
 
-  const mediaContent = (
-    <>
-      <img src={url} alt={alt || ""} style={{ display: "none" }} />
-      {caption && <figcaption>{caption}</figcaption>}
-    </>
-  );
+	const mediaStyle: React.CSSProperties = {
+		backgroundImage: `url(${url})`,
+		backgroundSize: "cover",
+		backgroundPosition: "center",
+	};
 
-  // Wrap media in <a> if there's a link, otherwise use <figure>
-  const mediaElement = href ? (
-    <a
-      href={href}
-      target={linkTarget}
-      rel={linkTarget === "_blank" ? rel || "noopener noreferrer" : rel}
-      title={title}
-      className="wp-block-media-text__media"
-      style={mediaStyle}
-    >
-      {mediaContent}
-    </a>
-  ) : (
-    <figure className="wp-block-media-text__media" style={mediaStyle}>
-      {mediaContent}
-    </figure>
-  );
+	const mediaContent = (
+		<>
+			<img src={url} alt={alt || ""} style={{ display: "none" }} />
+			{caption && <figcaption>{caption}</figcaption>}
+		</>
+	);
 
-  return (
-    <div className={mergedClassName || undefined} style={style} {...attributes}>
-      {mediaElement}
-      <div className="wp-block-media-text__content">
-        {children && children.length > 0 ? (
-          // Render children blocks if present
-          <div>{/* Children will be rendered by parent renderer */}</div>
-        ) : (
-          <div>{/* Text content */}</div>
-        )}
-      </div>
-    </div>
-  );
+	// Wrap media in <a> if there's a link, otherwise use <figure>
+	const mediaElement = href ? (
+		<a
+			href={href}
+			target={linkTarget}
+			rel={linkTarget === "_blank" ? rel || "noopener noreferrer" : rel}
+			title={title}
+			className="wp-block-media-text__media"
+			style={mediaStyle}
+		>
+			{mediaContent}
+		</a>
+	) : (
+		<figure className="wp-block-media-text__media" style={mediaStyle}>
+			{mediaContent}
+		</figure>
+	);
+
+	return (
+		<div className={mergedClassName || undefined} style={style} {...attributes}>
+			{mediaElement}
+			<div className="wp-block-media-text__content">
+				{block.children && block.children.length > 0 ? (
+					children
+				) : (
+					<div>{/* Text content */}</div>
+				)}
+			</div>
+		</div>
+	);
 }

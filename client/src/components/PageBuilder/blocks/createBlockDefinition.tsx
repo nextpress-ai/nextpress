@@ -36,11 +36,38 @@ export type CreateBlockDefinitionConfig<TContent> = {
   settings?: BlockDefinition["settings"];
   /** Pure renderer — receives derived state + props, returns the block's JSX. */
   render: (args: BlockRenderArgs<TContent>) => React.ReactNode;
-  /** Optional: parse persisted content into the editor model (structured blocks, e.g. icon). */
+  /** Optional: parse persisted content into the editor model. Defaults to structured unwrap. */
   parseContent?: (raw: BlockConfig["content"]) => TContent;
-  /** Optional: serialize the editor model back to persisted content. */
+  /** Optional: serialize the editor model back to persisted content. Defaults to structured wrap. */
   serializeContent?: (content: TContent) => BlockContent;
 };
+
+// ─── Default parse / serialize ──────────────────────────────────────────────
+
+/**
+ * Default parse: unwrap `{ kind: "structured", data }` → `data`.
+ * Pass through everything else (text, media, etc.) as-is.
+ */
+export function defaultParseContent<TContent>(raw: BlockConfig["content"]): TContent {
+	if (!raw || typeof raw !== "object") return raw as TContent;
+	const r = raw as Record<string, unknown>;
+	if (r.kind === "structured" && "data" in r && typeof r.data === "object") {
+		return r.data as TContent;
+	}
+	return raw as TContent;
+}
+
+/**
+ * Default serialize: wrap plain objects as `{ kind: "structured", data }`.
+ * Content that already carries a `kind` discriminator (text, media, etc.)
+ * is returned as-is — it already conforms to `BlockContent`.
+ */
+export function defaultSerializeContent<TContent>(content: TContent): BlockContent {
+	if (content && typeof content === "object" && "kind" in content) {
+		return content as BlockContent;
+	}
+	return { kind: "structured", data: content as Record<string, unknown> };
+}
 
 /**
  * Builds a `BlockDefinition` whose `component` is generated from a pure `render`
@@ -51,81 +78,62 @@ export type CreateBlockDefinitionConfig<TContent> = {
  * directly instead of using this factory.
  */
 export function createBlockDefinition<TContent>(
-  config: CreateBlockDefinitionConfig<TContent>,
+	config: CreateBlockDefinitionConfig<TContent>,
 ): BlockDefinition {
-  const {
-    defaultContent,
-    defaultStyles,
-    settings,
-    render,
-    parseContent,
-    serializeContent,
-    ...meta
-  } = config;
+	const {
+		defaultContent,
+		defaultStyles,
+		settings,
+		render,
+		parseContent: customParse,
+		serializeContent: customSerialize,
+		...meta
+	} = config;
 
-  function BlockComponent({
-    value,
-    onChange,
-    onNestedBlockChange,
-    isPreview,
-    isSelected,
-  }: BlockComponentProps) {
-    // Structured blocks parse persisted content into the editor model and
-    // serialize it back on change; flat blocks pass through unchanged.
-    const valueForState = React.useMemo(
-      () =>
-        parseContent
-          ? { ...value, content: parseContent(value.content) as unknown as BlockContent }
-          : value,
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [value],
-    );
+	const parse = customParse ?? defaultParseContent<TContent>;
+	const serialize = customSerialize ?? defaultSerializeContent<TContent>;
 
-    const handleChange = React.useCallback(
-      (block: BlockConfig) => {
-        if (serializeContent) {
-          const parsed = parseContent
-            ? parseContent(block.content)
-            : (block.content as unknown as TContent);
-          onChange({ ...block, content: serializeContent(parsed) });
-        } else {
-          onChange(block);
-        }
-      },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [onChange],
-    );
+	function BlockComponent({
+		value,
+		onChange,
+		onNestedBlockChange,
+		isPreview,
+		isSelected,
+	}: BlockComponentProps) {
+		const { content, styles, settings: st, setContent, setStyles, setSettings } =
+			useBlockState<TContent>({
+				value,
+				getDefaultContent: () => defaultContent,
+				onChange,
+				parseContent: parse,
+				serializeContent: serialize,
+			});
 
-    const { content, styles, settings: st, setContent, setStyles, setSettings } =
-      useBlockState<TContent>({
-        value: valueForState,
-        getDefaultContent: () => defaultContent,
-        onChange: handleChange,
-      });
+		return (
+			<>
+				{render({
+					value,
+					content,
+					styles,
+					settings: st as Record<string, unknown> | undefined,
+					setContent,
+					setStyles,
+					setSettings: setSettings as BlockRenderArgs<TContent>["setSettings"],
+					isPreview,
+					isSelected,
+					onNestedBlockChange,
+				})}
+			</>
+		);
+	}
 
-    return (
-      <>
-        {render({
-          value,
-          content,
-          styles,
-          settings: st as Record<string, unknown> | undefined,
-          setContent,
-          setStyles,
-          setSettings: setSettings as BlockRenderArgs<TContent>["setSettings"],
-          isPreview,
-          isSelected,
-          onNestedBlockChange,
-        })}
-      </>
-    );
-  }
-
-  return {
-    ...meta,
-    defaultContent,
-    defaultStyles: (defaultStyles ?? {}) as Record<string, any>,
-    settings,
-    component: BlockComponent,
-  };
+	return {
+		...meta,
+		defaultContent: serialize(defaultContent),
+		defaultStyles: (defaultStyles ?? {}) as Record<string, any>,
+		settings,
+		component: BlockComponent,
+		parseContent: parse as BlockDefinition["parseContent"],
+		serializeContent: serialize as BlockDefinition["serializeContent"],
+	};
 }
