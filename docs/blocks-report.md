@@ -15,7 +15,9 @@
 | Renderer types | Single `BlockConfig` pipeline (Phase 8) |
 | Block file size | All main block files < 400 LOC (split where needed) |
 
-**UX baseline:** Solid editor (DnD, undo/redo, auto-save, device preview, animations, block search, keyboard shortcuts). Remaining gaps are mostly polish, shared abstractions, and server-side template wiring.
+**UX baseline:** Production-ready editor chrome — DnD, undo/redo, auto-save, device preview with per-device style overrides, block copy/paste, animations, block search, keyboard shortcuts, real template/theme admin UX (no dummy UI). Remaining gaps: template SSR on public routes, Landing marketing shell theming, complex-block BlockShell parity.
+
+**Latest commit:** `0267e93` — template/theme UX, device overrides, CLI seeding, BlockShell rollout, copy/paste, loading shell.
 
 ---
 
@@ -25,28 +27,50 @@
 
 | Item | Notes |
 |---|---|
-| **Template system SSR wiring** | `renderTemplateBlocks()`, `buildRenderContext()`, `shouldRenderTemplate()` exist in `server/templates/` but have **zero route call sites**. See `docs/templates-feature-spec.md`. |
-| **Theme / public shell** | Partial | Public page loading/404 on `npb-*`; auth shell updated; Landing still custom |
+| **Template system SSR wiring** | `renderTemplateBlocks()`, `buildRenderContext()`, `shouldRenderTemplate()` exist in `server/templates/` but have **zero route call sites**. Block/template `displayConditions` UI exists; evaluation on public render is not wired. See `docs/templates-feature-spec.md`. |
+| **Landing / marketing shell** | Public page loading/404 and auth use `npb-*`; Landing page keeps custom styling intentionally. |
 
 ### Engineering backlog
 
 | Item | Status | Notes |
 |---|---|---|
-| **`BlockShell`** | In progress | Rollout across simple block renderers; columns outer wrapper added |
-| **`LinkSettings` / `MediaUrlField`** | Done | Wired in button, icon, image, video, media-text, cover, file, audio |
-| **Block copy/paste** | Done | Ctrl+C / Ctrl+V in page builder |
-| **Per-device style overrides** | Done (v1) | `other.deviceStyles` + device preview; Style tab overrides tablet/mobile |
+| **`BlockShell`** | Partial | ~30 simple renderers; columns outer wrapper added; container, group, image, markdown still custom shells |
 | **Undo structural sharing** | Partial | Skip duplicate snapshot refs; tree updates preserve sibling block refs |
-| **Theme-aware loading** | Done | Shared `AppLoadingShell` for route/auth/preview/editor fallbacks |
-| **Default template seed** | Setup + CLI upgrade | Basic Page/Post templates when table empty; idempotent |
-| **Columns / buttons group UX** | Partial | `npb-*` drop zones; buttons use accent tokens + layout fix |
-| **README Known Issues** | Partial | Posts save root cause fixed; columns fit fixed |
+| **Columns / buttons group UX** | Partial | `npb-*` drop zones + accent tokens; further layout polish possible |
+| **Per-device style overrides** | Done (v1) | `other.deviceStyles` + tablet/mobile preview hint; Style tab routes via `useBlockState`; manual save verified in code path |
+| **Display conditions (blocks)** | UI done | `ConditionBuilder` on block Advanced tab; SSR evaluation pending |
+| **README Known Issues** | Partial | Columns fit fixed; posts save needs periodic in-app verification |
 
 ---
 
 ## Resolved (no action)
 
-Auto-save (parent `queueDraftSave` + draft restore), block deselection fix, dual PageBuilder state, `post-new` orphan removed, `TokenSpacingPicker` deleted, block library search/filter, keyboard shortcuts (Delete/Esc/Ctrl+D), DnD placeholders + auto-scroll, debug log removal, `PublicBlockRenderer` token + markdown fixes, hardcoded colors → `npb-*`, oversized block splits, README block counts, settings pattern → `useSettingsState`, animation system, renderer type unification (`BlockConfig` only).
+| Area | What shipped |
+|---|---|
+| **Shared settings** | `LinkSettings` / `MediaUrlField` in button, icon, image, video, media-text, cover, file, audio |
+| **Block copy/paste** | Ctrl+C / Ctrl+V via `block-clipboard.ts` + `insertBlockAfterDeep` |
+| **Theme-aware loading** | `AppLoadingShell` on route/auth/preview/editor fallbacks |
+| **Template / theme UX** | Real admin pages; Design menu apply (blocks + FK); no Unsplash/dummy selectors; `ThemeColorPreview` from theme settings |
+| **Default template seed** | `Basic Page` / `Basic Post` on setup wizard + `nextpress install`/`upgrade` via `seed-default-content.js` (idempotent) |
+| **Theme activation** | `POST /api/themes/:id/activate` syncs `sites.activeThemeId` |
+| **Template preview** | Builder opens `/preview/template/:id` |
+| **Icon picker** | Search-first fuzzy modal (`b023610`) |
+| **Builder crash fix** | Restored `useTheme` import in `BuilderTopBar` |
+
+Also resolved earlier: auto-save, block deselection, dual PageBuilder state, block library search, DnD placeholders, hardcoded colors → `npb-*`, settings → `useSettingsState`, animation system, renderer unification.
+
+---
+
+## Browser verification (2026-06-12)
+
+| Flow | Result |
+|---|---|
+| `/admin/themes` | Custom SSR current theme; no fake Install/Preview buttons |
+| `/admin/templates` | Real template list + builder actions |
+| Design → apply template | Canvas replaced with template blocks |
+| Device tablet/mobile toggle | Canvas width + “Style edits apply to … only” hint |
+| Block Advanced → Display Conditions | ConditionBuilder renders (Is Homepage, Add Condition) |
+| Page builder load | Fixed `useTheme is not defined` crash before re-test |
 
 ---
 
@@ -60,27 +84,26 @@ Reference: `blocks/heading/HeadingBlock.tsx`
 model (optional) → renderer (pure) → settings → createBlockDefinition({ render, ... })
 ```
 
-Factory absorbs `useBlockState` wiring and optional `parseContent` / `serializeContent`.
+### Per-device styles
 
-### Complex block (>400 LOC)
+- Preview device: `DeviceViewProvider` + top-bar desktop/tablet/mobile toggles
+- Storage: `block.other.deviceStyles.{tablet|mobile}` merged in `resolve-block-device-styles.ts`
+- Edits: `useBlockState.setStyles` routes to base `styles` (desktop) or device overrides
 
-Reference: `blocks/icon/` — split into `*-model.ts`, `*-settings.tsx`, `*Block.tsx`.
+### Template apply
 
-### Container block
-
-Reference: `blocks/container/ContainerBlock.tsx` — `isContainer`, `handlesOwnChildren`, pass `value.children` and `onNestedBlockChange` into renderer.
-
-### Settings
-
-Use `useSettingsState({ block, onUpdate, defaultContent })` — never raw `setUpdateTrigger` or stale `block.content` reads.
+- **Design menu / create page:** fetch template → `reIdTemplateBlocks()` → PUT blocks + `templateId`
+- **Sidebar insert:** append re-id'd blocks to canvas (no FK change)
 
 ### Shared components
 
 | Component | Path | Purpose |
 |---|---|---|
 | `BlockShell` | `blocks/shared/block-shell.tsx` | Outer block wrapper |
-| `LinkUrlField`, `LinkTargetChips`, `LinkTargetSelect` | `blocks/shared/link-settings.tsx` | Link URL + target in settings |
-| `MediaUrlField` | `blocks/shared/media-url-field.tsx` | URL input + media library picker |
+| `LinkUrlField`, `LinkTargetChips`, `LinkTargetSelect` | `blocks/shared/link-settings.tsx` | Link URL + target |
+| `MediaUrlField` | `blocks/shared/media-url-field.tsx` | URL + media library picker |
+| `AppLoadingShell` | `components/app-loading-shell.tsx` | Theme-aware route loading |
+| `ThemeColorPreview` | `components/themes/theme-color-preview.tsx` | Theme swatches from settings |
 
 ---
 
@@ -94,13 +117,12 @@ Use `useSettingsState({ block, onUpdate, defaultContent })` — never raw `setUp
 | Core (icon) | 1 | icon |
 | Post | 10 | title, excerpt, featured-image, list, toc, author-box, comments, navigation, info, progress |
 
-Icon “sets” in README = one icon block with multiple libraries (Lucide, react-icons, SVGL), not four blocks.
-
 ---
 
 ## Related Docs
 
-- `docs/design-system.md` — admin / builder chrome tokens and UI patterns
+- `docs/design-system.md` — admin / builder chrome tokens
 - `docs/tailwind-token-system-spec.md` — block content styling tokens
 - `docs/templates-feature-spec.md` — template SSR integration (pending)
+- `docs/upgrade-flow.md` — CLI upgrade + default content seed step
 - `task.md` — phase history and commit references
