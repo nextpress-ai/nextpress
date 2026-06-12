@@ -20,7 +20,7 @@ export function SurfaceCard({ children, className, interactive, padding = 'md', 
       className
     )}>
       {header && (
-        <div className="flex items-center justify-between px-4 py-3 bg-npb-surface-header border-b border-npb-divider">
+        <div className="flex items-center justify-between px-4 py-3 bg-npb-surface-header">
           <span className="text-sm font-semibold text-npb-text-primary">{header.title}</span>
           {header.actions}
         </div>

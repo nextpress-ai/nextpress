@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Check, Trash2, AlertTriangle, MessageCircle, Edit } from "lucide-react";
-import AdminTopBar from "@/components/AdminTopBar";
-import AdminSidebar from "@/components/AdminSidebar";
+import { AdminLayout } from "@/components/AdminLayout";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Comment } from "@shared/schema-types";
@@ -178,26 +177,17 @@ export default function CommentsPage() {
   ) || [];
 
   return (
-    <div className="min-h-screen bg-wp-gray-light">
-      <AdminTopBar />
-      <AdminSidebar />
-      
-      <div className="ml-40 pt-8">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-wp-gray">Comments</h1>
-            <div className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-wp-blue" />
-              <span className="text-sm text-gray-600">
-                {(commentsData as any)?.total || 0} total comments
-              </span>
-            </div>
-          </div>
+    <AdminLayout
+      title="Comments"
+      actions={
+        <div className="flex items-center gap-2 text-npb-text-muted">
+          <MessageCircle className="h-5 w-5 text-npb-accent" />
+          <span className="text-sm">
+            {(commentsData as { total?: number })?.total ?? 0} total comments
+          </span>
         </div>
-
-        {/* Content */}
-        <div className="p-6 content-fade-in">
+      }
+    >
           {/* Filters and Search */}
           <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex gap-4 items-center">
@@ -365,8 +355,6 @@ export default function CommentsPage() {
               )) as React.ReactNode}
             </CardContent>
           </Card>
-        </div>
-      </div>
 
       {/* Edit Comment Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -441,6 +429,6 @@ export default function CommentsPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }

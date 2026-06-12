@@ -8,8 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import AdminTopBar from "@/components/AdminTopBar";
-import AdminSidebar from "@/components/AdminSidebar";
+import { AdminLayout } from "@/components/AdminLayout";
 import { CreatePostDialog } from "@/components/posts/CreatePostDialog";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -88,28 +87,19 @@ export default function Posts() {
   ) || [];
 
   return (
-    <div className="min-h-screen bg-wp-gray-light">
-      <AdminTopBar />
-      <AdminSidebar />
-      
-      <div className="ml-40 pt-8">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-wp-gray">Posts</h1>
-            <Button 
-              className="bg-wp-blue hover:bg-wp-blue-dark text-white"
-              onClick={handleNewPost}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add New Post
-            </Button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          <Card>
+    <AdminLayout
+      title="Posts"
+      actions={
+        <Button
+          className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+          onClick={handleNewPost}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add New Post
+        </Button>
+      }
+    >
+          <Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)]">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>All Posts</CardTitle>
@@ -256,13 +246,11 @@ export default function Posts() {
               )}
             </CardContent>
           </Card>
-        </div>
-      </div>
 
       <CreatePostDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
       />
-    </div>
+    </AdminLayout>
   );
 }

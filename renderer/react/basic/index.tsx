@@ -2,6 +2,53 @@ import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { getRenderProps, parseTextContent, parseStructuredContent } from "../render-helpers";
 
+// ─── SSR Icon Placeholder ──────────────────────────────────────────────────
+// Renders a lightweight inline SVG placeholder with data attributes for
+// client-side hydration. Mirrors the pattern in advanced/IconBlock.
+
+type IconData = Record<string, unknown> | undefined;
+
+function renderSsrIcon(icon: IconData, overrides?: { size?: number; color?: string }): React.ReactNode {
+	if (!icon || typeof icon !== "object") return null;
+	const iconSet = (icon.iconSet as string) || "lucide";
+	const iconName = (icon.iconName as string) || "";
+	if (!iconName) return null;
+
+	const baseSize = (icon.size as number) || 24;
+	const sizeUnit = typeof icon.sizeUnit === "string" ? (icon.sizeUnit as string) : undefined;
+	const baseColor = (icon.color as string) || "currentColor";
+	const baseStroke = (icon.strokeWidth as number) || 2;
+	const strokeUnit = typeof icon.strokeWidthUnit === "string" ? (icon.strokeWidthUnit as string) : undefined;
+
+	const resolvedSize = overrides?.size ?? baseSize;
+	const resolvedColor = overrides?.color ?? baseColor;
+	const unit = sizeUnit || "px";
+	const svgW = unit === "px" ? resolvedSize : "100%";
+	const svgH = svgW;
+	const strokeU = strokeUnit || "px";
+	const strokeVal = strokeU === "px" ? String(baseStroke) : `${baseStroke}${strokeU}`;
+
+	return (
+		<svg
+			width={svgW}
+			height={svgH}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke={resolvedColor}
+			strokeWidth={strokeVal}
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			style={{ flexShrink: 0 }}
+			data-icon-set={iconSet}
+			data-icon-name={iconName}
+			aria-hidden="true"
+		>
+			<rect x="3" y="3" width="18" height="18" rx="2" opacity="0.15" />
+			<circle cx="12" cy="12" r="3" opacity="0.3" />
+		</svg>
+	);
+}
+
 const HEADING_FONT_SIZES: Record<number, string> = {
 	1: "2.5rem",
 	2: "2rem",
@@ -105,9 +152,12 @@ export function ButtonBlock(block: BlockConfig) {
 	const link = (content.link as string) || (content.url as string) || "";
 	const target = (content.target as string) || (content.linkTarget as string) || undefined;
 	const variant = content.variant as string | undefined;
-	const icon = content.icon as Record<string, unknown> | undefined;
+	const icon = content.icon as IconData;
 	const iconPosition = (content.iconPosition as string) || "left";
 	const iconOnly = content.iconOnly as boolean | undefined;
+
+	const iconElement = renderSsrIcon(icon, { size: (icon?.size as number) || 16, color: "currentColor" });
+	const hasIcon = iconElement !== null;
 
 	const buttonClassName = [
 		"wp-block-button__link",
@@ -117,6 +167,19 @@ export function ButtonBlock(block: BlockConfig) {
 		.filter(Boolean)
 		.join(" ");
 
+	const buttonStyle: React.CSSProperties = {
+		...(hasIcon ? { display: "inline-flex", alignItems: "center", gap: hasIcon && !iconOnly ? "6px" : undefined } : {}),
+		...style,
+	};
+
+	const buttonChildren = (
+		<>
+			{hasIcon && iconPosition === "left" && iconElement}
+			{!iconOnly && text}
+			{hasIcon && iconPosition === "right" && iconElement}
+		</>
+	);
+
 	if (link && link !== "#" && link.trim() !== "") {
 		return (
 			<a
@@ -124,10 +187,10 @@ export function ButtonBlock(block: BlockConfig) {
 				target={target}
 				rel={target === "_blank" ? "noopener noreferrer" : undefined}
 				className={buttonClassName || undefined}
-				style={style}
+				style={buttonStyle}
 				{...attributes}
 			>
-				{text}
+				{buttonChildren}
 			</a>
 		);
 	}
@@ -136,10 +199,10 @@ export function ButtonBlock(block: BlockConfig) {
 		<button
 			type="button"
 			className={buttonClassName || undefined}
-			style={style}
+			style={buttonStyle}
 			{...attributes}
 		>
-			{text}
+			{buttonChildren}
 		</button>
 	);
 }
@@ -152,7 +215,7 @@ export function ButtonBlock(block: BlockConfig) {
 export function ButtonsBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
 	const data = parseStructuredContent(block.content);
-	const buttons = (data.buttons as Array<Record<string, string>>) || [];
+	const buttons = (data.buttons as Array<Record<string, unknown>>) || [];
 	const layout = data.layout as string | undefined;
 	const orientation = data.orientation as string | undefined;
 
@@ -175,12 +238,30 @@ export function ButtonsBlock(block: BlockConfig) {
 	return (
 		<div className={mergedClassName || undefined} style={style} {...attributes}>
 			{buttons.map((button, index) => {
-				const buttonText = button.text || "";
-				const buttonUrl = button.url || "";
-				const buttonTarget = button.linkTarget || button.target;
+				const buttonText = (button.text as string) || "";
+				const buttonUrl = (button.url as string) || "";
+				const buttonTarget = (button.linkTarget as string) || (button.target as string);
 				const hasLink =
 					buttonUrl && buttonUrl !== "#" && buttonUrl.trim() !== "";
-				const buttonKey = button.id || `${buttonText}-${index}`;
+				const buttonKey = (button.id as string) || `${buttonText}-${index}`;
+
+				const btnIcon = button.icon as IconData;
+				const btnIconPosition = (button.iconPosition as string) || "left";
+				const btnIconOnly = button.iconOnly as boolean | undefined;
+				const iconElement = renderSsrIcon(btnIcon, { size: (btnIcon?.size as number) || 16, color: "currentColor" });
+				const hasIcon = iconElement !== null;
+
+				const btnStyle: React.CSSProperties = {
+					...(hasIcon ? { display: "inline-flex", alignItems: "center", gap: hasIcon && !btnIconOnly ? "6px" : undefined } : {}),
+				};
+
+				const btnChildren = (
+					<>
+						{hasIcon && btnIconPosition === "left" && iconElement}
+						{!btnIconOnly && buttonText}
+						{hasIcon && btnIconPosition === "right" && iconElement}
+					</>
+				);
 
 				return (
 					<div key={buttonKey} className="wp-block-button">
@@ -190,25 +271,27 @@ export function ButtonsBlock(block: BlockConfig) {
 								target={buttonTarget}
 								rel={
 									buttonTarget === "_blank"
-										? button.rel || "noopener noreferrer"
-										: button.rel
+										? (button.rel as string) || "noopener noreferrer"
+										: (button.rel as string)
 								}
-								title={button.title}
+								title={button.title as string}
 								className={`wp-block-button__link ${
-									button.className || ""
+									(button.className as string) || ""
 								}`.trim()}
+								style={btnStyle}
 							>
-								{buttonText}
+								{btnChildren}
 							</a>
 						) : (
 							<button
 								type="button"
-								title={button.title}
+								title={button.title as string}
 								className={`wp-block-button__link ${
-									button.className || ""
+									(button.className as string) || ""
 								}`.trim()}
+								style={btnStyle}
 							>
-								{buttonText}
+								{btnChildren}
 							</button>
 						)}
 					</div>

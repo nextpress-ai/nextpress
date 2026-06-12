@@ -1064,20 +1064,20 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
       </div>
 
       <Tabs defaultValue="content" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 gap-1 rounded-lg p-1">
+        <TabsList className="grid h-auto min-h-10 w-full grid-cols-3 gap-1 rounded-[var(--npb-radius-surface)] bg-npb-surface-inset p-1">
           <TabsTrigger
             value="content"
-            className="flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors">
+            className="flex min-h-9 items-center justify-center gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-medium text-npb-text-muted hover:bg-npb-interactive-bg-hover hover:text-npb-text-primary data-[state=active]:bg-npb-interactive-bg-active data-[state=active]:text-npb-interactive-text-active transition-colors">
             <Type className="h-3 w-3" /> Content
           </TabsTrigger>
           <TabsTrigger
             value="style"
-            className="flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors">
+            className="flex min-h-9 items-center justify-center gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-medium text-npb-text-muted hover:bg-npb-interactive-bg-hover hover:text-npb-text-primary data-[state=active]:bg-npb-interactive-bg-active data-[state=active]:text-npb-interactive-text-active transition-colors">
             <Palette className="h-3 w-3" /> Style
           </TabsTrigger>
           <TabsTrigger
             value="advanced"
-            className="flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors">
+            className="flex min-h-9 items-center justify-center gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-medium text-npb-text-muted hover:bg-npb-interactive-bg-hover hover:text-npb-text-primary data-[state=active]:bg-npb-interactive-bg-active data-[state=active]:text-npb-interactive-text-active transition-colors">
             <Code className="h-3 w-3" /> Advanced
           </TabsTrigger>
         </TabsList>

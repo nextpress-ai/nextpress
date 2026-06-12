@@ -458,8 +458,8 @@ export default function PageBuilderEditor({
           <AdminTopBar />
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wp-blue mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-npb-accent mx-auto mb-4"></div>
+              <p className="text-npb-text-secondary">Loading...</p>
             </div>
           </div>
         </div>
@@ -478,10 +478,10 @@ export default function PageBuilderEditor({
           <div className="flex items-center justify-center h-full">
             <Card className="w-96">
               <CardHeader>
-                <CardTitle className="text-red-600">Error</CardTitle>
+                <CardTitle className="text-npb-status-error">Error</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4">
+                <p className="text-npb-text-secondary mb-4">
                   {label} not found or failed to load.
                 </p>
                 <Button
@@ -635,11 +635,11 @@ export default function PageBuilderEditor({
   const isInlineEditing = !!inlinePostId;
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-npb-surface-base">
       {/* Full-screen page builder */}
       <div className="w-full h-full flex flex-col">
         {/* Top navigation for page builder */}
-        <div className="bg-wp-gray text-white border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-none">
+        <div className="npb-editor-chrome-header flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-4 flex-1">
             <Button
               variant="ghost"
@@ -647,15 +647,15 @@ export default function PageBuilderEditor({
               onClick={
                 isInlineEditing ? handleBackToBlogPage : handleBackToList
               }
-              className="flex items-center gap-2">
+              className="npb-chrome-ghost flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
               {isInlineEditing ? 'Back to Blog Page' : 'Back'}
             </Button>
             <div className="flex items-center gap-2 flex-1 max-w-md">
               {isInlineEditing && (
-                <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                <FileText className="w-4 h-4 npb-chrome-accent flex-shrink-0" />
               )}
-              <span className="text-sm text-gray-400 flex-shrink-0">
+              <span className="text-sm npb-chrome-muted flex-shrink-0">
                 {isInlineEditing
                   ? 'Editing Post:'
                   : `Editing ${isTemplate ? 'Template' : isPost ? 'Post' : 'Page'}:`}
@@ -663,7 +663,7 @@ export default function PageBuilderEditor({
               <Input
                 value={pageState.title}
                 onChange={(e) => handleTitleChange(e.target.value)}
-                className="bg-wp-gray border-gray-600 text-white text-sm h-8 focus:border-wp-blue"
+                className="npb-chrome-input text-sm h-8"
                 placeholder="Enter title..."
               />
             </div>
@@ -674,7 +674,7 @@ export default function PageBuilderEditor({
               <Button
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 text-gray-800"
+                className="npb-chrome-outline flex items-center gap-2"
                 data-testid="button-site-settings">
                 <Settings2 className="w-4 h-4" />
                 Site settings
@@ -685,7 +685,7 @@ export default function PageBuilderEditor({
               size="sm"
               onClick={() => void handlePreview()}
               disabled={isSaving}
-              className="flex items-center gap-2 text-gray-800"
+              className="npb-chrome-outline flex items-center gap-2"
               data-testid="button-preview">
               <Eye className="w-4 h-4" />
               Preview
@@ -695,7 +695,7 @@ export default function PageBuilderEditor({
               size="sm"
               onClick={handlePageBuilderSave}
               disabled={isSaving}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-npb-accent hover:bg-npb-accent-hover text-white"
               data-testid="button-save">
               <Save className="w-4 h-4" />
               {isSaving ? 'Saving...' : 'Save'}

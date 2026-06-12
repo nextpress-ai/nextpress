@@ -1,32 +1,20 @@
-import AdminTopBar from "@/components/AdminTopBar";
-import AdminSidebar from "@/components/AdminSidebar";
-import { Plug } from "lucide-react";
+import { AdminLayout } from '@/components/AdminLayout';
+import { Plug } from 'lucide-react';
 
 /**
  * Placeholder page for Plugins. Functionality not yet supported; shows coming-soon banner.
  */
 export default function Plugins() {
   return (
-    <div className="min-h-screen bg-wp-gray-light">
-      <AdminTopBar />
-      <AdminSidebar />
-
-      <div className="ml-40 pt-8">
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <h1 className="text-2xl font-semibold text-wp-gray">Plugins</h1>
-        </div>
-
-        <div className="p-6">
-          <div
-            className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800"
-            role="status"
-            aria-live="polite"
-          >
-            <Plug className="h-5 w-5 shrink-0 text-amber-600" />
-            <p className="font-medium">Plugins functionality is coming soon.</p>
-          </div>
-        </div>
+    <AdminLayout title="Plugins">
+      <div
+        className="flex items-center gap-3 rounded-[var(--npb-radius-surface)] bg-npb-status-warning/10 px-4 py-3 text-npb-status-warning"
+        role="status"
+        aria-live="polite"
+      >
+        <Plug className="h-5 w-5 shrink-0" />
+        <p className="font-medium">Plugins functionality is coming soon.</p>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

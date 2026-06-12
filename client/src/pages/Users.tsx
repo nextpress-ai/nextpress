@@ -38,8 +38,7 @@ import {
 import { UserPlus, Edit, Trash2, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import AdminTopBar from "@/components/AdminTopBar";
-import AdminSidebar from "@/components/AdminSidebar";
+import { AdminLayout } from "@/components/AdminLayout";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User, NewUser } from "@shared/schema-types";
@@ -209,28 +208,19 @@ export default function Users() {
 	};
 
 	return (
-		<div className="min-h-screen bg-wp-gray-light">
-			<AdminTopBar />
-			<AdminSidebar />
-
-			<div className="ml-40 pt-8">
-				{/* Header */}
-				<div className="bg-white border-b border-gray-200 px-6 py-4">
-					<div className="flex items-center justify-between">
-						<h1 className="text-2xl font-semibold text-wp-gray">Users</h1>
-						<Button
-							className="bg-wp-blue hover:bg-wp-blue-dark text-white"
-							onClick={handleNewUser}
-						>
-							<UserPlus className="w-4 h-4 mr-2" />
-							Add New User
-						</Button>
-					</div>
-				</div>
-
-				{/* Content */}
-				<div className="p-6">
-					<Card>
+		<AdminLayout
+			title="Users"
+			actions={
+				<Button
+					className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+					onClick={handleNewUser}
+				>
+					<UserPlus className="w-4 h-4 mr-2" />
+					Add New User
+				</Button>
+			}
+		>
+					<Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)]">
 						<CardHeader>
 							<CardTitle>All Users</CardTitle>
 						</CardHeader>
@@ -404,8 +394,6 @@ export default function Users() {
 							))}
 						</div>
 					</div>
-				</div>
-			</div>
 
 			{/* User Editor Dialog */}
 			<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -587,6 +575,6 @@ export default function Users() {
 					</Form>
 				</DialogContent>
 			</Dialog>
-		</div>
+		</AdminLayout>
 	);
 }

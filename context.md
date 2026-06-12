@@ -17,12 +17,14 @@ Per **AGENTS.md → Workflow**: use `task.md` for work **>30min**; at **task end
 
 ## 2026-05-15 — Local admin login (agent verification)
 
-- **Purpose**: Hand off how agents can **re-verify** local admin sign-in without storing secrets in repo docs.
+- **Purpose**: Hand off how agents can **re-verify** local admin sign-in and page builder UI.
 - **Base URL**: `http://localhost:5000` — HTTP port follows **`PORT`** when set; otherwise server defaults to **5000** (see `server/index.ts`).
 - **Login path**: **`/admin/login`**
-- **How verified**: Cursor **IDE browser MCP** was used to exercise the sign-in flow (credentials not recorded here).
-- **Credentials**: **User-managed** (your machine / DB seed / owner). **Password**: ask project owner / use your own local user.
-- **Security**: **No passwords, API keys, or session tokens** in `context.md` — treat this file as shareable context only.
+- **Credentials** (local dev — owner-provided):
+  - **Email**: `hssnkizz@gmail.com`
+  - **Password**: `Abcd1234!`
+- **Page builder**: After login, open **`/admin/pages`** → edit a page, or **`/admin/page-builder/page/<id>`** if you know the ID.
+- **How verified**: Cursor **IDE browser MCP** — sign in, toggle light/dark via sun/moon in builder top bar, confirm sidebar/canvas/header stay in sync.
 
 ---
 
@@ -36,7 +38,8 @@ Full report: [`docs/design-reference.md`](docs/design-reference.md)
 - **Tailwind registration**: All tokens registered as `npb-*` colors in `tailwind.config.ts`
 - **ThemeProvider**: `client/src/components/ThemeProvider.tsx` — manages `.dark` class on `<html>`, persists to `localStorage` key `npb-theme`
 - **`useTheme()` hook**: Returns `{ theme, toggleTheme, isDark }`
-- **Theme toggles**: TopBar (global sun/moon), Canvas header (canvas-only override)
+- **Theme toggles**: TopBar (global sun/moon) — canvas-only override removed 2026-06-12
+- **shadcn + `.dark` gotcha**: Light shadcn vars live in a second `:root {}` block *after* the first `.dark {}` npb block. Dark shadcn overrides must be in a **second `.dark {}` placed after that `:root` block**, or `--background` / `--muted` / `--card` stay light while npb tokens flip — breaks outline buttons, selects, and tab chrome in the builder.
 - **Sidebar merged**: Removed local `useState<SidebarChromeTheme>`, now uses global `useTheme()`
 - **Shared utilities**: `OptionButton`, `OptionGroup`, `SettingsLabel`, `SurfaceCard` in `client/src/components/PageBuilder/shared/`
 - **All 36 blocks migrated**: Use tokens and shared utilities, no hardcoded Tailwind colors

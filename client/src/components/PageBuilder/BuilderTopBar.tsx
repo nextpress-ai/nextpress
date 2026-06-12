@@ -46,7 +46,7 @@ export function BuilderTopBar({
 }) {
   const { isDark, toggleTheme } = useTheme();
   return (
-    <div className="bg-npb-surface-base border-b border-npb-border-default p-4">
+    <div className="bg-npb-surface-base p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {!sidebarVisible && (
@@ -103,9 +103,9 @@ export function BuilderTopBar({
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDark ? (
-              <Sun className="w-4 h-4 text-zinc-400" />
+              <Sun className="w-4 h-4 text-npb-text-muted" />
             ) : (
-              <Moon className="w-4 h-4 text-zinc-600" />
+              <Moon className="w-4 h-4 text-npb-text-secondary" />
             )}
           </Button>
 
@@ -159,9 +159,9 @@ export function BuilderTopBar({
                 type="button"
                 size="sm"
                 title="Page — browse, create, settings"
-                className="mr-2 gap-2 border border-zinc-950 bg-zinc-950 text-white shadow-sm hover:bg-zinc-800 hover:text-white focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                className="mr-2 gap-2 border border-npb-border-strong bg-npb-text-primary text-npb-text-inverse shadow-sm hover:bg-npb-interactive-bg-active hover:text-npb-text-inverse focus-visible:ring-2 focus-visible:ring-npb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-npb-surface-base"
               >
-                <FileStack className="h-4 w-4 shrink-0 text-white" aria-hidden />
+                <FileStack className="h-4 w-4 shrink-0 text-npb-text-inverse" aria-hidden />
                 Page
               </Button>
             </PagesMenu>

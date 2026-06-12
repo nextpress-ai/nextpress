@@ -187,7 +187,7 @@ export function IconPickerDialog({
 
         {/* Icon Grid */}
         <ScrollArea className="flex-1 min-h-0">
-          <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1 p-1">
+          <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-8 gap-2 p-1">
             {pageNames.map((iconName) => {
               const isSelected =
                 currentIcon?.iconName === iconName ||
@@ -205,7 +205,7 @@ export function IconPickerDialog({
                   onClick={() => handleSelect(iconName)}
                   className={`
                     flex flex-col items-center justify-center p-2 rounded-md transition-colors
-                    aspect-square gap-1 min-h-0
+                    gap-1 min-h-[60px]
                     ${
                       isSelected
                         ? 'bg-blue-100 ring-2 ring-blue-500'
@@ -224,7 +224,7 @@ export function IconPickerDialog({
                     }}
                     size={20}
                   />
-                  <span className="block min-h-0 min-w-0 w-full text-center text-[9px] leading-tight text-gray-500">
+                  <span className="block min-w-0 w-full text-center text-xs leading-tight text-gray-500 truncate">
                     {displayName}
                   </span>
                 </button>

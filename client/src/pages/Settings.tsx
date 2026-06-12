@@ -10,8 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Save, Globe, Database, Code, Shield, Bell, Upload, X, ImageIcon, Home, Check } from 'lucide-react';
-import AdminTopBar from '@/components/AdminTopBar';
-import AdminSidebar from '@/components/AdminSidebar';
+import { AdminLayout } from '@/components/AdminLayout';
 import { Spinner } from '@/components/ui/spinner';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -751,54 +750,38 @@ export default function Settings() {
 
   if (isLoading || (isSiteInfoLoading && !siteInfoError) || (isThemesLoading && !themesError) || !formData) {
     return (
-      <div className="min-h-screen bg-wp-gray-light">
-        <AdminTopBar />
-        <AdminSidebar />
-        <div className="ml-40 pt-8">
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <h1 className="text-2xl font-semibold text-wp-gray">Settings</h1>
-          </div>
-          <div className="flex items-center justify-center p-12">
-            <div className="text-center">
-              <Spinner className="w-8 h-8 text-wp-blue mx-auto mb-4" />
-              <p className="text-gray-600">Loading settings...</p>
-            </div>
+      <AdminLayout title="Settings">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Spinner className="mx-auto mb-4 h-8 w-8 text-npb-accent" />
+            <p className="text-npb-text-muted">Loading settings…</p>
           </div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
+  const saveActions = (
+    <>
+      {settingsJustSaved ? (
+        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-npb-status-success">
+          <Check className="h-4 w-4 shrink-0" aria-hidden />
+          Saved
+        </span>
+      ) : null}
+      <Button
+        className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+        onClick={handleSave}
+        disabled={saveMutation.isPending}
+      >
+        <Save className="mr-2 h-4 w-4" />
+        {saveMutation.isPending ? 'Saving…' : 'Save Changes'}
+      </Button>
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-wp-gray-light">
-      <AdminTopBar />
-      <AdminSidebar />
-
-      <div className="ml-40 pt-8">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-wp-gray">Settings</h1>
-          <div className="flex items-center gap-3">
-            {settingsJustSaved ? (
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
-                <Check className="h-4 w-4 shrink-0" aria-hidden />
-                Saved
-              </span>
-            ) : null}
-            <Button
-              className="bg-wp-blue hover:bg-wp-blue-dark text-white"
-              onClick={handleSave}
-              disabled={saveMutation.isPending}>
-              <Save className="w-4 h-4 mr-2" />
-              {saveMutation.isPending ? 'Saving…' : 'Save Changes'}
-            </Button>
-          </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
+    <AdminLayout title="Settings" actions={saveActions}>
           <Tabs defaultValue="general" className="space-y-6">
             <TabsList className="grid grid-cols-5 w-full max-w-2xl">
               <TabsTrigger value="general">General</TabsTrigger>
@@ -1651,15 +1634,12 @@ export default function Settings() {
               </div>
             </TabsContent>
           </Tabs>
-        </div>
-      </div>
 
-      {/* Media Picker Dialog */}
       <MediaPickerDialog
         open={mediaPickerOpen}
         onOpenChange={setMediaPickerOpen}
         onSelect={handleMediaSelect}
       />
-    </div>
+    </AdminLayout>
   );
 }

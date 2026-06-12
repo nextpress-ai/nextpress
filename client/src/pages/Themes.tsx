@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Download, Settings } from "lucide-react";
-import AdminTopBar from "@/components/AdminTopBar";
-import AdminSidebar from "@/components/AdminSidebar";
+import { AdminLayout } from "@/components/AdminLayout";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Theme } from "@shared/schema-types";
@@ -63,24 +62,15 @@ export default function Themes() {
 };
 
   return (
-    <div className="min-h-screen bg-wp-gray-light">
-      <AdminTopBar />
-      <AdminSidebar />
-      
-      <div className="ml-40 pt-8">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-wp-gray">Themes</h1>
-            <Button className="bg-wp-blue hover:bg-wp-blue-dark text-white">
-              <Download className="w-4 h-4 mr-2" />
-              Install Theme
-            </Button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
+    <AdminLayout
+      title="Themes"
+      actions={
+        <Button className="bg-npb-accent hover:bg-npb-accent-hover text-white">
+          <Download className="w-4 h-4 mr-2" />
+          Install Theme
+        </Button>
+      }
+    >
           {/* Current Theme */}
           {(activeTheme && (
             <div className="mb-8">
@@ -209,8 +199,6 @@ export default function Themes() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </AdminLayout>
   );
 }

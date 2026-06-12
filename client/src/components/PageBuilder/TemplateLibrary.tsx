@@ -51,27 +51,27 @@ export function TemplateLibrary({ onInsertTemplate }: TemplateLibraryProps) {
       <CollapsibleTrigger asChild>
         <Button
           variant="ghost"
-          className="w-full justify-between p-4 h-auto font-semibold text-sm text-gray-800 hover:text-gray-900 hover:bg-gray-50"
+          className="w-full justify-between p-4 h-auto font-semibold text-sm text-npb-text-primary hover:text-npb-text-primary hover:bg-npb-interactive-bg-hover"
         >
           <span className="flex items-center gap-2">
             <LayoutTemplate className="w-4 h-4" />
             Templates
           </span>
           {isOpen ? (
-            <ChevronDown className="w-4 h-4 text-gray-500" />
+            <ChevronDown className="w-4 h-4 text-npb-text-muted" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-gray-500" />
+            <ChevronRight className="w-4 h-4 text-npb-text-muted" />
           )}
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="px-4 pb-4">
           {isLoading ? (
-            <p className="text-xs text-gray-500 text-center py-4">
+            <p className="text-xs text-npb-text-muted text-center py-4">
               Loading templates...
             </p>
           ) : templates.length === 0 ? (
-            <p className="text-xs text-gray-500 text-center py-4">
+            <p className="text-xs text-npb-text-muted text-center py-4">
               No templates available. Create one first.
             </p>
           ) : (
@@ -90,13 +90,13 @@ export function TemplateLibrary({ onInsertTemplate }: TemplateLibraryProps) {
                       type="button"
                       onClick={() => handleInsert(template)}
                       disabled={blockCount === 0}
-                      className="w-full text-left px-3 py-2.5 rounded-md hover:bg-gray-100 transition-colors group disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full text-left px-3 py-2.5 rounded-md hover:bg-npb-interactive-bg-hover transition-colors group disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span
-                              className="text-sm font-medium text-gray-800 min-w-0 shrink"
+                              className="text-sm font-medium text-npb-text-primary min-w-0 shrink"
                               title={template.name}>
                               {nameDisplay}
                             </span>
@@ -107,14 +107,14 @@ export function TemplateLibrary({ onInsertTemplate }: TemplateLibraryProps) {
                               {template.type}
                             </Badge>
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="text-xs text-npb-text-muted mt-0.5">
                             {blockCount} block{blockCount !== 1 ? "s" : ""}
                             {template.description
                               ? ` · ${template.description}`
                               : ""}
                           </p>
                         </div>
-                        <Plus className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 shrink-0 ml-2" />
+                        <Plus className="w-4 h-4 text-npb-text-muted opacity-0 group-hover:opacity-100 shrink-0 ml-2" />
                       </div>
                     </button>
                   );

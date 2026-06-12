@@ -50,11 +50,7 @@ export default function AdminSidebar() {
   return (
     <div className="fixed left-0 top-8 bottom-0 w-40 bg-wp-gray text-white overflow-hidden z-40">
       <div className="flex h-full flex-col">
-        <div className="p-4">
-          <h1 className="text-lg font-bold text-white mb-4">NextPress</h1>
-        </div>
-
-        <nav className="flex-1 space-y-1 overflow-y-auto">
+        <nav className="flex-1 space-y-1 overflow-y-auto pt-3">
         {/* Main items (no section) */}
         {groupedItems.main?.map((item) => {
           const Icon = item.icon;

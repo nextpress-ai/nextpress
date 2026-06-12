@@ -402,7 +402,7 @@ export default function PageBuilder({
   );
 
   return (
-    <div className="npb-editor-shell flex h-full bg-gray-50">
+    <div className="npb-editor-shell flex h-full bg-npb-canvas-bg">
       <PageProvider pageOther={data?.other as any}>
         <BlockActionsProvider
         value={{

@@ -17,7 +17,7 @@ interface EditorBarProps {
  */
 export function EditorBar({ currentPostId, currentType, currentBlogId }: EditorBarProps) {
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-2">
+    <div className="bg-npb-surface-base px-4 py-2 flex items-center gap-2">
       {/* Site Menu - Settings, Themes, Media */}
       <SiteMenu>
         <Button variant="ghost" size="sm" className="gap-2">

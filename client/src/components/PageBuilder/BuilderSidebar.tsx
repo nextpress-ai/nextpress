@@ -19,10 +19,9 @@ import {
   Sidebar,
 } from 'lucide-react';
 import type { BlockConfig } from '@shared/schema-types';
-import { useTheme } from '@/components/ThemeProvider';
 
 /**
- * Header layout: title left; icon cluster L→R — theme toggle, fold all block groups, collapse sidebar.
+ * Header layout: title left; icon cluster L→R — fold all block groups, collapse sidebar.
  */
 export function BuilderSidebar({
   activeTab,
@@ -43,8 +42,6 @@ export function BuilderSidebar({
   onToggleSidebar: () => void;
   onInsertTemplate?: (blocks: BlockConfig[]) => void;
 }) {
-  const { isDark } = useTheme();
-
   const libraryCategories = useMemo(() => buildBlockLibraryCategories(), []);
 
   const [libraryOpen, setLibraryOpen] = useState<Record<string, boolean>>(() =>
@@ -60,34 +57,34 @@ export function BuilderSidebar({
   }, [libraryCategories, libraryOpen]);
 
   const rootClass =
-    'npb-editor-sidebar flex h-full min-h-0 w-80 shrink-0 flex-col border-r border-zinc-800/50 bg-[#050507] text-zinc-300 shadow-[12px_0_32px_-14px_rgb(0_0_0/0.85)] transition-all duration-300 ease-out sm:w-80 lg:w-80';
+    'npb-editor-sidebar flex h-full min-h-0 w-80 shrink-0 flex-col bg-npb-surface-base text-npb-text-secondary shadow-[var(--npb-shadow-surface)] transition-all duration-300 ease-out sm:w-80 lg:w-80';
 
   const headerRowClass =
-    'flex w-full items-center justify-between gap-2 border-b p-4 bg-[#050507] [border-bottom-color:var(--npb-coll-header-divider)]';
+    'flex w-full items-center justify-between gap-2 bg-npb-surface-header p-4';
 
-  const titleClass = 'text-lg font-semibold tracking-tight text-zinc-100';
+  const titleClass = 'text-lg font-semibold tracking-tight text-npb-text-primary';
 
   const headerIconBtnClass =
-    'h-9 w-9 shrink-0 p-0 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 focus-visible:ring-zinc-500/55 focus-visible:ring-offset-0';
+    'h-9 w-9 shrink-0 rounded-[var(--npb-radius-input)] p-0 text-npb-text-muted hover:bg-npb-interactive-bg-hover hover:text-npb-text-primary focus-visible:ring-npb-focus focus-visible:ring-offset-0';
 
   const tabsListClass =
-    'grid h-auto min-h-10 w-full grid-cols-2 rounded-lg border border-zinc-800/45 bg-zinc-950 p-1 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.03)]';
+    'grid h-auto min-h-10 w-full grid-cols-2 rounded-[var(--npb-radius-surface)] bg-npb-surface-inset p-1';
 
   const tabTriggerClass =
-    'flex min-h-9 items-center gap-2 rounded-md border border-transparent px-4 py-2.5 text-sm font-medium text-zinc-500 hover:bg-zinc-900/80 hover:text-zinc-100 data-[state=active]:bg-zinc-900 data-[state=active]:text-zinc-50 transition-colors';
+    'flex min-h-9 items-center gap-2 rounded-[var(--npb-radius-input)] px-4 py-2.5 text-sm font-medium text-npb-text-muted hover:bg-npb-interactive-bg-hover hover:text-npb-text-primary data-[state=active]:bg-npb-interactive-bg-active data-[state=active]:text-npb-interactive-text-active transition-colors';
 
   const panelShellClass =
-    'relative h-full overflow-hidden rounded-lg border border-zinc-800/40 bg-zinc-950 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04)]';
+    'relative h-full overflow-hidden rounded-[var(--npb-radius-surface)] bg-npb-surface-raised';
 
   const scrollPanelBottomFade = (
     <div className="npb-editor-scroll-fade" aria-hidden />
   );
 
   const emptySettingsClass =
-    'rounded-lg border border-dashed border-zinc-700/50 bg-npb-surface-base/40 p-6 text-center text-sm text-npb-text-muted';
+    'rounded-[var(--npb-radius-surface)] bg-npb-surface-inset/60 p-6 text-center text-sm text-npb-text-muted';
 
   const templateWrapClass =
-    'mt-4 rounded-lg border border-zinc-800/35 bg-zinc-950/90 shadow-sm';
+    'mt-4 rounded-[var(--npb-radius-surface)] bg-npb-surface-raised';
 
   const handleToggleLibraryFold = () => {
     if (libraryCategories.length === 0) return;

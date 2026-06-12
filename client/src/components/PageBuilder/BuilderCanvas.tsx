@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Droppable, Draggable, DropPlaceholder } from '@/lib/dnd';
 import DevicePreview from './DevicePreview';
 import BlockRenderer from './BlockRenderer';
 import { BlockAnimationRuntime } from './BlockAnimationRuntime';
-import { Layers, Sun, Moon } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import { useBlockActions } from './BlockActionsContext';
 import type { BlockConfig } from "@shared/schema-types";
 import { getBlockSiblingFlexItemStyles } from "@shared/block-container-placement";
-import { Button } from '@/components/ui/button';
 
 export function BuilderCanvas({
   blocks,
@@ -29,26 +28,8 @@ export function BuilderCanvas({
   onBlockChange?: (updated: any) => void;
 }) {
   const actions = useBlockActions();
-  const [canvasIsDark, setCanvasIsDark] = useState(false);
-  const isDark = canvasIsDark;
   return (
     <div className="flex-1 overflow-auto bg-npb-canvas-bg p-8 min-h-0">
-      <div className="flex items-center justify-between mb-4 px-1">
-        <div className="text-xs text-npb-text-muted">Canvas preview</div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCanvasIsDark(d => !d)}
-          className="p-1 h-auto"
-          aria-label={canvasIsDark ? 'Switch canvas to light' : 'Switch canvas to dark'}
-        >
-          {canvasIsDark ? (
-            <Sun className="w-3.5 h-3.5 text-zinc-500" />
-          ) : (
-            <Moon className="w-3.5 h-3.5 text-zinc-500" />
-          )}
-        </Button>
-      </div>
       <DevicePreview device={deviceView}>
         <div className="bg-npb-canvas-page min-h-full shadow-lg">
           <Droppable droppableId="canvas">

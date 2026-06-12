@@ -9,8 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Search, Edit, Trash2, Download, Image, FileText, Film, Music, File } from "lucide-react";
-import AdminTopBar from "@/components/AdminTopBar";
-import AdminSidebar from "@/components/AdminSidebar";
+import { AdminLayout } from "@/components/AdminLayout";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Media } from "@shared/schema-types";
@@ -188,27 +187,18 @@ export default function MediaPage() {
   ) || [];
 
   return (
-    <div className="min-h-screen bg-wp-gray-light">
-      <AdminTopBar />
-      <AdminSidebar />
-      
-      <div className="ml-40 pt-8">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-wp-gray">Media Library</h1>
-            <Button 
-              onClick={() => setIsUploadOpen(true)}
-              className="bg-wp-blue hover:bg-wp-blue-dark text-white"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Add New Media
-            </Button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 content-fade-in">
+    <AdminLayout
+      title="Media Library"
+      actions={
+        <Button
+          onClick={() => setIsUploadOpen(true)}
+          className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          Add New Media
+        </Button>
+      }
+    >
           {/* Filters and Search */}
           <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex gap-4 items-center">
@@ -355,8 +345,6 @@ export default function MediaPage() {
               </Button>
             </div>
           )}
-        </div>
-      </div>
 
       {/* Upload Dialog */}
       <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
@@ -449,6 +437,6 @@ export default function MediaPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }

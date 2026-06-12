@@ -252,7 +252,7 @@ function BlockEditorToolbarPanel({
   className?: string;
 }) {
   const labelClass =
-    'block min-w-0 flex-1 px-2 text-left text-xs text-gray-600';
+    'block min-w-0 flex-1 px-2 text-left text-xs text-npb-text-secondary';
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -519,7 +519,7 @@ export default function BlockRenderer({
   const blockToolbarLabelTooltip =
     blockToolbarLabel !== fullToolbarLabel ? fullToolbarLabel : undefined;
   const toolbarPanelClass =
-    "flex min-w-0 max-w-full items-center gap-1 bg-white/90 border-b border-gray-200 rounded-t backdrop-blur-sm shadow-sm p-1";
+    "flex min-w-0 max-w-full items-center gap-1 bg-npb-surface-overlay/90 border-b border-npb-border-default rounded-t backdrop-blur-sm shadow-sm p-1";
 
   return (
     <div
@@ -574,7 +574,7 @@ export default function BlockRenderer({
           className={`${!isPreview ? 'cursor-pointer' : ''} transition-all duration-200`}>
           <div
             data-block-id={block.id}
-            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'block-ring-fade' : ''} ${!isPreview && isHovered && !effectiveSelected ? 'ring-1 ring-gray-300' : ''} relative`}
+            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'block-ring-fade' : ''} ${!isPreview && isHovered && !effectiveSelected ? 'ring-1 ring-npb-border-strong' : ''} relative`}
             style={{
               width: '100%',
               minWidth: 0,

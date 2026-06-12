@@ -20,11 +20,11 @@
   --npb-text-muted: #9ca3af;
   --npb-text-inverse: #fafafa;
 
-  /* Borders & Dividers */
-  --npb-border-default: #e5e7eb;
-  --npb-border-subtle: #f3f4f6;
-  --npb-border-strong: #d1d5db;
-  --npb-divider: #e5e7eb;
+  /* Borders & Dividers — low-contrast; hierarchy via surface shades */
+  --npb-border-default: rgb(0 0 0 / 0.06);
+  --npb-border-subtle: rgb(0 0 0 / 0.03);
+  --npb-border-strong: rgb(0 0 0 / 0.1);
+  --npb-divider: rgb(0 0 0 / 0.05);
 
   /* Interactive */
   --npb-interactive-bg: #ffffff;
@@ -43,7 +43,7 @@
   --npb-focus-ring: #3b82f6;
 
   /* Shape */
-  --npb-radius-surface: 0;
+  --npb-radius-surface: 0.5rem;
   --npb-radius-input: 0.375rem;
 
   /* Shadows */
@@ -75,10 +75,10 @@
   --npb-text-muted: #71717a;
   --npb-text-inverse: #18181b;
 
-  --npb-border-default: #3f3f46;
-  --npb-border-subtle: #27272a;
-  --npb-border-strong: #52525b;
-  --npb-divider: #3f3f46;
+  --npb-border-default: rgb(255 255 255 / 0.08);
+  --npb-border-subtle: rgb(255 255 255 / 0.04);
+  --npb-border-strong: rgb(255 255 255 / 0.14);
+  --npb-divider: rgb(255 255 255 / 0.06);
 
   --npb-interactive-bg: #27272a;
   --npb-interactive-bg-hover: #3f3f46;
@@ -132,6 +132,29 @@
   --wp-success: hsl(123, 38%, 57%);
   --wp-warning: hsl(45, 100%, 51%);
   --wp-error: hsl(0, 79%, 63%);
+}
+
+/**
+ * shadcn dark tokens — MUST follow the :root shadcn block above or light values win on `<html class="dark">`.
+ */
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --border: #3f3f46;
+  --input: #3f3f46;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --destructive: #7f1d1d;
+  --destructive-foreground: #fafafa;
+  --ring: #60a5fa;
 }
 
 /* Prevent accidental text selection while dragging in builder */
@@ -302,20 +325,70 @@
   }
 
   /**
-   * Block settings + sidebar collapsibles — tokens follow sidebar dark / --light.
-   * BlockLibrary uses gray remaps; BlockSettings used zinc-only → mismatch in light mode.
+   * Block settings + sidebar collapsibles — scoped tokens follow global `.dark` on `<html>`.
+   * Light defaults here; dark overrides in `.dark .npb-editor-sidebar` below.
    */
   .npb-editor-sidebar {
-    /**
-     * Scoped shadcn semantic tokens: global `* { border-border }` uses `var(--border)` from :root
-     * (light gray). Without this, dark sidebar chrome picks up harsh light border-color on any
-     * `border-*` edge and on `ring-offset-background` (tabs / ghost controls).
-     */
+    --border: rgb(229 231 235 / 0.9);
+    --input: rgb(229 231 235);
+    --background: rgb(255 255 255);
+    --npb-settings-hero-bg: rgb(249 250 251);
+    --npb-settings-hero-border: rgb(209 213 219 / 0.65);
+    --npb-settings-hero-title: rgb(24 24 27);
+    --npb-settings-hero-sub: rgb(107 114 128);
+    --npb-settings-panel-bg: rgb(255 255 255 / 0.95);
+    --npb-settings-panel-border: rgb(229 231 235);
+    --npb-settings-label: rgb(24 24 27);
+    --npb-settings-hint: rgb(55 65 81);
+    --npb-settings-hint-muted: rgb(156 163 175);
+    --npb-settings-divider: rgb(229 231 235 / 0.85);
+    --npb-chip-border: rgb(209 213 219);
+    --npb-chip-bg: rgb(255 255 255);
+    --npb-chip-text: rgb(55 65 81);
+    --npb-chip-border-hover: rgb(161 161 170);
+    --npb-chip-bg-hover: rgb(249 250 251);
+    --npb-chip-active-border: rgb(161 161 170);
+    --npb-chip-active-bg: rgb(229 231 235);
+    --npb-chip-active-text: rgb(24 24 27);
+    --npb-chip-active-shadow: 0 1px 0 0 rgb(0 0 0 / 0.05);
+    --npb-chip-ring: rgb(59 130 246 / 0.35);
+    --npb-coll-bg: rgb(249 250 251);
+    --npb-coll-header-bg: rgb(243 244 246);
+    --npb-coll-header-hover: rgb(229 231 235);
+    --npb-coll-border: rgb(229 231 235);
+    --npb-coll-header-divider: rgb(229 231 235 / 0.85);
+    --npb-coll-title: rgb(24 24 27);
+    --npb-coll-icon: rgb(107 114 128);
+    --npb-coll-chevron: rgb(156 163 175);
+    --npb-coll-shadow: 0 1px 0 0 rgb(0 0 0 / 0.05);
+    --npb-coll-body-text: rgb(55 65 81);
+    --npb-settings-hero-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.8);
+    --npb-settings-panel-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.6);
+    --npb-sidebar-field-bg: rgb(255 255 255);
+    --npb-sidebar-field-text: rgb(24 24 27);
+    --npb-sidebar-field-border: rgb(209 213 219 / 0.85);
+    --npb-sidebar-field-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.9);
+    --npb-sidebar-field-shadow: 0 1px 0 0 rgb(0 0 0 / 0.04);
+    --npb-sidebar-field-focus-border: rgb(59 130 246);
+    --npb-sidebar-field-focus-ring: rgb(59 130 246 / 0.35);
+    --npb-sidebar-field-placeholder: rgb(156 163 175);
+    --npb-sidebar-tablist-bg: rgb(243 244 246);
+    --npb-sidebar-tablist-border: rgb(229 231 235);
+    --npb-sidebar-tablist-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.7);
+    --npb-sidebar-tab-inactive: rgb(107 114 128);
+    --npb-sidebar-tab-active-bg: rgb(255 255 255);
+    --npb-sidebar-tab-active-text: rgb(24 24 27);
+    --npb-sidebar-tab-active-shadow: 0 1px 0 0 rgb(0 0 0 / 0.06), inset 0 1px 0 0 rgb(255 255 255 / 0.9);
+    --npb-sidebar-scroll-fade-0: rgb(249 250 251 / 0.85);
+    --npb-sidebar-scroll-fade-1: rgb(249 250 251 / 0.45);
+    --npb-sidebar-scroll-fade-2: rgb(249 250 251 / 0.12);
+  }
+
+  .dark .npb-editor-sidebar {
     --border: rgb(63 63 70 / 0.38);
     --input: rgb(63 63 70 / 0.45);
     --background: rgb(5 5 7);
     --npb-settings-hero-bg: rgb(3 3 5);
-    /* Tier: panel chrome — slightly stronger than inner wells */
     --npb-settings-hero-border: rgb(63 63 70 / 0.52);
     --npb-settings-hero-title: rgb(250 250 250);
     --npb-settings-hero-sub: rgb(113 113 122);
@@ -338,7 +411,6 @@
     --npb-coll-bg: rgb(9 9 11 / 0.92);
     --npb-coll-header-bg: rgb(3 3 5);
     --npb-coll-header-hover: rgb(15 15 18);
-    /* Tier: card / group — hairline; header rule softer than outer edge */
     --npb-coll-border: rgb(63 63 70 / 0.34);
     --npb-coll-header-divider: rgb(63 63 70 / 0.26);
     --npb-coll-title: rgb(250 250 250);
@@ -348,6 +420,24 @@
     --npb-coll-body-text: rgb(228 228 231);
     --npb-settings-hero-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
     --npb-settings-panel-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.03);
+    --npb-sidebar-field-bg: rgb(7 7 9);
+    --npb-sidebar-field-text: rgb(250 250 250);
+    --npb-sidebar-field-border: rgb(63 63 70 / 0.58);
+    --npb-sidebar-field-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.05);
+    --npb-sidebar-field-shadow: 0 1px 0 0 rgb(0 0 0 / 0.28);
+    --npb-sidebar-field-focus-border: rgb(161 161 170);
+    --npb-sidebar-field-focus-ring: rgb(161 161 170 / 0.45);
+    --npb-sidebar-field-placeholder: rgb(113 113 122);
+    --npb-sidebar-tablist-bg: rgb(12 12 15);
+    --npb-sidebar-tablist-border: rgb(63 63 70 / 0.38);
+    --npb-sidebar-tablist-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.03);
+    --npb-sidebar-tab-inactive: rgb(130 130 138);
+    --npb-sidebar-tab-active-bg: rgb(24 24 27);
+    --npb-sidebar-tab-active-text: rgb(250 250 250);
+    --npb-sidebar-tab-active-shadow: 0 1px 0 0 rgb(0 0 0 / 0.45), inset 0 1px 0 0 rgb(255 255 255 / 0.05), 0 0 0 1px rgb(63 63 70 / 0.42);
+    --npb-sidebar-scroll-fade-0: rgb(9 9 11 / 0.78);
+    --npb-sidebar-scroll-fade-1: rgb(9 9 11 / 0.38);
+    --npb-sidebar-scroll-fade-2: rgb(9 9 11 / 0.11);
   }
 
   /**
@@ -366,9 +456,9 @@
     border-bottom-right-radius: inherit;
     background: linear-gradient(
       to top,
-      rgb(9 9 11 / 0.78) 0%,
-      rgb(9 9 11 / 0.38) 42%,
-      rgb(9 9 11 / 0.11) 72%,
+      var(--npb-sidebar-scroll-fade-0) 0%,
+      var(--npb-sidebar-scroll-fade-1) 42%,
+      var(--npb-sidebar-scroll-fade-2) 72%,
       transparent 100%
     );
   }
@@ -525,7 +615,7 @@
 
 /**
  * Page builder sidebar — utilities layer so field/tab chrome wins over Tailwind atoms.
- * Zinc-950 fields + zinc-600 hairline + zinc-400 focus ring (single cue, no stacked rings).
+ * Uses scoped sidebar CSS variables that follow global `.dark` on `<html>`.
  */
 @layer utilities {
   .npb-editor-sidebar input:is(
@@ -538,12 +628,10 @@
     ):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
   .npb-editor-sidebar select,
   .npb-editor-sidebar textarea {
-    background-color: rgb(7 7 9) !important;
-    color: rgb(250 250 250) !important;
-    border-color: rgb(63 63 70 / 0.58) !important;
-    box-shadow:
-      inset 0 1px 0 0 rgb(255 255 255 / 0.05),
-      0 1px 0 0 rgb(0 0 0 / 0.28) !important;
+    background-color: var(--npb-sidebar-field-bg) !important;
+    color: var(--npb-sidebar-field-text) !important;
+    border-color: var(--npb-sidebar-field-border) !important;
+    box-shadow: var(--npb-sidebar-field-inset), var(--npb-sidebar-field-shadow) !important;
   }
 
   .npb-editor-sidebar input:is(
@@ -559,59 +647,52 @@
     --tw-ring-width: 0 !important;
     --tw-ring-offset-width: 0 !important;
     outline: none !important;
-    border-color: rgb(161 161 170) !important;
-    box-shadow:
-      inset 0 1px 0 0 rgb(255 255 255 / 0.08),
-      0 0 0 1px rgb(161 161 170 / 0.45) !important;
+    border-color: var(--npb-sidebar-field-focus-border) !important;
+    box-shadow: var(--npb-sidebar-field-inset), 0 0 0 1px var(--npb-sidebar-field-focus-ring) !important;
   }
 
   .npb-editor-sidebar input::placeholder,
   .npb-editor-sidebar textarea::placeholder {
-    color: rgb(113 113 122) !important;
+    color: var(--npb-sidebar-field-placeholder) !important;
   }
 
   .npb-editor-sidebar [role="tablist"] {
-    border-color: rgb(63 63 70 / 0.38) !important;
-    background-color: rgb(12 12 15) !important;
-    box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.03);
+    border-color: var(--npb-sidebar-tablist-border) !important;
+    background-color: var(--npb-sidebar-tablist-bg) !important;
+    box-shadow: var(--npb-sidebar-tablist-inset);
   }
 
   .npb-editor-sidebar [role="tab"][data-state="inactive"] {
-    color: rgb(130 130 138) !important;
+    color: var(--npb-sidebar-tab-inactive) !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
   }
 
   .npb-editor-sidebar [role="tab"][data-state="active"] {
-    background-color: rgb(24 24 27) !important;
-    color: rgb(250 250 250) !important;
-    box-shadow:
-      0 1px 0 0 rgb(0 0 0 / 0.45),
-      inset 0 1px 0 0 rgb(255 255 255 / 0.05),
-      0 0 0 1px rgb(63 63 70 / 0.42) !important;
+    background-color: var(--npb-sidebar-tab-active-bg) !important;
+    color: var(--npb-sidebar-tab-active-text) !important;
+    box-shadow: var(--npb-sidebar-tab-active-shadow) !important;
     border: 1px solid transparent !important;
   }
 
   /* Radix SelectTrigger is a button — match native field chrome from sidebar input rules. */
   .npb-editor-sidebar .npb-settings-select-trigger {
-    background-color: rgb(7 7 9) !important;
-    color: rgb(250 250 250) !important;
-    border-color: rgb(63 63 70) !important;
-    box-shadow:
-      inset 0 1px 0 0 rgb(255 255 255 / 0.06),
-      0 1px 0 0 rgb(0 0 0 / 0.35) !important;
+    background-color: var(--npb-sidebar-field-bg) !important;
+    color: var(--npb-sidebar-field-text) !important;
+    border-color: var(--npb-sidebar-field-border) !important;
+    box-shadow: var(--npb-sidebar-field-inset), var(--npb-sidebar-field-shadow) !important;
   }
 
   .npb-editor-sidebar .npb-settings-select-trigger:focus-visible {
     --tw-ring-width: 0 !important;
     --tw-ring-offset-width: 0 !important;
     outline: none !important;
-    border-color: rgb(161 161 170) !important;
-    box-shadow:
-      inset 0 1px 0 0 rgb(255 255 255 / 0.08),
-      0 0 0 1px rgb(161 161 170 / 0.45) !important;
+    border-color: var(--npb-sidebar-field-focus-border) !important;
+    box-shadow: var(--npb-sidebar-field-inset), 0 0 0 1px var(--npb-sidebar-field-focus-ring) !important;
   }
 
   .npb-editor-sidebar .npb-settings-select-trigger [data-placeholder] {
-    color: rgb(161 161 170) !important;
+    color: var(--npb-sidebar-field-placeholder) !important;
   }
 }
 
@@ -629,6 +710,73 @@
 
 .block-ring-fade {
   animation: block-ring-fade 2s ease-out forwards;
+}
+
+/* Admin shell — top bar always dark; main area follows global theme */
+.admin-top-bar {
+  background: hsl(210, 11%, 15%);
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+}
+
+.admin-page-header {
+  box-shadow: 0 1px 0 var(--npb-divider);
+}
+
+.admin-page-content .rounded-lg,
+.admin-page-content [data-slot="card"] {
+  border-radius: var(--npb-radius-surface);
+}
+
+/* Page builder editor chrome — always dark regardless of theme */
+.npb-editor-chrome-header {
+  background: hsl(210, 11%, 15%);
+  color: rgb(250 250 250);
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  flex: none;
+}
+
+.npb-editor-chrome-header .npb-chrome-muted {
+  color: rgb(161 161 170);
+}
+
+.npb-editor-chrome-header .npb-chrome-input {
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.12);
+  color: rgb(250 250 250);
+}
+
+.npb-editor-chrome-header .npb-chrome-input::placeholder {
+  color: rgb(161 161 170);
+}
+
+.npb-editor-chrome-header .npb-chrome-input:focus-visible {
+  border-color: rgb(96 165 250);
+  box-shadow: 0 0 0 1px rgb(96 165 250 / 0.5);
+}
+
+.npb-editor-chrome-header .npb-chrome-ghost {
+  color: rgb(212 212 216);
+}
+
+.npb-editor-chrome-header .npb-chrome-ghost:hover {
+  background: rgb(255 255 255 / 0.08);
+  color: rgb(250 250 250);
+}
+
+.npb-editor-chrome-header .npb-chrome-outline {
+  border-color: rgb(255 255 255 / 0.18);
+  background: transparent;
+  color: rgb(250 250 250);
+}
+
+.npb-editor-chrome-header .npb-chrome-outline:hover {
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.24);
+  color: rgb(250 250 250);
+}
+
+.npb-editor-chrome-header .npb-chrome-accent {
+  color: rgb(96 165 250);
 }
 
 
