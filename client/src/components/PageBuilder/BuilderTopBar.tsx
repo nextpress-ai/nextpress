@@ -55,7 +55,7 @@ export function BuilderTopBar({
                 variant="ghost"
                 size="sm"
                 onClick={onToggleSidebar}
-                className="p-1 h-auto"
+                className="npb-interactive-ghost p-1 h-auto"
               >
                 <Sidebar className="w-5 h-5 text-npb-text-primary" />
               </Button>
@@ -99,7 +99,7 @@ export function BuilderTopBar({
             variant="ghost"
             size="sm"
             onClick={toggleTheme}
-            className="p-1.5 h-auto"
+            className="npb-interactive-ghost p-1.5 h-auto"
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDark ? (
@@ -159,9 +159,9 @@ export function BuilderTopBar({
                 type="button"
                 size="sm"
                 title="Page — browse, create, settings"
-                className="mr-2 gap-2 border border-npb-border-strong bg-npb-text-primary text-npb-text-inverse shadow-sm hover:bg-npb-interactive-bg-active hover:text-npb-text-inverse focus-visible:ring-2 focus-visible:ring-npb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-npb-surface-base"
+                className="npb-interactive-emphasis mr-2 gap-2 focus-visible:ring-2 focus-visible:ring-npb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-npb-surface-base"
               >
-                <FileStack className="h-4 w-4 shrink-0 text-npb-text-inverse" aria-hidden />
+                <FileStack className="h-4 w-4 shrink-0" aria-hidden />
                 Page
               </Button>
             </PagesMenu>

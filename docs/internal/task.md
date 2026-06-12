@@ -8,7 +8,7 @@
 
 ## Pre-flight ✅
 - [x] `post-new` orphan block → moved to `/trash/blocks-post-new-20260603/`
-- [x] Design reference written → `/docs/design-reference.md`
+- [x] Design system written → `/docs/design-system.md` (consolidates former design-reference + design-taste)
 - [x] Blocks audit complete → `/docs/blocks-report.md`
 - [x] Execution plan approved
 

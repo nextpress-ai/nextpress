@@ -89,10 +89,15 @@ sidebar: {
 					'bg-active': 'var(--npb-interactive-bg-active)',
 					text: 'var(--npb-interactive-text)',
 					'text-active': 'var(--npb-interactive-text-active)',
+					'emphasis-bg': 'var(--npb-interactive-emphasis-bg)',
+					'emphasis-bg-hover': 'var(--npb-interactive-emphasis-bg-hover)',
+					'emphasis-text': 'var(--npb-interactive-emphasis-text)',
 				},
 				canvas: {
 					bg: 'var(--npb-canvas-bg)',
 					page: 'var(--npb-canvas-page)',
+					'block-hover': 'var(--npb-canvas-block-hover-outline)',
+					'toolbar-bg': 'var(--npb-canvas-block-toolbar-bg)',
 				},
 				accent: {
 					DEFAULT: 'var(--npb-accent)',

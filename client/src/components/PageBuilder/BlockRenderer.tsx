@@ -519,7 +519,7 @@ export default function BlockRenderer({
   const blockToolbarLabelTooltip =
     blockToolbarLabel !== fullToolbarLabel ? fullToolbarLabel : undefined;
   const toolbarPanelClass =
-    "flex min-w-0 max-w-full items-center gap-1 bg-npb-surface-overlay/90 border-b border-npb-border-default rounded-t backdrop-blur-sm shadow-sm p-1";
+    'npb-canvas-toolbar flex min-w-0 max-w-full items-center gap-1 p-1';
 
   return (
     <div
@@ -574,7 +574,7 @@ export default function BlockRenderer({
           className={`${!isPreview ? 'cursor-pointer' : ''} transition-all duration-200`}>
           <div
             data-block-id={block.id}
-            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'block-ring-fade' : ''} ${!isPreview && isHovered && !effectiveSelected ? 'ring-1 ring-npb-border-strong' : ''} relative`}
+            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'block-ring-fade' : ''} ${!isPreview && isHovered && !effectiveSelected ? 'npb-canvas-block-hover' : ''} relative`}
             style={{
               width: '100%',
               minWidth: 0,

@@ -8,7 +8,7 @@ Per **AGENTS.md → Workflow**: use `task.md` for work **>30min**; at **task end
 
 - **Editor sidebar shell**: `BuilderSidebar` root uses class `npb-editor-sidebar` (dark zinc chrome: `bg-zinc-950`, `border-zinc-700`, etc.).
 - **BlockSettings tabs**: `TabsList` is **3 columns** — **Content** | **Style** | **Advanced**. **Display Conditions** (`ConditionBuilder`) lives only under **`TabsContent value="advanced"`**, not a top-level tab.
-- **Contrast / dark chrome**: Workstream used **design-taste**-style passes; **repo artifact** = `client/src/index.css` — scoped `.npb-editor-sidebar` descendant overrides (remap light Tailwind grays/whites) + **`@layer utilities`** for inputs/selects/textarea/tablist (zinc fields, single focus ring). Comments in file describe intent.
+- **Contrast / dark chrome**: See **`docs/design-system.md`** §16; repo artifact = `client/src/index.css` — scoped `.npb-editor-sidebar` overrides + sidebar field/tab utilities.
 - **Backups**: No `backup/` directory and no `*.20260514-contrast` files found in this workspace (if they exist locally, path may differ or be untracked).
 - **Sidebar header (current code)**: Title string **`Nextpress Builder`**; adjacent **ghost** button calls **`onToggleSidebar`** (collapse/hide sidebar) — **not** a light/dark theme control.
 - **Fold-all / “NextPress Editor” title / sidebar theme toggle**: **Not found** in `BuilderSidebar` / `PageBuilderEditor` via search; treat as **pending verify** if another agent is adding them elsewhere.
@@ -30,7 +30,7 @@ Per **AGENTS.md → Workflow**: use `task.md` for work **>30min**; at **task end
 
 ## 2026-06-03 — Global Theming System Migration
 
-Full report: [`docs/design-reference.md`](docs/design-reference.md)
+Full report: [`docs/design-system.md`](docs/design-system.md)
 
 ### What Changed
 
@@ -46,14 +46,9 @@ Full report: [`docs/design-reference.md`](docs/design-reference.md)
 - **All shell files migrated**: BuilderSidebar, TopBar, Canvas, Library, PageSettings, BlockSettings, TokenColorPicker, AnimationPicker
 - **Legacy code removed**: `!important` overrides, `.npb-editor-sidebar--light`, sidebar-local theme state, dead `.dark` sidebar shadcn tokens
 
-### Design Reference
+### Design system
 
-All agents working on UI MUST read `/docs/design-reference.md` before making any UI changes. It contains:
-- Complete token inventory with light/dark values
-- Shared utility component APIs
-- Design rules (borders, shadows, focus states, card structure, dividers)
-- Motion & interaction guidelines
-- Hardcoded → token migration map
+All agents working on UI MUST read **`/docs/design-system.md`** before making any UI changes — single source for character, theory, taste, patterns, tokens, motion, and migration.
 
 ---
 
@@ -68,7 +63,7 @@ Guidance for block sidebar settings (Page Builder and similar):
 ### 2026-05-16 — Borders & contrast (editor settings)
 
 - **Borders (sidebar settings)**: Avoid harsh stacked chrome. Prefer **hairlines** and **opacity-tiered** borders like `.npb-editor-sidebar` tokens in `client/src/index.css` (`--npb-coll-header-divider` / `--npb-settings-panel-border` / `--npb-chip-*`, collapsible card tier). Do not wrap every control in `.npb-settings-panel` when the parent is already a collapsible card — that reads as “card in card” with **double** hard edges; match **BlockSettings** (e.g. `TokenColorPicker` without an extra panel shell) unless a well is truly needed.
-- **Contrast (summary)**: See repo root [`design-taste.md`](design-taste.md) for product-wide taste; in the builder sidebar, respect **shell vs panel vs card** separation via those CSS variables (hero / panel / collapsible / chip). Avoid **white-on-white** in dark chrome; keep **shadcn** primitives for controls but rely on **scoped** `.npb-editor-sidebar` remaps in `index.css` so fields and outlines stay legible on zinc surfaces.
+- **Contrast (summary)**: See **`docs/design-system.md`** §9–§16; in the builder sidebar, respect **shell vs panel vs card** separation via `--npb-sidebar-*` in `index.css`. Avoid **white-on-white** in dark chrome; keep **shadcn** primitives but rely on scoped `.npb-editor-sidebar` remaps so fields stay legible.
 
 ---
 
@@ -206,5 +201,5 @@ BlockConfig[] (single type)
 ### Docs Cleanup
 
 - 8 outdated docs archived to `/trash/docs-archive-20260610/` (report-1/2/4, my-notes, phase7-tasks, templates-enhancement-plan, homepage-admin-routing-task, client/plan)
-- 5 root docs moved to `docs/internal/` (intent, task, COPYWRITING, design-taste, documentation-guidelines)
+- 5 root docs moved to `docs/internal/` (intent, task, COPYWRITING, documentation-guidelines); design guidance consolidated to `docs/design-system.md`
 - Only `AGENTS.md` and `context.md` remain at root

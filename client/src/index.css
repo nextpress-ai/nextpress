@@ -14,10 +14,10 @@
   --npb-surface-overlay: #ffffff;
   --npb-surface-header: #f3f4f6;
 
-  /* Text */
+  /* Text — tuned for WCAG AA on surface-base */
   --npb-text-primary: #18181b;
-  --npb-text-secondary: #374151;
-  --npb-text-muted: #9ca3af;
+  --npb-text-secondary: #52525b;
+  --npb-text-muted: #71717a;
   --npb-text-inverse: #fafafa;
 
   /* Borders & Dividers — low-contrast; hierarchy via surface shades */
@@ -30,8 +30,18 @@
   --npb-interactive-bg: #ffffff;
   --npb-interactive-bg-hover: #f9fafb;
   --npb-interactive-bg-active: #e5e7eb;
-  --npb-interactive-text: #374151;
+  --npb-interactive-text: #52525b;
   --npb-interactive-text-active: #18181b;
+
+  /* Emphasis controls — inverted primary (Page button, key CTAs in chrome) */
+  --npb-interactive-emphasis-bg: #18181b;
+  --npb-interactive-emphasis-bg-hover: #27272a;
+  --npb-interactive-emphasis-text: #fafafa;
+
+  /* Canvas block interaction */
+  --npb-canvas-block-hover-outline: rgb(59 130 246 / 0.5);
+  --npb-canvas-block-toolbar-bg: #ffffff;
+  --npb-canvas-block-toolbar-border: rgb(0 0 0 / 0.06);
 
   /* Canvas */
   --npb-canvas-bg: #f3f4f6;
@@ -71,8 +81,8 @@
   --npb-surface-header: #27272a;
 
   --npb-text-primary: #fafafa;
-  --npb-text-secondary: #a1a1aa;
-  --npb-text-muted: #71717a;
+  --npb-text-secondary: #d4d4d8;
+  --npb-text-muted: #a1a1aa;
   --npb-text-inverse: #18181b;
 
   --npb-border-default: rgb(255 255 255 / 0.08);
@@ -83,8 +93,16 @@
   --npb-interactive-bg: #27272a;
   --npb-interactive-bg-hover: #3f3f46;
   --npb-interactive-bg-active: #3f3f46;
-  --npb-interactive-text: #a1a1aa;
+  --npb-interactive-text: #d4d4d8;
   --npb-interactive-text-active: #fafafa;
+
+  --npb-interactive-emphasis-bg: #fafafa;
+  --npb-interactive-emphasis-bg-hover: #e4e4e7;
+  --npb-interactive-emphasis-text: #18181b;
+
+  --npb-canvas-block-hover-outline: rgb(96 165 250 / 0.55);
+  --npb-canvas-block-toolbar-bg: #27272a;
+  --npb-canvas-block-toolbar-border: rgb(255 255 255 / 0.08);
 
   --npb-canvas-bg: #18181b;
   --npb-canvas-page: #27272a;
@@ -777,6 +795,37 @@
 
 .npb-editor-chrome-header .npb-chrome-accent {
   color: rgb(96 165 250);
+}
+
+/* Emphasis button — contrast-safe hover (Page btn, etc.) */
+.npb-interactive-emphasis {
+  background-color: var(--npb-interactive-emphasis-bg);
+  color: var(--npb-interactive-emphasis-text);
+  transition: background-color var(--npb-duration-normal) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .npb-interactive-emphasis:hover {
+    background-color: var(--npb-interactive-emphasis-bg-hover);
+    color: var(--npb-interactive-emphasis-text);
+  }
+
+  .npb-interactive-ghost:hover {
+    background-color: var(--npb-interactive-bg-hover);
+    color: var(--npb-interactive-text-active);
+  }
+}
+
+/* Canvas block hover + toolbar — accent outline, solid toolbar surface */
+.npb-canvas-block-hover {
+  box-shadow: inset 0 0 0 2px var(--npb-canvas-block-hover-outline);
+}
+
+.npb-canvas-toolbar {
+  background-color: var(--npb-canvas-block-toolbar-bg);
+  border-bottom: 1px solid var(--npb-canvas-block-toolbar-border);
+  border-radius: var(--npb-radius-input) var(--npb-radius-input) 0 0;
+  box-shadow: var(--npb-shadow-surface);
 }
 
 
