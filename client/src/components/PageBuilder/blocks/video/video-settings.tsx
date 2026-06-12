@@ -1,14 +1,11 @@
-import { useState } from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Video as VideoIcon, AlignCenter, Maximize, Settings } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
+import { MediaUrlField } from "../shared/media-url-field";
 import { type VideoContent, DEFAULT_CONTENT } from "./video-model";
 
 interface VideoSettingsProps {
@@ -22,8 +19,6 @@ export function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
     onUpdate,
     defaultContent: DEFAULT_CONTENT,
   });
-  const [isPickerOpen, setPickerOpen] = useState(false);
-  const [isPosterPickerOpen, setPosterPickerOpen] = useState(false);
 
   const alignmentOptions = [
     { value: 'default', label: 'Default', icon: AlignCenter },
@@ -42,47 +37,30 @@ export function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
         defaultOpen={true}
       >
         <div className="space-y-4">
-          {/* Video URL */}
-          <div>
-            <SettingsLabel htmlFor="video-src">Video URL</SettingsLabel>
-            <div className="flex items-center gap-2">
-              <Input
-                id="video-src"
-                value={videoUrl}
-                onChange={(e) => updateContent({ kind: 'media', mediaType: 'video', url: e.target.value } as VideoContent)}
-                placeholder="https://example.com/video.mp4 or YouTube URL"
-              />
-              <Button type="button" variant="outline" onClick={() => setPickerOpen(true)}>Choose from library</Button>
-            </div>
-            <MediaPickerDialog
-              open={isPickerOpen}
-              onOpenChange={setPickerOpen}
-              kind="video"
-              onSelect={(m) => {
-                updateContent({ id: m.id ? Number(m.id) : undefined, url: m.url });
-              }}
-            />
-          </div>
+          <MediaUrlField
+            id="video-src"
+            label="Video URL"
+            value={videoUrl}
+            kind="video"
+            placeholder="https://example.com/video.mp4 or YouTube URL"
+            onChange={({ url }) =>
+              updateContent({ kind: "media", mediaType: "video", url } as VideoContent)
+            }
+            onLibrarySelect={({ item }) => {
+              updateContent({ id: item.id ? Number(item.id) : undefined, url: item.url });
+            }}
+          />
 
-          {/* Poster Image */}
-          <div>
-            <SettingsLabel htmlFor="video-poster">Poster Image URL</SettingsLabel>
-            <div className="flex items-center gap-2">
-              <Input
-                id="video-poster"
-                value={content?.poster || ''}
-                onChange={(e) => updateContent({ poster: e.target.value })}
-                placeholder="https://example.com/poster.jpg"
-              />
-              <Button type="button" variant="outline" onClick={() => setPosterPickerOpen(true)}>Choose image</Button>
-            </div>
-            <MediaPickerDialog
-              open={isPosterPickerOpen}
-              onOpenChange={setPosterPickerOpen}
-              kind="image"
-              onSelect={(m) => updateContent({ poster: m.url })}
-            />
-          </div>
+          <MediaUrlField
+            id="video-poster"
+            label="Poster Image URL"
+            value={content?.poster || ""}
+            kind="image"
+            libraryButtonLabel="Choose image"
+            placeholder="https://example.com/poster.jpg"
+            onChange={({ url }) => updateContent({ poster: url })}
+            onLibrarySelect={({ item }) => updateContent({ poster: item.url })}
+          />
 
           {/* Caption */}
           <div>

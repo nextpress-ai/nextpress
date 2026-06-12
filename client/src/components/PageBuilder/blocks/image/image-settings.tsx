@@ -1,14 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Maximize, Settings, Link } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
+import { MediaUrlField } from "../shared/media-url-field";
+import { LinkUrlField, LinkTargetSelect } from "../shared/link-settings";
 import { type ImageContent, DEFAULT_CONTENT, getAlignmentButtonClass } from "./image-model";
 
 interface ImageSettingsProps {
@@ -18,7 +18,6 @@ interface ImageSettingsProps {
 
 export function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
   const { accessor, rerender } = useSettingsState({ block, onUpdate });
-  const [isPickerOpen, setPickerOpen] = useState(false);
 
   // Get current state
   const content = accessor
@@ -83,34 +82,26 @@ export function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
             </div>
           )}
 
-          {/* Image URL */}
-          <div>
-            <SettingsLabel htmlFor="image-src">Image URL</SettingsLabel>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                id="image-src"
-                value={imageUrl}
-                onChange={(e) => updateContent({ kind: 'media', mediaType: 'image', url: e.target.value } as ImageContent)}
-                placeholder="https://example.com/image.jpg"
-              />
-              <Button type="button" variant="outline" onClick={() => setPickerOpen(true)}>Choose from library</Button>
-            </div>
-            <MediaPickerDialog
-              open={isPickerOpen}
-              onOpenChange={setPickerOpen}
-              kind="image"
-              onSelect={(m) => {
-                updateContent({
-                  kind: 'media',
-                  mediaType: 'image',
-                  id: m.id,
-                  url: m.url,
-                  alt: content?.alt || m.alt || m.originalName || m.filename,
-                  caption: content?.caption,
-                } as ImageContent);
-              }}
-            />
-          </div>
+          <MediaUrlField
+            id="image-src"
+            label="Image URL"
+            value={imageUrl}
+            kind="image"
+            placeholder="https://example.com/image.jpg"
+            onChange={({ url }) =>
+              updateContent({ kind: "media", mediaType: "image", url } as ImageContent)
+            }
+            onLibrarySelect={({ item }) => {
+              updateContent({
+                kind: "media",
+                mediaType: "image",
+                id: item.id,
+                url: item.url,
+                alt: content?.alt || item.alt || item.originalName || item.filename,
+                caption: content?.caption,
+              } as ImageContent);
+            }}
+          />
 
           {/* Alt Text */}
           <div>
@@ -218,35 +209,21 @@ export function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
             </Select>
           </div>
 
-          {/* Custom Link URL */}
-          {(content?.linkDestination === 'custom') && (
-            <div>
-              <SettingsLabel htmlFor="image-link-url">Custom Link URL</SettingsLabel>
-              <Input
-                id="image-link-url"
-                value={content?.href || ''}
-                onChange={(e) => updateContent({ href: e.target.value })}
-                placeholder="https://example.com"
-              />
-            </div>
+          {(content?.linkDestination === "custom") && (
+            <LinkUrlField
+              id="image-link-url"
+              label="Custom Link URL"
+              value={content?.href || ""}
+              onChange={({ url }) => updateContent({ href: url })}
+            />
           )}
 
-          {/* Link Target */}
-          <div>
-            <SettingsLabel htmlFor="image-link-target-select">Link Target</SettingsLabel>
-            <Select
-              value={(content?.linkTarget || content?.target || '_self')}
-              onValueChange={(value) => updateContent({ linkTarget: value as any, target: undefined })}
-            >
-              <SelectTrigger id="image-link-target-select" aria-label="Link target">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_self">Same Window</SelectItem>
-                <SelectItem value="_blank">New Window</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <LinkTargetSelect
+            id="image-link-target-select"
+            value={content?.linkTarget}
+            legacyTarget={content?.target}
+            onChange={({ target }) => updateContent({ linkTarget: target, target: undefined })}
+          />
         </div>
       </CollapsibleCard>
     </div>

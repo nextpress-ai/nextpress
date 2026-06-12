@@ -10,6 +10,7 @@ import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { Image as ImageIcon, Settings, Link } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
+import { LinkUrlField, LinkTargetSelect } from "../shared/link-settings";
 import { type MediaTextContent, type MediaTextData, DEFAULT_CONTENT, DEFAULT_DATA } from './media-text-model';
 
 interface MediaTextSettingsProps {
@@ -184,32 +185,19 @@ export function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
 
       <CollapsibleCard title="Link Settings" icon={Link} defaultOpen={false}>
         <div className="space-y-4">
-          <div>
-            <SettingsLabel htmlFor="media-link">Media Link</SettingsLabel>
-            <Input
-              id="media-link"
-              value={blockData?.href || ''}
-              onChange={(e) => updateContent({ href: e.target.value })}
-              placeholder="https://example.com"
-              className="mt-1 h-9"
-            />
-          </div>
+          <LinkUrlField
+            id="media-link"
+            label="Media Link"
+            value={blockData?.href || ""}
+            onChange={({ url }) => updateContent({ href: url })}
+          />
 
-          <div>
-            <SettingsLabel htmlFor="media-target">Link Target</SettingsLabel>
-            <Select
-              value={blockData?.linkTarget || '_self'}
-              onValueChange={(value) => updateContent({ linkTarget: value as any })}
-            >
-              <SelectTrigger id="media-target" className="h-9 mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_self">Same Window</SelectItem>
-                <SelectItem value="_blank">New Window</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <LinkTargetSelect
+            id="media-target"
+            label="Link Target"
+            value={blockData?.linkTarget}
+            onChange={({ target }) => updateContent({ linkTarget: target })}
+          />
 
           <div>
             <SettingsLabel htmlFor="media-rel">Rel</SettingsLabel>

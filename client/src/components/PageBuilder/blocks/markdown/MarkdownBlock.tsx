@@ -1,13 +1,9 @@
 import React from "react";
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
+import type { JSX } from "react";
 import { FileText as MarkdownIcon } from "lucide-react";
-import { getBlockStateAccessor } from "../blockStateRegistry";
-import { useBlockState } from "../useBlockState";
-
-// Import dynamically to avoid loading huge library if not needed
-// or we can import standard if it's fine. @uiw/react-md-editor is pretty large
 import MDEditor from "@uiw/react-md-editor";
+import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 
 // ============================================================================
 // TYPES
@@ -24,7 +20,7 @@ const DEFAULT_CONTENT: MarkdownContent = {
 };
 
 // ============================================================================
-// COMPONENT RENDERER
+// RENDERER
 // ============================================================================
 
 interface MarkdownRendererProps {
@@ -34,23 +30,24 @@ interface MarkdownRendererProps {
   onChange?: (value: string) => void;
 }
 
-function MarkdownRenderer({ content, styles, isPreview, onChange }: MarkdownRendererProps) {
+function MarkdownRenderer({
+  content,
+  styles,
+  isPreview,
+  onChange,
+}: MarkdownRendererProps): JSX.Element {
   const markdownText = content?.content || "";
 
-  const className = ["wp-block-markdown", content?.className || ""].filter(Boolean).join(" ");
-
-  // In preview mode or rendering mode, display the actual markdown
   if (isPreview) {
     return (
-      <div className={className} style={styles} data-color-mode="light">
+      <BlockShell blockClass="wp-block-markdown" className={content?.className} style={styles} data-color-mode="light">
         <MDEditor.Markdown source={markdownText} style={{ whiteSpace: "pre-wrap" }} />
-      </div>
+      </BlockShell>
     );
   }
 
-  // Edit Mode: show embeddable markdown editor
   return (
-    <div className={className} style={styles} data-color-mode="light">
+    <BlockShell blockClass="wp-block-markdown" className={content?.className} style={styles} data-color-mode="light">
       <div className="overflow-hidden rounded-md border border-npb-border-default bg-npb-surface-base transition-colors hover:border-npb-border-strong focus-within:ring-2 focus-within:ring-npb-focus focus-within:ring-offset-1">
         <MDEditor
           value={markdownText}
@@ -61,47 +58,7 @@ function MarkdownRenderer({ content, styles, isPreview, onChange }: MarkdownRend
           visiableDragbar={true}
         />
       </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function MarkdownBlockComponent({
-  value,
-  onChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, styles } = useBlockState<MarkdownContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
-
-  const handleEditorChange = (newVal: string) => {
-    const accessor = getBlockStateAccessor(value.id);
-    if (accessor) {
-      accessor.setContent({ ...(content as MarkdownContent), content: newVal });
-    } else {
-      onChange({
-        ...value,
-        content: {
-          ...(value.content as Record<string, unknown>),
-          content: newVal,
-        } as unknown as BlockContent,
-      });
-    }
-  };
-
-  return (
-    <MarkdownRenderer
-      content={content}
-      styles={styles}
-      isPreview={isPreview}
-      onChange={handleEditorChange}
-    />
+    </BlockShell>
   );
 }
 
@@ -109,21 +66,25 @@ export function MarkdownBlockComponent({
 // BLOCK DEFINITION
 // ============================================================================
 
-const MarkdownBlock: BlockDefinition = {
+const MarkdownBlock = createBlockDefinition<MarkdownContent>({
   id: "core/markdown",
   label: "Markdown",
   icon: MarkdownIcon,
   description: "Add rich text using Markdown format",
   category: "advanced",
-  defaultContent: {
-    content: "### Welcome to Markdown!\n\nThis is a *markdown* block.",
-    className: "",
-  },
+  defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     margin: "1em 0",
   },
-  component: MarkdownBlockComponent,
   hasSettings: false,
-};
+  render: ({ content, styles, setContent, isPreview }) => (
+    <MarkdownRenderer
+      content={content}
+      styles={styles}
+      isPreview={isPreview}
+      onChange={(val) => setContent({ ...content, content: val })}
+    />
+  ),
+});
 
 export default MarkdownBlock;

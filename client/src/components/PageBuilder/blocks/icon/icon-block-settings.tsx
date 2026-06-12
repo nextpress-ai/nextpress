@@ -3,7 +3,7 @@ import type { BlockConfig, TokenEntry } from "@shared/schema-types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
-import { Smile, Link as LinkIcon, Type, ExternalLink, Palette } from "lucide-react";
+import { Smile, Link as LinkIcon, Type, Palette } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { IconRenderer } from "../shared/IconRenderer";
 import { IconPickerButton } from "../../IconPicker/IconPickerButton";
@@ -35,6 +35,7 @@ import {
   serializeIconContent,
   DEFAULT_ICON_CONTENT,
 } from "./icon-block-model";
+import { LinkUrlField, LinkTargetChips } from "../shared/link-settings";
 
 function settingsChipClass(selected: boolean): string {
   return cn(
@@ -395,39 +396,16 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
 
       <CollapsibleCard title="Link" icon={LinkIcon} defaultOpen={false}>
         <div className="space-y-4">
-          <div>
-            <Label
-              htmlFor="icon-link"
-              className="npb-settings-label text-sm font-semibold">
-              Link URL
-            </Label>
-            <Input
-              id="icon-link"
-              className="mt-2 text-sm"
-              value={content?.link || ""}
-              onChange={(e) => updateContent({ link: e.target.value })}
-              placeholder="https://example.com"
-            />
-          </div>
+          <LinkUrlField
+            id="icon-link"
+            value={content?.link || ""}
+            onChange={({ url }) => updateContent({ link: url })}
+          />
 
-          <div>
-            <Label className="npb-settings-label text-sm font-semibold">Link target</Label>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => updateContent({ linkTarget: "_self" })}
-                className={settingsChipClass((content?.linkTarget || "_self") === "_self")}>
-                Same window
-              </button>
-              <button
-                type="button"
-                onClick={() => updateContent({ linkTarget: "_blank" })}
-                className={settingsChipClass((content?.linkTarget || "_self") === "_blank")}>
-                <ExternalLink className="mr-1 inline h-3 w-3 shrink-0 align-middle" />
-                New window
-              </button>
-            </div>
-          </div>
+          <LinkTargetChips
+            value={content?.linkTarget}
+            onChange={({ target }) => updateContent({ linkTarget: target })}
+          />
 
           <div>
             <Label

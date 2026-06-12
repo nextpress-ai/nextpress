@@ -1,11 +1,10 @@
 import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types";
 import { Grid3x3 as GridIcon } from "lucide-react";
 import { Droppable, Draggable, DropPlaceholder } from "@/lib/dnd";
 import { useBlockActions } from "../../BlockActionsContext";
 import BlockRenderer from "../../BlockRenderer";
-import { useBlockState } from "../useBlockState";
+import { createBlockDefinition } from "../createBlockDefinition";
 import {
   type ColumnLayout,
   type ColumnsContent,
@@ -17,7 +16,11 @@ import {
   getBlockSiblingFlexItemStyles,
   getBlockStackLayerWrapperStyles,
 } from "@shared/block-container-placement";
-import { DEFAULT_CONTENT } from "./columns-model";
+import {
+  DEFAULT_CONTENT,
+  parseColumnsContent,
+  serializeColumnsContent,
+} from "./columns-model";
 import { ColumnsSettings } from "./columns-settings";
 
 // Re-exported for tests and external callers that import from this module.
@@ -204,32 +207,41 @@ function ColumnsRenderer({
 }
 
 // ============================================================================
-// MAIN COMPONENT
+// LAYOUT INIT (mount-only — persists columnLayout for DnD)
 // ============================================================================
 
-export function ColumnsBlockComponent({
-  value,
-  onChange,
-  onNestedBlockChange,
-  isPreview,
-}: BlockComponentProps) {
-  const { content, styles, settings, setSettings } = useBlockState<ColumnsContent>({
-    value,
-    getDefaultContent: () => DEFAULT_CONTENT,
-    onChange,
-  });
+function useMountEffect(effect: () => void | (() => void)) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(effect, []);
+}
 
-  // Ensure columnLayout exists in settings so DnD can resolve column drop zones.
-  // Without this, the UI renders `default-col-1` but the drag handler can't map it
-  // back to a Columns block (it looks only at `settings.columnLayout`).
-  React.useEffect(() => {
+type ColumnsBlockViewProps = {
+  value: BlockConfig;
+  content: ColumnsContent;
+  styles?: React.CSSProperties;
+  settings?: Record<string, unknown>;
+  setSettings: (next: Record<string, unknown> | undefined) => void;
+  isPreview?: boolean;
+  onNestedBlockChange?: (updated: BlockConfig) => void;
+};
+
+function ColumnsBlockView({
+  value,
+  content,
+  styles,
+  settings,
+  setSettings,
+  isPreview,
+  onNestedBlockChange,
+}: ColumnsBlockViewProps) {
+  useMountEffect(() => {
     const existing = settings?.columnLayout;
     if (Array.isArray(existing) && existing.length > 0) return;
     setSettings({
       ...(settings || {}),
       columnLayout: [{ columnId: "default-col-1", width: "100%", blockIds: [] }],
     });
-  }, [settings, setSettings]);
+  });
 
   const columnLayout =
     (settings?.columnLayout as ColumnLayout[] | undefined) || [
@@ -252,7 +264,7 @@ export function ColumnsBlockComponent({
 // BLOCK DEFINITION
 // ============================================================================
 
-const ColumnsBlock: BlockDefinition = {
+const ColumnsBlock = createBlockDefinition<ColumnsContent>({
   id: "core/columns",
   label: "Columns",
   icon: GridIcon,
@@ -260,11 +272,31 @@ const ColumnsBlock: BlockDefinition = {
   category: "layout",
   isContainer: true,
   handlesOwnChildren: true,
-  defaultContent: { kind: "structured", data: { gap: "20px", verticalAlignment: "top", horizontalAlignment: "left", direction: "row" } },
-  defaultStyles: { margin: '1em 0' },
-  component: ColumnsBlockComponent,
+  defaultContent: DEFAULT_CONTENT,
+  defaultStyles: { margin: "1em 0" },
   settings: ColumnsSettings,
   hasSettings: true,
-};
+  parseContent: parseColumnsContent,
+  serializeContent: serializeColumnsContent,
+  render: ({
+    value,
+    content,
+    styles,
+    settings,
+    setSettings,
+    isPreview,
+    onNestedBlockChange,
+  }) => (
+    <ColumnsBlockView
+      value={value}
+      content={content}
+      styles={styles}
+      settings={settings}
+      setSettings={setSettings as ColumnsBlockViewProps["setSettings"]}
+      isPreview={isPreview}
+      onNestedBlockChange={onNestedBlockChange}
+    />
+  ),
+});
 
 export default ColumnsBlock;

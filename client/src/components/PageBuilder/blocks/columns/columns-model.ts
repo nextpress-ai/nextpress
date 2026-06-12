@@ -2,7 +2,7 @@
  * Columns block data model: default content plus pure column-layout helpers
  * (clone, redistribute, remove). No React here — see `columns-settings.tsx`.
  */
-import type { BlockConfig } from "@shared/schema-types";
+import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { generateBlockId } from "../../utils";
 import type { ColumnLayout, ColumnsContent } from "@shared/columns-layout";
 
@@ -100,4 +100,16 @@ export function removeColumnAndCleanup(
     nextLayout,
     nextChildren: children.filter((child) => !removedIds.has(child.id)),
   };
+}
+
+/** Keeps full structured content shape — columns renderer uses `readColumnsData`. */
+export function parseColumnsContent(raw: BlockConfig["content"]): ColumnsContent {
+  if (!raw || typeof raw !== "object") return DEFAULT_CONTENT;
+  const r = raw as Record<string, unknown>;
+  if (r.kind === "structured") return raw as ColumnsContent;
+  return { kind: "structured", data: r as ColumnsContent["data"] };
+}
+
+export function serializeColumnsContent(content: ColumnsContent): BlockContent {
+  return content as BlockContent;
 }

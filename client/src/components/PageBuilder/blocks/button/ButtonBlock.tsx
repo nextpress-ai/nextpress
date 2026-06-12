@@ -3,9 +3,10 @@ import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
-import { MousePointer, ExternalLink, Type, Link, Smile, X } from "lucide-react";
+import { MousePointer, Type, Link, Smile, X } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { useSettingsState } from "../useSettingsState";
+import { LinkTargetChips } from "../shared/link-settings";
 import { IconRenderer } from "../shared/IconRenderer";
 import { IconPickerButton } from "../../IconPicker/IconPickerButton";
 import { formatIconReferenceLabel, type IconReference } from "@/lib/icon-indexes";
@@ -289,28 +290,11 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
       </CollapsibleCard>
       
       <CollapsibleCard title="Link Settings" icon={Link} defaultOpen={true}>
-        <div className="space-y-3">
-          <SettingsLabel>Link Target</SettingsLabel>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { value: '_self', label: 'Same Window' },
-              { value: '_blank', label: 'New Window', icon: ExternalLink }
-            ].map((target) => (
-              <button
-                key={target.value}
-                onClick={() => updateContent({ linkTarget: target.value as '_self' | '_blank', target: undefined })}
-                className={`h-8 px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
-                  (content?.linkTarget || content?.target || '_self') === target.value
-                    ? "bg-npb-interactive-bg-active text-npb-interactive-text-active hover:bg-npb-interactive-bg-active" 
-                    : "bg-npb-surface-base text-npb-text-secondary border border-npb-border-default hover:bg-npb-interactive-bg-hover hover:border-npb-border-strong"
-                }`}
-              >
-                {target.icon && <target.icon className="w-3 h-3" />}
-                {target.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <LinkTargetChips
+          value={content?.linkTarget}
+          legacyTarget={content?.target}
+          onChange={({ target }) => updateContent({ linkTarget: target, target: undefined })}
+        />
       </CollapsibleCard>
     </div>
   );

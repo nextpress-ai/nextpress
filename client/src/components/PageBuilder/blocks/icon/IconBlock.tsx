@@ -1,18 +1,15 @@
 import React from "react";
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
-import type { BlockDefinition, BlockComponentProps } from "../types.ts";
-import { useBlockState } from "../useBlockState";
+import type { JSX } from "react";
+import { Smile } from "lucide-react";
+import { createBlockDefinition } from "../createBlockDefinition";
 import { IconRenderer } from "../shared/IconRenderer";
-import type { IconReference } from "@/lib/icon-indexes";
 import {
   parseIconContent,
   serializeIconContent,
   DEFAULT_ICON_CONTENT,
-  STRUCTURED_DEFAULT_ICON_CONTENT,
   type IconContent,
 } from "./icon-block-model";
 import { IconBlockSettings } from "./icon-block-settings";
-import { Smile } from "lucide-react";
 
 // ============================================================================
 // RENDERER
@@ -26,14 +23,14 @@ interface IconRendererBlockProps {
 
 function effectiveGlyphColor(
   styles: React.CSSProperties | undefined,
-  icon: IconReference,
+  icon: IconContent["icon"],
 ): string | undefined {
   const fromStyles = styles?.color;
   if (typeof fromStyles === "string" && fromStyles.length > 0) return fromStyles;
   return icon.color;
 }
 
-function iconBoxCss(icon: IconReference): React.CSSProperties {
+function iconBoxCss(icon: IconContent["icon"]): React.CSSProperties {
   const unit = icon.sizeUnit ?? "px";
   if (unit === "px") return {};
   const n = icon.size ?? 24;
@@ -41,7 +38,7 @@ function iconBoxCss(icon: IconReference): React.CSSProperties {
   return { width: box, height: box };
 }
 
-function IconBlockRenderer({ content, styles, isPreview }: IconRendererBlockProps) {
+function IconBlockRenderer({ content, styles, isPreview }: IconRendererBlockProps): JSX.Element {
   const icon = content?.icon ?? DEFAULT_ICON_CONTENT.icon;
   const link = content?.link;
   const linkTarget = content?.linkTarget || "_self";
@@ -56,7 +53,6 @@ function IconBlockRenderer({ content, styles, isPreview }: IconRendererBlockProp
       ? (icon.strokeWidth ?? 2)
       : `${icon.strokeWidth ?? 2}${strokeUnit}`;
 
-  /** Block-level styles (padding, typography tokens, etc.) must not be forwarded onto the Lucide SVG — they can collapse or hide vector output. */
   const wrapperStyle: React.CSSProperties = {
     ...styles,
     ...box,
@@ -85,7 +81,8 @@ function IconBlockRenderer({ content, styles, isPreview }: IconRendererBlockProp
         target={linkTarget}
         rel={linkTarget === "_blank" ? "noopener noreferrer" : undefined}
         title={label || undefined}
-        style={{ textDecoration: "none", display: "inline-flex" }}>
+        style={{ textDecoration: "none", display: "inline-flex" }}
+      >
         {iconElement}
       </a>
     );
@@ -95,64 +92,31 @@ function IconBlockRenderer({ content, styles, isPreview }: IconRendererBlockProp
 }
 
 // ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function IconBlockComponent({
-  value,
-  onChange,
-  isPreview,
-}: BlockComponentProps) {
-  const valueForState = React.useMemo(
-    () => ({
-      ...value,
-      content: parseIconContent(value.content) as unknown as BlockContent,
-    }),
-    [value],
-  );
-
-  const persistOnChange = React.useCallback(
-    (block: BlockConfig) => {
-      const parsed = parseIconContent(block.content);
-      onChange({
-        ...block,
-        content: serializeIconContent(parsed),
-      });
-    },
-    [onChange],
-  );
-
-  const { content, styles } = useBlockState<IconContent>({
-    value: valueForState,
-    getDefaultContent: () => ({
-      ...DEFAULT_ICON_CONTENT,
-      icon: { ...DEFAULT_ICON_CONTENT.icon },
-    }),
-    onChange: persistOnChange,
-  });
-
-  return <IconBlockRenderer content={content} styles={styles} isPreview={isPreview} />;
-}
-
-// ============================================================================
 // BLOCK DEFINITION
 // ============================================================================
 
-const IconBlock: BlockDefinition = {
+const IconBlock = createBlockDefinition<IconContent>({
   id: "core/icon",
   label: "Icon",
   icon: Smile,
   description: "Add an icon from various icon sets",
   category: "basic",
-  defaultContent: STRUCTURED_DEFAULT_ICON_CONTENT,
+  defaultContent: {
+    ...DEFAULT_ICON_CONTENT,
+    icon: { ...DEFAULT_ICON_CONTENT.icon },
+  },
   defaultStyles: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
   },
-  component: IconBlockComponent,
   settings: IconBlockSettings,
   hasSettings: true,
-};
+  parseContent: parseIconContent,
+  serializeContent: serializeIconContent,
+  render: ({ content, styles, isPreview }) => (
+    <IconBlockRenderer content={content} styles={styles} isPreview={isPreview} />
+  ),
+});
 
 export default IconBlock;
