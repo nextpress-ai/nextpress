@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { createBlockDefinition } from '../createBlockDefinition';
+import { BlockShell } from '../shared/block-shell';
 import {
   ArrowLeftRight,
   ChevronLeft,
@@ -63,10 +64,6 @@ function PostNavigationRenderer({
   const prevLabel = content?.prevLabel || 'Previous Post';
   const nextLabel = content?.nextLabel || 'Next Post';
 
-  const className = ['wp-block-post-navigation', content?.className || '']
-    .filter(Boolean)
-    .join(' ');
-
   const adjacentData = useAdjacentPosts(content?.postId, !!isPreview);
   const displayData: AdjacentPostsData =
     isPreview && adjacentData ? adjacentData : PLACEHOLDER_ADJACENT;
@@ -76,16 +73,16 @@ function PostNavigationRenderer({
 
   if (!hasPrev && !hasNext) {
     return (
-      <div className={className} style={styles}>
+      <BlockShell blockClass="wp-block-post-navigation" className={content?.className} style={styles}>
         <p className="text-sm text-npb-text-muted text-center py-4">
           No adjacent posts found.
         </p>
-      </div>
+      </BlockShell>
     );
   }
 
   return (
-    <div className={className} style={styles}>
+    <BlockShell blockClass="wp-block-post-navigation" className={content?.className} style={styles}>
       <nav className="flex items-stretch justify-between gap-4">
         {/* Previous post */}
         {hasPrev ? (
@@ -115,7 +112,7 @@ function PostNavigationRenderer({
           <div className="flex-1" />
         )}
       </nav>
-    </div>
+    </BlockShell>
   );
 }
 

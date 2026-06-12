@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
-import { Spinner } from '@/components/ui/spinner';
+import { AppLoadingShell } from '@/components/app-loading-shell';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import PublicPageView from '@/pages/PublicPageView';
 
@@ -28,11 +28,7 @@ const PreviewPage = lazy(() => import('@/pages/PreviewPage'));
 const Setup = lazy(() => import('@/pages/Setup'));
 
 function RouteFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Spinner className="h-12 w-12 text-npb-accent" />
-    </div>
-  );
+  return <AppLoadingShell />;
 }
 
 function Router() {
@@ -51,11 +47,7 @@ function Router() {
 
   // Show loading while checking setup status
   if (isCheckingSetup) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Spinner className="h-12 w-12 text-npb-accent" />
-      </div>
-    );
+    return <AppLoadingShell />;
   }
 
   // If not setup, only show setup route
@@ -120,9 +112,7 @@ function Router() {
 
       {/* Conditional routes based on auth state */}
       {isLoading ? (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <Spinner className="h-12 w-12 text-npb-accent" />
-        </div>
+        <AppLoadingShell />
       ) : !isAuthenticated ? (
         <>
           <Route path="/admin" component={Login} />

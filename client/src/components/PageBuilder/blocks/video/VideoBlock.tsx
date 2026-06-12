@@ -1,6 +1,7 @@
 import React from "react";
 import { Video as VideoIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import {
   type VideoContent,
   DEFAULT_CONTENT,
@@ -40,7 +41,6 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
   } = content || {};
 
   const classes = [
-    'wp-block-video',
     align ? `align${align}` : '',
     className || '',
   ].filter(Boolean).join(' ');
@@ -62,10 +62,8 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
 
     const embedUrl = `https://www.youtube.com/embed/${youTubeId}?${params.toString()}`;
     const embedClasses = [
-      'wp-block-embed',
       'is-type-video',
       'is-provider-youtube',
-      'wp-block-embed-youtube',
       align ? `align${align}` : '',
       className || '',
     ].filter(Boolean).join(' ');
@@ -76,7 +74,13 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
     const hasExplicitHeight = typeof styles?.height === 'string' && styles.height !== '';
 
     return (
-      <figure id={anchor} className={embedClasses} style={{ ...styles }}>
+      <BlockShell
+        as="figure"
+        blockClass="wp-block-embed wp-block-embed-youtube"
+        className={embedClasses || undefined}
+        style={{ ...styles }}
+        id={anchor}
+      >
         <div
           className="wp-block-embed__wrapper"
           style={{
@@ -97,12 +101,18 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
         {caption ? (
           <figcaption className="wp-element-caption">{caption}</figcaption>
         ) : null}
-      </figure>
+      </BlockShell>
     );
   }
 
   return (
-    <figure id={anchor} className={classes} style={{ ...styles }}>
+    <BlockShell
+      as="figure"
+      blockClass="wp-block-video"
+      className={classes || undefined}
+      style={{ ...styles }}
+      id={anchor}
+    >
       <video
         src={url}
         poster={poster}
@@ -122,7 +132,7 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
       {caption ? (
         <figcaption className="wp-element-caption">{caption}</figcaption>
       ) : null}
-    </figure>
+    </BlockShell>
   );
 }
 

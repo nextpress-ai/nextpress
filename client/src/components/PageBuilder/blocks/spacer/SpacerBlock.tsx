@@ -7,6 +7,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Space as SpaceIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -38,8 +39,9 @@ function SpacerRenderer({ content, styles }: SpacerRendererProps) {
   const height = content?.height ?? 100;
   
   return (
-    <div
-      className="wp-block-spacer"
+    <BlockShell
+      blockClass="wp-block-spacer"
+      className={content?.className}
       style={{
         height: `${height}px`,
         ...styles,

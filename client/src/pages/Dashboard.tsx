@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, File, MessageCircle, Users, Plus, ExternalLink } from 'lucide-react';
 import { AdminLayout } from '@/components/AdminLayout';
+import { ThemeColorPreview } from '@/components/themes/theme-color-preview';
 import { Link } from 'wouter';
+import type { Theme } from '@shared/schema-types';
 
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -118,20 +120,24 @@ export default function Dashboard() {
             <CardTitle className="text-lg font-semibold text-npb-text-primary">Active Theme</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="overflow-hidden rounded-[var(--npb-radius-surface)] bg-npb-surface-inset">
-              <img
-                src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250"
-                alt="Theme preview"
-                className="h-28 w-full object-cover"
-              />
-            </div>
-            <h4 className="mt-4 font-semibold text-npb-text-primary">
-              {(activeTheme as { name?: string })?.name ?? 'Next Theme'}
-            </h4>
-            <p className="mt-1 text-sm text-npb-text-muted line-clamp-2">
-              {(activeTheme as { description?: string })?.description ??
-                'A modern, responsive theme built with Next.js and Tailwind CSS.'}
-            </p>
+            {(activeTheme as Theme | undefined)?.name ? (
+              <>
+                <ThemeColorPreview
+                  settings={(activeTheme as Theme).settings as { colors?: Record<string, string> }}
+                  className="h-28 w-full rounded-[var(--npb-radius-surface)]"
+                />
+                <h4 className="mt-4 font-semibold text-npb-text-primary">
+                  {(activeTheme as Theme).name}
+                </h4>
+                {(activeTheme as Theme).description ? (
+                  <p className="mt-1 text-sm text-npb-text-muted line-clamp-2">
+                    {(activeTheme as Theme).description}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="py-4 text-sm text-npb-text-muted">No theme active.</p>
+            )}
             <Link href="/admin/themes" className="mt-4 block">
               <Button variant="outline" size="sm" className="w-full">
                 Manage Themes

@@ -431,19 +431,28 @@ export default function PageSettingsModal({
 
                   <div className="space-y-2">
                     <Label htmlFor="templateId">Template</Label>
+                    {templates.length > 0 ? (
                     <Select value={templateId || '__none__'} onValueChange={(val) => setTemplateId(val === '__none__' ? '' : val)}>
                       <SelectTrigger id="templateId">
-                        <SelectValue placeholder="Default Template" />
+                        <SelectValue placeholder="None" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">Default Template</SelectItem>
-                        {templates?.map((t) => (
+                        <SelectItem value="__none__">None</SelectItem>
+                        {templates.map((t) => (
                           <SelectItem key={t.id} value={t.id.toString()}>
                             {t.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    ) : (
+                      <p className="text-sm text-npb-text-muted">
+                        No templates yet.{' '}
+                        <a href="/admin/templates" className="text-npb-accent hover:underline">
+                          Create one
+                        </a>
+                      </p>
+                    )}
                   </div>
                 </>
               )}

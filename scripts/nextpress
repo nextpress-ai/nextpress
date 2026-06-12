@@ -608,6 +608,11 @@ run_schema_migrations() {
 	compose run --rm --no-deps app pnpm drizzle-kit migrate
 }
 
+run_default_content_seed() {
+	info "Seeding default templates and themes if missing..."
+	compose run --rm --no-deps app node dist/seed-default-content.js
+}
+
 resolve_public_ip() {
 	local public_ip
 	local service_url
@@ -724,6 +729,7 @@ run_install() {
 	(cd "$INSTALL_DIR" && copy_release_config_from_image "$(app_image)" "$target_config")
 	(cd "$INSTALL_DIR" && ensure_postgres_running)
 	(cd "$INSTALL_DIR" && run_schema_migrations "$(app_image)")
+	(cd "$INSTALL_DIR" && run_default_content_seed)
 	copy_installed_config "$target_config"
 	cleanup_target_config "$target_config"
 	trap - RETURN
@@ -773,6 +779,8 @@ run_upgrade() {
 		copy_installed_config "$target_config"
 		cleanup_target_config "$target_config"
 		trap - RETURN
+		(cd "$INSTALL_DIR" && ensure_postgres_running)
+		(cd "$INSTALL_DIR" && run_default_content_seed)
 		(cd "$INSTALL_DIR" && compose up -d)
 		info "Upgrade complete. Schema is now $target_schema_version."
 		return
@@ -792,6 +800,7 @@ run_upgrade() {
 		load_install_env
 		(cd "$INSTALL_DIR" && ensure_postgres_running)
 		(cd "$INSTALL_DIR" && run_schema_migrations "$(app_image)")
+		(cd "$INSTALL_DIR" && run_default_content_seed)
 		copy_installed_config "$target_config"
 		cleanup_target_config "$target_config"
 		trap - RETURN
@@ -806,10 +815,13 @@ run_upgrade() {
 		write_or_update_env "$INSTALL_VERSION"
 		load_install_env
 		(cd "$INSTALL_DIR" && run_schema_migrations "$(app_image)")
+		(cd "$INSTALL_DIR" && run_default_content_seed)
 	else
 		info "No schema changes declared for this release."
 		write_or_update_env "$INSTALL_VERSION"
 		load_install_env
+		(cd "$INSTALL_DIR" && ensure_postgres_running)
+		(cd "$INSTALL_DIR" && run_default_content_seed)
 	fi
 
 	copy_installed_config "$target_config"

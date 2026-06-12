@@ -5,16 +5,17 @@ type BrandedFormLayoutProps = {
 };
 
 /**
- * Shared shell for auth and setup: soft backdrop and logo from `client/public/logo.svg`.
+ * Shared shell for auth and setup — uses public `npb-*` canvas tokens so loading
+ * and auth screens match the rest of the product chrome.
  */
 export function BrandedFormLayout({ children }: BrandedFormLayoutProps) {
 	return (
-		<div className="relative min-h-screen flex flex-col items-center justify-center gap-6 p-4 sm:p-8 bg-gradient-to-b from-slate-50 via-background to-muted/50 dark:from-background dark:via-background dark:to-muted/25">
+		<div className="relative flex min-h-screen flex-col items-center justify-center gap-6 bg-npb-canvas-bg p-4 sm:p-8">
 			<div
 				className="pointer-events-none absolute inset-0 overflow-hidden"
 				aria-hidden
 			>
-				<div className="absolute -top-32 left-1/2 h-56 w-[min(90vw,36rem)] -translate-x-1/2 rounded-full bg-muted-foreground/[0.06] blur-3xl dark:bg-muted-foreground/[0.12]" />
+				<div className="absolute -top-32 left-1/2 h-56 w-[min(90vw,36rem)] -translate-x-1/2 rounded-full bg-npb-accent/10 blur-3xl" />
 			</div>
 			<div className="relative z-[1] flex w-full max-w-md flex-col items-center gap-5">
 				<img

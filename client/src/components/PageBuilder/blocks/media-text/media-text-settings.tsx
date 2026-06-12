@@ -1,15 +1,13 @@
-import { useState } from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
-import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { Image as ImageIcon, Settings, Link } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
+import { MediaUrlField } from "../shared/media-url-field";
 import { LinkUrlField, LinkTargetSelect } from "../shared/link-settings";
 import { type MediaTextContent, type MediaTextData, DEFAULT_CONTENT, DEFAULT_DATA } from './media-text-model';
 
@@ -20,7 +18,6 @@ interface MediaTextSettingsProps {
 
 export function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
   const { accessor, rerender } = useSettingsState({ block, onUpdate });
-  const [isPickerOpen, setPickerOpen] = useState(false);
 
   // Get current state
   const content = accessor
@@ -64,33 +61,24 @@ export function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
     <div className="space-y-4">
       <CollapsibleCard title="Content" icon={ImageIcon} defaultOpen={true}>
         <div className="space-y-4">
-          <div>
-            <SettingsLabel htmlFor="media-url">Media URL</SettingsLabel>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                id="media-url"
-                value={blockData?.mediaUrl || ''}
-                onChange={(e) => updateContent({ mediaUrl: e.target.value })}
-                placeholder="https://example.com/image-or-video.jpg"
-                className="h-9"
-              />
-              <Button type="button" variant="outline" size="sm" onClick={() => setPickerOpen(true)}>Choose</Button>
-            </div>
-            <MediaPickerDialog
-              open={isPickerOpen}
-              onOpenChange={setPickerOpen}
-              kind="any"
-              onSelect={(m) => {
-                const type = m.mimeType?.startsWith("video/") ? "video" : "image";
-                updateContent({
-                  mediaId: m.id ? Number(m.id) : undefined,
-                  mediaUrl: m.url,
-                  mediaType: type,
-                  mediaAlt: blockData?.mediaAlt || m.alt || m.originalName || m.filename,
-                });
-              }}
-            />
-          </div>
+          <MediaUrlField
+            id="media-url"
+            label="Media URL"
+            value={blockData?.mediaUrl || ""}
+            kind="any"
+            libraryButtonLabel="Choose"
+            placeholder="https://example.com/image-or-video.jpg"
+            onChange={({ url }) => updateContent({ mediaUrl: url })}
+            onLibrarySelect={({ item }) => {
+              const type = item.mimeType?.startsWith("video/") ? "video" : "image";
+              updateContent({
+                mediaId: item.id ? Number(item.id) : undefined,
+                mediaUrl: item.url,
+                mediaType: type,
+                mediaAlt: blockData?.mediaAlt || item.alt || item.originalName || item.filename,
+              });
+            }}
+          />
           <div>
             <SettingsLabel htmlFor="media-alt">Alt Text</SettingsLabel>
             <Input

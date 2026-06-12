@@ -53,6 +53,12 @@ export function createThemesRoutes(deps: Deps) {
     try {
       const id = req.params.id;
       const theme = await models.themes.setActiveTheme(id);
+
+      const site = await models.sites.findDefaultSite();
+      if (site) {
+        await models.sites.update(site.id, { activeThemeId: id });
+      }
+
       res.json(theme);
     } catch (error) {
       console.error('Error activating theme:', error);

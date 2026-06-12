@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
-import { Loader2, AlertCircle } from "lucide-react";
+import { AppLoadingShell } from "@/components/app-loading-shell";
+import { AlertCircle } from "lucide-react";
 import type { Post, Template } from "@shared/schema-types";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
 import BlockRenderer from "@/components/PageBuilder/BlockRenderer";
@@ -31,14 +32,7 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-npb-text-muted" />
-          <p className="text-npb-text-secondary">Loading preview…</p>
-        </div>
-      </div>
-    );
+    return <AppLoadingShell label="Loading preview…" />;
   }
 
   // Error state
@@ -46,7 +40,7 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
     const isUnauthorized =
       error instanceof Error && error.message.startsWith('401:');
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-npb-canvas-bg">
         <div className="text-center">
           <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-400" />
           <h1 className="mb-2 text-xl font-semibold text-npb-text-primary">

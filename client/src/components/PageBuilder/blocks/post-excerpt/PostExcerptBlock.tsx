@@ -10,6 +10,7 @@ import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { FileText, Settings } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
 import { createBlockDefinition } from '../createBlockDefinition';
+import { BlockShell } from '../shared/block-shell';
 
 // ============================================================================
 // TYPES
@@ -62,13 +63,6 @@ function truncateText(
   return { truncated: sliced.slice(0, breakpoint) + '…', wasTruncated: true };
 }
 
-/** Build className string for the excerpt wrapper. */
-function buildExcerptClassName(content: PostExcerptContent): string {
-  return ['wp-block-post-excerpt', content?.className || '']
-    .filter(Boolean)
-    .join(' ');
-}
-
 // ============================================================================
 // RENDERER
 // ============================================================================
@@ -88,12 +82,11 @@ function PostExcerptRenderer({ content, styles }: PostExcerptRendererProps) {
   const maxLength = content?.maxLength ?? DEFAULT_CONTENT.maxLength!;
   const showReadMore = content?.showReadMore ?? true;
   const readMoreText = content?.readMoreText || 'Read More';
-  const className = buildExcerptClassName(content);
 
   const { truncated, wasTruncated } = truncateText(text, maxLength);
 
   return (
-    <div className={className} style={styles}>
+    <BlockShell blockClass="wp-block-post-excerpt" className={content?.className} style={styles}>
       <p className="wp-block-post-excerpt__excerpt">
         {truncated || 'Write your post excerpt...'}
       </p>
@@ -104,7 +97,7 @@ function PostExcerptRenderer({ content, styles }: PostExcerptRendererProps) {
           </button>
         </p>
       )}
-    </div>
+    </BlockShell>
   );
 }
 

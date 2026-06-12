@@ -26,18 +26,21 @@
 | Item | Notes |
 |---|---|
 | **Template system SSR wiring** | `renderTemplateBlocks()`, `buildRenderContext()`, `shouldRenderTemplate()` exist in `server/templates/` but have **zero route call sites**. See `docs/templates-feature-spec.md`. |
-| **Theme / public shell** | Public pages and auth screens not yet on admin `npb-*` chrome. Separate from block content tokens (`docs/tailwind-token-system-spec.md`). |
+| **Theme / public shell** | Partial | Public page loading/404 on `npb-*`; auth shell updated; Landing still custom |
 
 ### Engineering backlog
 
 | Item | Status | Notes |
 |---|---|---|
-| **`BlockShell`** | Done when adopted | Shared outer wrapper (`wp-block-*` + className + styles). Roll out block-by-block as renderers are touched. |
-| **`LinkSettings` / `MediaUrlField`** | Done when adopted | Shared settings fields extracted; wire into remaining blocks over time. |
-| **README Known Issues** | Partial | Posts save root cause fixed (block deselection); columns fit refactored but behavior unverified. Update README after in-app QA. |
-| **Responsive per-device styles** | Roadmap | Device preview is width-only; no per-breakpoint style overrides. |
-| **Block copy/paste** | Roadmap | — |
-| **Undo structural sharing** | Roadmap | Full snapshots today; memory-heavy on large pages. |
+| **`BlockShell`** | In progress | Rollout across simple block renderers; columns outer wrapper added |
+| **`LinkSettings` / `MediaUrlField`** | Done | Wired in button, icon, image, video, media-text, cover, file, audio |
+| **Block copy/paste** | Done | Ctrl+C / Ctrl+V in page builder |
+| **Per-device style overrides** | Done (v1) | `other.deviceStyles` + device preview; Style tab overrides tablet/mobile |
+| **Undo structural sharing** | Partial | Skip duplicate snapshot refs; tree updates preserve sibling block refs |
+| **Theme-aware loading** | Done | Shared `AppLoadingShell` for route/auth/preview/editor fallbacks |
+| **Default template seed** | Setup + CLI upgrade | Basic Page/Post templates when table empty; idempotent |
+| **Columns / buttons group UX** | Partial | `npb-*` drop zones; buttons use accent tokens + layout fix |
+| **README Known Issues** | Partial | Posts save root cause fixed; columns fit fixed |
 
 ---
 

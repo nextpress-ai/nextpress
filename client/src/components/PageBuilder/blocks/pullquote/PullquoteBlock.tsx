@@ -7,6 +7,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Quote as QuoteIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -42,15 +43,14 @@ function PullquoteRenderer({ content, styles }: PullquoteRendererProps) {
   const citation = content?.citation || '';
   const textAlign = content?.textAlign || 'center';
   
-  const className = [
-    "wp-block-pullquote",
-    textAlign ? `has-text-align-${textAlign}` : '',
-    content?.className || "",
-  ].filter(Boolean).join(" ");
-
   return (
-    <figure
-      className={className}
+    <BlockShell
+      as="figure"
+      blockClass="wp-block-pullquote"
+      className={[
+        textAlign ? `has-text-align-${textAlign}` : '',
+        content?.className || '',
+      ].filter(Boolean).join(' ') || undefined}
       style={{
         textAlign,
         margin: '2em 0',
@@ -84,7 +84,7 @@ function PullquoteRenderer({ content, styles }: PullquoteRendererProps) {
           {citation}
         </cite>
       )}
-    </figure>
+    </BlockShell>
   );
 }
 

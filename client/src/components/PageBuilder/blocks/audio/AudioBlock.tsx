@@ -1,16 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { AudioLines as AudioIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
+import { MediaUrlField } from "../shared/media-url-field";
 
 // ============================================================================
 // TYPES
@@ -72,12 +71,6 @@ function AudioRenderer({ content, styles }: AudioRendererProps) {
     className,
   } = content || {};
 
-  const classes = [
-    'wp-block-audio',
-    align ? `align${align}` : '',
-    className || '',
-  ].filter(Boolean).join(' ');
-
   if (!audioUrl) {
     return (
       <div className="rounded-[var(--npb-radius-surface)] border border-dashed border-npb-border-strong p-4 text-npb-text-muted">
@@ -87,7 +80,13 @@ function AudioRenderer({ content, styles }: AudioRendererProps) {
   }
 
   return (
-    <figure id={anchor} className={classes} style={{ ...styles }}>
+    <BlockShell
+      as="figure"
+      blockClass="wp-block-audio"
+      className={[align ? `align${align}` : '', className || ''].filter(Boolean).join(' ') || undefined}
+      style={{ ...styles }}
+      id={anchor}
+    >
       <audio
         src={audioUrl}
         controls={controls}
@@ -101,7 +100,7 @@ function AudioRenderer({ content, styles }: AudioRendererProps) {
       {caption ? (
         <figcaption className="wp-element-caption">{caption}</figcaption>
       ) : null}
-    </figure>
+    </BlockShell>
   );
 }
 
@@ -120,34 +119,33 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
     onUpdate,
     defaultContent: DEFAULT_CONTENT,
   });
-  const [isPickerOpen, setPickerOpen] = useState(false);
 
-  const audioUrl = content?.kind === 'media' ? content.url : '';
+  const audioUrl = content?.kind === "media" ? content.url : "";
 
   return (
     <div className="space-y-4">
       {/* Content Card */}
       <CollapsibleCard title="Content" icon={AudioIcon} defaultOpen={true}>
         <div className="space-y-4">
-          <div>
-            <SettingsLabel htmlFor="audio-src">Audio URL</SettingsLabel>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                id="audio-src"
-                value={audioUrl}
-                onChange={(e) => updateContent({ kind: 'media', mediaType: 'audio', url: e.target.value } as AudioContent)}
-                placeholder="https://example.com/audio.mp3"
-                className="h-9"
-              />
-              <Button type="button" variant="outline" size="sm" onClick={() => setPickerOpen(true)}>Choose</Button>
-            </div>
-            <MediaPickerDialog
-              open={isPickerOpen}
-              onOpenChange={setPickerOpen}
-              kind="audio"
-              onSelect={(m) => updateContent({ kind: 'media', mediaType: 'audio', id: m.id, url: m.url } as AudioContent)}
-            />
-          </div>
+          <MediaUrlField
+            id="audio-src"
+            label="Audio URL"
+            value={audioUrl}
+            kind="audio"
+            libraryButtonLabel="Choose"
+            placeholder="https://example.com/audio.mp3"
+            onChange={({ url }) =>
+              updateContent({ kind: "media", mediaType: "audio", url } as AudioContent)
+            }
+            onLibrarySelect={({ item }) =>
+              updateContent({
+                kind: "media",
+                mediaType: "audio",
+                id: item.id,
+                url: item.url,
+              } as AudioContent)
+            }
+          />
           
           <div>
             <SettingsLabel htmlFor="audio-caption">Caption</SettingsLabel>

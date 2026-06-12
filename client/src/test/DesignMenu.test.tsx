@@ -89,7 +89,7 @@ describe('DesignMenu', () => {
     expect(screen.getByText('Modern Theme')).toBeInTheDocument();
   });
 
-  test('displays "No templates" when templates array is empty', async () => {
+  test('links to template admin when templates array is empty', async () => {
     mockUseContentLists.mockReturnValue({
       templates: [],
       themes: mockThemes,
@@ -99,10 +99,10 @@ describe('DesignMenu', () => {
     const trigger = screen.getByText('Design');
     await user.click(trigger);
 
-    expect(await screen.findByText('No templates')).toBeInTheDocument();
+    expect(await screen.findByText('Create a template')).toBeInTheDocument();
   });
 
-  test('displays "No themes" when themes array is empty', async () => {
+  test('links to themes admin when themes array is empty', async () => {
     mockUseContentLists.mockReturnValue({
       templates: mockTemplates,
       themes: [],
@@ -112,11 +112,19 @@ describe('DesignMenu', () => {
     const trigger = screen.getByText('Design');
     await user.click(trigger);
 
-    expect(await screen.findByText('No themes')).toBeInTheDocument();
+    expect(await screen.findByText('Manage themes')).toBeInTheDocument();
   });
 
   test('applies template when template is clicked', async () => {
-    vi.mocked(queryClient.apiRequest).mockResolvedValue(new Response());
+    vi.mocked(queryClient.apiRequest)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({
+          id: 'template-1',
+          name: 'Blog Post Template',
+          blocks: [],
+        })),
+      )
+      .mockResolvedValueOnce(new Response());
 
     renderDesignMenu({ currentPostId: 'post-123', currentType: 'post' });
     const trigger = screen.getByText('Design');
@@ -127,16 +135,23 @@ describe('DesignMenu', () => {
 
     await waitFor(() => {
       expect(queryClient.apiRequest).toHaveBeenCalledWith(
+        'GET',
+        '/api/templates/template-1',
+      );
+    });
+
+    await waitFor(() => {
+      expect(queryClient.apiRequest).toHaveBeenCalledWith(
         'PUT',
         '/api/posts/post-123',
-        { templateId: 'template-1' }
+        expect.objectContaining({ templateId: 'template-1', blocks: [] }),
       );
     });
 
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith({
-        title: 'Template Applied',
-        description: 'Successfully applied "Blog Post Template" template',
+        title: 'Template applied',
+        description: '"Blog Post Template" layout is now on this post.',
       });
     });
   });
@@ -172,7 +187,7 @@ describe('DesignMenu', () => {
 
     expect(mockToast).toHaveBeenCalledWith({
       title: 'Error',
-      description: 'No post/page selected for template application',
+      description: 'Save this content first, then apply a template.',
       variant: 'destructive',
     });
   });
@@ -197,8 +212,8 @@ describe('DesignMenu', () => {
 
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith({
-        title: 'Theme Activated',
-        description: 'Successfully activated "Dark Theme" theme',
+        title: 'Theme activated',
+        description: '"Dark Theme" is now active site-wide.',
       });
     });
   });
@@ -239,7 +254,15 @@ describe('DesignMenu', () => {
   });
 
   test('invalidates queries after successful template application', async () => {
-    vi.mocked(queryClient.apiRequest).mockResolvedValue(new Response());
+    vi.mocked(queryClient.apiRequest)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({
+          id: 'template-1',
+          name: 'Blog Post Template',
+          blocks: [],
+        })),
+      )
+      .mockResolvedValueOnce(new Response());
     const invalidateQueriesSpy = vi.spyOn(queryClientInstance, 'invalidateQueries');
 
     renderDesignMenu({ currentPostId: 'post-123', currentType: 'post' });

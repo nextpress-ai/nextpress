@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup';
 import { TsconfigPathsPlugin } from '@esbuild-plugins/tsconfig-paths';
 
 export default defineConfig({
-  entry: ['server/index.ts'],
+  entry: ['server/index.ts', 'server/seed-default-content.ts'],
   outDir: 'dist',
   format: ['esm'],
   platform: 'node',

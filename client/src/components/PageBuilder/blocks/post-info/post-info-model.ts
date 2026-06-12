@@ -106,16 +106,15 @@ export function computeReadTime(wordCount: number | undefined): string {
   return `${Math.max(1, Math.ceil(wordCount / WORDS_PER_MINUTE))} min read`;
 }
 
-/** Build the wrapper className string. */
+/** Build extra className modifiers for the post info wrapper. */
 export function buildClassName(
   content: PostInfoContent,
   layout: 'inline' | 'stacked',
-): string {
+): string | undefined {
   return [
-    'wp-block-post-info',
     layout === 'stacked' ? 'post-info--stacked' : 'post-info--inline',
     content?.className || '',
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(' ') || undefined;
 }

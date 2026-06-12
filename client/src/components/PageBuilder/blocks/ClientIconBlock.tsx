@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { getRenderProps, parseStructuredContent } from "../../../../../renderer/react/render-helpers";
+import { BlockShell } from "./shared/block-shell";
 
 // Lazy-load IconRenderer — only fetched when an icon block renders
 const IconRendererLazy = React.lazy(() =>
@@ -36,7 +37,7 @@ export function ClientIconBlock(block: BlockConfig) {
 	};
 
 	const inner = (
-		<span className="wp-block-icon" style={wrapperStyle}>
+		<BlockShell as="span" blockClass="wp-block-icon" style={wrapperStyle}>
 			<Suspense
 				fallback={
 					<svg
@@ -58,7 +59,7 @@ export function ClientIconBlock(block: BlockConfig) {
 					aria-label={label || undefined}
 				/>
 			</Suspense>
-		</span>
+		</BlockShell>
 	);
 
 	if (link && link !== "#") {

@@ -9,6 +9,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useBlockState } from '../useBlockState';
+import { BlockShell } from '../shared/block-shell';
 import { defaultParseContent, defaultSerializeContent } from '../createBlockDefinition';
 import {
   type PostInfoContent,
@@ -142,17 +143,17 @@ function PostInfoRenderer({
 
   if (items.length === 0) {
     return (
-      <div className={className} style={styles}>
+      <BlockShell blockClass="wp-block-post-info" className={className} style={styles}>
         <p className="text-sm text-npb-text-muted italic">
           No post info items enabled
         </p>
-      </div>
+      </BlockShell>
     );
   }
 
   if (layout === 'inline') {
     return (
-      <div className={className} style={styles}>
+      <BlockShell blockClass="wp-block-post-info" className={className} style={styles}>
         <div className="flex flex-wrap items-center gap-3">
           {items.map((item, idx) => (
             <React.Fragment key={itemKeys[idx]}>
@@ -161,14 +162,14 @@ function PostInfoRenderer({
             </React.Fragment>
           ))}
         </div>
-      </div>
+      </BlockShell>
     );
   }
 
   return (
-    <div className={className} style={styles}>
+    <BlockShell blockClass="wp-block-post-info" className={className} style={styles}>
       <div className="flex flex-col gap-2">{items}</div>
-    </div>
+    </BlockShell>
   );
 }
 

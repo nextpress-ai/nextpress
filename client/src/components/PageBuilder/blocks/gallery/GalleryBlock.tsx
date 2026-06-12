@@ -1,6 +1,7 @@
 import React from "react";
 import { Image as ImageIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import {
   type GalleryContent,
   type GalleryData,
@@ -32,8 +33,7 @@ function GalleryRenderer({ content, styles }: GalleryRendererProps) {
   const sizeSlug = galleryData?.sizeSlug || 'large';
   const caption = galleryData?.caption || '';
 
-  const className = [
-    "wp-block-gallery",
+  const extraClassName = [
     `has-nested-images`,
     `columns-${columns}`,
     imageCrop ? 'is-cropped' : '',
@@ -42,18 +42,23 @@ function GalleryRenderer({ content, styles }: GalleryRendererProps) {
 
   if (images.length === 0) {
     return (
-      <div className={className} style={styles}>
+      <BlockShell blockClass="wp-block-gallery" className={extraClassName || undefined} style={styles}>
         <div className="gallery-placeholder text-center text-npb-text-muted p-8 border-2 border-dashed border-npb-border-default rounded">
           <ImageIcon className="w-12 h-12 mx-auto mb-2" />
           <p>Gallery</p>
           <small>Add images to create a gallery</small>
         </div>
-      </div>
+      </BlockShell>
     );
   }
 
   return (
-    <figure className={className} style={styles}>
+    <BlockShell
+      as="figure"
+      blockClass="wp-block-gallery"
+      className={extraClassName || undefined}
+      style={styles}
+    >
       <div
         className="blocks-gallery-grid"
         style={{
@@ -100,7 +105,7 @@ function GalleryRenderer({ content, styles }: GalleryRendererProps) {
           {caption}
         </figcaption>
       )}
-    </figure>
+    </BlockShell>
   );
 }
 

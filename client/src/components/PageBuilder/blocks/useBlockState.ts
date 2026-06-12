@@ -6,6 +6,12 @@ import {
 	registerBlockState,
 	unregisterBlockState,
 } from "./blockStateRegistry";
+import { useDeviceView } from "../device-view-context";
+import {
+	readBlockDeviceStyles,
+	resolveBlockDeviceStyles,
+	type BlockDeviceStyles,
+} from "../resolve-block-device-styles";
 
 function useMountEffect(effect: () => void | (() => void)) {
 	// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -39,6 +45,28 @@ function withNullsForRemovedStyleKeys(
 	return merged as React.CSSProperties;
 }
 
+/** Stores only properties that differ from desktop base styles. */
+function diffDeviceStyleOverrides(
+	base: React.CSSProperties | undefined,
+	merged: React.CSSProperties | undefined,
+): React.CSSProperties {
+	const diff: Record<string, string | number | null | undefined> = {};
+	const baseRec = (base ?? {}) as Record<string, string | number | null | undefined>;
+	const mergedRec = (merged ?? {}) as Record<string, string | number | null | undefined>;
+
+	for (const key of Object.keys(mergedRec)) {
+		if (mergedRec[key] !== baseRec[key]) {
+			diff[key] = mergedRec[key];
+		}
+	}
+	for (const key of Object.keys(baseRec)) {
+		if (!(key in mergedRec)) {
+			diff[key] = null;
+		}
+	}
+	return diff as React.CSSProperties;
+}
+
 interface UseBlockStateOptions<TContent> {
 	value: BlockConfig;
 	getDefaultContent: () => TContent;
@@ -70,13 +98,14 @@ export function useBlockState<TContent>({
 	serializeContent,
 }: UseBlockStateOptions<TContent>): UseBlockStateResult<TContent> {
 	const [clientId] = useState(() => value.id || nanoid());
+	const deviceView = useDeviceView();
 
 	// Derive state from props — Rule 1
 	// parseContent unwraps structured content; without it, content passes through as-is
 	const content = parseContent
 		? parseContent(value.content) ?? getDefaultContent()
 		: (value.content as TContent) ?? getDefaultContent();
-	const styles = value.styles;
+	const styles = resolveBlockDeviceStyles({ block: value, device: deviceView });
 	const settings = value.settings;
 
 	// Refs for stable callback identity.
@@ -125,7 +154,7 @@ export function useBlockState<TContent>({
 		[serializeContent],
 	);
 
-	/** Stable setter for styles. */
+	/** Stable setter for styles — routes to base or per-device overrides. */
 	const setStyles = useCallback(
 		(
 			update:
@@ -145,13 +174,34 @@ export function useBlockState<TContent>({
 						)(prev)
 					: update;
 			const stylesForTree = withNullsForRemovedStyleKeys(prev, next);
-			// Eagerly update refs before notifying parent
 			stylesRef.current = stylesForTree;
-			const updatedBlock = { ...valueRef.current, styles: stylesForTree };
+
+			if (deviceView === "desktop") {
+				const updatedBlock = { ...valueRef.current, styles: stylesForTree };
+				valueRef.current = updatedBlock;
+				onChangeRef.current(updatedBlock);
+				return;
+			}
+
+			const baseStyles = valueRef.current.styles;
+			const overrides = diffDeviceStyleOverrides(baseStyles, stylesForTree);
+			const currentDeviceStyles = readBlockDeviceStyles(valueRef.current);
+			const nextDeviceStyles: BlockDeviceStyles = {
+				...currentDeviceStyles,
+				[deviceView]: overrides,
+			};
+
+			const updatedBlock = {
+				...valueRef.current,
+				other: {
+					...(valueRef.current.other ?? {}),
+					deviceStyles: nextDeviceStyles,
+				},
+			};
 			valueRef.current = updatedBlock;
 			onChangeRef.current(updatedBlock);
 		},
-		[],
+		[deviceView],
 	);
 
 	/** Stable setter for settings. */

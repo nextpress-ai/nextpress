@@ -13,6 +13,7 @@ import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { SettingsLabel } from '../../shared';
 import { Plus, Trash2, SquareMousePointer, Settings } from 'lucide-react';
 import { createBlockDefinition } from '../createBlockDefinition';
+import { BlockShell } from '../shared/block-shell';
 import { useSettingsState } from '../useSettingsState';
 
 // ============================================================================
@@ -80,11 +81,10 @@ function ButtonsRenderer({ content, styles }: ButtonsRendererProps) {
 
   const layout = buttonsData?.layout || 'flex-start';
   const orientation = buttonsData?.orientation || 'horizontal';
-  const className = [
-    'wp-block-buttons',
+  const extraClassName = [
     orientation === 'vertical' ? 'is-vertical' : '',
     layout === 'center' ? 'is-content-justification-center' : '',
-    layout === 'right' ? 'is-content-justification-right' : '',
+    layout === 'flex-end' || layout === 'right' ? 'is-content-justification-right' : '',
     layout === 'space-between' ? 'is-content-justification-space-between' : '',
     buttonsData?.className || '',
   ]
@@ -92,15 +92,16 @@ function ButtonsRenderer({ content, styles }: ButtonsRendererProps) {
     .join(' ');
 
   return (
-    <div
-      className={className}
+    <BlockShell
+      blockClass="wp-block-buttons"
+      className={extraClassName || undefined}
       style={{
         ...styles,
         display: 'flex',
         flexDirection: orientation === 'vertical' ? 'column' : 'row',
         justifyContent: layout,
-        gap: '0.5em',
-        alignItems: orientation === 'vertical' ? 'flex-start' : 'center',
+        gap: orientation === 'vertical' ? '0.75em' : '0.5em',
+        alignItems: orientation === 'vertical' ? 'stretch' : 'center',
         flexWrap: 'wrap',
       }}>
       {buttons.map((button, index) => {
@@ -111,29 +112,32 @@ function ButtonsRenderer({ content, styles }: ButtonsRendererProps) {
         return (
           <div key={button.id || index} className={buttonClassName}>
             <a
-              className="wp-block-button__link"
+              className="wp-block-button__link wp-element-button"
               href={button.url}
               target={button.linkTarget}
               rel={button.rel}
               title={button.title}
               style={{
-                backgroundColor: '#007cba',
-                color: '#ffffff',
+                backgroundColor: 'var(--npb-accent)',
+                color: 'var(--npb-text-inverse)',
                 padding: '12px 24px',
-                borderRadius: '4px',
+                borderRadius: 'var(--npb-radius-input, 4px)',
                 textDecoration: 'none',
-                display: 'inline-block',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 border: 'none',
                 fontSize: '16px',
-                fontWeight: '600',
+                fontWeight: 600,
                 cursor: 'pointer',
+                width: orientation === 'vertical' ? '100%' : undefined,
               }}>
               {button.text}
             </a>
           </div>
         );
       })}
-    </div>
+    </BlockShell>
   );
 }
 

@@ -6,6 +6,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Code as CodeIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -37,14 +38,12 @@ function CodeRenderer({ content, styles }: CodeRendererProps) {
   const codeContent = content?.content || '';
   const language = content?.language || '';
   
-  const className = [
-    "wp-block-code",
-    language ? `language-${language}` : '',
-    content?.className || "",
-  ].filter(Boolean).join(" ");
-
   return (
-    <div className={className} style={styles}>
+    <BlockShell
+      blockClass="wp-block-code"
+      className={[language ? `language-${language}` : '', content?.className || ''].filter(Boolean).join(' ') || undefined}
+      style={styles}
+    >
       <pre style={{
         backgroundColor: '#f8f9fa',
         padding: '1em',
@@ -58,7 +57,7 @@ function CodeRenderer({ content, styles }: CodeRendererProps) {
       }}>
         <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{codeContent}</code>
       </pre>
-    </div>
+    </BlockShell>
   );
 }
 

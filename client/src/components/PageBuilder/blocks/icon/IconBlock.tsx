@@ -2,6 +2,7 @@ import React from "react";
 import type { JSX } from "react";
 import { Smile } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { IconRenderer } from "../shared/IconRenderer";
 import {
   parseIconContent,
@@ -62,7 +63,7 @@ function IconBlockRenderer({ content, styles, isPreview }: IconRendererBlockProp
   };
 
   const iconElement = (
-    <span className="wp-block-icon" style={wrapperStyle}>
+    <BlockShell as="span" blockClass="wp-block-icon" style={wrapperStyle}>
       <IconRenderer
         icon={icon}
         size={sizeUnit === "px" ? (icon.size ?? 24) : "100%"}
@@ -71,7 +72,7 @@ function IconBlockRenderer({ content, styles, isPreview }: IconRendererBlockProp
         className="wp-block-icon__glyph"
         aria-label={label || undefined}
       />
-    </span>
+    </BlockShell>
   );
 
   if (link && link !== "#" && !isPreview) {

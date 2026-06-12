@@ -7,6 +7,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Type } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -51,24 +52,27 @@ function TextRenderer({ content, styles }: TextRendererProps) {
   const extraClass = (content?.className as string | undefined) || "";
   const dropCap = Boolean(content?.dropCap);
 
-  const className = [
-    "wp-block-paragraph",
-    align ? `has-text-align-${align}` : "",
-    dropCap ? "has-drop-cap" : "",
-    extraClass,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   const mergedStyles: React.CSSProperties = {
     ...styles,
     ...(align ? { textAlign: align as React.CSSProperties["textAlign"] } : {}),
   };
 
   return (
-    <p id={anchor} className={className} style={mergedStyles}>
+    <BlockShell
+      as="p"
+      blockClass="wp-block-paragraph"
+      className={[
+        align ? `has-text-align-${align}` : "",
+        dropCap ? "has-drop-cap" : "",
+        extraClass,
+      ]
+        .filter(Boolean)
+        .join(" ") || undefined}
+      style={mergedStyles}
+      id={anchor}
+    >
       {textContent}
-    </p>
+    </BlockShell>
   );
 }
 

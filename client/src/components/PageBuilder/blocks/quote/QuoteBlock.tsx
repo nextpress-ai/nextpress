@@ -7,6 +7,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Quote as QuoteIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -56,19 +57,18 @@ function QuoteRenderer({ content, styles }: QuoteRendererProps) {
     ? valueHtmlRaw
     : (legacyText ? `<p>${legacyText}</p>` : '<p>Add a quote</p>');
 
-  const classes = [
-    'wp-block-quote',
-    className || '',
-    textAlign ? `has-text-align-${textAlign}` : '',
-    align ? `align${align}` : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
   return (
-    <blockquote
+    <BlockShell
+      as="blockquote"
+      blockClass="wp-block-quote"
+      className={[
+        className || '',
+        textAlign ? `has-text-align-${textAlign}` : '',
+        align ? `align${align}` : '',
+      ]
+        .filter(Boolean)
+        .join(' ') || undefined}
       {...(anchor ? { id: anchor } : {})}
-      className={classes || undefined}
       style={{
         backgroundColor: '#f8fafc',
         borderLeft: '4px solid #e2e8f0',
@@ -87,7 +87,7 @@ function QuoteRenderer({ content, styles }: QuoteRendererProps) {
           — {citation}
         </cite>
       )}
-    </blockquote>
+    </BlockShell>
   );
 }
 

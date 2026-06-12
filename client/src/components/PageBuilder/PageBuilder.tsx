@@ -19,8 +19,14 @@ import {
   updateBlockDeep,
   deleteBlockDeep,
   duplicateBlockDeep,
+  insertBlockAfterDeep,
 } from '@/lib/handlers/treeUtils';
-import '@/lib/animate.min.css';
+import { DeviceViewProvider } from './device-view-context';
+import {
+  copyBlockToClipboard,
+  readBlockFromClipboard,
+} from './block-clipboard';
+import { reIdTemplateBlocks } from '@/lib/re-id-template-blocks';
 
 function useMountEffect(effect: () => void | (() => void)) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,7 +77,8 @@ interface PageBuilderProps {
     meta: Partial<{ title: string; slug: string; status: string }>,
   ) => void;
   currentPostId?: string;
-  contentType?: 'post' | 'page';
+  contentType?: 'post' | 'page' | 'template';
+  isTemplateEditor?: boolean;
 }
 
 export default function PageBuilder({
@@ -85,10 +92,12 @@ export default function PageBuilder({
   onPageMetaChange,
   currentPostId,
   contentType,
+  isTemplateEditor = false,
 }: PageBuilderProps) {
   const data = post;
-  const isTemplate = false;
-  const resolvedContentType = contentType ?? 'page';
+  const isTemplate = isTemplateEditor;
+  const resolvedContentType =
+    contentType === 'template' ? 'page' : (contentType ?? 'page');
 
   const initialBlocks =
     propBlocks || (data ? (data.blocks as BlockConfig[]) || [] : []);
@@ -261,6 +270,8 @@ export default function PageBuilder({
   // Assigned below their definitions so the mount-only listener stays stable.
   const handleDeleteRef = useRef<(id: string) => void>(() => {});
   const handleDuplicateRef = useRef<(id: string) => void>(() => {});
+  const handleCopyRef = useRef<(id: string) => void>(() => {});
+  const handlePasteRef = useRef<() => void>(() => {});
 
   useMountEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -310,6 +321,12 @@ export default function PageBuilder({
       } else if (isMod && key === 'd') {
         e.preventDefault();
         handleDuplicateRef.current(selectedId);
+      } else if (isMod && key === 'c') {
+        e.preventDefault();
+        handleCopyRef.current(selectedId);
+      } else if (isMod && key === 'v') {
+        e.preventDefault();
+        handlePasteRef.current();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -354,6 +371,53 @@ export default function PageBuilder({
     [commitBlocks, setActiveTab],
   );
 
+  const handleCopy = useCallback(
+    (id: string) => {
+      const block = findBlock(blocks, id);
+      if (block) copyBlockToClipboard({ block });
+    },
+    [blocks],
+  );
+
+  const handlePaste = useCallback(() => {
+    const clip = readBlockFromClipboard();
+    if (!clip) return;
+
+    const selectedId = selectedBlockIdRef.current;
+    let insertedId: string | undefined;
+
+    commitBlocks((prev) => {
+      if (prev.length === 0) {
+        const rootClone = structuredClone(clip) as BlockConfig;
+        const assignIds = (blk: BlockConfig): void => {
+          blk.id = generateBlockId();
+          insertedId = blk.id;
+          if (Array.isArray(blk.children)) blk.children.forEach(assignIds);
+        };
+        assignIds(rootClone);
+        return [rootClone];
+      }
+
+      const anchorId = selectedId ?? prev[prev.length - 1]?.id;
+      if (!anchorId) return prev;
+
+      const { found, next, insertedId: id } = insertBlockAfterDeep(
+        prev,
+        anchorId,
+        clip,
+        generateBlockId,
+      );
+      if (!found) return prev;
+      insertedId = id;
+      return next;
+    });
+
+    if (insertedId) {
+      setSelectedBlockId(insertedId);
+      setActiveTab('settings');
+    }
+  }, [commitBlocks, setActiveTab]);
+
   const handleDelete = useCallback(
     (id: string) => {
       const shouldClearSelection =
@@ -376,6 +440,8 @@ export default function PageBuilder({
   // Keep keyboard-shortcut refs current (handlers defined above the listener)
   handleDeleteRef.current = handleDelete;
   handleDuplicateRef.current = handleDuplicate;
+  handleCopyRef.current = handleCopy;
+  handlePasteRef.current = handlePaste;
 
   const toggleSidebar = () => {
     setSidebarVisible(!sidebarVisible);
@@ -387,23 +453,26 @@ export default function PageBuilder({
    */
   const handleInsertTemplate = useCallback(
     (templateBlocks: BlockConfig[]) => {
-      // Generate new IDs for all blocks to avoid conflicts
-      const reIdBlocks = (blocks: BlockConfig[]): BlockConfig[] =>
-        blocks.map((block) => ({
-          ...block,
-          id: generateBlockId(),
-          children: block.children ? reIdBlocks(block.children) : undefined,
-        }));
-
-      const newBlocks = reIdBlocks(templateBlocks);
+      const newBlocks = reIdTemplateBlocks(templateBlocks);
       commitBlocks((prev) => [...prev, ...newBlocks]);
     },
     [commitBlocks],
   );
 
+  const handleApplyTemplateFromDesign = useCallback(
+    ({ blocks }: { templateId: string; blocks: BlockConfig[] }) => {
+      resetState(blocks);
+      onBlocksChange?.(blocks);
+      setSelectedBlockId(null);
+      setActiveTab('blocks');
+    },
+    [resetState, onBlocksChange],
+  );
+
   return (
     <div className="npb-editor-shell flex h-full bg-npb-canvas-bg">
       <PageProvider pageOther={data?.other as any}>
+        <DeviceViewProvider device={deviceView}>
         <BlockActionsProvider
         value={{
           selectedBlockId,
@@ -463,6 +532,8 @@ export default function PageBuilder({
             <BuilderTopBar
               data={data}
               isTemplate={isTemplate}
+              contentType={contentType ?? 'page'}
+              onApplyTemplate={handleApplyTemplateFromDesign}
               deviceView={deviceView}
               setDeviceView={setDeviceView}
               blocks={blocks}
@@ -497,6 +568,7 @@ export default function PageBuilder({
           contentType={resolvedContentType}
         />
       </BlockActionsProvider>
+        </DeviceViewProvider>
       </PageProvider>
     </div>
   );

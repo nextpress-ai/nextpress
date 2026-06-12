@@ -21,6 +21,7 @@ import {
   parseColumnsContent,
   serializeColumnsContent,
 } from "./columns-model";
+import { BlockShell } from "../shared/block-shell";
 import { ColumnsSettings } from "./columns-settings";
 
 // Re-exported for tests and external callers that import from this module.
@@ -80,7 +81,7 @@ function ColumnsRenderer({
   const containerStyle = buildColumnsContainerStyle(data, layout, styles);
 
   return (
-    <div className="wp-block-columns" style={containerStyle}>
+    <BlockShell blockClass="wp-block-columns" style={containerStyle}>
       {layout.map((column) => {
         const columnChildren = childBlocks.filter((child) =>
           column.blockIds.includes(child.id)
@@ -135,15 +136,17 @@ function ColumnsRenderer({
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
+                    className={
+                      snapshot.isDraggingOver
+                        ? "rounded border-2 border-solid border-npb-accent bg-npb-accent/5"
+                        : "rounded border-2 border-dashed border-npb-border-default"
+                    }
                     style={{
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: columnJustifyContent,
                       alignItems: columnAlignItems,
-                      minHeight: "60px",
-                      border: snapshot.isDraggingOver ? "2px solid #3b82f6" : "2px dashed #e2e8f0",
-                      borderRadius: "4px",
-                      background: snapshot.isDraggingOver ? "rgba(59,130,246,0.06)" : undefined,
+                      minHeight: "72px",
                       padding: "8px",
                       paddingBottom: columnChildren.length > 0 ? "20px" : "8px",
                     }}
@@ -189,8 +192,9 @@ function ColumnsRenderer({
                         </React.Fragment>
                       ))
                     ) : (
-                      <div className="text-center text-npb-text-muted p-8">
-                        <small>Drop blocks here</small>
+                      <div className="flex flex-1 flex-col items-center justify-center gap-1 p-6 text-center text-npb-text-muted">
+                        <GridIcon className="h-5 w-5 opacity-50" aria-hidden />
+                        <small className="text-xs">Drop blocks here</small>
                       </div>
                     )}
                     {columnChildren.length > 0 && snapshot.placeholderIndex === columnChildren.length && <DropPlaceholder />}
@@ -202,7 +206,7 @@ function ColumnsRenderer({
           </div>
         );
       })}
-    </div>
+    </BlockShell>
   );
 }
 

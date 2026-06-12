@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { useSettingsState } from '../useSettingsState';
 import { useBlockState } from '../useBlockState';
+import { BlockShell } from '../shared/block-shell';
 import { defaultParseContent, defaultSerializeContent } from '../createBlockDefinition';
 
 // ============================================================================
@@ -153,13 +154,11 @@ function PostTocRenderer({ content, styles, isPreview }: PostTocRendererProps) {
   const numbering = computeNumbering(entries);
   const ListTag = ordered ? 'ol' : 'ul';
 
-  const containerClassName = ['wp-block-post-toc', content?.className || '']
-    .filter(Boolean)
-    .join(' ');
-
   return (
-    <nav
-      className={containerClassName}
+    <BlockShell
+      as="nav"
+      blockClass="wp-block-post-toc"
+      className={content?.className}
       style={{
         border: '1px solid var(--npb-border-default)',
         borderRadius: 'var(--npb-radius-input)',
@@ -204,7 +203,7 @@ function PostTocRenderer({ content, styles, isPreview }: PostTocRendererProps) {
           ))}
         </ListTag>
       )}
-    </nav>
+    </BlockShell>
   );
 }
 

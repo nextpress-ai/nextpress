@@ -4,6 +4,7 @@ import { asyncHandler } from './shared/async-handler';
 import { updateCaddyConfig } from '../utils/caddy';
 import { getCaddyTlsHostnames, validateDomain } from '../utils/validate-domain';
 import { verifyDomainReadiness } from '../utils/verify-domain-readiness';
+import { seedDefaultContent } from '../seed-default-content';
 
 /**
  * Password validation: minimum 8 chars, 1 uppercase, 1 lowercase, 1 number
@@ -180,6 +181,8 @@ export function createSetupRoutes(deps: Deps): Router {
         site.id
       );
     }
+
+    await seedDefaultContent();
 
     // Update Caddyfile
     const caddyResult = await updateCaddyConfig(domain, { acmeEmail: email });

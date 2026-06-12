@@ -5,6 +5,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Code2 as HtmlIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -35,17 +36,11 @@ interface HtmlRendererProps {
 function HtmlRenderer({ content, styles, isPreview }: HtmlRendererProps) {
   const htmlContent = content?.content || '';
   
-  const className = [
-    "wp-block-html",
-    content?.className || "",
-  ].filter(Boolean).join(" ");
-
-  // In preview mode, render the HTML directly
-  // In edit mode, show it as code
   if (isPreview && htmlContent) {
     return (
-      <div
-        className={className}
+      <BlockShell
+        blockClass="wp-block-html"
+        className={content?.className}
         style={styles}
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }}
       />
@@ -53,7 +48,7 @@ function HtmlRenderer({ content, styles, isPreview }: HtmlRendererProps) {
   }
 
   return (
-    <div className={className} style={styles}>
+    <BlockShell blockClass="wp-block-html" className={content?.className} style={styles}>
       <div style={{
         backgroundColor: '#f8f9fa',
         padding: '1em',
@@ -67,7 +62,7 @@ function HtmlRenderer({ content, styles, isPreview }: HtmlRendererProps) {
       }}>
         {htmlContent || 'Enter custom HTML...'}
       </div>
-    </div>
+    </BlockShell>
   );
 }
 

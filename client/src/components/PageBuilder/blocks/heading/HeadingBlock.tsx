@@ -8,6 +8,7 @@ import { OptionButton, OptionGroup, SettingsLabel } from '../../shared';
 import * as React from "react";
 import type { JSX } from "react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -72,23 +73,6 @@ function getTextContent(content: HeadingContent): string {
   return content?.kind === "text" ? content.value : "";
 }
 
-/**
- * Build className string for heading element
- */
-function buildHeadingClassName(content: HeadingContent): string {
-  const classes = ["wp-block-heading"];
-
-  if (content.textAlign) {
-    classes.push(`has-text-align-${content.textAlign}`);
-  }
-
-  if (content.className) {
-    classes.push(content.className);
-  }
-
-  return classes.filter(Boolean).join(" ");
-}
-
 // ============================================================================
 // RENDERER
 // ============================================================================
@@ -102,9 +86,6 @@ function HeadingRenderer({ content, styles }: HeadingRendererProps) {
   const textContent = getTextContent(content);
   const level = content.level || 2;
   const Tag = `h${level}` as keyof JSX.IntrinsicElements;
-  const className = buildHeadingClassName(content);
-
-  // Apply default font size and weight per level unless explicitly overridden by styles
   const mergedStyles: React.CSSProperties = {
     fontSize: HEADING_FONT_SIZES[level],
     fontWeight: HEADING_FONT_WEIGHTS[level],
@@ -112,9 +93,20 @@ function HeadingRenderer({ content, styles }: HeadingRendererProps) {
   };
 
   return (
-    <Tag id={content.anchor} className={className} style={mergedStyles}>
+    <BlockShell
+      as={Tag}
+      blockClass="wp-block-heading"
+      className={[
+        content.textAlign ? `has-text-align-${content.textAlign}` : "",
+        content.className,
+      ]
+        .filter(Boolean)
+        .join(" ") || undefined}
+      style={mergedStyles}
+      id={content.anchor}
+    >
       {textContent}
-    </Tag>
+    </BlockShell>
   );
 }
 

@@ -6,6 +6,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { FileText as PreformattedIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -34,14 +35,11 @@ interface PreformattedRendererProps {
 function PreformattedRenderer({ content, styles }: PreformattedRendererProps) {
   const textContent = content?.content || '';
   
-  const className = [
-    "wp-block-preformatted",
-    content?.className || "",
-  ].filter(Boolean).join(" ");
-
   return (
-    <pre
-      className={className}
+    <BlockShell
+      as="pre"
+      blockClass="wp-block-preformatted"
+      className={content?.className}
       style={{
         fontFamily: 'Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace',
         fontSize: '14px',
@@ -57,7 +55,7 @@ function PreformattedRenderer({ content, styles }: PreformattedRendererProps) {
       }}
     >
       {textContent}
-    </pre>
+    </BlockShell>
   );
 }
 

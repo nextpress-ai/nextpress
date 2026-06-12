@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { PagesMenu, BlogMenu, DesignMenu } from "@/components/PageBuilder/EditorBar";
 import { useTheme } from "@/components/ThemeProvider";
+import type { BlockConfig } from "@shared/schema-types";
 
 export function BuilderTopBar({
   data,
@@ -30,6 +31,8 @@ export function BuilderTopBar({
   canUndo,
   canRedo,
   onPageSettingsClick,
+  contentType = "page",
+  onApplyTemplate,
 }: {
   data: any;
   isTemplate: boolean;
@@ -43,6 +46,11 @@ export function BuilderTopBar({
   canUndo?: boolean;
   canRedo?: boolean;
   onPageSettingsClick?: () => void;
+  contentType?: "post" | "page" | "template";
+  onApplyTemplate?: (params: {
+    templateId: string;
+    blocks: BlockConfig[];
+  }) => void;
 }) {
   const { isDark, toggleTheme } = useTheme();
   return (
@@ -92,6 +100,11 @@ export function BuilderTopBar({
             >
               <Smartphone className="w-4 h-4" />
             </Button>
+            {deviceView !== "desktop" ? (
+              <span className="text-xs text-npb-text-muted">
+                Style edits apply to {deviceView} only
+              </span>
+            ) : null}
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -120,7 +133,8 @@ export function BuilderTopBar({
 
           <DesignMenu
             currentPostId={data?.id}
-            currentType={isTemplate ? "template" : "post"}
+            currentType={contentType === "template" ? "template" : contentType}
+            onApplyTemplate={onApplyTemplate}
           >
             <Button variant="outline" size="sm" className="gap-2">
               <Palette className="w-4 h-4" />

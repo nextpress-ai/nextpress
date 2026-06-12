@@ -257,6 +257,11 @@ export interface BlockConfig {
 		animation?: BlockAnimation | null;
 		/** Z-order among siblings inside layout containers (group, container, columns, etc.). Higher draws on top. */
 		stackLayer?: number;
+		/** Per-device style overrides merged on top of `styles` in tablet/mobile preview. */
+		deviceStyles?: {
+			tablet?: CSSProperties;
+			mobile?: CSSProperties;
+		};
 	}
 }
 

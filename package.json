@@ -18,6 +18,7 @@
     "test:coverage": "vitest --coverage",
     "test:jest": "jest",
     "db:push": "drizzle-kit push",
+    "seed:defaults": "node dist/seed-default-content.js",
     "import:users": "tsx scripts/import-users.ts",
     "verify:users": "tsx scripts/verify-users.ts",
     "cli:build": "pnpm --filter @nextpress-org/cli build",

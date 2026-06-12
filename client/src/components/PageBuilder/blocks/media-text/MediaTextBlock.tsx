@@ -2,6 +2,7 @@ import React from "react";
 import { Image as ImageIcon } from "lucide-react";
 import { sanitizeHtml } from "../../utils";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { type MediaTextContent, type MediaTextData, DEFAULT_CONTENT, DEFAULT_DATA } from './media-text-model';
 import { MediaTextSettings } from './media-text-settings';
 
@@ -36,8 +37,7 @@ function MediaTextRenderer({ content, styles }: MediaTextRendererProps) {
     anchor,
   } = blockData;
 
-  const wrapperClasses = [
-    'wp-block-media-text',
+  const extraClassName = [
     mediaPosition === 'right' ? 'has-media-on-the-right' : '',
     isStackedOnMobile ? 'is-stacked-on-mobile' : '',
     imageFill ? 'is-image-fill' : '',
@@ -67,7 +67,12 @@ function MediaTextRenderer({ content, styles }: MediaTextRendererProps) {
   );
 
   return (
-    <div id={anchor} className={wrapperClasses} style={{ ...styles, display: 'flex', gap: '20px', alignItems }}>
+    <BlockShell
+      blockClass="wp-block-media-text"
+      className={extraClassName || undefined}
+      id={anchor}
+      style={{ ...styles, display: 'flex', gap: '20px', alignItems }}
+    >
       {mediaPosition === 'left' ? (
         <>
           {mediaContent}
@@ -79,7 +84,7 @@ function MediaTextRenderer({ content, styles }: MediaTextRendererProps) {
           {mediaContent}
         </>
       )}
-    </div>
+    </BlockShell>
   );
 }
 

@@ -13,6 +13,7 @@ import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { Image as ImageIcon, Settings } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
 import { createBlockDefinition } from '../createBlockDefinition';
+import { BlockShell } from '../shared/block-shell';
 
 // ============================================================================
 // TYPES
@@ -111,10 +112,6 @@ function PostFeaturedImageRenderer({
     className = '',
   } = content ?? {};
 
-  const wrapperClass = ['wp-block-post-featured-image', className]
-    .filter(Boolean)
-    .join(' ');
-
   const handleApply = () => {
     if (onChangeUrl && editUrl.trim()) {
       onChangeUrl(editUrl.trim());
@@ -125,7 +122,7 @@ function PostFeaturedImageRenderer({
   // Empty state — placeholder with dashed border
   if (!url) {
     return (
-      <figure className={wrapperClass} style={styles}>
+      <BlockShell as="figure" blockClass="wp-block-post-featured-image" className={className} style={styles}>
         <div
           className={
             `flex flex-col items-center justify-center gap-2 border-2 border-dashed border-npb-border-default rounded-lg bg-npb-surface-raised text-npb-text-muted ` +
@@ -145,13 +142,13 @@ function PostFeaturedImageRenderer({
             </div>
           )}
         </div>
-      </figure>
+      </BlockShell>
     );
   }
 
   // Image present — render with optional editor hover overlay
   return (
-    <figure className={wrapperClass} style={styles}>
+    <BlockShell as="figure" blockClass="wp-block-post-featured-image" className={className} style={styles}>
       <div
         className="relative w-full"
         style={{ aspectRatio }}
@@ -183,7 +180,7 @@ function PostFeaturedImageRenderer({
           {caption}
         </figcaption>
       )}
-    </figure>
+    </BlockShell>
   );
 }
 

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronDown, ChevronRight, LayoutTemplate, Plus } from "lucide-react";
+import { Link } from "wouter";
 import type { Template, BlockConfig } from "@shared/schema-types";
 import {
   NPB_TEMPLATE_LIST_NAME_MAX_CHARS,
@@ -71,9 +72,18 @@ export function TemplateLibrary({ onInsertTemplate }: TemplateLibraryProps) {
               Loading templates...
             </p>
           ) : templates.length === 0 ? (
-            <p className="text-xs text-npb-text-muted text-center py-4">
-              No templates available. Create one first.
-            </p>
+            <div className="space-y-2 px-1 py-4 text-center">
+              <p className="text-xs text-npb-text-muted">
+                No templates yet.
+              </p>
+              <Link
+                href="/admin/templates"
+                className="inline-flex items-center gap-1 text-xs font-medium text-npb-accent hover:underline"
+              >
+                <Plus className="h-3 w-3" />
+                Create a template
+              </Link>
+            </div>
           ) : (
             <ScrollArea className="max-h-64">
               <div className="space-y-1.5 pr-2">

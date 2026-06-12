@@ -54,9 +54,10 @@ The command does this:
 4. Compares `schemaVersion` with `previousSchemaVersion`.
 5. Starts PostgreSQL if needed.
 6. Creates a database backup under `<install-dir>/backups`.
-7. Runs `pnpm drizzle-kit migrate` from the target app image.
-8. Writes the target schema config into the install directory.
-9. Restarts the compose stack.
+7. Runs `pnpm drizzle-kit migrate` from the target app image when schema changes are declared.
+8. Seeds default templates and themes if missing (`node dist/seed-default-content.js`).
+9. Writes the target schema config into the install directory.
+10. Restarts the compose stack.
 
 If the installed schema already matches the target schema, the command updates the image version and restarts the stack without running migrations.
 

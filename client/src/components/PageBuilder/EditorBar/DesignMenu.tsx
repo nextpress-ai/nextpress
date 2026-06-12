@@ -1,5 +1,6 @@
 import { ReactNode, useState } from 'react';
-import { Layout, Palette, Loader2 } from 'lucide-react';
+import { Layout, Palette, Loader2, Plus } from 'lucide-react';
+import { Link } from 'wouter';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DropdownMenu,
@@ -13,47 +14,72 @@ import {
 import { useContentLists } from '@/hooks/useContentLists';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { reIdTemplateBlocks } from '@/lib/re-id-template-blocks';
+import type { BlockConfig } from '@shared/schema-types';
 
 interface DesignMenuProps {
   children: ReactNode;
   currentPostId?: string;
   currentType?: 'post' | 'page' | 'template';
+  onApplyTemplate?: (params: {
+    templateId: string;
+    blocks: BlockConfig[];
+  }) => void;
 }
 
 /**
- * DesignMenu - Dropdown for applying templates and themes
- * Phase 2: Full mutation support with loading states
+ * DesignMenu — apply real templates (blocks + FK) and activate themes.
  */
 export function DesignMenu({
   children,
   currentPostId,
-  currentType,
+  currentType = 'page',
+  onApplyTemplate,
 }: DesignMenuProps) {
   const { templates, themes } = useContentLists();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isApplying, setIsApplying] = useState(false);
 
-  // Mutation for applying template to current post/page
+  const contentEndpoint =
+    currentType === 'post'
+      ? `/api/posts/${currentPostId}`
+      : `/api/pages/${currentPostId}`;
+
   const applyTemplateMutation = useMutation({
     mutationFn: async ({ templateId }: { templateId: string }) => {
       if (!currentPostId) {
         throw new Error('No post/page selected');
       }
-      return await apiRequest('PUT', `/api/posts/${currentPostId}`, {
-        templateId,
-      });
+
+      const templateResponse = await apiRequest('GET', `/api/templates/${templateId}`);
+      const template = (await templateResponse.json()) as {
+        id: string;
+        name: string;
+        blocks?: BlockConfig[];
+      };
+
+      const blocks = reIdTemplateBlocks(
+        Array.isArray(template.blocks) ? template.blocks : [],
+      );
+
+      await apiRequest('PUT', contentEndpoint, { templateId, blocks });
+
+      return { templateId, blocks, templateName: template.name };
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/posts/${currentPostId}`] });
-      const template = templates.find((t) => t.id === variables.templateId);
+    onSuccess: (data) => {
+      onApplyTemplate?.({
+        templateId: data.templateId,
+        blocks: data.blocks,
+      });
+      queryClient.invalidateQueries({ queryKey: [contentEndpoint] });
       toast({
-        title: 'Template Applied',
-        description: `Successfully applied "${template?.name}" template`,
+        title: 'Template applied',
+        description: `"${data.templateName}" layout is now on this ${currentType}.`,
       });
       setIsApplying(false);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to apply template',
@@ -63,22 +89,22 @@ export function DesignMenu({
     },
   });
 
-  // Mutation for activating theme
   const activateThemeMutation = useMutation({
     mutationFn: async ({ themeId }: { themeId: string }) => {
       return await apiRequest('POST', `/api/themes/${themeId}/activate`, {});
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/themes'] });
       queryClient.invalidateQueries({ queryKey: ['/api/themes/active'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/site'] });
       const theme = themes.find((t) => t.id === variables.themeId);
       toast({
-        title: 'Theme Activated',
-        description: `Successfully activated "${theme?.name}" theme`,
+        title: 'Theme activated',
+        description: `"${theme?.name ?? 'Theme'}" is now active site-wide.`,
       });
       setIsApplying(false);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to activate theme',
@@ -88,11 +114,11 @@ export function DesignMenu({
     },
   });
 
-  const handleApplyTemplate = (templateId: string, templateName: string) => {
+  const handleApplyTemplate = (templateId: string) => {
     if (!currentPostId) {
       toast({
         title: 'Error',
-        description: 'No post/page selected for template application',
+        description: 'Save this content first, then apply a template.',
         variant: 'destructive',
       });
       return;
@@ -101,12 +127,11 @@ export function DesignMenu({
     applyTemplateMutation.mutate({ templateId });
   };
 
-  const handleApplyTheme = (themeId: string, themeName: string) => {
+  const handleApplyTheme = (themeId: string) => {
     setIsApplying(true);
     activateThemeMutation.mutate({ themeId });
   };
 
-  // Don't show design menu for templates
   if (currentType === 'template') {
     return null;
   }
@@ -115,16 +140,13 @@ export function DesignMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
-        {/* Templates Section */}
         <DropdownMenuLabel>Templates</DropdownMenuLabel>
         <DropdownMenuGroup>
           {templates.length > 0 ? (
             templates.slice(0, 5).map((template) => (
               <DropdownMenuItem
                 key={template.id}
-                onClick={() =>
-                  handleApplyTemplate(template.id, template.name)
-                }
+                onClick={() => handleApplyTemplate(template.id)}
                 disabled={isApplying || !currentPostId}>
                 {isApplying && applyTemplateMutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -135,24 +157,24 @@ export function DesignMenu({
               </DropdownMenuItem>
             ))
           ) : (
-            <DropdownMenuItem disabled>
-              <span className="text-sm text-muted-foreground">
-                No templates
-              </span>
+            <DropdownMenuItem asChild>
+              <Link href="/admin/templates" className="flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Create a template
+              </Link>
             </DropdownMenuItem>
           )}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
 
-        {/* Themes Section */}
         <DropdownMenuLabel>Themes</DropdownMenuLabel>
         <DropdownMenuGroup>
           {themes.length > 0 ? (
             themes.slice(0, 5).map((theme) => (
               <DropdownMenuItem
                 key={theme.id}
-                onClick={() => handleApplyTheme(theme.id, theme.name)}
+                onClick={() => handleApplyTheme(theme.id)}
                 disabled={isApplying}>
                 {isApplying && activateThemeMutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -163,8 +185,11 @@ export function DesignMenu({
               </DropdownMenuItem>
             ))
           ) : (
-            <DropdownMenuItem disabled>
-              <span className="text-sm text-muted-foreground">No themes</span>
+            <DropdownMenuItem asChild>
+              <Link href="/admin/themes" className="flex items-center gap-2">
+                <Palette className="w-4 h-4" />
+                Manage themes
+              </Link>
             </DropdownMenuItem>
           )}
         </DropdownMenuGroup>

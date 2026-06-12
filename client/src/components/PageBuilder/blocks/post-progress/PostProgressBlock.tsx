@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { useSettingsState } from '../useSettingsState';
 import { useBlockState } from '../useBlockState';
+import { BlockShell } from '../shared/block-shell';
 import { defaultParseContent, defaultSerializeContent } from '../createBlockDefinition';
 
 // ============================================================================
@@ -101,13 +102,6 @@ function PostProgressRenderer({
   const scrollProgress = useScrollProgress(!!isPreview);
   const fillWidth = isPreview ? scrollProgress : EDITOR_PREVIEW_FILL;
 
-  const containerClassName = [
-    'wp-block-post-progress',
-    content?.className || '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
   // --- Preview mode: fixed bar attached to viewport edge ---
   if (isPreview) {
     const positionStyles: React.CSSProperties = {
@@ -119,9 +113,11 @@ function PostProgressRenderer({
     };
 
     return (
-      <div
-        className={containerClassName}
-        style={{ ...positionStyles, height, backgroundColor, ...styles }}>
+      <BlockShell
+        blockClass="wp-block-post-progress"
+        className={content?.className}
+        style={{ ...positionStyles, height, backgroundColor, ...styles }}
+      >
         <div
           style={{
             height: '100%',
@@ -145,13 +141,13 @@ function PostProgressRenderer({
             {fillWidth}%
           </span>
         )}
-      </div>
+      </BlockShell>
     );
   }
 
   // --- Editor mode: inline static preview ---
   return (
-    <div className={containerClassName} style={styles}>
+    <BlockShell blockClass="wp-block-post-progress" className={content?.className} style={styles}>
       <div
         style={{
           position: 'relative',
@@ -184,7 +180,7 @@ function PostProgressRenderer({
           Fixed to viewport when published
         </span>
       </div>
-    </div>
+    </BlockShell>
   );
 }
 

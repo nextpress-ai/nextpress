@@ -1,16 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Square as CoverIcon, Settings } from "lucide-react";
-import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
+import { MediaUrlField } from "../shared/media-url-field";
 import { type CoverContent, type CoverData, DEFAULT_CONTENT, DEFAULT_DATA } from './cover-model';
 
 interface CoverSettingsProps {
@@ -20,7 +19,6 @@ interface CoverSettingsProps {
 
 export function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
   const { accessor, rerender } = useSettingsState({ block, onUpdate });
-  const [isPickerOpen, setPickerOpen] = useState(false);
 
   // Get current state
   const content = accessor
@@ -93,37 +91,21 @@ export function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
             </Select>
           </div>
 
-          <div>
-            <SettingsLabel htmlFor="cover-media">Background {blockData?.backgroundType === 'video' ? 'Video' : 'Image'}</SettingsLabel>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                id="cover-media"
-                value={blockData?.url || ''}
-                onChange={(e) => updateContent({ url: e.target.value })}
-                placeholder={`https://example.com/${blockData?.backgroundType === 'video' ? 'video.mp4' : 'image.jpg'}`}
-                className="h-9"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setPickerOpen(true)}
-              >
-                Choose
-              </Button>
-            </div>
-            <MediaPickerDialog
-              open={isPickerOpen}
-              onOpenChange={setPickerOpen}
-              kind={blockData?.backgroundType === 'video' ? 'video' : 'image'}
-              onSelect={(m) => {
-                updateContent({
-                  url: m.url,
-                  alt: blockData?.alt || m.alt || m.originalName || m.filename,
-                });
-              }}
-            />
-          </div>
+          <MediaUrlField
+            id="cover-media"
+            label={`Background ${blockData?.backgroundType === "video" ? "Video" : "Image"}`}
+            value={blockData?.url || ""}
+            kind={blockData?.backgroundType === "video" ? "video" : "image"}
+            libraryButtonLabel="Choose"
+            placeholder={`https://example.com/${blockData?.backgroundType === "video" ? "video.mp4" : "image.jpg"}`}
+            onChange={({ url }) => updateContent({ url })}
+            onLibrarySelect={({ item }) => {
+              updateContent({
+                url: item.url,
+                alt: blockData?.alt || item.alt || item.originalName || item.filename,
+              });
+            }}
+          />
 
           {blockData?.backgroundType === 'image' && (
             <div>

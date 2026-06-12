@@ -1,6 +1,7 @@
 import React from "react";
 import { Table as TableIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { sanitizeHtml } from "../../utils";
 import {
   type TableContent,
@@ -28,26 +29,29 @@ function TableRenderer({ content, styles }: TableRendererProps) {
   const hasFixedLayout = tableData?.hasFixedLayout || false;
   const caption = tableData?.caption || '';
 
-  const className = [
-    "wp-block-table",
-    hasFixedLayout ? 'has-fixed-layout' : '',
-    tableData?.className || "",
-  ].filter(Boolean).join(" ");
-
   if (body.length === 0) {
     return (
-      <div className={className} style={styles}>
+      <BlockShell
+        blockClass="wp-block-table"
+        className={[hasFixedLayout ? 'has-fixed-layout' : '', tableData?.className || ''].filter(Boolean).join(' ') || undefined}
+        style={styles}
+      >
         <div className="table-placeholder text-center text-npb-text-muted p-8 border-2 border-dashed border-npb-border-strong rounded">
           <TableIcon className="w-12 h-12 mx-auto mb-2" />
           <p>Table</p>
           <small>Add a table to display data</small>
         </div>
-      </div>
+      </BlockShell>
     );
   }
 
   return (
-    <figure className={className} style={styles}>
+    <BlockShell
+      as="figure"
+      blockClass="wp-block-table"
+      className={[hasFixedLayout ? 'has-fixed-layout' : '', tableData?.className || ''].filter(Boolean).join(' ') || undefined}
+      style={styles}
+    >
       <table style={{
         borderCollapse: 'collapse',
         width: '100%',
@@ -116,7 +120,7 @@ function TableRenderer({ content, styles }: TableRendererProps) {
           </tfoot>
         )}
       </table>
-    </figure>
+    </BlockShell>
   );
 }
 

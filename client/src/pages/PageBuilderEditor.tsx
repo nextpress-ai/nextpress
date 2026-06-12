@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Eye, Save, FileText, Settings2 } from 'lucide-react';
+import { AppLoadingShell } from '@/components/app-loading-shell';
 import AdminTopBar from '@/components/AdminTopBar';
 import AdminSidebar from '@/components/AdminSidebar';
 import PageBuilder from '@/components/PageBuilder/PageBuilder';
@@ -452,16 +453,11 @@ export default function PageBuilderEditor({
 
   if (isLoading || (data && !pageState.isInitialized)) {
     return (
-      <div className="flex h-screen">
+      <div className="flex h-screen bg-npb-canvas-bg">
         <AdminSidebar />
         <div className="flex-1 ml-40">
           <AdminTopBar />
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-npb-accent mx-auto mb-4"></div>
-              <p className="text-npb-text-secondary">Loading...</p>
-            </div>
-          </div>
+          <AppLoadingShell fullScreen={false} label="Loading…" />
         </div>
       </div>
     );
@@ -606,10 +602,8 @@ export default function PageBuilderEditor({
 
   const handlePreview = async () => {
     if (isTemplate) {
-      toast({
-        title: 'Preview',
-        description: 'Template preview is not available yet',
-      });
+      if (!data?.id) return;
+      window.open(`/preview/template/${data.id}`, '_blank');
       return;
     }
 
@@ -730,8 +724,9 @@ export default function PageBuilderEditor({
               version: isInlineEditing ? 0 : data.version,
             }}
             onPageMetaChange={handlePageMetaChange}
-            currentPostId={inlinePostId || (isPost ? data?.id : undefined)}
-            contentType={isTemplate ? 'page' : type}
+            currentPostId={inlinePostId || data?.id}
+            contentType={isTemplate ? 'template' : type}
+            isTemplateEditor={isTemplate}
           />
         </div>
       </div>

@@ -56,16 +56,12 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#cbd6e2]">
+      <div className="min-h-screen bg-npb-canvas-bg">
         <div className="mx-auto flex min-h-screen max-w-4xl items-center justify-center px-6 py-12">
           <div className="w-full animate-pulse space-y-5">
-            <div className="h-10 rounded bg-black/10 sm:h-14"></div>
-            <div className="h-4 rounded bg-black/10"></div>
-            <div className="h-4 w-4/5 rounded bg-black/10"></div>
-            <div className="mt-10 grid gap-4 sm:grid-cols-2">
-              <div className="h-32 rounded-2xl bg-white/35"></div>
-              <div className="h-32 rounded-2xl bg-white/35"></div>
-            </div>
+            <div className="h-10 rounded bg-npb-border-subtle sm:h-14" />
+            <div className="h-4 rounded bg-npb-border-subtle" />
+            <div className="h-4 w-4/5 rounded bg-npb-border-subtle" />
           </div>
         </div>
       </div>
@@ -78,19 +74,19 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
     }
 
     return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="min-h-screen bg-npb-surface-base">
+        <div className="mx-auto max-w-4xl px-6 py-12">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-            <h2 className="text-xl text-gray-600 mb-8">
+            <h1 className="mb-4 text-4xl font-bold text-npb-text-primary">404</h1>
+            <h2 className="mb-8 text-xl text-npb-text-secondary">
               {`${type.charAt(0).toUpperCase() + type.slice(1)} not found`}
             </h2>
-            <p className="text-gray-500 mb-8">
+            <p className="mb-8 text-npb-text-muted">
               {`The ${type} you're looking for doesn't exist or hasn't been published yet.`}
             </p>
-            <a 
-              href="/" 
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            <a
+              href="/"
+              className="inline-flex items-center rounded-lg bg-npb-interactive-bg-active px-4 py-2 text-npb-interactive-text-active transition-colors hover:opacity-90"
               data-testid="link-home"
             >
               Go to Homepage

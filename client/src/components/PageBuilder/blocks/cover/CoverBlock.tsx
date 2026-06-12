@@ -2,6 +2,7 @@ import React from "react";
 import { Square as CoverIcon } from "lucide-react";
 import { sanitizeHtml } from "../../utils";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { type CoverContent, type CoverData, DEFAULT_CONTENT, DEFAULT_DATA } from './cover-model';
 import { CoverSettings } from './cover-settings';
 
@@ -31,8 +32,7 @@ function CoverRenderer({ content, styles }: CoverRendererProps) {
   const focalPoint = blockData?.focalPoint || { x: 0.5, y: 0.5 };
   const innerContent = blockData?.innerContent || '<p>Write title…</p>';
 
-  const className = [
-    "wp-block-cover",
+  const extraClassName = [
     hasParallax ? 'has-parallax' : '',
     backgroundType === 'video' ? 'has-background-video' : '',
     blockData?.className || "",
@@ -61,8 +61,9 @@ function CoverRenderer({ content, styles }: CoverRendererProps) {
   })();
 
   return (
-    <div
-      className={className}
+    <BlockShell
+      blockClass="wp-block-cover"
+      className={extraClassName || undefined}
       style={{
         position: 'relative',
         minHeight: `${minHeight}px`,
@@ -124,7 +125,7 @@ function CoverRenderer({ content, styles }: CoverRendererProps) {
           }}
         />
       </div>
-    </div>
+    </BlockShell>
   );
 }
 

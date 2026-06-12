@@ -6,6 +6,7 @@ import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { Type, Settings } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
 import { createBlockDefinition } from '../createBlockDefinition';
+import { BlockShell } from '../shared/block-shell';
 
 // ============================================================================
 // TYPES
@@ -30,19 +31,6 @@ const HEADING_TAG_OPTIONS = [
 ] as const;
 
 // ============================================================================
-// UTILITIES
-// ============================================================================
-
-/**
- * Build className string for the post title element.
- */
-function buildTitleClassName(content: PostTitleContent): string {
-  return ['wp-block-post-title', content?.className || '']
-    .filter(Boolean)
-    .join(' ');
-}
-
-// ============================================================================
 // RENDERER
 // ============================================================================
 
@@ -59,9 +47,12 @@ interface PostTitleRendererProps {
 function PostTitleRenderer({ content, styles }: PostTitleRendererProps) {
   const text = content?.text || 'Post Title';
   const tag = content?.tag || 'h1';
-  const className = buildTitleClassName(content);
 
-  return React.createElement(tag, { className, style: styles }, text);
+  return (
+    <BlockShell as={tag} blockClass="wp-block-post-title" className={content?.className} style={styles}>
+      {text}
+    </BlockShell>
+  );
 }
 
 // ============================================================================

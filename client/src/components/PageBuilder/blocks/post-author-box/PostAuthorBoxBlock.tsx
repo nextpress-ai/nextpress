@@ -16,6 +16,7 @@ import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { UserCircle, Settings, Wrench } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
 import { createBlockDefinition } from '../createBlockDefinition';
+import { BlockShell } from '../shared/block-shell';
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -58,18 +59,17 @@ const LAYOUT_OPTIONS = [
   { value: 'vertical' as const, label: 'Vertical' },
 ] as const;
 
-/** Build className string for the author box wrapper. */
+/** Build extra className modifiers for the author box wrapper. */
 function buildAuthorBoxClassName(
   content: PostAuthorBoxContent,
   layout: 'horizontal' | 'vertical',
-): string {
+): string | undefined {
   return [
-    'wp-block-post-author-box',
     layout === 'vertical' ? 'author-box--vertical' : 'author-box--horizontal',
     content?.className || '',
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(' ') || undefined;
 }
 
 /** Fetch author data from the API in preview mode. Returns null while loading or without authorId. */
@@ -159,7 +159,7 @@ function PostAuthorBoxRenderer({
   );
 
   return (
-    <div className={className} style={styles}>
+    <BlockShell blockClass="wp-block-post-author-box" className={className} style={styles}>
       <div
         className={
           isVertical
@@ -169,7 +169,7 @@ function PostAuthorBoxRenderer({
         {avatarElement}
         {textElement}
       </div>
-    </div>
+    </BlockShell>
   );
 }
 

@@ -677,6 +677,7 @@ async function initializeDefaultThemes() {
 			version: "1.0.0",
 			requires: "1.0.0",
 			status: "active",
+			renderer: "custom",
 			settings: {
 				colors: {
 					primary: "#0073aa",
@@ -700,6 +701,11 @@ async function initializeDefaultThemes() {
 		});
 
 		console.log("Default theme initialized:", customSSRTheme.name);
+
+		const site = await models.sites.findDefaultSite();
+		if (site) {
+			await models.sites.update(site.id, { activeThemeId: customSSRTheme.id });
+		}
 	}
 }
 

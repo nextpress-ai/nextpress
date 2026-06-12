@@ -27,9 +27,10 @@ import {
   resolveCreatePageError,
 } from "@/lib/sonner-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { reIdTemplateBlocks } from "@/lib/re-id-template-blocks";
 import { useContentLists } from "@/hooks/useContentLists";
 import { FilePlus } from "lucide-react";
-import type { Page } from "@shared/schema-types";
+import type { Page, BlockConfig } from "@shared/schema-types";
 
 interface CreatePageModalProps {
   open: boolean;
@@ -163,11 +164,18 @@ export function CreatePageModal({
         }
       }
 
+      const selectedTemplate = data.templateId
+        ? templates.find((template) => template.id === data.templateId)
+        : undefined;
+      const starterBlocks = selectedTemplate?.blocks
+        ? reIdTemplateBlocks(selectedTemplate.blocks as BlockConfig[])
+        : [];
+
       const payload = {
         title: data.title || "Untitled",
         slug: data.slug || generateSlug(data.title) || `untitled-${Date.now()}`,
         status: "draft", // Always draft on creation
-        blocks: [], // Always empty on creation
+        blocks: starterBlocks,
         allowComments: data.allowComments,
         password: data.password || undefined,
         parentId: data.parentId || undefined,
@@ -435,6 +443,7 @@ export function CreatePageModal({
 
           <div className="grid gap-2">
             <Label htmlFor="templateId">Template</Label>
+            {templates.length > 0 ? (
             <Select
               value={formData.templateId || "__none__"}
               onValueChange={(value) =>
@@ -445,10 +454,10 @@ export function CreatePageModal({
               }
             >
               <SelectTrigger id="templateId">
-                <SelectValue placeholder="Default Template" />
+                <SelectValue placeholder="None" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">Default Template</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {templates.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
                     {template.name}
@@ -456,6 +465,11 @@ export function CreatePageModal({
                 ))}
               </SelectContent>
             </Select>
+            ) : (
+              <p className="text-sm text-npb-text-muted">
+                No templates yet. The page will start empty.
+              </p>
+            )}
           </div>
         </div>
 

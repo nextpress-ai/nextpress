@@ -1,16 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { File as FileIcon, Download, Settings } from "lucide-react";
-import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
+import { MediaUrlField } from "../shared/media-url-field";
+import { LinkTargetSelect } from "../shared/link-settings";
 
 // ============================================================================
 // TYPES
@@ -83,28 +82,23 @@ function FileRenderer({ content, styles }: FileRendererProps) {
   const downloadButtonText = blockData?.downloadButtonText || 'Download';
   const displayPreview = blockData?.displayPreview !== false;
   
-  const className = [
-    "wp-block-file",
-    blockData?.className || "",
-  ].filter(Boolean).join(" ");
-
-  const fileExtension = fileName ? fileName.split('.').pop()?.toUpperCase() : '';
-  const fileSize = blockData?.fileSize || '';
-
   if (!url) {
     return (
-      <div className={className} style={styles}>
+      <BlockShell blockClass="wp-block-file" className={blockData?.className} style={styles}>
         <div className="file-placeholder text-center text-npb-text-muted p-8 border-2 border-dashed border-npb-border-default rounded">
           <FileIcon className="w-12 h-12 mx-auto mb-2" />
           <p>File Block</p>
           <small>Add a file for users to download</small>
         </div>
-      </div>
+      </BlockShell>
     );
   }
 
+  const fileExtension = fileName ? fileName.split('.').pop()?.toUpperCase() : '';
+  const fileSize = blockData?.fileSize || '';
+
   return (
-    <div className={className} style={styles}>
+    <BlockShell blockClass="wp-block-file" className={blockData?.className} style={styles}>
       <div className="wp-block-file__content-wrapper">
         {displayPreview && (
           <div className="wp-block-file__preview">
@@ -157,7 +151,7 @@ function FileRenderer({ content, styles }: FileRendererProps) {
           </div>
         )}
       </div>
-    </div>
+    </BlockShell>
   );
 }
 
@@ -172,7 +166,6 @@ interface FileSettingsProps {
 
 function FileSettings({ block, onUpdate }: FileSettingsProps) {
   const { accessor, rerender } = useSettingsState({ block, onUpdate });
-  const [isPickerOpen, setPickerOpen] = useState(false);
 
   // Get current state
   const content = accessor
@@ -218,39 +211,23 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
       {/* Content Card */}
       <CollapsibleCard title="Content" icon={FileIcon} defaultOpen={true}>
         <div className="space-y-4">
-          <div>
-            <SettingsLabel htmlFor="file-url">File URL</SettingsLabel>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                id="file-url"
-                value={blockData?.href || ''}
-                onChange={(e) => updateContent({ href: e.target.value, textLinkHref: e.target.value })}
-                placeholder="https://example.com/document.pdf"
-                className="h-9"
-              />
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm"
-                onClick={() => setPickerOpen(true)}
-              >
-                Choose
-              </Button>
-            </div>
-            <MediaPickerDialog
-              open={isPickerOpen}
-              onOpenChange={setPickerOpen}
-              kind="any"
-              onSelect={(m) => {
-                updateContent({
-                  href: m.url,
-                  textLinkHref: m.url,
-                  fileName: m.originalName || m.filename,
-                  fileSize: m.size ? formatFileSize(m.size) : '',
-                });
-              }}
-            />
-          </div>
+          <MediaUrlField
+            id="file-url"
+            label="File URL"
+            value={blockData?.href || ""}
+            kind="any"
+            libraryButtonLabel="Choose"
+            placeholder="https://example.com/document.pdf"
+            onChange={({ url }) => updateContent({ href: url, textLinkHref: url })}
+            onLibrarySelect={({ item }) => {
+              updateContent({
+                href: item.url,
+                textLinkHref: item.url,
+                fileName: item.originalName || item.filename,
+                fileSize: item.size ? formatFileSize(item.size) : "",
+              });
+            }}
+          />
 
           <div>
             <SettingsLabel htmlFor="file-name">File Name</SettingsLabel>
@@ -310,21 +287,12 @@ function FileSettings({ block, onUpdate }: FileSettingsProps) {
             </div>
           )}
 
-          <div>
-            <SettingsLabel htmlFor="file-link-target">Link Target</SettingsLabel>
-            <Select
-              value={blockData?.textLinkTarget || '_self'}
-              onValueChange={(value) => updateContent({ textLinkTarget: value as '_self' | '_blank' })}
-            >
-              <SelectTrigger id="file-link-target" className="h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_self">Same Window</SelectItem>
-                <SelectItem value="_blank">New Window</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <LinkTargetSelect
+            id="file-link-target"
+            label="Link Target"
+            value={blockData?.textLinkTarget}
+            onChange={({ target }) => updateContent({ textLinkTarget: target })}
+          />
         </div>
       </CollapsibleCard>
 

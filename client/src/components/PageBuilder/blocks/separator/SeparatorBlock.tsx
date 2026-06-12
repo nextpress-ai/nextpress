@@ -5,6 +5,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Minus as SeparatorIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -29,14 +30,11 @@ interface SeparatorRendererProps {
 }
 
 function SeparatorRenderer({ content, styles }: SeparatorRendererProps) {
-  const className = [
-    "wp-block-separator",
-    content?.className || "",
-  ].filter(Boolean).join(" ");
-
   return (
-    <hr
-      className={className}
+    <BlockShell
+      as="hr"
+      blockClass="wp-block-separator"
+      className={content?.className}
       style={{
         ...styles,
         border: "none",

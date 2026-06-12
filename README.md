@@ -184,7 +184,7 @@ These are bugs we are tracking and fixing:
 | Posts do not save content or slug | Root cause fixed (block deselection); needs in-app verification |
 | Cannot set page as homepage | Pending fix |
 | Error creating duplicated page | In progress |
-| Columns do not fit content properly | In progress |
+| Columns do not fit content properly | Fixed |
 | Comments | Needs polish |
 | Media support (SVG, resize) | Needs polish |
 

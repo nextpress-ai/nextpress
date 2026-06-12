@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { SettingsLabel } from "../../shared";
 
-type MediaKind = "image" | "video" | "audio";
+type MediaKind = "image" | "video" | "audio" | "any";
 
 type MediaUrlFieldProps = {
   id: string;

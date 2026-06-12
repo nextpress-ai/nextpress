@@ -35,6 +35,9 @@ export function useUndoRedo<T>(initialState: T) {
     (newState: T) => {
       setHistory((prevHistory) => {
         const idx = currentIndexRef.current;
+        if (prevHistory[idx] === newState) {
+          return prevHistory;
+        }
         // Remove any states after current index (when undoing then making new change)
         const newHistory = prevHistory.slice(0, idx + 1);
         newHistory.push(newState);

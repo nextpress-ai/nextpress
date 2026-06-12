@@ -9,6 +9,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Settings, List as ListIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -73,24 +74,29 @@ function ListRenderer({ content, styles }: ListRendererProps) {
     ...(listType && !isOrdered ? { listStyleType: listType as React.CSSProperties['listStyleType'] } : {}),
   };
 
-  const commonProps: any = {
+  const commonProps = {
     style,
     ...(anchor ? { id: anchor } : {}),
-    ...(className ? { className } : {}),
     dangerouslySetInnerHTML: { __html: sanitizeHtml(valuesHtml) },
   };
 
   // For ordered lists, support HTML attributes reversed/start and type
   if (isOrdered) {
-    if (typeof start === 'number') commonProps.start = start;
-    if (reversed) commonProps.reversed = true;
-    // For ordered lists, `type` can be one of '1', 'a', 'A', 'i', 'I'
+    if (typeof start === 'number') (commonProps as Record<string, unknown>).start = start;
+    if (reversed) (commonProps as Record<string, unknown>).reversed = true;
     if (listType && ['1', 'a', 'A', 'i', 'I'].includes(listType)) {
-      commonProps.type = listType;
+      (commonProps as Record<string, unknown>).type = listType;
     }
   }
 
-  return <ListTag {...commonProps} />;
+  return (
+    <BlockShell
+      as={ListTag}
+      blockClass="wp-block-list"
+      className={className}
+      {...commonProps}
+    />
+  );
 }
 
 // ============================================================================

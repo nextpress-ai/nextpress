@@ -5,6 +5,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { MousePointer, Type, Link, Smile, X } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
 import { LinkTargetChips } from "../shared/link-settings";
 import { IconRenderer } from "../shared/IconRenderer";
@@ -80,7 +81,7 @@ function ButtonRenderer({ content, styles, isPreview }: ButtonRendererProps) {
   const iconPosition = content?.iconPosition || 'left';
   const iconOnly = content?.iconOnly || false;
 
-  const wrapperClass = ["wp-block-button", extraClass].filter(Boolean).join(" ");
+  const wrapperClass = extraClass || undefined;
   const anchorClass = "wp-block-button__link wp-element-button";
 
   const iconElement = icon ? (
@@ -105,7 +106,12 @@ function ButtonRenderer({ content, styles, isPreview }: ButtonRendererProps) {
     "center";
 
   return (
-    <div className={wrapperClass} role="presentation" onClick={(e) => (isPreview ? undefined : e.preventDefault())}>
+    <BlockShell
+      blockClass="wp-block-button"
+      className={wrapperClass}
+      role="presentation"
+      onClick={(e) => (isPreview ? undefined : e.preventDefault())}
+    >
       <a
         href={url}
         target={linkTarget}
@@ -124,7 +130,7 @@ function ButtonRenderer({ content, styles, isPreview }: ButtonRendererProps) {
         {!iconOnly && textContent}
         {iconElement && iconPosition === 'right' && iconElement}
       </a>
-    </div>
+    </BlockShell>
   );
 }
 

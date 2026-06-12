@@ -316,6 +316,48 @@ export function duplicateBlockDeep(rootBlocks: BlockConfig[], targetId: string, 
   return { found, next, duplicatedId };
 }
 
+/** Inserts a cloned block immediately after `targetId` at the same tree level. */
+export function insertBlockAfterDeep(
+  rootBlocks: BlockConfig[],
+  targetId: string,
+  block: BlockConfig,
+  generateBlockId: () => string = generateId,
+): { found: boolean; next: BlockConfig[]; insertedId: string } {
+  let insertedId = block.id;
+
+  function remapIds(blk: BlockConfig): void {
+    blk.id = generateBlockId();
+    insertedId = blk.id;
+    if (Array.isArray(blk.children)) blk.children.forEach(remapIds);
+  }
+
+  const clone = structuredClone(block) as BlockConfig;
+  remapIds(clone);
+
+  function walk(list: BlockConfig[]): { next: BlockConfig[]; found: boolean } {
+    for (let i = 0; i < list.length; i++) {
+      const b = list[i];
+      if (b.id === targetId) {
+        const next = [...list];
+        next.splice(i + 1, 0, clone);
+        return { next, found: true };
+      }
+      if (Array.isArray(b.children)) {
+        const childRes = walk(b.children);
+        if (childRes.found) {
+          const next = [...list];
+          next[i] = { ...b, children: childRes.next };
+          return { next, found: true };
+        }
+      }
+    }
+    return { next: list, found: false };
+  }
+
+  const { next, found } = walk(rootBlocks);
+  return { found, next, insertedId };
+}
+
 /**
  * Recursively set parentId for all blocks in the tree
  * @param blocks Array of blocks to process
