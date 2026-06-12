@@ -80,7 +80,7 @@ function AudioRenderer({ content, styles }: AudioRendererProps) {
 
   if (!audioUrl) {
     return (
-      <div className="p-4 border border-dashed border-gray-300 rounded text-gray-500">
+      <div className="rounded-[var(--npb-radius-surface)] border border-dashed border-npb-border-strong p-4 text-npb-text-muted">
         Add an audio source URL to preview the player.
       </div>
     );

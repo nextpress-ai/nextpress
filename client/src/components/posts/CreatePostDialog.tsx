@@ -260,12 +260,12 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
           <div className="grid gap-2">
             <Label htmlFor="blog-select">Blog</Label>
             {blogsLoading ? (
-              <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+              <div className="flex items-center gap-2 text-sm text-npb-text-muted py-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Loading blogs...
               </div>
             ) : blogs.length === 0 ? (
-              <div className="text-sm text-gray-500 py-2">
+              <div className="text-sm text-npb-text-muted py-2">
                 No blogs yet.{" "}
                 <Button
                   variant="link"

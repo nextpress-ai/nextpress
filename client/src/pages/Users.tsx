@@ -264,10 +264,10 @@ export default function Users() {
 															</AvatarFallback>
 														</Avatar>
 														<div>
-															<div className="font-medium text-wp-gray">
+															<div className="font-medium text-npb-text-primary">
 																{user.firstName} {user.lastName}
 															</div>
-															<div className="text-sm text-gray-500">
+															<div className="text-sm text-npb-text-muted">
 																@{user.username}
 															</div>
 														</div>
@@ -276,7 +276,7 @@ export default function Users() {
 												<TableCell>
 													<a
 														href={`mailto:${user.email}`}
-														className="text-wp-blue hover:underline flex items-center"
+														className="text-npb-accent hover:underline flex items-center"
 													>
 														<Mail className="w-4 h-4 mr-1" />
 														{user.email}
@@ -317,8 +317,8 @@ export default function Users() {
 					</Card>
 
 					{/* User Roles Info */}
-					<div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
-						<h3 className="text-lg font-semibold text-wp-gray mb-4">
+					<div className="mt-8 rounded-[var(--npb-radius-surface)] bg-npb-surface-inset p-6">
+						<h3 className="text-lg font-semibold text-npb-text-primary mb-4">
 							User Roles & Capabilities
 						</h3>
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -371,21 +371,21 @@ export default function Users() {
 									capabilities: ["Read posts", "Edit profile", "View comments"],
 								},
 							].map((role, index) => (
-								<div key={index} className="bg-white p-4 rounded border">
+								<div key={index} className="rounded-[var(--npb-radius-surface)] bg-npb-surface-base p-4">
 									<div className="flex items-center space-x-2 mb-2">
-										<h4 className="font-medium text-wp-gray">{role.role}</h4>
+										<h4 className="font-medium text-npb-text-primary">{role.role}</h4>
 										{getRoleBadge(role.role.toLowerCase())}
 									</div>
-									<p className="text-sm text-gray-600 mb-3">
+									<p className="text-sm text-npb-text-secondary mb-3">
 										{role.description}
 									</p>
 									<div className="space-y-1">
 										{role.capabilities.map((capability, capIndex) => (
 											<div
 												key={capIndex}
-												className="text-xs text-gray-500 flex items-center"
+												className="text-xs text-npb-text-muted flex items-center"
 											>
-												<span className="w-1 h-1 bg-wp-blue rounded-full mr-2"></span>
+												<span className="w-1 h-1 bg-npb-accent rounded-full mr-2"></span>
 												{capability}
 											</div>
 										))}
@@ -563,7 +563,7 @@ export default function Users() {
 								</Button>
 								<Button
 									type="submit"
-									className="bg-wp-blue hover:bg-wp-blue-dark"
+									className="bg-npb-accent hover:bg-npb-accent-hover"
 									disabled={
 										createMutation.isPending || updateMutation.isPending
 									}

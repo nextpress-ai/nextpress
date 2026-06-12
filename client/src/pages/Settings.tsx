@@ -161,12 +161,12 @@ function SiteHomepageField({
   onSelectSlug: (slug: string) => void;
 }) {
   return (
-    <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+    <div className="space-y-3 rounded-lg border border-npb-border-default bg-npb-surface-inset/80 p-4">
       <div className="flex items-start gap-3">
-        <Home className="mt-0.5 h-5 w-5 shrink-0 text-wp-blue" aria-hidden />
+        <Home className="mt-0.5 h-5 w-5 shrink-0 text-npb-accent" aria-hidden />
         <div className="min-w-0 flex-1 space-y-2">
           <Label htmlFor={selectId}>Site homepage</Label>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-npb-text-secondary">
             Published page shown at the site root (<span className="font-mono text-xs">/</span>
             ). Choose &quot;Default landing page&quot; to show the built-in landing until you select a page.
           </p>
@@ -182,7 +182,7 @@ function SiteHomepageField({
                 : '__none__'
             }
           >
-            <SelectTrigger id={selectId} className="max-w-md bg-white">
+            <SelectTrigger id={selectId} className="max-w-md bg-npb-surface-base">
               <SelectValue placeholder="Select homepage" />
             </SelectTrigger>
             <SelectContent>
@@ -793,10 +793,10 @@ export default function Settings() {
 
             {/* General Settings */}
             <TabsContent value="general">
-              <Card>
+              <Card className="admin-surface">
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Globe className="w-5 h-5 mr-2 text-wp-blue" />
+                    <Globe className="w-5 h-5 mr-2 text-npb-accent" />
                     General Settings
                   </CardTitle>
                 </CardHeader>
@@ -912,7 +912,7 @@ export default function Settings() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-npb-text-muted">
                         Your site's timezone for date and time display
                       </p>
                       {getFieldError('general.timezone') && (
@@ -941,7 +941,7 @@ export default function Settings() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-npb-text-muted">
                         Preview: {safeFormatDate(formData.general.dateFormat)}
                       </p>
                       {getFieldError('general.dateFormat') && (
@@ -970,7 +970,7 @@ export default function Settings() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-npb-text-muted">
                         Preview: {safeFormatDate(formData.general.timeFormat)}
                       </p>
                       {getFieldError('general.timeFormat') && (
@@ -1026,7 +1026,7 @@ export default function Settings() {
                         ) : logoPreview ? (
                           /* Show preview with upload/cancel buttons */
                           <div className="space-y-3">
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                            <div className="border-2 border-dashed border-npb-border-strong rounded-lg p-4">
                               <img
                                 src={logoPreview}
                                 alt="Logo preview"
@@ -1038,7 +1038,7 @@ export default function Settings() {
                                 type="button"
                                 onClick={() => handleFileUpload('logo')}
                                 disabled={uploadingLogo}
-                                className="bg-wp-blue hover:bg-wp-blue-dark text-white"
+                                className="bg-npb-accent hover:bg-npb-accent-hover text-white"
                               >
                                 <Upload className="w-4 h-4 mr-2" />
                                 {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
@@ -1058,7 +1058,7 @@ export default function Settings() {
                           /* Show dropzone */
                           <div
                             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                              logoDragActive ? 'border-wp-blue bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                              logoDragActive ? 'border-npb-accent bg-npb-accent/10' : 'border-npb-border-strong hover:border-npb-border-default'
                             }`}
                             onDrop={(e) => handleDrop(e, 'logo')}
                             onDragOver={(e) => handleDragOver(e, 'logo')}
@@ -1072,18 +1072,18 @@ export default function Settings() {
                               className="hidden"
                               accept="image/*"
                             />
-                            <ImageIcon className={`mx-auto w-12 h-12 mb-4 ${logoDragActive ? 'text-wp-blue' : 'text-gray-400'}`} />
+                            <ImageIcon className={`mx-auto w-12 h-12 mb-4 ${logoDragActive ? 'text-npb-accent' : 'text-npb-text-muted'}`} />
                             <p className="text-lg font-medium mb-2">
                               {logoDragActive ? 'Drop logo here' : 'Drag & drop logo here'}
                             </p>
-                            <p className="text-gray-500 mb-4">or click to browse</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-npb-text-muted mb-4">or click to browse</p>
+                            <p className="text-xs text-npb-text-muted">
                               Supported: PNG, JPG, SVG (Max 5MB)
                             </p>
                           </div>
                         )}
                         
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-npb-text-muted">
                           Recommended size: 200x60px or similar aspect ratio
                         </p>
                       </div>
@@ -1126,7 +1126,7 @@ export default function Settings() {
                       ) : faviconPreview ? (
                         /* Show preview with upload/cancel buttons */
                         <div className="space-y-3">
-                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                          <div className="border-2 border-dashed border-npb-border-strong rounded-lg p-4">
                             <img
                               src={faviconPreview}
                               alt="Favicon preview"
@@ -1138,7 +1138,7 @@ export default function Settings() {
                               type="button"
                               onClick={() => handleFileUpload('favicon')}
                               disabled={uploadingFavicon}
-                              className="bg-wp-blue hover:bg-wp-blue-dark text-white"
+                              className="bg-npb-accent hover:bg-npb-accent-hover text-white"
                             >
                               <Upload className="w-4 h-4 mr-2" />
                               {uploadingFavicon ? 'Uploading...' : 'Upload Favicon'}
@@ -1158,7 +1158,7 @@ export default function Settings() {
                         /* Show dropzone */
                         <div
                           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                            faviconDragActive ? 'border-wp-blue bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                            faviconDragActive ? 'border-npb-accent bg-npb-accent/10' : 'border-npb-border-strong hover:border-npb-border-default'
                           }`}
                           onDrop={(e) => handleDrop(e, 'favicon')}
                           onDragOver={(e) => handleDragOver(e, 'favicon')}
@@ -1172,18 +1172,18 @@ export default function Settings() {
                             className="hidden"
                             accept="image/*,.ico"
                           />
-                          <ImageIcon className={`mx-auto w-12 h-12 mb-4 ${faviconDragActive ? 'text-wp-blue' : 'text-gray-400'}`} />
+                          <ImageIcon className={`mx-auto w-12 h-12 mb-4 ${faviconDragActive ? 'text-npb-accent' : 'text-npb-text-muted'}`} />
                           <p className="text-lg font-medium mb-2">
                             {faviconDragActive ? 'Drop favicon here' : 'Drag & drop favicon here'}
                           </p>
-                          <p className="text-gray-500 mb-4">or click to browse</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-npb-text-muted mb-4">or click to browse</p>
+                          <p className="text-xs text-npb-text-muted">
                             Supported: PNG, ICO (Max 5MB)
                           </p>
                         </div>
                       )}
                       
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-npb-text-muted">
                         Recommended: 32x32px or 16x16px .ico or .png file
                       </p>
                     </div>
@@ -1211,7 +1211,7 @@ export default function Settings() {
                           )}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-npb-text-muted">
                         Choose the theme for your site's frontend
                       </p>
                     </div>
@@ -1223,10 +1223,10 @@ export default function Settings() {
 
             {/* Writing Settings */}
             <TabsContent value="writing">
-              <Card>
+              <Card className="admin-surface">
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Code className="w-5 h-5 mr-2 text-wp-blue" />
+                    <Code className="w-5 h-5 mr-2 text-npb-accent" />
                     Writing Settings
                   </CardTitle>
                 </CardHeader>
@@ -1235,7 +1235,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Enable Rich Text Editor</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Use visual editor for posts and pages
                         </p>
                       </div>
@@ -1250,7 +1250,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Auto-save Posts</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Automatically save drafts while writing
                         </p>
                       </div>
@@ -1265,7 +1265,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Enable Code Syntax Highlighting</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Highlight code blocks in posts
                         </p>
                       </div>
@@ -1283,7 +1283,7 @@ export default function Settings() {
 
             {/* Reading Settings */}
             <TabsContent value="reading">
-              <Card>
+              <Card className="admin-surface">
                 <CardHeader>
                   <CardTitle>Reading Settings</CardTitle>
                 </CardHeader>
@@ -1349,7 +1349,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Enable RSS Feeds</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Allow RSS feed generation
                         </p>
                       </div>
@@ -1364,7 +1364,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Search Engine Visibility</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Discourage search engines from indexing this site
                         </p>
                       </div>
@@ -1385,10 +1385,10 @@ export default function Settings() {
 
             {/* Discussion Settings */}
             <TabsContent value="discussion">
-              <Card>
+              <Card className="admin-surface">
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Bell className="w-5 h-5 mr-2 text-wp-blue" />
+                    <Bell className="w-5 h-5 mr-2 text-npb-accent" />
                     Discussion Settings
                   </CardTitle>
                 </CardHeader>
@@ -1397,7 +1397,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Allow Comments</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Enable comments on posts and pages
                         </p>
                       </div>
@@ -1412,7 +1412,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Moderate Comments</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Comments must be approved before appearing
                         </p>
                       </div>
@@ -1427,7 +1427,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Email Notifications</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Send email when new comments are posted
                         </p>
                       </div>
@@ -1446,7 +1446,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>User Registration</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Allow new user registration
                         </p>
                       </div>
@@ -1485,10 +1485,10 @@ export default function Settings() {
             <TabsContent value="system">
               <div className="space-y-6">
                 {/* System Information */}
-                <Card>
+                <Card className="admin-surface">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <Database className="w-5 h-5 mr-2 text-wp-blue" />
+                      <Database className="w-5 h-5 mr-2 text-npb-accent" />
                       System Information
                     </CardTitle>
                   </CardHeader>
@@ -1497,8 +1497,8 @@ export default function Settings() {
                       {systemInfo.map((info, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                          <span className="text-sm font-medium text-gray-700">
+                          className="flex items-center justify-between p-3 bg-npb-surface-inset rounded">
+                          <span className="text-sm font-medium text-npb-text-secondary">
                             {info.label}
                           </span>
                           <Badge variant="outline">{info.value}</Badge>
@@ -1509,10 +1509,10 @@ export default function Settings() {
                 </Card>
 
                 {/* Performance Settings */}
-                <Card>
+                <Card className="admin-surface">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <Shield className="w-5 h-5 mr-2 text-wp-blue" />
+                      <Shield className="w-5 h-5 mr-2 text-npb-accent" />
                       Performance & Security
                     </CardTitle>
                   </CardHeader>
@@ -1520,7 +1520,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Enable Caching</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Cache rendered pages for better performance
                         </p>
                       </div>
@@ -1535,7 +1535,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Enable Compression</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Compress responses to reduce bandwidth
                         </p>
                       </div>
@@ -1550,7 +1550,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Security Headers</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Add security headers to responses
                         </p>
                       </div>
@@ -1565,7 +1565,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Debug Mode</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Enable debug logging and error details
                         </p>
                       </div>
@@ -1580,7 +1580,7 @@ export default function Settings() {
                 </Card>
 
                 {/* API Settings */}
-                <Card>
+                <Card className="admin-surface">
                   <CardHeader>
                     <CardTitle>API Configuration</CardTitle>
                   </CardHeader>
@@ -1588,7 +1588,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>REST API</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Enable WordPress-compatible REST API
                         </p>
                       </div>
@@ -1603,7 +1603,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>GraphQL API</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Enable GraphQL endpoint for modern applications
                         </p>
                       </div>
@@ -1618,7 +1618,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Webhooks</Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-npb-text-secondary">
                           Enable webhook notifications for content changes
                         </p>
                       </div>

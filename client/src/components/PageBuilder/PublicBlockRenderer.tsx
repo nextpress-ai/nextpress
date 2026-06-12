@@ -62,7 +62,7 @@ export default function PublicBlockRenderer({ block, stackDirection = "column" }
 	if (!Component) {
 		return (
 			<BlockWrapper block={block} styles={styles} stackDirection={stackDirection}>
-				<div className="rounded border border-dashed border-gray-300 p-4 text-sm text-gray-500">
+				<div className="rounded border border-dashed border-npb-border-strong p-4 text-sm text-npb-text-muted">
 					{block.label || block.name} block is not available in the public renderer yet.
 				</div>
 			</BlockWrapper>

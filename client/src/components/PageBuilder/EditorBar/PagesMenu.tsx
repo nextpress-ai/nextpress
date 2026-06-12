@@ -52,13 +52,13 @@ export function PagesMenu({
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      publish: "bg-green-100 text-green-500 ring-1 ring-green-300",
-      published: "bg-green-100 text-green-500 ring-1 ring-green-300",
-      draft: "bg-orange-100 text-orange-500 ring-1 ring-orange-300",
-      private: "bg-yellow-100 text-yellow-500 ring-1 ring-yellow-300",
-      trash: "bg-red-100 text-red-500 ring-1 ring-red-300",
+      publish: 'bg-npb-status-success/15 text-npb-status-success',
+      published: 'bg-npb-status-success/15 text-npb-status-success',
+      draft: 'bg-npb-status-warning/15 text-npb-status-warning',
+      private: 'bg-npb-status-warning/15 text-npb-status-warning',
+      trash: 'bg-npb-status-error/15 text-npb-status-error',
     };
-    return colors[status] || "bg-gray-300 text-gray-500 ring-1 ring-gray-300";
+    return colors[status] ?? 'bg-npb-surface-inset text-npb-text-muted';
   };
 
   return (
@@ -113,7 +113,7 @@ export function PagesMenu({
                   onSelect={() => handlePageSelect(page.id)}
                   className={`
                     group cursor-pointer px-3 py-2.5 rounded-md transition-colors
-                    ${isCurrentPage ? "bg-blue-50/80" : ""}
+                    ${isCurrentPage ? 'bg-npb-accent/10' : ''}
                   `}
                   {...(isCurrentPage ? { "aria-current": "page" } : {})}
                 >
@@ -121,14 +121,14 @@ export function PagesMenu({
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <FileText
                         className={`w-4 h-4 flex-shrink-0 ${
-                          isCurrentPage ? "text-blue-600" : "text-gray-400"
+                          isCurrentPage ? 'text-npb-accent' : 'text-npb-text-muted'
                         }`}
                       />
                       <span
                         className={`truncate font-medium ${
                           isCurrentPage
-                            ? "text-blue-600"
-                            : "text-gray-700 group-hover:text-blue-600"
+                            ? 'text-npb-accent'
+                            : 'text-npb-text-primary group-hover:text-npb-accent'
                         }`}
                       >
                         {page.title || "Untitled"}
@@ -141,7 +141,7 @@ export function PagesMenu({
                             page.status
                           )}`}
                         >
-                          <BiPencil className="w-2 h-2 text-gray-500 hover:text-gray-700" />
+                          <BiPencil className="h-2 w-2 text-npb-text-muted group-hover:text-npb-text-secondary" />
                           {page.status}
                         </Badge>
                       )}

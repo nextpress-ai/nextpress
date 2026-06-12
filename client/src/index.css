@@ -736,6 +736,65 @@
   border-bottom: 1px solid rgb(255 255 255 / 0.06);
 }
 
+.admin-sidebar {
+  background: hsl(210, 11%, 15%);
+  color: rgb(250 250 250);
+}
+
+.admin-sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgb(212 212 216);
+  transition:
+    background-color var(--npb-duration-normal) ease,
+    color var(--npb-duration-normal) ease;
+}
+
+.admin-sidebar-link-sub {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.admin-sidebar-section-label {
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgb(113 113 122);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-sidebar-link:hover {
+    background: rgb(255 255 255 / 0.08);
+    color: rgb(250 250 250);
+  }
+
+  .admin-sidebar-link-sub:hover {
+    background: transparent;
+    color: rgb(147 197 253);
+  }
+}
+
+.admin-sidebar-link-active {
+  background: rgb(59 130 246 / 0.18);
+  color: rgb(191 219 254);
+}
+
+.admin-sidebar-link-sub.admin-sidebar-link-active {
+  background: transparent;
+  color: rgb(147 197 253);
+}
+
+.admin-surface {
+  border: 0;
+  background-color: var(--npb-surface-raised);
+  box-shadow: var(--npb-shadow-surface);
+}
+
 .admin-page-header {
   box-shadow: 0 1px 0 var(--npb-divider);
 }

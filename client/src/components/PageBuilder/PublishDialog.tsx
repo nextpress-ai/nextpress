@@ -266,7 +266,7 @@ export default function PublishDialog({
           <div className="space-y-2">
             <Label htmlFor="slug">{contentType === 'page' ? 'Page URL' : 'Post URL'}</Label>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">/{postType}/</span>
+              <span className="text-sm text-npb-text-muted">/{postType}/</span>
               <Input
                 id="slug"
                 value={slug}
@@ -276,7 +276,7 @@ export default function PublishDialog({
                 data-testid="input-slug"
               />
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-npb-text-muted">
               Only lowercase letters, numbers, and hyphens allowed
             </p>
           </div>
@@ -295,7 +295,7 @@ export default function PublishDialog({
           <div className="space-y-2">
             <h4 className="text-sm font-medium">{contentType === 'page' ? 'Page' : 'Post'} Status</h4>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-npb-text-secondary">
                   {post?.title || `Untitled ${contentType === 'page' ? 'Page' : 'Post'}`}
               </span>
               <Badge variant={isPublished ? "default" : "secondary"}>
@@ -303,7 +303,7 @@ export default function PublishDialog({
               </Badge>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Blocks</span>
+              <span className="text-sm text-npb-text-secondary">Blocks</span>
               <Badge variant="outline">
                 {blocks.length}
               </Badge>

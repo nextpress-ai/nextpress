@@ -187,7 +187,7 @@ export function ContainerChildren({
               </React.Fragment>
             ))
           ) : (
-            <div className="text-center text-gray-400 p-8">
+            <div className="text-center text-npb-text-muted p-8">
               <small>Drag blocks here</small>
             </div>
           )}
@@ -473,8 +473,8 @@ export default function BlockRenderer({
     return (
       <div
         style={mergedStyles}
-        className="p-4 border border-dashed border-gray-300 rounded">
-        <div className="text-center text-gray-400">
+        className="p-4 border border-dashed border-npb-border-strong rounded-[var(--npb-radius-surface)]">
+        <div className="text-center text-npb-text-muted">
           {blockRegistry[block.name]?.label || block.name} block
           <br />
           <small>Not implemented yet</small>

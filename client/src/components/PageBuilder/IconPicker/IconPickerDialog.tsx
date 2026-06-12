@@ -152,7 +152,7 @@ export function IconPickerDialog({
         {/* Search + Set Selector */}
         <div className="flex gap-2 mb-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-npb-text-muted" />
             <Input
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
@@ -180,7 +180,7 @@ export function IconPickerDialog({
         </div>
 
         {/* Results count */}
-        <p className="text-xs text-gray-500 mb-2">
+        <p className="text-xs text-npb-text-muted mb-2">
           {filteredNames.length.toLocaleString()} icons
           {search ? ` matching "${search}"` : ''}
         </p>
@@ -209,7 +209,7 @@ export function IconPickerDialog({
                     ${
                       isSelected
                         ? 'bg-blue-100 ring-2 ring-blue-500'
-                        : 'hover:bg-gray-100 border border-transparent hover:border-gray-200'
+                        : 'hover:bg-npb-interactive-bg-hover border border-transparent hover:border-npb-border-default'
                     }
                   `}
                   title={storageName}
@@ -224,7 +224,7 @@ export function IconPickerDialog({
                     }}
                     size={20}
                   />
-                  <span className="block min-w-0 w-full text-center text-xs leading-tight text-gray-500 truncate">
+                  <span className="block min-w-0 w-full text-center text-xs leading-tight text-npb-text-muted truncate">
                     {displayName}
                   </span>
                 </button>
@@ -233,7 +233,7 @@ export function IconPickerDialog({
           </div>
 
           {pageNames.length === 0 && (
-            <div className="flex items-center justify-center py-12 text-gray-400 text-sm">
+            <div className="flex items-center justify-center py-12 text-npb-text-muted text-sm">
               No icons found
             </div>
           )}
@@ -250,7 +250,7 @@ export function IconPickerDialog({
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="text-sm text-gray-600 min-w-[80px] text-center">
+            <span className="text-sm text-npb-text-secondary min-w-[80px] text-center">
               {safePage + 1} / {totalPages}
             </span>
             <Button

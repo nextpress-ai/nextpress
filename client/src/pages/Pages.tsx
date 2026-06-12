@@ -198,7 +198,7 @@ export default function Pages() {
                 <CardTitle>All Pages</CardTitle>
                 <div className="flex items-center space-x-4">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-npb-text-muted w-4 h-4" />
                     <Input
                       placeholder="Search pages..."
                       value={search}
@@ -211,9 +211,9 @@ export default function Pages() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading pages...</div>
+                <div className="text-center py-8 text-npb-text-muted">Loading pages...</div>
               ) : filteredPages.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-npb-text-muted">
                   No pages found. <Button variant="link" onClick={handleNewPage}>Create your first page</Button>
                 </div>
               ) : (
@@ -231,7 +231,7 @@ export default function Pages() {
                       <TableRow key={page.id}>
                         <TableCell>
                           <div>
-                            <div className="font-medium text-wp-gray flex items-center gap-2">
+                            <div className="font-medium text-npb-text-primary flex items-center gap-2">
                               {page.title}
                               {(page.other as any)?.isBlogPage && (
                                 <Badge variant="outline" className="text-xs font-normal text-blue-600 border-blue-300">Blog</Badge>
@@ -248,7 +248,7 @@ export default function Pages() {
                         <TableCell>
                           <div className="text-sm">
                             <div>{page.createdAt ? new Date(page.createdAt).toLocaleDateString() : 'N/A'}</div>
-                            <div className="text-gray-500">
+                            <div className="text-npb-text-muted">
                               {page.createdAt ? new Date(page.createdAt).toLocaleTimeString() : 'N/A'}
                             </div>
                           </div>
@@ -303,7 +303,7 @@ export default function Pages() {
               {/* Pagination */}
               {pagesData && pagesData.total_pages > 1 && (
                 <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-npb-text-muted">
                     Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, pagesData.total)} of {pagesData.total} pages
                   </div>
                   <div className="flex space-x-2">

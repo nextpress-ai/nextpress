@@ -153,7 +153,7 @@ export function ImageDropzone({
   if (value) {
     return (
       <div className={cn('relative group', className)}>
-        <div className="relative w-full h-48 rounded-lg border-2 border-gray-200 overflow-hidden bg-gray-50">
+        <div className="relative h-48 w-full overflow-hidden rounded-[var(--npb-radius-surface)] border-2 border-npb-border-default bg-npb-surface-inset">
           <img
             src={value}
             alt="Featured image preview"
@@ -200,8 +200,8 @@ export function ImageDropzone({
       <div
         className={cn(
           'border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer',
-          dragActive && 'border-wp-blue bg-blue-50',
-          !dragActive && 'border-gray-300 hover:border-gray-400',
+          dragActive && 'border-npb-accent bg-npb-accent/10',
+          !dragActive && 'border-npb-border-strong hover:border-npb-border-default',
           disabled && 'opacity-50 cursor-not-allowed',
           uploading && 'opacity-50 cursor-wait'
         )}
@@ -221,7 +221,7 @@ export function ImageDropzone({
         {uploading ? (
           <>
             <div className="mx-auto w-12 h-12 mb-4 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-wp-blue"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-npb-accent"></div>
             </div>
             <p className="text-lg font-medium mb-2">Uploading...</p>
           </>
@@ -230,13 +230,13 @@ export function ImageDropzone({
             <ImageIcon
               className={cn(
                 'mx-auto w-12 h-12 mb-4',
-                dragActive ? 'text-wp-blue' : 'text-gray-400'
+                dragActive ? 'text-npb-accent' : 'text-npb-text-muted'
               )}
             />
             <p className="text-lg font-medium mb-2">
               {dragActive ? 'Drop image here' : 'Drag & drop image here'}
             </p>
-            <p className="text-gray-500 mb-4">or</p>
+            <p className="mb-4 text-npb-text-muted">or</p>
             <Button
               type="button"
               variant="outline"
@@ -251,7 +251,7 @@ export function ImageDropzone({
             </Button>
           </>
         )}
-        <p className="text-xs text-gray-500 mt-4">
+        <p className="mt-4 text-xs text-npb-text-muted">
           Supported: JPG, PNG, GIF, WebP, SVG (Max {Math.round(maxSize / 1024 / 1024)}MB)
         </p>
       </div>

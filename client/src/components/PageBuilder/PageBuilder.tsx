@@ -441,7 +441,7 @@ export default function PageBuilder({
                   gap: 6,
                 }}>
                 {def?.icon ? (
-                  <def.icon className="w-4 h-4 text-gray-600" />
+                  <def.icon className="w-4 h-4 text-npb-text-secondary" />
                 ) : null}
                 <span style={{ opacity: 0.85 }}>{def?.label || id}</span>
               </div>

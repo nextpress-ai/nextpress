@@ -203,7 +203,7 @@ export default function MediaPage() {
           <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex gap-4 items-center">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-npb-text-muted" />
                 <Input
                   placeholder="Search media..."
                   value={search}
@@ -233,9 +233,9 @@ export default function MediaPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {[...Array(12)].map((_, i) => (
                     <div key={i} className="animate-pulse">
-                      <div className="bg-gray-200 aspect-square rounded-lg mb-2"></div>
-                      <div className="bg-gray-200 h-4 rounded mb-1"></div>
-                      <div className="bg-gray-200 h-3 rounded w-3/4"></div>
+                      <div className="bg-npb-surface-inset aspect-square rounded-lg mb-2"></div>
+                      <div className="bg-npb-surface-inset h-4 rounded mb-1"></div>
+                      <div className="bg-npb-surface-inset h-3 rounded w-3/4"></div>
                     </div>
                   ))}
                 </div>
@@ -246,7 +246,7 @@ export default function MediaPage() {
                   {filteredMedia.map((media: Media) => (
                     <Card key={media.id} className="group hover:shadow-md transition-shadow">
                       <CardContent className="p-3">
-                        <div className="aspect-square mb-3 bg-gray-100 rounded-lg overflow-hidden relative">
+                        <div className="aspect-square mb-3 bg-npb-surface-inset rounded-lg overflow-hidden relative">
                           {media.mimeType.startsWith('image/') ? (
                             <img 
                               src={media.url} 
@@ -254,7 +254,7 @@ export default function MediaPage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                             <div className="w-full h-full flex items-center justify-center text-gray-400">
+                             <div className="w-full h-full flex items-center justify-center text-npb-text-muted">
                                {getFileIcon(media.mimeType)}
                 </div>
               )}
@@ -292,7 +292,7 @@ export default function MediaPage() {
                           <p className="text-sm font-medium truncate" title={media.originalName}>
                             {media.originalName}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-npb-text-muted">
                             {formatFileSize(media.size)}
                           </p>
                           <Badge variant="secondary" className="text-xs">
@@ -307,11 +307,11 @@ export default function MediaPage() {
             } else {
               return (
                 <div className="text-center py-12">
-                  <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <Image className="w-8 h-8 text-gray-400" />
+                  <div className="mx-auto w-24 h-24 bg-npb-surface-inset rounded-full flex items-center justify-center mb-4">
+                    <Image className="w-8 h-8 text-npb-text-muted" />
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No media files found</h3>
-                  <p className="text-gray-500 mb-4">
+                  <h3 className="text-lg font-medium text-npb-text-primary mb-2">No media files found</h3>
+                  <p className="text-npb-text-muted mb-4">
                     {search ? "Try adjusting your search criteria." : "Upload your first media file to get started."}
                   </p>
                   <Button onClick={() => setIsUploadOpen(true)}>
@@ -333,7 +333,7 @@ export default function MediaPage() {
               >
                 Previous
               </Button>
-              <span className="flex items-center px-4 text-sm text-gray-600">
+              <span className="flex items-center px-4 text-sm text-npb-text-muted">
                 Page {page} of {(mediaData as any).total_pages}
               </span>
               <Button
@@ -354,7 +354,7 @@ export default function MediaPage() {
           </DialogHeader>
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              dragActive ? 'border-wp-blue bg-blue-50' : 'border-gray-300'
+              dragActive ? 'border-npb-accent bg-npb-accent/10' : 'border-npb-border-strong'
             }`}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -367,18 +367,18 @@ export default function MediaPage() {
               className="hidden"
               accept="image/*,video/*,audio/*,.pdf,.txt"
             />
-            <Upload className={`mx-auto w-12 h-12 mb-4 ${dragActive ? 'text-wp-blue' : 'text-gray-400'}`} />
+            <Upload className={`mx-auto w-12 h-12 mb-4 ${dragActive ? 'text-npb-accent' : 'text-npb-text-muted'}`} />
             <p className="text-lg font-medium mb-2">
               {dragActive ? 'Drop file here' : 'Drag & drop file here'}
             </p>
-            <p className="text-gray-500 mb-4">or</p>
+            <p className="text-npb-text-muted mb-4">or</p>
             <Button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadMutation.isPending}
             >
               {uploadMutation.isPending ? 'Uploading...' : 'Choose File'}
             </Button>
-            <p className="text-xs text-gray-500 mt-4">
+            <p className="text-xs text-npb-text-muted mt-4">
               Supported: Images, Videos, Audio, PDF, Text (Max 10MB)
             </p>
           </div>

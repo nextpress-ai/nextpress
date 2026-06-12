@@ -164,7 +164,7 @@ export default function CommentsPage() {
       case 'spam':
         return <Badge variant="secondary" className="bg-red-100 text-red-800">Spam</Badge>;
       case 'trash':
-        return <Badge variant="secondary" className="bg-gray-100 text-gray-800">Trash</Badge>;
+        return <Badge variant="secondary" className="bg-npb-surface-inset text-npb-text-secondary">Trash</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -192,7 +192,7 @@ export default function CommentsPage() {
           <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex gap-4 items-center">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-npb-text-muted" />
                 <Input
                   placeholder="Search comments..."
                   value={search}
@@ -216,18 +216,18 @@ export default function CommentsPage() {
           </div>
 
           {/* Comments Table */}
-          <Card>
+          <Card className="admin-surface">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <MessageCircle className="w-5 h-5 mr-2 text-wp-blue" />
+                <MessageCircle className="w-5 h-5 mr-2 text-npb-accent" />
                 Manage Comments
               </CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading comments...</div>
+                <div className="text-center py-8 text-npb-text-muted">Loading comments...</div>
               ) : filteredComments.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-npb-text-muted">
                   No comments found.
                 </div>
               ) : (
@@ -247,11 +247,11 @@ export default function CommentsPage() {
                       <TableRow key={comment.id}>
                         <TableCell>
                           <div>
-                            <div className="font-medium text-wp-gray">
+                            <div className="font-medium text-npb-text-primary">
                               {comment.authorName || 'Anonymous'}
                             </div>
                             {comment.authorEmail && (
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-npb-text-muted">
                                 {comment.authorEmail}
                               </div>
                             )}
@@ -265,7 +265,7 @@ export default function CommentsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-npb-text-secondary">
                             Post #{comment.postId}
                           </div>
                         </TableCell>
@@ -275,7 +275,7 @@ export default function CommentsPage() {
                         <TableCell>
                           <div className="text-sm">
                             <div>{new Date(comment.createdAt || '').toLocaleDateString()}</div>
-                            <div className="text-gray-500">
+                            <div className="text-npb-text-muted">
                               {new Date(comment.createdAt || '').toLocaleTimeString()}
                             </div>
                           </div>
@@ -330,7 +330,7 @@ export default function CommentsPage() {
               {/* Pagination */}
               {(commentsData && (commentsData as any).total_pages > 1 && (
                 <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-npb-text-muted">
                     Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, (commentsData as any).total)} of {(commentsData as any).total} comments
                   </div>
                   <div className="flex space-x-2">

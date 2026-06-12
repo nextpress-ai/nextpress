@@ -105,7 +105,7 @@ export default function Posts() {
                 <CardTitle>All Posts</CardTitle>
                 <div className="flex items-center space-x-4">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-npb-text-muted w-4 h-4" />
                     <Input
                       placeholder="Search posts..."
                       value={search}
@@ -118,9 +118,9 @@ export default function Posts() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading posts...</div>
+                <div className="text-center py-8 text-npb-text-muted">Loading posts...</div>
               ) : filteredPosts.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-npb-text-muted">
                   No posts found. <Button variant="link" onClick={handleNewPost}>Create your first post</Button>
                 </div>
               ) : (
@@ -138,9 +138,9 @@ export default function Posts() {
                       <TableRow key={post.id}>
                         <TableCell>
                           <div>
-                            <div className="font-medium text-wp-gray">{post.title}</div>
+                            <div className="font-medium text-npb-text-primary">{post.title}</div>
                             {post.excerpt && (
-                              <div className="text-sm text-gray-500 mt-1">
+                              <div className="text-sm text-npb-text-muted mt-1">
                                 {post.excerpt.substring(0, 100)}...
                               </div>
                             )}
@@ -152,7 +152,7 @@ export default function Posts() {
                         <TableCell>
                           <div className="text-sm">
                             <div>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'N/A'}</div>
-                            <div className="text-gray-500">
+                            <div className="text-npb-text-muted">
                               {post.createdAt ? new Date(post.createdAt).toLocaleTimeString() : 'N/A'}
                             </div>
                           </div>
@@ -221,7 +221,7 @@ export default function Posts() {
               {/* Pagination */}
               {postsData && postsData.total_pages > 1 && (
                 <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-npb-text-muted">
                     Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, postsData.total)} of {postsData.total} posts
                   </div>
                   <div className="flex space-x-2">

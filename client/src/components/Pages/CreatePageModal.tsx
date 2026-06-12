@@ -331,7 +331,7 @@ export function CreatePageModal({
           <div className="grid gap-2">
             <Label htmlFor="slug">URL Slug</Label>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">/page/</span>
+              <span className="text-sm text-npb-text-muted">/page/</span>
               <Input
                 id="slug"
                 placeholder={generateSlug(formData.title) || "auto-generated"}
@@ -341,7 +341,7 @@ export function CreatePageModal({
                 className="flex-1"
               />
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-npb-text-muted">
               Leave empty to auto-generate from title
             </p>
           </div>
@@ -359,7 +359,7 @@ export function CreatePageModal({
               onFileSelect={handleImageSelect}
               disabled={createMutation.isPending}
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-npb-text-muted">
               Optional: Select an image to use as the featured image (will be
               uploaded when you create the page)
             </p>
@@ -387,7 +387,7 @@ export function CreatePageModal({
               value={formData.password || ""}
               onChange={(e) => handleFieldChange("password", e.target.value)}
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-npb-text-muted">
               Optional: Password protect this page
             </p>
           </div>
@@ -428,7 +428,7 @@ export function CreatePageModal({
                 handleFieldChange("menuOrder", parseInt(e.target.value) || 0)
               }
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-npb-text-muted">
               Lower numbers appear first in menus
             </p>
           </div>

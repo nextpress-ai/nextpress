@@ -120,7 +120,7 @@ export default function PostEditor({
   const content = (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-wp-gray">
+        <h1 className="text-2xl font-bold text-npb-text-primary">
           {postId ? `Edit ${type}` : `Add New ${type}`}
         </h1>
         <div className="flex space-x-3">
@@ -136,7 +136,7 @@ export default function PostEditor({
             Save Draft
           </Button>
           <Button
-            className="bg-wp-blue hover:bg-wp-blue-dark"
+            className="bg-npb-accent hover:bg-npb-accent-hover"
             onClick={() => handleSave('publish')}
             disabled={saveMutation.isPending}>
             {postId ? 'Update' : 'Publish'}

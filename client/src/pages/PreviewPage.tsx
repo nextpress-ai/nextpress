@@ -34,8 +34,8 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600">Loading preview...</p>
+          <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-npb-text-muted" />
+          <p className="text-npb-text-secondary">Loading preview…</p>
         </div>
       </div>
     );
@@ -49,10 +49,10 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-400" />
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+          <h1 className="mb-2 text-xl font-semibold text-npb-text-primary">
             {isUnauthorized ? 'Sign in required' : 'Preview Not Available'}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-npb-text-secondary">
             {isUnauthorized
               ? 'Preview is only available to signed-in users.'
               : error
@@ -125,13 +125,13 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
         {blocks.length === 0 ? (
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <div className="text-gray-400 mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mb-4 text-npb-text-muted">
+                <svg className="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h2 className="text-xl font-medium text-gray-900 mb-2">Empty Page</h2>
-              <p className="text-gray-600">This {contentType} doesn't have any content yet.</p>
+              <h2 className="mb-2 text-xl font-medium text-npb-text-primary">Empty Page</h2>
+              <p className="text-npb-text-secondary">This {contentType} doesn&apos;t have any content yet.</p>
             </div>
           </div>
         ) : (

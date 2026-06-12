@@ -30,7 +30,7 @@ const Setup = lazy(() => import('@/pages/Setup'));
 function RouteFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Spinner className="h-12 w-12 text-wp-blue" />
+      <Spinner className="h-12 w-12 text-npb-accent" />
     </div>
   );
 }
@@ -53,7 +53,7 @@ function Router() {
   if (isCheckingSetup) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Spinner className="h-12 w-12 text-wp-blue" />
+        <Spinner className="h-12 w-12 text-npb-accent" />
       </div>
     );
   }
@@ -121,7 +121,7 @@ function Router() {
       {/* Conditional routes based on auth state */}
       {isLoading ? (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <Spinner className="h-12 w-12 text-wp-blue" />
+          <Spinner className="h-12 w-12 text-npb-accent" />
         </div>
       ) : !isAuthenticated ? (
         <>

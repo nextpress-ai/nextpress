@@ -170,7 +170,7 @@ export default function Templates() {
                 <CardTitle>All Templates</CardTitle>
                 <div className="flex items-center space-x-4">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-npb-text-muted w-4 h-4" />
                     <Input
                       placeholder="Search templates..."
                       value={search}
@@ -196,9 +196,9 @@ export default function Templates() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading templates...</div>
+                <div className="text-center py-8 text-npb-text-muted">Loading templates...</div>
               ) : filteredTemplates.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-npb-text-muted">
                   No templates found. <Button variant="link" onClick={handleNewTemplate}>Create your first template</Button>
                 </div>
               ) : (
@@ -216,7 +216,7 @@ export default function Templates() {
                     {filteredTemplates.map((template: Template) => (
                       <TableRow key={template.id}>
                         <TableCell>
-                          <div className="font-medium text-wp-gray">
+                          <div className="font-medium text-npb-text-primary">
                             {template.name}
                           </div>
                         </TableCell>
@@ -224,14 +224,14 @@ export default function Templates() {
                           {getTypeBadge(template.type)}
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm text-gray-500 max-w-xs truncate">
+                          <div className="text-sm text-npb-text-muted max-w-xs truncate">
                             {template.description || "—"}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
                             <div>{template.createdAt ? new Date(template.createdAt).toLocaleDateString() : 'N/A'}</div>
-                            <div className="text-gray-500">
+                            <div className="text-npb-text-muted">
                               {template.createdAt ? new Date(template.createdAt).toLocaleTimeString() : 'N/A'}
                             </div>
                           </div>
@@ -283,7 +283,7 @@ export default function Templates() {
               {/* Pagination */}
               {templatesData && templatesData.total_pages > 1 && (
                 <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-npb-text-muted">
                     Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, templatesData.total)} of {templatesData.total} templates
                   </div>
                   <div className="flex space-x-2">
