@@ -7,6 +7,14 @@ import { SettingsLabel } from "../../shared";
 import { Settings, Layout } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { type GroupContent, DEFAULT_CONTENT, LAYOUT_PRESETS } from "./group-model";
+import { DimensionPresetField } from "../../dimension-preset-field";
+import {
+  HEIGHT_PRESETS,
+  MAX_WIDTH_PRESETS,
+  MIN_HEIGHT_PRESETS,
+  SPACING_PRESETS,
+  WIDTH_PRESETS,
+} from "@shared/dimension-presets";
 
 export interface GroupSettingsProps {
   block: BlockConfig;
@@ -243,21 +251,13 @@ export function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
             </div>
 
             {/* Gap */}
-            <div>
-              <SettingsLabel htmlFor="flex-gap">Gap</SettingsLabel>
-              <Input
-                id="flex-gap"
-                value={
-                  content?.gap !== undefined &&
-                  content.gap !== null &&
-                  String(content.gap).trim() !== ""
-                    ? String(content.gap)
-                    : ""
-                }
-                onChange={(e) => updateContent({ gap: e.target.value })}
-                placeholder="e.g. 0px, 10px, 1rem"
-              />
-            </div>
+            <DimensionPresetField
+              label="Gap"
+              value={content?.gap || undefined}
+              presets={SPACING_PRESETS}
+              onChange={(next) => updateContent({ gap: next ?? "0" })}
+              customPlaceholder="e.g. 12px, 1.5rem"
+            />
           </div>
         </CollapsibleCard>
       )}
@@ -314,21 +314,13 @@ export function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
             </div>
 
             {/* Gap */}
-            <div>
-              <SettingsLabel htmlFor="grid-gap">Gap</SettingsLabel>
-              <Input
-                id="grid-gap"
-                value={
-                  content?.gap !== undefined &&
-                  content.gap !== null &&
-                  String(content.gap).trim() !== ""
-                    ? String(content.gap)
-                    : ""
-                }
-                onChange={(e) => updateContent({ gap: e.target.value })}
-                placeholder="e.g. 16px, 1rem"
-              />
-            </div>
+            <DimensionPresetField
+              label="Gap"
+              value={content?.gap || undefined}
+              presets={SPACING_PRESETS}
+              onChange={(next) => updateContent({ gap: next ?? "0" })}
+              customPlaceholder="e.g. 16px, 1rem"
+            />
           </div>
         </CollapsibleCard>
       )}
@@ -339,60 +331,37 @@ export function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
         defaultOpen={false}
       >
         <div className="space-y-4">
-          {/* Width */}
-          <div>
-            <SettingsLabel htmlFor="group-width">Width</SettingsLabel>
-            <Input
-              id="group-width"
-              value={content?.width || ''}
-              onChange={(e) => updateContent({ width: e.target.value })}
-              placeholder="auto (e.g. 100%, 500px)"
-            />
-          </div>
+          <DimensionPresetField
+            label="Width"
+            value={content?.width || undefined}
+            presets={WIDTH_PRESETS}
+            onChange={(next) => updateContent({ width: next })}
+            customPlaceholder="e.g. 100%, 480px, 80dvh"
+          />
 
-          {/* Min Width */}
-          <div>
-            <SettingsLabel htmlFor="group-min-width">Min Width</SettingsLabel>
-            <Input
-              id="group-min-width"
-              value={content?.minWidth || ''}
-              onChange={(e) => updateContent({ minWidth: e.target.value })}
-              placeholder="0 (e.g. 200px, 50%)"
-            />
-          </div>
+          <DimensionPresetField
+            label="Max width"
+            value={content?.maxWidth || undefined}
+            presets={MAX_WIDTH_PRESETS}
+            onChange={(next) => updateContent({ maxWidth: next })}
+            customPlaceholder="e.g. 1200px, 90rem"
+          />
 
-          {/* Max Width */}
-          <div>
-            <SettingsLabel htmlFor="group-max-width">Max Width</SettingsLabel>
-            <Input
-              id="group-max-width"
-              value={content?.maxWidth || ''}
-              onChange={(e) => updateContent({ maxWidth: e.target.value })}
-              placeholder="none (e.g. 1200px, 100%)"
-            />
-          </div>
+          <DimensionPresetField
+            label="Min height"
+            value={content?.minHeight || undefined}
+            presets={MIN_HEIGHT_PRESETS}
+            onChange={(next) => updateContent({ minHeight: next })}
+            customPlaceholder="e.g. 24rem, 100dvh"
+          />
 
-          {/* Height */}
-          <div>
-            <SettingsLabel htmlFor="group-height">Height</SettingsLabel>
-            <Input
-              id="group-height"
-              value={content?.height || ''}
-              onChange={(e) => updateContent({ height: e.target.value })}
-              placeholder="auto (e.g. 100vh, 400px)"
-            />
-          </div>
-
-          {/* Min Height */}
-          <div>
-            <SettingsLabel htmlFor="group-min-height">Min Height</SettingsLabel>
-            <Input
-              id="group-min-height"
-              value={content?.minHeight || ''}
-              onChange={(e) => updateContent({ minHeight: e.target.value })}
-              placeholder="0 (e.g. 200px, 50vh)"
-            />
-          </div>
+          <DimensionPresetField
+            label="Height"
+            value={content?.height || undefined}
+            presets={HEIGHT_PRESETS}
+            onChange={(next) => updateContent({ height: next })}
+            customPlaceholder="e.g. 400px, 50dvh"
+          />
 
           {/* Overflow */}
           <div>

@@ -8,6 +8,7 @@ import { createBlockDefinition } from "../createBlockDefinition";
 import {
   type ColumnLayout,
   type ColumnsContent,
+  readColumnLayoutFromBlock,
   readColumnsData,
   buildColumnsContainerStyle,
   buildColumnStyle,
@@ -247,17 +248,18 @@ function ColumnsBlockView({
     });
   });
 
-  const columnLayout =
-    (settings?.columnLayout as ColumnLayout[] | undefined) || [
-      { columnId: "default-col-1", width: "100%", blockIds: [] },
-    ];
+  const layout = readColumnLayoutFromBlock({
+    settings,
+    content,
+    children: value.children,
+  });
 
   return (
     <ColumnsRenderer
       content={content}
       styles={styles}
       children={value.children}
-      columnLayout={columnLayout}
+      columnLayout={layout}
       isPreview={isPreview}
       onBlockChange={onNestedBlockChange}
     />

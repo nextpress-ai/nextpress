@@ -129,7 +129,7 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-stretch w-full">
+          <div className="flex flex-col items-stretch w-full min-w-0 overflow-x-clip">
             <BlockAnimationRuntime contentKey={`${contentType}-${contentId}-${blocks.length}`} />
             {blocks.map((block) => (
               <div

@@ -186,3 +186,50 @@ export function buildColumnStyle(
 		columnCount,
 	}) as CSSProperties;
 }
+
+type ColumnLayoutBlock = {
+	settings?: Record<string, unknown>;
+	content?: BlockContent;
+	children?: { id: string }[];
+};
+
+/**
+ * Assigns unmapped children to the first column so public/preview render matches the editor.
+ */
+export function normalizeColumnLayoutWithChildren(
+	layout: ColumnLayout[],
+	children: { id: string }[],
+): ColumnLayout[] {
+	const assigned = new Set(layout.flatMap((col) => col.blockIds ?? []));
+	const orphans = children.filter((child) => !assigned.has(child.id)).map((child) => child.id);
+	if (orphans.length === 0) {
+		return layout;
+	}
+
+	const [first, ...rest] = layout;
+	if (!first) {
+		return [{ columnId: "default-col-1", width: "100%", blockIds: orphans }];
+	}
+
+	return [{ ...first, blockIds: [...(first.blockIds ?? []), ...orphans] }, ...rest];
+}
+
+/**
+ * Reads column layout from block settings (canonical), with legacy content fallback.
+ * Defaults to a single full-width column containing all children.
+ */
+export function readColumnLayoutFromBlock(block: ColumnLayoutBlock): ColumnLayout[] {
+	const fromSettings = block.settings?.columnLayout;
+	if (Array.isArray(fromSettings) && fromSettings.length > 0) {
+		return normalizeColumnLayoutWithChildren(fromSettings as ColumnLayout[], block.children ?? []);
+	}
+
+	const data = readColumnsData(block.content ?? {});
+	const fromContent = (data as { columnLayout?: ColumnLayout[] }).columnLayout;
+	if (Array.isArray(fromContent) && fromContent.length > 0) {
+		return normalizeColumnLayoutWithChildren(fromContent, block.children ?? []);
+	}
+
+	const childIds = (block.children ?? []).map((child) => child.id);
+	return [{ columnId: "default-col-1", width: "100%", blockIds: childIds }];
+}

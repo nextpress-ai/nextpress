@@ -57,6 +57,13 @@ import TokenColorPicker from "./TokenColorPicker"
 import AnimationPicker from "./AnimationPicker"
 import type { TokenEntry, BlockAnimation } from "@shared/schema-types"
 import { FreeformSpacingSideRow } from "./freeform-spacing-side-row";
+import { DimensionPresetField } from "./dimension-preset-field";
+import {
+	MAX_WIDTH_PRESETS,
+	MIN_HEIGHT_PRESETS,
+	WIDTH_PRESETS,
+	HEIGHT_PRESETS,
+} from "@shared/dimension-presets";
 
 /** Font options matching PageSettings — same fonts available at block level */
 const FONT_OPTIONS = [
@@ -379,24 +386,6 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
       marginBottom: "Bottom",
       marginLeft: "Left",
     };
-    const widthRaw = block.styles?.width;
-    const widthLayoutMode =
-      widthRaw == null || widthRaw === "" || widthRaw === "auto"
-        ? "auto"
-        : widthRaw === "100%"
-          ? "fill"
-          : widthRaw === "fit-content"
-            ? "fit"
-            : "custom";
-    const heightRaw = block.styles?.height;
-    const heightLayoutMode =
-      heightRaw == null || heightRaw === "" || heightRaw === "auto"
-        ? "auto"
-        : heightRaw === "min-content"
-          ? "min-content"
-          : heightRaw === "max-content"
-            ? "max-content"
-            : "custom";
     return (
       <div className="space-y-6">
         {/* Typography */}
@@ -682,81 +671,59 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
 
         {/* Layout & Dimensions */}
         <CollapsibleCard title="Layout & Dimensions" icon={Layout} defaultOpen={false}>
-            {/* Width */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                  <Columns className="w-3 h-3" />
-                  Width
-                </Label>
-                <Select
-                  value={widthLayoutMode}
-                  onValueChange={(val) => {
-                    if (val === "auto") updateStyles({ width: "auto" });
-                    else if (val === "fill") updateStyles({ width: "100%" });
-                    else if (val === "fit") updateStyles({ width: "fit-content" });
-                    else if (val === "custom") {
-                      const current = block.styles?.width;
-                      const isAlreadyCustom =
-                        current != null &&
-                        current !== "" &&
-                        current !== "auto" &&
-                        current !== "100%" &&
-                        current !== "fit-content";
-                      updateStyles({
-                        width: isAlreadyCustom ? String(current) : "200px",
-                      });
-                    }
-                  }}
-                >
-                  <SelectTrigger
-                    className={cn(
-                      "h-7 w-[7.5rem] rounded-none px-2 text-xs focus-visible:outline-none",
-                      "npb-settings-select-trigger",
-                    )}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto">Auto</SelectItem>
-                    <SelectItem value="fill">Fill</SelectItem>
-                    <SelectItem value="fit">Fit</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Input
+            <DimensionPresetField
+              label="Width"
+              value={
+                block.styles?.width != null && block.styles.width !== ""
+                  ? String(block.styles.width)
+                  : undefined
+              }
+              presets={WIDTH_PRESETS}
+              onChange={(next) => updateStyles({ width: next ?? "auto" })}
+              customPlaceholder="e.g. 320px, 50%, 80dvh"
+            />
+
+            <div className="mt-4">
+              <DimensionPresetField
+                label="Max width"
                 value={
-                  block.styles?.width !== undefined && block.styles.width !== null
-                    ? String(block.styles.width)
-                    : ""
+                  block.styles?.maxWidth != null && block.styles.maxWidth !== ""
+                    ? String(block.styles.maxWidth)
+                    : undefined
                 }
-                onChange={(e) => updateStyles({ width: e.target.value })}
-                placeholder="auto"
-                className="h-8 rounded-none text-sm focus-visible:outline-none"
+                presets={MAX_WIDTH_PRESETS}
+                onChange={(next) => updateStyles({ maxWidth: next })}
+                customPlaceholder="e.g. 1200px, 90rem"
               />
             </div>
 
-            {/* Max Width */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                  <Columns className="w-3 h-3" />
-                  Max Width
-                </Label>
-              </div>
-              <Input
+            <div className="mt-4">
+              <DimensionPresetField
+                label="Min height"
                 value={
-                  block.styles?.maxWidth !== undefined && block.styles.maxWidth !== null
-                    ? String(block.styles.maxWidth)
-                    : ""
+                  block.styles?.minHeight != null && block.styles.minHeight !== ""
+                    ? String(block.styles.minHeight)
+                    : undefined
                 }
-                onChange={(e) => updateStyles({ maxWidth: e.target.value || undefined })}
-                placeholder="none"
-                className="h-8 rounded-none text-sm focus-visible:outline-none"
+                presets={MIN_HEIGHT_PRESETS}
+                onChange={(next) => updateStyles({ minHeight: next })}
+                customPlaceholder="e.g. 24rem, 100dvh"
               />
             </div>
-            
+
+            <div className="mt-4">
+              <DimensionPresetField
+                label="Height"
+                value={
+                  block.styles?.height != null && block.styles.height !== ""
+                    ? String(block.styles.height)
+                    : undefined
+                }
+                presets={HEIGHT_PRESETS}
+                onChange={(next) => updateStyles({ height: next ?? "auto" })}
+                customPlaceholder="e.g. 400px, 50dvh"
+              />
+            </div>
             {/* Display Type for Layout-capable Blocks
                 NOTE: `core/columns` layout is controlled via its own Content settings to avoid conflicts.
              */}
@@ -795,7 +762,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                         { value: 'row-reverse', label: 'Row Rev' },
                         { value: 'column-reverse', label: 'Col Rev' },
                       ]}
-                      value={block.styles?.flexDirection || 'row'}
+                      value={block.styles?.flexDirection || 'column'}
                       onChange={(value) => updateStyles({ flexDirection: value })}
                     />
                   </div>
@@ -880,63 +847,6 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                   </div>
                 )}
               </>
-            )}
-
-            {/* Height for specific blocks */}
-            {['image', 'video', 'container', 'core/group', 'core/container'].includes(block.name) && (
-              <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                      <Rows className="w-3 h-3" />
-                      Height
-                    </Label>
-                  <Select
-                    value={heightLayoutMode}
-                    onValueChange={(val) => {
-                      if (val === "auto") updateStyles({ height: "auto" });
-                      else if (val === "min-content") updateStyles({ height: "min-content" });
-                      else if (val === "max-content") updateStyles({ height: "max-content" });
-                      else if (val === "custom") {
-                        const current = block.styles?.height;
-                        const isAlreadyCustom =
-                          current != null &&
-                          current !== "" &&
-                          current !== "auto" &&
-                          current !== "min-content" &&
-                          current !== "max-content";
-                        updateStyles({
-                          height: isAlreadyCustom ? String(current) : "200px",
-                        });
-                      }
-                    }}
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "h-7 w-[9.5rem] rounded-none px-2 text-xs focus-visible:outline-none",
-                        "npb-settings-select-trigger",
-                      )}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">Auto</SelectItem>
-                      <SelectItem value="min-content">Min Content</SelectItem>
-                      <SelectItem value="max-content">Max Content</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Input
-                  value={
-                    block.styles?.height !== undefined && block.styles.height !== null
-                      ? String(block.styles.height)
-                      : ""
-                  }
-                  onChange={(e) => updateStyles({ height: e.target.value })}
-                  placeholder="auto"
-                  className="h-8 rounded-none text-sm focus-visible:outline-none"
-                />
-              </div>
             )}
 
             {block.name === "core/image" && (

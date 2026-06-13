@@ -3,15 +3,22 @@ import type { JSX } from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { getRenderProps, parseStructuredContent, renderChildBlocks } from "../render-helpers";
 import { BLOCK_COMPONENTS } from "../block-components";
-import { buildFlexRowColumnStyle } from "@shared/columns-flex-style";
+import {
+	buildColumnStyle,
+	buildColumnsContainerStyle,
+	readColumnLayoutFromBlock,
+	readColumnsData,
+} from "@shared/columns-layout";
 import {
 	getBlockSiblingFlexItemStyles,
+	getBlockStackLayerWrapperStyles,
 	getContainerChildrenStackStyle,
 	getContainerOuterShellStyle,
 	getContainerParentDisplayMode,
 	getContainerSiblingStackDirection,
 	readContainerLayoutFromBlock,
 } from "@shared/block-container-placement";
+import { buildGroupShellStyles, readGroupShellContent } from "@shared/group-shell-styles";
 
 /**
  * Columns Block Component
@@ -19,54 +26,38 @@ import {
  */
 export function ColumnsBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
-	const data = parseStructuredContent(block.content);
-
-	const gap = data.gap as string | undefined;
-	const minColumnWidth = data.minColumnWidth as string | undefined;
-	const verticalAlignment = data.verticalAlignment as string | undefined;
-	const horizontalAlignment = data.horizontalAlignment as string | undefined;
-	const direction = (data.direction as string) || "row";
-	const layoutMode = data.layoutMode as string | undefined;
-	const columnLayout = data.columnLayout as Array<{ columnId: string; width?: string; blockIds?: string[] }> | undefined;
+	const data = readColumnsData(block.content);
+	const layoutMode = data.layoutMode || "flex";
+	const direction = data.direction || "row";
+	const columnVerticalAlignment = data.columnVerticalAlignment || "top";
+	const columnHorizontalAlignment = data.columnHorizontalAlignment || "stretch";
+	const columnLayout = readColumnLayoutFromBlock(block);
 
 	const mergedClassName = [
 		"wp-block-columns",
-		verticalAlignment ? `is-vertically-aligned-${verticalAlignment}` : "",
-		horizontalAlignment ? `is-horizontally-aligned-${horizontalAlignment}` : "",
+		data.verticalAlignment ? `is-vertically-aligned-${data.verticalAlignment}` : "",
+		data.horizontalAlignment ? `is-horizontally-aligned-${data.horizontalAlignment}` : "",
 		className,
 	]
 		.filter(Boolean)
 		.join(" ");
 
-	const columnsStyle: React.CSSProperties = {
-		...style,
-		display: "flex",
-		flexDirection: direction,
-		...(gap ? { gap } : {}),
-		...(verticalAlignment
-			? {
-					alignItems: {
-						top: "flex-start",
-						center: "center",
-						bottom: "flex-end",
-						stretch: "stretch",
-					}[verticalAlignment],
-				}
-			: {}),
-		...(horizontalAlignment
-			? {
-					justifyContent: {
-						left: "flex-start",
-						center: "center",
-						right: "flex-end",
-						"space-between": "space-between",
-						"space-around": "space-around",
-					}[horizontalAlignment],
-				}
-			: {}),
-	};
+	const columnsStyle = buildColumnsContainerStyle(data, columnLayout, style);
 
-	// Helper to render a single child block
+	const columnAlignItems = {
+		stretch: "stretch",
+		left: "flex-start",
+		center: "center",
+		right: "flex-end",
+	}[columnHorizontalAlignment];
+
+	const columnJustifyContent = {
+		top: "flex-start",
+		center: "center",
+		bottom: "flex-end",
+		stretch: "stretch",
+	}[columnVerticalAlignment];
+
 	const renderChild = (child: BlockConfig): React.ReactNode => {
 		const ChildComponent = BLOCK_COMPONENTS[child.name];
 		if (!ChildComponent) {
@@ -75,74 +66,47 @@ export function ColumnsBlock(block: BlockConfig) {
 		return <ChildComponent key={child.id} {...child} />;
 	};
 
-	// If columnLayout is provided, use it to structure columns
-	if (columnLayout && columnLayout.length > 0) {
-		const gapCss = (gap && String(gap).trim()) || "20px";
-		const columnCount = columnLayout.length;
-
-		return (
-			<div
-				className={mergedClassName || undefined}
-				style={columnsStyle}
-				{...attributes}
-			>
-				{columnLayout.map((column, index) => {
-					const columnChildren =
-						block.children?.filter((child) =>
-							column.blockIds?.includes(child.id)
-						) || [];
-
-					const columnKey = column.columnId || `column-${index}`;
-					return (
-						<div
-							key={columnKey}
-							className="wp-block-column"
-							style={
-								direction === "row"
-									? (buildFlexRowColumnStyle(column.width, minColumnWidth, {
-											gap: gapCss,
-											columnCount,
-										}) as React.CSSProperties)
-									: { minWidth: 0, width: "100%" }
-							}
-						>
-							{columnChildren.map((child) => renderChild(child))}
-						</div>
-					);
-				})}
-			</div>
-		);
-	}
-
-	// Fallback: render children directly if no columnLayout
-	if (block.children && block.children.length > 0) {
-		return (
-			<div
-				className={mergedClassName || undefined}
-				style={columnsStyle}
-				{...attributes}
-			>
-				{block.children.map((child) => (
-					<div
-						key={child.id}
-						className="wp-block-column"
-						style={{ flex: "1" }}
-					>
-						{renderChild(child)}
-					</div>
-				))}
-			</div>
-		);
-	}
-
-	// Empty columns container
 	return (
 		<div
 			className={mergedClassName || undefined}
 			style={columnsStyle}
 			{...attributes}
 		>
-			{/* Empty columns */}
+			{columnLayout.map((column, index) => {
+				const columnChildren =
+					block.children?.filter((child) => column.blockIds?.includes(child.id)) || [];
+				const columnKey = column.columnId || `column-${index}`;
+				const columnStyle = buildColumnStyle(data, layoutMode, direction, column, columnLayout);
+
+				return (
+					<div
+						key={columnKey}
+						className="wp-block-column"
+						style={{
+							...columnStyle,
+							display: "flex",
+							flexDirection: "column",
+							alignItems: columnAlignItems,
+							justifyContent: columnJustifyContent,
+							minWidth: 0,
+						}}
+					>
+						{columnChildren.map((child) => (
+							<div
+								key={child.id}
+								style={{
+									width: "100%",
+									minWidth: 0,
+									...getBlockSiblingFlexItemStyles(child.styles, "column"),
+									...getBlockStackLayerWrapperStyles(child),
+								}}
+							>
+								{renderChild(child)}
+							</div>
+						))}
+					</div>
+				);
+			})}
 		</div>
 	);
 }
@@ -167,23 +131,50 @@ export function GroupBlock(block: BlockConfig) {
 		.filter(Boolean)
 		.join(" ");
 
-	const renderedChildren = renderChildBlocks(block.children || []);
+	const shellContent = readGroupShellContent(block.content);
+	const { outerStyle, innerStackStyle, stackDirection, isHorizontal } = buildGroupShellStyles({
+		styles: style,
+		content: shellContent,
+		children: block.children?.map((child) => ({ styles: child.styles })),
+	});
+
+	const renderChild = (child: BlockConfig): React.ReactNode => {
+		const ChildComponent = BLOCK_COMPONENTS[child.name];
+		if (!ChildComponent) {
+			return null;
+		}
+		return (
+			<div
+				key={child.id}
+				style={{
+					minWidth: 0,
+					flex: isHorizontal ? "1 1 auto" : undefined,
+					...getBlockSiblingFlexItemStyles(child.styles, stackDirection),
+					...getBlockStackLayerWrapperStyles(child),
+				}}
+			>
+				<ChildComponent {...child} />
+			</div>
+		);
+	};
 
 	if (block.children && block.children.length > 0) {
 		return (
 			<Tag
 				className={mergedClassName || undefined}
-				style={style}
+				style={outerStyle}
 				{...attributes}
 			>
-				{renderedChildren}
+				<div className="wp-block-group__inner-container" style={innerStackStyle}>
+					{block.children.map((child) => renderChild(child))}
+				</div>
 			</Tag>
 		);
 	}
 
 	return (
-		<Tag className={mergedClassName || undefined} style={style} {...attributes}>
-			{/* Empty group */}
+		<Tag className={mergedClassName || undefined} style={outerStyle} {...attributes}>
+			<div className="wp-block-group__inner-container" style={innerStackStyle} />
 		</Tag>
 	);
 }
@@ -224,6 +215,7 @@ export function ContainerBlock(block: BlockConfig) {
 					minWidth: 0,
 					flex: isHorizontal ? "1 1 auto" : undefined,
 					...getBlockSiblingFlexItemStyles(child.styles, stackDirection),
+					...getBlockStackLayerWrapperStyles(child),
 				}}
 			>
 				<ChildComponent {...child} />
@@ -251,7 +243,7 @@ export function ContainerBlock(block: BlockConfig) {
 			style={outerStyle}
 			{...attributes}
 		>
-			<div className="wp-block-container__inner" style={innerStackStyle}>{/* Empty container */}</div>
+			<div className="wp-block-container__inner" style={innerStackStyle} />
 		</Tag>
 	);
 }

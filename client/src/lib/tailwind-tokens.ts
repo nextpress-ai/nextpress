@@ -26,7 +26,7 @@ export const tokenScreens = fullConfig.theme.screens
 export const unitCategories: Record<string, string[]> = {
   spacing: ["px", "rem", "em", "%"],
   font: ["px", "rem", "em"],
-  dimension: ["px", "rem", "%", "vw", "vh"],
+  dimension: ["px", "rem", "%", "vw", "vh", "dvh", "dvw", "svh"],
   border: ["px", "rem", "%"],
 }
 

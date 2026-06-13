@@ -1,6 +1,7 @@
 import React from "react";
 import type { JSX } from "react";
 import type { BlockConfig } from "@shared/schema-types";
+import { buildGroupShellStyles, readGroupShellContent } from "@shared/group-shell-styles";
 import { ContainerChildren } from "../../BlockRenderer";
 import { Package as GroupIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
@@ -28,73 +29,33 @@ function GroupRenderer({
   isPreview,
   onNestedBlockChange,
 }: GroupRendererProps) {
-  const tagName = content?.tagName || 'div';
-  const className = [
-    'wp-block-group',
-    content?.className || '',
-  ].filter(Boolean).join(' ');
+  const tagName = content?.tagName || "div";
+  const className = ["wp-block-group", content?.className || ""].filter(Boolean).join(" ");
   const TagName = tagName as keyof JSX.IntrinsicElements;
 
-  const display = content?.display || 'block';
-  const flexDirection = content?.flexDirection || 'column';
-  const flexWrap = content?.flexWrap || 'nowrap';
-  const alignItems = content?.alignItems || 'flex-start';
-  const justifyContent = content?.justifyContent || 'flex-start';
-  const gap = content?.gap || '0px';
-  const overflow = content?.overflow || 'visible';
+  const shellContent = readGroupShellContent(content as BlockConfig["content"]);
+  const childBlocks = children ?? hostBlock.children ?? [];
+  const { outerStyle } = buildGroupShellStyles({
+    styles,
+    content: shellContent,
+    children: childBlocks.map((child) => ({ styles: child.styles })),
+  });
 
-  const containerStyle: React.CSSProperties = {
-    ...styles,
-    padding: styles?.padding || '1.25em 2.375em',
-    ...(display === 'flex' || display === 'inline-flex' ? {
-      display,
-      flexDirection,
-      flexWrap,
-      alignItems,
-      justifyContent,
-      gap,
-    } : {}),
-    ...(display === 'grid' ? {
-      display: 'grid',
-      gridTemplateColumns: content?.gridTemplateColumns || 'repeat(auto-fill, minmax(200px, 1fr))',
-      gridTemplateRows: content?.gridTemplateRows,
-      gap,
-      alignItems,
-      justifyContent,
-    } : {}),
-    ...(display === 'block' || display === 'inline-block' || display === 'inline' ? {
-      display,
-    } : {}),
-    overflow,
-    minWidth: content?.minWidth,
-    maxWidth: content?.maxWidth,
-    minHeight: content?.minHeight,
-    maxHeight: content?.maxHeight,
-    width: content?.width || styles?.width,
-    height: content?.height || styles?.height,
-    boxSizing: 'border-box',
-  };
-
-  // Real block id/name so ContainerChildren registers a valid droppableId for insert/move.
   const blockForChildren: BlockConfig = {
     ...hostBlock,
-    content: content as any,
+    content: content as BlockConfig["content"],
     styles,
-    children: children ?? hostBlock.children ?? [],
+    children: childBlocks,
   };
 
   return (
-    <TagName
-      className={className}
-      style={containerStyle}
-    >
-      <div className="wp-block-group__inner-container">
-        <ContainerChildren
-          block={blockForChildren}
-          isPreview={isPreview ?? false}
-          onBlockChange={onNestedBlockChange}
-        />
-      </div>
+    <TagName className={className} style={outerStyle}>
+      <ContainerChildren
+        block={blockForChildren}
+        isPreview={isPreview ?? false}
+        stackClassName="wp-block-group__inner-container"
+        onBlockChange={onNestedBlockChange}
+      />
     </TagName>
   );
 }
@@ -104,16 +65,16 @@ function GroupRenderer({
 // ============================================================================
 
 const GroupBlock = createBlockDefinition<GroupContent>({
-  id: 'core/group',
-  label: 'Group',
+  id: "core/group",
+  label: "Group",
   icon: GroupIcon,
-  description: 'Gather blocks in a layout container',
-  category: 'layout',
+  description: "Gather blocks in a layout container",
+  category: "layout",
   isContainer: true,
   handlesOwnChildren: true,
   defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
-    padding: '1.25em 2.375em',
+    padding: "1.25em 2.375em",
   },
   settings: GroupSettings,
   hasSettings: true,

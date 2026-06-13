@@ -39,7 +39,15 @@ function BlockWrapper({ block, styles, stackDirection, children }: {
 	return (
 		<div className="block-container w-full">
 			<div style={{ width: "100%", minWidth: 0, ...flexItemPlacement, ...getBlockStackLayerWrapperStyles(block) }}>
-				<div className={`block-${block.id}`} style={{ width: styles.width || "100%" }} {...animationAttributes}>
+				<div
+					className={`block-${block.id}`}
+					style={{
+						width: styles.width || "100%",
+						minWidth: 0,
+						boxSizing: "border-box",
+					}}
+					{...animationAttributes}
+				>
 					{children}
 				</div>
 			</div>
@@ -57,6 +65,7 @@ function BlockWrapper({ block, styles, stackDirection, children }: {
  */
 export default function PublicBlockRenderer({ block, stackDirection = "column" }: PublicBlockRendererProps) {
 	const { styles, css } = getPublicBlockStyles(block);
+	const patchedBlock: BlockConfig = { ...block, styles };
 	const Component = CLIENT_COMPONENTS[block.name] || BLOCK_COMPONENTS[block.name];
 
 	if (!Component) {
@@ -73,7 +82,7 @@ export default function PublicBlockRenderer({ block, stackDirection = "column" }
 		<>
 			<BlockWrapper block={block} styles={styles} stackDirection={stackDirection}>
 				<Suspense fallback={<div style={{ minHeight: "20px" }} />}>
-					<Component {...block} />
+					<Component {...patchedBlock} />
 				</Suspense>
 			</BlockWrapper>
 			{css && <style dangerouslySetInnerHTML={{ __html: css }} />}
