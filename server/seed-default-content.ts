@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { pathToFileURL } from "node:url";
 import { models } from "./storage.js";
 import { initializeDefaultTemplates } from "./initialize-default-templates.js";
 import { initializeDefaultThemes } from "./themes.js";
@@ -45,12 +44,16 @@ async function main(): Promise<void> {
 	console.log("[seed] Default content check complete.");
 }
 
-const entryHref = process.argv[1]
-	? pathToFileURL(process.argv[1]).href
-	: "";
-const isDirectRun = entryHref !== "" && import.meta.url === entryHref;
+/** True only when invoked as `node dist/seed-default-content.js`, not when bundled into index.js. */
+function isSeedCliEntry(): boolean {
+	const entry = process.argv[1];
+	if (!entry) {
+		return false;
+	}
+	return /seed-default-content\.(js|ts|mjs|cjs)$/.test(entry);
+}
 
-if (isDirectRun) {
+if (isSeedCliEntry()) {
 	main()
 		.then(() => process.exit(0))
 		.catch((error: unknown) => {

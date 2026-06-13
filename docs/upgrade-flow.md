@@ -48,18 +48,36 @@ nextpress upgrade --version beta-v1.0.2
 
 The command does this:
 
-1. Reads the installed schema config.
-2. Pulls the target image.
-3. Reads the target image schema config.
-4. Compares `schemaVersion` with `previousSchemaVersion`.
-5. Starts PostgreSQL if needed.
-6. Creates a database backup under `<install-dir>/backups`.
-7. Runs `pnpm drizzle-kit migrate` from the target app image when schema changes are declared.
-8. Seeds default templates and themes if missing (`node dist/seed-default-content.js`).
-9. Writes the target schema config into the install directory.
-10. Restarts the compose stack.
+1. Self-updates the `nextpress` CLI from the release URL when a newer script is published.
+2. Stops app and Caddy before database work (avoids query traffic during Postgres recovery).
+3. Refreshes `docker-compose.prod.yml` from the canonical compose URL.
+4. Prunes stale Docker images and old SQL backups (keeps the 3 newest).
+5. Verifies free disk space (≥1 GB install dir, ≥2 GB Docker data root) before continuing.
+6. Reads the installed schema config.
+7. Pulls the target image.
+8. Reads the target image schema config.
+9. Compares `schemaVersion` with `previousSchemaVersion`.
+10. Starts PostgreSQL if needed and waits until it accepts queries (`SELECT 1`).
+11. Creates a database backup under `<install-dir>/backups` when schema changes are declared.
+12. Runs `pnpm drizzle-kit migrate` from the target app image when schema changes are declared.
+13. Seeds default templates and themes if missing (`node dist/seed-default-content.js`).
+14. Writes the target schema config into the install directory.
+15. Starts the full stack and waits for `/api/health` before reporting success.
 
-If the installed schema already matches the target schema, the command updates the image version and restarts the stack without running migrations.
+If the installed schema already matches the target schema, the command updates the image version, seeds defaults if missing, and restarts the stack without running migrations.
+
+## 3.1 Disk space
+
+Upgrades refuse to continue when disk is too low for image pull, backup, and Postgres checkpoint I/O:
+
+- **Install directory:** at least **1 GB** free (`/opt/nextpress` by default).
+- **Docker data root:** at least **2 GB** free (usually `/var/lib/docker`).
+
+The command prunes dangling Docker layers and old `nextpress-db-*.sql` backups (keeps 3) before checking. If space is still insufficient, free disk on the host and rerun `nextpress upgrade`.
+
+## 3.2 Service readiness
+
+Postgres health uses a real query, not `pg_isready` alone. The app is not started until Postgres accepts connections and `/api/health` returns OK.
 
 ## 4. Incompatible Schema Chain
 

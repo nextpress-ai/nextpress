@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly CLI_VERSION="nextpress 1.0.11"
+readonly CLI_VERSION="nextpress 1.0.12"
 readonly DEFAULT_INSTALL_DIR="/opt/nextpress"
 readonly DEFAULT_VERSION="latest"
 readonly COMPOSE_FILE="docker-compose.prod.yml"
 readonly RELEASE_CONFIG_FILE="nextpress.config.json"
 readonly BACKUP_DIR="backups"
 readonly DEFAULT_COMPOSE_SPEC_URL="https://raw.githubusercontent.com/pabloh3/nextpress1/main/docker-compose.prod.yml"
+readonly DEFAULT_COMMAND_URL="${NEXTPRESS_COMMAND_URL:-${NEXTPRESS_RAW_BASE:-https://raw.githubusercontent.com/pabloh3/nextpress1/main}/scripts/nextpress}"
+readonly MIN_FREE_MB_INSTALL=1024
+readonly MIN_FREE_MB_DOCKER=2048
+readonly BACKUP_KEEP_COUNT=3
 readonly SETUP_URL="http://nextpress.localhost"
 
 INSTALL_DIR="${NEXTPRESS_INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
@@ -283,6 +287,22 @@ resolve_compose_file() {
 	curl -fsSL "$DEFAULT_COMPOSE_SPEC_URL" -o "$target" || fail "Could not fetch compose from default URL."
 	validate_compose_file "$target" "$source"
 	info "Using compose from: $source"
+}
+
+refresh_compose_file() {
+	local target="$1"
+	local source
+
+	if [ "${NEXTPRESS_COMPOSE_URL:-}" != "" ]; then
+		source="NEXTPRESS_COMPOSE_URL"
+		curl -fsSL "$NEXTPRESS_COMPOSE_URL" -o "$target" || fail "Could not fetch compose from NEXTPRESS_COMPOSE_URL."
+	else
+		source="$DEFAULT_COMPOSE_SPEC_URL"
+		curl -fsSL "$DEFAULT_COMPOSE_SPEC_URL" -o "$target" || fail "Could not fetch compose from default URL."
+	fi
+
+	validate_compose_file "$target" "$source"
+	info "Refreshed compose from: $source"
 }
 
 generate_secret_hex() {
@@ -593,12 +613,181 @@ reset_database_volume() {
 	docker_cmd volume rm "$volume_name" >/dev/null 2>&1 || warn "Could not remove database volume: $volume_name. It may already be absent."
 }
 
+get_free_mb() {
+	local path="$1"
+	df -Pm "$path" 2>/dev/null | awk 'NR==2 {print $4}'
+}
+
+get_docker_data_path() {
+	local root
+	root="$(docker_cmd info --format '{{.DockerRootDir}}' 2>/dev/null || true)"
+	if [ "$root" = "" ]; then
+		printf '%s\n' "/var/lib/docker"
+		return
+	fi
+	printf '%s\n' "$root"
+}
+
+free_upgrade_disk_space() {
+	local target_image old_image old_backup
+
+	target_image="$(app_image)"
+	info "Freeing disk space before upgrade..."
+
+	if [ -d "$BACKUP_DIR" ]; then
+		while IFS= read -r old_backup; do
+			[ -n "$old_backup" ] || continue
+			rm -f "$old_backup"
+			info "Removed old backup: $(basename "$old_backup")"
+		done < <(ls -t "$BACKUP_DIR"/nextpress-db-*.sql 2>/dev/null | tail -n +$((BACKUP_KEEP_COUNT + 1)) || true)
+	fi
+
+	docker_cmd image prune -f >/dev/null 2>&1 || true
+
+	while IFS= read -r old_image; do
+		[ -n "$old_image" ] || continue
+		[ "$old_image" = "$target_image" ] && continue
+		if docker_cmd rmi "$old_image" >/dev/null 2>&1; then
+			info "Removed old image: $old_image"
+		fi
+	done < <(docker_cmd images "husseinkizz/nextpress" --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -v '<none>' || true)
+}
+
+assert_disk_space_for_upgrade() {
+	local install_free docker_root docker_free
+
+	install_free="$(get_free_mb "$INSTALL_DIR")"
+	docker_root="$(get_docker_data_path)"
+	docker_free="$(get_free_mb "$docker_root")"
+
+	if [ "${install_free:-0}" -lt "$MIN_FREE_MB_INSTALL" ]; then
+		fail "Need at least ${MIN_FREE_MB_INSTALL}MB free at $INSTALL_DIR (found ${install_free:-unknown}MB). Free disk space, then rerun: nextpress upgrade"
+	fi
+
+	if [ "${docker_free:-0}" -lt "$MIN_FREE_MB_DOCKER" ]; then
+		fail "Need at least ${MIN_FREE_MB_DOCKER}MB free for Docker at $docker_root (found ${docker_free:-unknown}MB). Free disk space, then rerun: nextpress upgrade"
+	fi
+
+	info "Disk check OK: ${install_free}MB at install dir, ${docker_free}MB for Docker."
+}
+
+stop_app_services() {
+	info "Stopping app services before database work..."
+	compose stop app caddy 2>/dev/null || true
+}
+
+prepare_upgrade_workspace() {
+	stop_app_services
+	refresh_compose_file "$COMPOSE_FILE"
+	free_upgrade_disk_space
+	assert_disk_space_for_upgrade
+}
+
+try_self_update_for_upgrade() {
+	local upgrade_args=("$@")
+	local bin_path tmp_path updated url
+
+	if [ "${NEXTPRESS_UPGRADE_REEXEC:-}" = "true" ]; then
+		return
+	fi
+
+	bin_path="$(command -v nextpress 2>/dev/null || true)"
+	if [ "$bin_path" = "" ]; then
+		return
+	fi
+
+	url="$DEFAULT_COMMAND_URL"
+	tmp_path="$(mktemp)"
+	if ! curl -fsSL "$url" -o "$tmp_path"; then
+		rm -f "$tmp_path"
+		warn "Could not update nextpress command; continuing with installed version."
+		return
+	fi
+
+	if cmp -s "$tmp_path" "$bin_path" 2>/dev/null; then
+		rm -f "$tmp_path"
+		return
+	fi
+
+	chmod +x "$tmp_path"
+	updated="false"
+	if cp "$tmp_path" "$bin_path" 2>/dev/null; then
+		updated="true"
+	elif command_exists sudo && sudo cp "$tmp_path" "$bin_path"; then
+		updated="true"
+	fi
+	rm -f "$tmp_path"
+
+	if [ "$updated" = "true" ]; then
+		info "Updated nextpress command from $url"
+		export NEXTPRESS_UPGRADE_REEXEC=true
+		exec "$bin_path" upgrade "${upgrade_args[@]}"
+	fi
+}
+
+wait_for_app_health() {
+	local attempt=0
+	local max_attempts=30
+
+	info "Waiting for app health check..."
+	while [ "$attempt" -lt "$max_attempts" ]; do
+		if compose exec -T app node -e "fetch('http://127.0.0.1:5000/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1; then
+			info "App is healthy."
+			return 0
+		fi
+		sleep 2
+		attempt=$((attempt + 1))
+	done
+
+	fail "App health check failed after upgrade. Check: nextpress logs app"
+}
+
+start_upgrade_stack() {
+	ensure_postgres_running
+	compose up -d
+	wait_for_app_health
+}
+
+postgres_accepts_queries() {
+	compose exec -T postgres psql -U postgres -d nextpress -c 'SELECT 1' >/dev/null 2>&1
+}
+
 ensure_postgres_running() {
+	local attempt=0
+	local max_attempts=60
+	local restarted="false"
+
+	try_postgres_ready() {
+		attempt=0
+		while [ "$attempt" -lt "$max_attempts" ]; do
+			if postgres_accepts_queries; then
+				info "Database is ready."
+				return 0
+			fi
+			sleep 2
+			attempt=$((attempt + 1))
+		done
+		return 1
+	}
+
 	info "Starting database service..."
 	compose up -d postgres
-	info "Waiting for database to become healthy..."
-	compose exec -T postgres pg_isready -U postgres >/dev/null || sleep 3
-	compose exec -T postgres pg_isready -U postgres >/dev/null || fail "Database did not become ready."
+	info "Waiting for database to accept queries (max ${max_attempts} attempts)..."
+
+	if try_postgres_ready; then
+		return 0
+	fi
+
+	if [ "$restarted" = "false" ]; then
+		warn "Database not ready; restarting postgres once..."
+		compose restart postgres
+		restarted="true"
+		if try_postgres_ready; then
+			return 0
+		fi
+	fi
+
+	fail "Database did not accept queries. Check: nextpress logs postgres"
 }
 
 run_schema_migrations() {
@@ -744,6 +933,7 @@ run_install() {
 
 run_upgrade() {
 	parse_upgrade_args "$@"
+	try_self_update_for_upgrade "$@"
 	local current_config
 	local current_schema_version
 	local has_schema_changes
@@ -757,6 +947,8 @@ run_upgrade() {
 	write_legacy_installed_config
 
 	info "Upgrading stack in $INSTALL_DIR to $INSTALL_VERSION..."
+	(cd "$INSTALL_DIR" && prepare_upgrade_workspace)
+
 	if [ "${NEXTPRESS_SKIP_IMAGE_PULL:-}" = "true" ]; then
 		info "Skipping image pull because NEXTPRESS_SKIP_IMAGE_PULL=true."
 	else
@@ -781,7 +973,7 @@ run_upgrade() {
 		trap - RETURN
 		(cd "$INSTALL_DIR" && ensure_postgres_running)
 		(cd "$INSTALL_DIR" && run_default_content_seed)
-		(cd "$INSTALL_DIR" && compose up -d)
+		(cd "$INSTALL_DIR" && start_upgrade_stack)
 		info "Upgrade complete. Schema is now $target_schema_version."
 		return
 	fi
@@ -804,7 +996,7 @@ run_upgrade() {
 		copy_installed_config "$target_config"
 		cleanup_target_config "$target_config"
 		trap - RETURN
-		(cd "$INSTALL_DIR" && compose up -d)
+		(cd "$INSTALL_DIR" && start_upgrade_stack)
 		info "Override upgrade complete. Schema is now $target_schema_version."
 		return
 	fi
@@ -827,7 +1019,7 @@ run_upgrade() {
 	copy_installed_config "$target_config"
 	cleanup_target_config "$target_config"
 	trap - RETURN
-	(cd "$INSTALL_DIR" && compose up -d)
+	(cd "$INSTALL_DIR" && start_upgrade_stack)
 	info "Upgrade complete. Schema is now $target_schema_version."
 }
 
