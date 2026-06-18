@@ -135,7 +135,38 @@ Build green; full suite **453/453**. Fixed one stale theming-migration assertion
 
 ---
 
-## 2026-06-10 — Phase 8: Renderer Unification (COMPLETE)
+## 2026-06-18 — WordPress Import (Phase 1 — Posts)
+
+Intent: [`docs/internal/intent-wordpress-import.md`](docs/internal/intent-wordpress-import.md)
+
+### Approved tradeoffs
+
+- **Gutenberg parser**: **Deferred** — v1 stores `content.rendered` as a single `core/html` block; raw JSON in `post.other.import.raw`
+- **Featured images**: User chooses **reference** (external URL) or **copy** (sideload via `server/utils/sideload-remote-image.ts` → media row)
+- **Server routes**: Approved — `/api/import/wordpress/discover`, `/posts` GET/POST
+- **Taxonomy**: `shared/posts/post-other.ts` + `enrichPostForApi()` on posts/public GET; `PostInfoBlock` falls back to `other`
+- **Blog**: Explicit picker on import UI (required)
+- **Sidebar**: New **Tools** section → **Import WordPress** (`/admin/import/wordpress`); Posts list also has quick **Import from WordPress** dialog
+- **Imported badge**: Posts table shows outline **Imported** badge when `isImported` from enriched API
+
+### Architecture
+
+```
+shared/import/wordpress/
+  types.ts, normalize-site-url.ts, fetch-wp-api.ts
+  map-wp-post.ts, adapters/posts-adapter.ts
+  create-wordpress-importer.ts   # factory + adapter registry (posts only)
+
+server/routes/import.wordpress.routes.ts  # SSRF via validate-external-url.ts
+```
+
+### Deferred (documented, not implemented)
+
+- Gutenberg → native `BlockConfig[]` conversion
+- WP Application Passwords for draft/private posts
+- Adapters: pages, media, comments, users
+- Re-import / update by `wpId`
+
 
 Full spec: [`docs/phase8-renderer-unification.md`](docs/phase8-renderer-unification.md). Tracker: `task.md`.
 

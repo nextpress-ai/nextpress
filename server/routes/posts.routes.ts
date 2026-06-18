@@ -3,6 +3,7 @@ import type { Deps } from './shared/deps';
 import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
 import { coerceDates } from './shared/date-coerce';
+import { enrichPostForApi } from '@shared/posts/post-other';
 
 /**
  * Creates Posts CRUD routes for the NextPress API.
@@ -56,7 +57,7 @@ export function createPostsRoutes(deps: Deps): Router {
         });
 
         return {
-          posts,
+          posts: posts.map(enrichPostForApi),
           total,
           page,
           per_page: limit,
@@ -84,7 +85,7 @@ export function createPostsRoutes(deps: Deps): Router {
         if (!post) {
           return res.status(404).json({ message: 'Post not found' });
         }
-        res.json(post);
+        res.json(enrichPostForApi(post));
       } catch (error) {
         console.error('Error fetching post:', error);
         res.status(500).json({ message: 'Failed to fetch post' });

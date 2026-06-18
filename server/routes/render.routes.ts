@@ -11,6 +11,7 @@ import { PageTemplate } from "../../renderer/templates/page";
 import type { PageRenderOptions } from "../../renderer/templates/page";
 import type { BlockConfig } from "@shared/schema-types";
 import type { BlockAnimation } from "@shared/schema-types";
+import { enrichPostForApi } from "@shared/posts/post-other";
 
 import { generateBlockAnimationCSS, getEntryAnimationBaseCSS } from "@shared/animation-utils";
 
@@ -115,7 +116,7 @@ export function createRenderRoutes(deps: Deps): Router {
 				const siteSettings = getSiteSettings(req);
 
 				const html = await themeManager.renderContent("single-post", {
-					post,
+					post: enrichPostForApi(post),
 					site: siteSettings,
 				});
 

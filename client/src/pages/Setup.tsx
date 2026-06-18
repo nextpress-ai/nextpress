@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DomainInputWithVerify } from '@/components/domain';
 import { BrandedFormLayout } from '@/components/auth';
 import { cn } from '@/lib/utils';
@@ -23,15 +24,28 @@ const PASSWORD_REQUIREMENTS = [
   { regex: /[0-9]/, label: 'One number' },
 ];
 
-/** Time to allow routing and certificates to settle before opening the site domain. */
+/** Time to allow routing and certificates to settle before opening a public site domain. */
 const POST_SETUP_REDIRECT_MS = 8000;
+
+const LOCAL_HOST_PATTERN = /^(localhost|127\.0\.0\.1|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?$/i;
+
+/** Whether the domain value targets this machine (localhost, loopback, or raw IP). */
+const isLocalHostDomain = (value: string): boolean => {
+  const raw = value.trim().replace(/^https?:\/\//, '').split('/')[0];
+  return LOCAL_HOST_PATTERN.test(raw);
+};
+
+const buildLocalHostDomain = (): string => {
+  if (typeof window === 'undefined') return 'localhost:5000';
+  return window.location.host || 'localhost:5000';
+};
 
 /**
  * Builds `/admin/login` on the configured site host so the browser does not stay on a raw address.
  */
 function buildLoginUrlFromDomain(domain: string): string {
   const raw = domain.trim();
-  if (!raw) {
+  if (!raw || isLocalHostDomain(raw)) {
     return `${window.location.origin}/admin/login`;
   }
   try {
@@ -56,6 +70,7 @@ export default function Setup() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [useLocalDomain, setUseLocalDomain] = useState(false);
   const [finishingSetup, setFinishingSetup] = useState<{
     loginUrl: string;
     httpsNote: boolean;
@@ -70,8 +85,12 @@ export default function Setup() {
 
   useEffect(() => {
     try {
+      const host = buildLocalHostDomain();
       const hostname = window.location.hostname;
-      if (hostname && hostname !== 'localhost') {
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        setUseLocalDomain(true);
+        setFormData((prev) => ({ ...prev, domain: host }));
+      } else if (hostname) {
         setFormData((prev) => ({ ...prev, domain: hostname }));
       }
     } catch {
@@ -144,6 +163,14 @@ export default function Setup() {
         typeof data.loginUrl === 'string' && data.loginUrl.length > 0
           ? data.loginUrl
           : buildLoginUrlFromDomain(formData.domain);
+
+      const redirectLocal =
+        useLocalDomain || isLocalHostDomain(formData.domain);
+
+      if (redirectLocal) {
+        setLocation('/admin/login');
+        return;
+      }
 
       scheduledRedirect = true;
       setIsLoading(false);
@@ -246,18 +273,57 @@ export default function Setup() {
               />
             </div>
 
-            <DomainInputWithVerify
-              id="domain"
-              label="Domain"
-              inputMode="domain"
-              value={formData.domain}
-              onChange={(v) => {
-                setFormData((prev) => ({ ...prev, domain: v }));
-              }}
-              placeholder="example.com"
-              disabled={isLoading}
-              required
-            />
+            <div className="space-y-3">
+              <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
+                <Checkbox
+                  id="useLocalDomain"
+                  checked={useLocalDomain}
+                  onCheckedChange={(checked) => {
+                    const enabled = checked === true;
+                    setUseLocalDomain(enabled);
+                    setFormData((prev) => ({
+                      ...prev,
+                      domain: enabled ? buildLocalHostDomain() : '',
+                    }));
+                  }}
+                  disabled={isLoading}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="useLocalDomain" className="cursor-pointer font-medium">
+                    Use local
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Run on this machine only — no DNS or HTTPS setup required.
+                  </p>
+                </div>
+              </div>
+
+              {useLocalDomain ? (
+                <div className="space-y-2">
+                  <Label htmlFor="domain">Local address</Label>
+                  <Input
+                    id="domain"
+                    value={formData.domain}
+                    readOnly
+                    disabled
+                    className="h-10 bg-muted"
+                  />
+                </div>
+              ) : (
+                <DomainInputWithVerify
+                  id="domain"
+                  label="Domain"
+                  inputMode="domain"
+                  value={formData.domain}
+                  onChange={(v) => {
+                    setFormData((prev) => ({ ...prev, domain: v }));
+                  }}
+                  placeholder="example.com"
+                  disabled={isLoading}
+                  required
+                />
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Admin email</Label>

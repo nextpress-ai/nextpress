@@ -10,6 +10,7 @@ import {
   Plug,
   Users,
   Cog,
+  Download,
 } from 'lucide-react';
 import { NEXTPRESS_CONFIG } from '../../../config';
 
@@ -28,6 +29,7 @@ const menuItems: MenuItem[] = [
   { label: 'Comments', path: '/admin/comments', icon: MessageCircle, section: 'Content' },
   { label: 'Themes', path: '/admin/themes', icon: Paintbrush, section: 'Appearance' },
   { label: 'Templates', path: '/admin/templates', icon: Layout, section: 'Appearance' },
+  { label: 'Import WordPress', path: '/admin/import/wordpress', icon: Download, section: 'Tools' },
   { label: 'Plugins', path: '/admin/plugins', icon: Plug, section: 'System' },
   { label: 'Users', path: '/admin/users', icon: Users, section: 'System' },
   { label: 'Settings', path: '/admin/settings', icon: Cog, section: 'System' },

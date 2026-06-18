@@ -30,11 +30,18 @@ export function parseStructuredContent(content: BlockContent | undefined): Recor
 	return content.data || {};
 }
 
-/** Unwrap HTML content: { kind: "html", value, sanitized } → { content, sanitized } */
+/** Unwrap HTML content from structured, html, or legacy shapes. */
 export function parseHtmlContent(content: BlockContent | undefined): { content: string; sanitized: boolean } {
 	if (!content) return { content: "", sanitized: false };
 	if (content.kind === "html") {
 		return { content: content.value || "", sanitized: content.sanitized || false };
+	}
+	if (content.kind === "structured") {
+		const data = content.data || {};
+		return {
+			content: typeof data.content === "string" ? data.content : "",
+			sanitized: false,
+		};
 	}
 	// Fallback for legacy format
 	return { content: (content as Record<string, unknown>).content as string || "", sanitized: false };

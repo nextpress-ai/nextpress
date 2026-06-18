@@ -24,6 +24,7 @@ const Register = lazy(() => import('@/pages/Register'));
 const PageBuilderEditor = lazy(() => import('@/pages/PageBuilderEditor'));
 const Templates = lazy(() => import('@/pages/Templates'));
 const Plugins = lazy(() => import('@/pages/Plugins'));
+const ImportWordPress = lazy(() => import('@/pages/ImportWordPress'));
 const PreviewPage = lazy(() => import('@/pages/PreviewPage'));
 const Setup = lazy(() => import('@/pages/Setup'));
 
@@ -129,6 +130,7 @@ function Router() {
           <Route path="/admin/themes" component={Themes} />
           <Route path="/admin/templates" component={Templates} />
           <Route path="/admin/plugins" component={Plugins} />
+          <Route path="/admin/import/wordpress" component={ImportWordPress} />
           <Route path="/admin/users" component={Users} />
           <Route path="/admin/settings" component={Settings} />
           <Route

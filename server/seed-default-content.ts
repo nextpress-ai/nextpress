@@ -31,12 +31,6 @@ export async function seedDefaultContent(): Promise<void> {
 
 	const authorId = await resolveSeedAuthorId();
 	await initializeDefaultTemplates({ authorId });
-
-	const site = await models.sites.findDefaultSite();
-	const activeTheme = await models.themes.findActiveTheme();
-	if (site && activeTheme && !site.activeThemeId) {
-		await models.sites.update(site.id, { activeThemeId: activeTheme.id });
-	}
 }
 
 async function main(): Promise<void> {

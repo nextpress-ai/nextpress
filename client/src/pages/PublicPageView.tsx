@@ -143,13 +143,9 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
           <meta name="twitter:image" content={data.featuredImage} />
         )}
         <link rel="canonical" href={canonicalUrl} />
-        {googleFontUrl && (
-          <>
-            <link rel="preconnect" href="https://fonts.googleapis.com" />
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-            <link rel="stylesheet" href={googleFontUrl} />
-          </>
-        )}
+        {googleFontUrl && <link rel="preconnect" href="https://fonts.googleapis.com" />}
+        {googleFontUrl && <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />}
+        {googleFontUrl && <link rel="stylesheet" href={googleFontUrl} />}
         {seo?.noIndex && (
           <meta name="robots" content="noindex, nofollow" />
         )}
@@ -158,12 +154,8 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
         ))}
         
         {/* Article specific meta for posts */}
-        {type === 'post' && (
-          <>
-            <meta property="article:published_time" content={publishDate.toISOString()} />
-            <meta property="article:modified_time" content={typeof data.updatedAt === 'string' ? data.updatedAt : new Date(data.updatedAt || publishDate).toISOString()} />
-          </>
-        )}
+        {type === 'post' && <meta property="article:published_time" content={publishDate.toISOString()} />}
+        {type === 'post' && <meta property="article:modified_time" content={typeof data.updatedAt === 'string' ? data.updatedAt : new Date(data.updatedAt || publishDate).toISOString()} />}
       </Helmet>
 
       {/* Page content */}

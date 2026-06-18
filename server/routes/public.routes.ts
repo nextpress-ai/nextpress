@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Deps } from './shared/deps';
 import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
+import { enrichPostForApi } from '@shared/posts/post-other';
 
 /**
  * Creates public API routes for accessing published content without authentication.
@@ -67,7 +68,7 @@ export function createPublicRoutes(deps: Deps): Router {
           return res.status(404).json({ message: 'Post not found' });
         }
 
-        res.json(post);
+        res.json(enrichPostForApi(post));
       });
 
       if (err) {

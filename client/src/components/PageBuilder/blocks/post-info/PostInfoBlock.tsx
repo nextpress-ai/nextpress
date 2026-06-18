@@ -11,6 +11,7 @@ import {
 import { useBlockState } from '../useBlockState';
 import { BlockShell } from '../shared/block-shell';
 import { defaultParseContent, defaultSerializeContent } from '../createBlockDefinition';
+import { parsePostOther } from '@shared/posts/post-other';
 import {
   type PostInfoContent,
   type PostMeta,
@@ -44,10 +45,12 @@ function usePostMeta(
   });
 
   if (!data) return null;
+
+  const parsedOther = parsePostOther(data.other);
   return {
     publishedAt: data.publishedAt,
-    categories: data.categories,
-    tags: data.tags,
+    categories: data.categories ?? parsedOther.categories ?? [],
+    tags: data.tags ?? parsedOther.tags ?? [],
     wordCount: data.wordCount,
   };
 }

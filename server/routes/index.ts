@@ -22,6 +22,7 @@ import { createPreviewRoutes } from './preview.routes';
 import { createPublicRoutes } from './public.routes';
 import { createRenderRoutes } from './render.routes';
 import { createSetupRoutes } from './setup.routes';
+import { createWordPressImportRoutes } from './import.wordpress.routes';
 import { setupCheck } from '../middleware/setupCheck';
 import express from 'express';
 import fs from 'node:fs';
@@ -94,6 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/settings', createSettingsRoutes(deps));
   app.use('/api/site', createSiteRoutes(deps));
   app.use('/api/dashboard', createDashboardRoutes(deps));
+  app.use('/api/import/wordpress', createWordPressImportRoutes(deps));
 
   app.use('/api/preview', createPreviewRoutes(deps));
   app.use('/api/public', createPublicRoutes(deps));

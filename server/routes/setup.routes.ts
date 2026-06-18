@@ -2,7 +2,12 @@ import { Router } from 'express';
 import type { Deps } from './shared/deps';
 import { asyncHandler } from './shared/async-handler';
 import { updateCaddyConfig } from '../utils/caddy';
-import { getCaddyTlsHostnames, validateDomain } from '../utils/validate-domain';
+import {
+  getCaddyTlsHostnames,
+  validateDomain,
+} from '../utils/validate-domain';
+import { normalizeSetupSiteUrl } from '../utils/normalize-setup-site-url';
+import { collectErrorText } from '../utils';
 import { verifyDomainReadiness } from '../utils/verify-domain-readiness';
 import { seedDefaultContent } from '../seed-default-content';
 
@@ -69,6 +74,7 @@ export function createSetupRoutes(deps: Deps): Router {
   router.post('/', asyncHandler(async (req, res) => {
     const { email, password, username, siteName, domain } = req.body;
 
+    try {
     // Validate required fields
     if (!email || !password || !siteName || !domain) {
       return res.status(400).json({
@@ -119,42 +125,41 @@ export function createSetupRoutes(deps: Deps): Router {
     // Generate username from email if not provided
     const finalUsername = username || email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
 
-    // Check if username already exists
-    const existingUser = await deps.models.users.findByUsername(finalUsername);
-    if (existingUser) {
-      return res.status(400).json({
-        error: 'Username taken',
-        message: 'Please choose a different username',
-      });
-    }
-
-    // Check if email already exists
-    const existingEmail = await deps.models.users.findByEmail(email);
-    if (existingEmail) {
-      return res.status(400).json({
-        error: 'Email taken',
-        message: 'An account with this email already exists',
-      });
-    }
-
-    // Hash password
     const bcrypt = await import('bcrypt');
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const existingEmailUser = await deps.models.users.findByEmail(email);
+    let adminUser = existingEmailUser;
 
-    // Create admin user
-    const adminUser = await deps.models.users.create({
-      email,
-      username: finalUsername,
-      password: hashedPassword,
-      firstName: 'Admin',
-      status: 'active',
-    });
+    if (adminUser) {
+      const passwordMatch = await bcrypt.compare(password, adminUser.password || '');
+      if (!passwordMatch) {
+        return res.status(400).json({
+          error: 'Email taken',
+          message: 'An account with this email already exists',
+        });
+      }
+    } else {
+      const existingUser = await deps.models.users.findByUsername(finalUsername);
+      if (existingUser) {
+        return res.status(400).json({
+          error: 'Username taken',
+          message: 'Please choose a different username',
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      adminUser = await deps.models.users.create({
+        email,
+        username: finalUsername,
+        password: hashedPassword,
+        firstName: 'Admin',
+        status: 'active',
+      });
+    }
 
     // Get admin role
     const adminRole = await deps.models.roles.findByName('admin');
 
-    // Normalize domain for siteUrl
-    const siteUrl = domain.startsWith('http') ? domain : `https://${domain}`;
+    const siteUrl = normalizeSetupSiteUrl(domain);
     const siteBase = siteUrl.replace(/\/+$/, '');
     const loginUrl = `${siteBase}/admin/login`;
 
@@ -169,6 +174,7 @@ export function createSetupRoutes(deps: Deps): Router {
         general: {
           siteName,
           siteUrl,
+          adminEmail: email,
         },
       },
     });
@@ -196,6 +202,13 @@ export function createSetupRoutes(deps: Deps): Router {
       caddySuccess: caddyResult.success,
       caddyStatus: caddyResult.message,
     });
+    } catch (error: unknown) {
+      console.error('Setup failed:', collectErrorText(error));
+      return res.status(500).json({
+        error: 'Setup failed',
+        message: collectErrorText(error),
+      });
+    }
   }));
 
   return router;

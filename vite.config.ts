@@ -22,6 +22,8 @@ export default defineConfig({
       "@shared": path.resolve(import.meta.dirname, "shared"),
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
     },
+    // Single React instance across app + pre-bundled deps (avoids invalid hook call in dev).
+    dedupe: ["react", "react-dom"],
   },
   root: path.resolve(import.meta.dirname, "client"),
   build: {
@@ -35,10 +37,16 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    force: true, // Force re-optimization when cache is cleared
-    // Pre-bundle these in the first optimize pass. Without this they are
-    // discovered lazily mid-load, triggering a second pass whose chunks
-    // reference a different React instance → "Invalid hook call" in dev.
-    include: ["react-markdown", "remark-gfm"],
+    // Pre-bundle in the first optimize pass. Lazy discovery triggers a second
+    // pass whose chunks reference a different React instance → null dispatcher
+    // ("Cannot read properties of null (reading 'useState'/'useEffect')") in dev.
+    include: [
+      "react",
+      "react-dom",
+      "react/jsx-dev-runtime",
+      "react/jsx-runtime",
+      "react-markdown",
+      "remark-gfm",
+    ],
   },
 });

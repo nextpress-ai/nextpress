@@ -7,7 +7,6 @@ import express, {
 import { registerRoutes } from './routes';
 import { setupVite, serveStatic, log } from './vite';
 import { initDevDatabase } from './db';
-import { initializeDefaultThemes } from './themes';
 
 // Load environment variables
 dotenv.config();
@@ -49,9 +48,6 @@ app.use((req, res, next) => {
 (async () => {
   // Initialize PGlite schema in development mode
   await initDevDatabase();
-
-  // Initialize default themes after database is ready
-  await initializeDefaultThemes().catch(console.error);
 
   const server = await registerRoutes(app);
 
