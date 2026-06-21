@@ -264,6 +264,20 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 						}
 						return { id: post.id, title: post.title };
 					},
+					updatePost: async ({ postId, data }) => {
+						const parsed = schemas.posts.update.parse(data);
+						const post = await models.posts.update(postId, {
+							...parsed,
+							title: String(parsed.title ?? ""),
+							slug: String(parsed.slug ?? ""),
+						});
+						if (!post) throw new Error("Post not found");
+						deps.hooks.doAction("save_post", post);
+						if (post.status === CONFIG.STATUS.PUBLISH) {
+							deps.hooks.doAction("publish_post", post);
+						}
+						return { id: post.id, title: post.title };
+					},
 				}),
 			);
 
@@ -272,17 +286,217 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 				return res.status(500).json({ message: "Import failed" });
 			}
 
+			const enrichPost = async (item: { postId: string }) => {
+				const post = await models.posts.findById(item.postId);
+				return post ? enrichPostForApi(post) : undefined;
+			};
+
 			const enrichedImported = await Promise.all(
-				result.imported.map(async (item) => {
-					const post = await models.posts.findById(item.postId);
-					return {
-						...item,
-						post: post ? enrichPostForApi(post) : undefined,
-					};
+				result.imported.map(async (item) => ({
+					...item,
+					post: await enrichPost(item),
+				})),
+			);
+
+			const enrichedUpdated = await Promise.all(
+				(result.updated ?? []).map(async (item) => ({
+					...item,
+					post: await enrichPost(item),
+				})),
+			);
+
+			res.json({ ...result, imported: enrichedImported, updated: enrichedUpdated });
+		}),
+	);
+
+	router.get(
+		"/pages",
+		requireAuth,
+		asyncHandler(async (req, res) => {
+			const baseUrl = req.query.baseUrl;
+			const page = Number.parseInt(String(req.query.page ?? "1"), 10) || 1;
+			const perPage = Math.min(
+				Number.parseInt(String(req.query.per_page ?? "20"), 10) || 20,
+				50,
+			);
+
+			if (!baseUrl || typeof baseUrl !== "string") {
+				return res.status(400).json({ message: "baseUrl is required" });
+			}
+
+			const validated = await validateExternalUrl(baseUrl);
+			if (!validated.ok) {
+				return res.status(400).json({ message: validated.message });
+			}
+
+			const pathname = validated.url.pathname.replace(/\/+$/, "");
+			const normalizedBaseUrl = `${validated.url.origin}${pathname}`;
+
+			const { err, result } = await safeTryAsync(async () =>
+				importer.listPages({
+					baseUrl: normalizedBaseUrl,
+					page,
+					perPage,
 				}),
 			);
 
-			res.json({ ...result, imported: enrichedImported });
+			if (err) {
+				console.error("WordPress pages list error:", err);
+				return res.status(502).json({ message: "Failed to list WordPress pages" });
+			}
+
+			res.json({
+				items: result.items,
+				total: result.total,
+				page: result.page,
+				per_page: result.perPage,
+				total_pages: result.totalPages,
+			});
+		}),
+	);
+
+	router.post(
+		"/pages",
+		requireAuth,
+		asyncHandler(async (req: {
+			body?: {
+				baseUrl?: string;
+				siteId?: string;
+				wpIds?: number[];
+				featuredImageMode?: FeaturedImageMode;
+			};
+		}, res) => {
+			const userId = authService.getCurrentUserId(req);
+			if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+			if (!checkRateLimit({ key: `import-pages:${userId}`, limit: 5, windowMs: 60_000 })) {
+				return res.status(429).json({ message: "Import rate limit exceeded. Try again shortly." });
+			}
+
+			const { baseUrl, siteId, wpIds, featuredImageMode: modeInput } = req.body ?? {};
+
+			if (!baseUrl || typeof baseUrl !== "string") {
+				return res.status(400).json({ message: "baseUrl is required" });
+			}
+			if (!siteId || typeof siteId !== "string") {
+				return res.status(400).json({ message: "siteId is required" });
+			}
+			if (!Array.isArray(wpIds) || wpIds.length === 0) {
+				return res.status(400).json({ message: "wpIds must be a non-empty array" });
+			}
+			if (wpIds.length > 50) {
+				return res.status(400).json({ message: "Maximum 50 pages per import batch" });
+			}
+
+			const validated = await validateExternalUrl(baseUrl);
+			if (!validated.ok) {
+				return res.status(400).json({ message: validated.message });
+			}
+
+			const pathname = validated.url.pathname.replace(/\/+$/, "");
+			const normalizedBaseUrl = `${validated.url.origin}${pathname}`;
+			const featuredImageMode = parseFeaturedImageMode(modeInput);
+
+			const site = await models.sites.findById(siteId);
+			if (!site) {
+				return res.status(400).json({ message: "Site not found" });
+			}
+
+			const existingPages = await models.pages.findMany({ limit: 5000 });
+
+			const sideloadAndRecord = async (remoteUrl: string): Promise<string> => {
+				const sideloaded = await sideloadRemoteImage({
+					imageUrl: remoteUrl,
+					uploadDir,
+					allowedMimeTypes: CONFIG.UPLOAD.ALLOWED_MIME_TYPES,
+					maxSize: CONFIG.UPLOAD.LIMIT,
+				});
+				if (!sideloaded.ok) return remoteUrl;
+				const mediaData = schemas.media.insert.parse({
+					filename: sideloaded.filename,
+					originalName: sideloaded.originalName,
+					mimeType: sideloaded.mimeType,
+					size: sideloaded.size,
+					url: sideloaded.url,
+					authorId: userId,
+				});
+				await models.media.create({
+					...mediaData,
+					filename: String(mediaData.filename),
+					originalName: String(mediaData.originalName),
+					mimeType: String(mediaData.mimeType),
+					size: Number(mediaData.size),
+					url: String(mediaData.url),
+					authorId: String(mediaData.authorId),
+				});
+				return sideloaded.url;
+			};
+
+			const resolveFeaturedImage = async (params: { featuredMediaId: number }) => {
+				const remoteUrl = await fetchWpFeaturedImageUrl({
+					baseUrl: normalizedBaseUrl,
+					featuredMediaId: params.featuredMediaId,
+				});
+				if (!remoteUrl) return null;
+				if (featuredImageMode === "reference") return remoteUrl;
+				return sideloadAndRecord(remoteUrl);
+			};
+
+			const resolveContentImage = async (params: { imageUrl: string }) => {
+				if (featuredImageMode === "reference") return null;
+				const imageValidated = await validateExternalUrl(params.imageUrl);
+				if (!imageValidated.ok) return null;
+				return sideloadAndRecord(params.imageUrl);
+			};
+
+			const { err, result } = await safeTryAsync(async () =>
+				importer.importPages({
+					baseUrl: normalizedBaseUrl,
+					siteId,
+					authorId: userId,
+					wpIds: wpIds.filter((id): id is number => typeof id === "number"),
+					featuredImageMode,
+					existingPages,
+					resolveFeaturedImage,
+					resolveContentImage,
+					createPage: async (data) => {
+						const parsed = schemas.pages.insert.parse(data);
+						const page = await models.pages.create({
+							...parsed,
+							title: String(parsed.title),
+							slug: String(parsed.slug),
+							siteId: String(parsed.siteId),
+							authorId: String(parsed.authorId),
+						});
+						deps.hooks.doAction("save_post", page);
+						if (page.status === CONFIG.STATUS.PUBLISH) {
+							deps.hooks.doAction("publish_post", page);
+						}
+						return { id: page.id, title: page.title };
+					},
+					updatePage: async ({ pageId, data }) => {
+						const parsed = schemas.pages.update.parse(data);
+						const page = await models.pages.update(pageId, {
+							...parsed,
+							title: String(parsed.title ?? ""),
+							slug: String(parsed.slug ?? ""),
+						});
+						if (!page) throw new Error("Page not found");
+						deps.hooks.doAction("save_post", page);
+						if (page.status === CONFIG.STATUS.PUBLISH) {
+							deps.hooks.doAction("publish_post", page);
+						}
+						return { id: page.id, title: page.title };
+					},
+				}),
+			);
+
+			if (err) {
+				console.error("WordPress page import error:", err);
+				return res.status(500).json({ message: "Import failed" });
+			}
+
+			res.json(result);
 		}),
 	);
 

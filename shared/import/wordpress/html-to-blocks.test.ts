@@ -142,6 +142,34 @@ describe("htmlToBlocks", () => {
 	});
 });
 
+	it("maps Gutenberg columns and buttons to native layout blocks", () => {
+		const html = [
+			'<div class="wp-block-buttons is-layout-flex">',
+			'<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://example.com/apply">Apply now</a></div>',
+			"</div>",
+			'<div class="wp-block-columns is-layout-flex">',
+			'<div class="wp-block-column is-layout-flow" style="flex-basis:66.66%">',
+			"<p>Left column text.</p>",
+			"</div>",
+			'<div class="wp-block-column is-layout-flow" style="flex-basis:33.33%">',
+			'<figure class="wp-block-image"><img src="https://x.com/sign.png" alt="Sign"></figure>',
+			"</div>",
+			"</div>",
+		].join("");
+		const blocks = htmlToBlocks(html);
+		expect(blocks.map((b) => b.name)).toEqual(["core/buttons", "core/columns"]);
+		expect(blocks[0].content).toMatchObject({
+			kind: "structured",
+			data: {
+				buttons: [{ text: "Apply now", url: "https://example.com/apply" }],
+			},
+		});
+		const columns = blocks[1];
+		expect(columns.type).toBe("container");
+		expect(columns.settings?.columnLayout).toHaveLength(2);
+		expect(columns.children?.map((c) => c.name)).toEqual(["core/paragraph", "core/image"]);
+	});
+
 describe("collectImageUrls", () => {
 	it("collects unique image srcs", () => {
 		const urls = collectImageUrls(

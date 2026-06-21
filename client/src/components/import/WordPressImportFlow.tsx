@@ -39,6 +39,7 @@ type WpPostsListResponse = {
 
 type ImportResponse = {
 	imported: Array<{ wpId: number; postId: string; title: string; status: "imported" }>;
+	updated?: Array<{ wpId: number; postId: string; title: string; status: "updated" }>;
 	skipped: Array<{ wpId: number; reason: string; status: "skipped" }>;
 	failed: Array<{ wpId: number; reason: string; status: "failed" }>;
 };
@@ -113,9 +114,10 @@ export function WordPressImportFlow({ onComplete, compact = false }: WordPressIm
 		},
 		onSuccess: (data) => {
 			queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+			const updated = data.updated?.length ?? 0;
 			toast({
 				title: "Import complete",
-				description: `${data.imported.length} imported, ${data.skipped.length} skipped, ${data.failed.length} failed`,
+				description: `${data.imported.length} imported, ${updated} updated, ${data.skipped.length} skipped, ${data.failed.length} failed`,
 			});
 			onComplete?.();
 		},
@@ -194,10 +196,14 @@ export function WordPressImportFlow({ onComplete, compact = false }: WordPressIm
 				<Alert>
 					<CheckCircle2 className="h-4 w-4" />
 					<AlertTitle>
-						{discoverResult.siteName ?? "WordPress site"} — {discoverResult.entities.posts?.total ?? 0} posts
+						{discoverResult.siteName ?? "WordPress site"} —{" "}
+						{discoverResult.entities.posts?.total ?? 0} posts
+						{(discoverResult.entities.pages?.total ?? 0) > 0 &&
+							`, ${discoverResult.entities.pages?.total} pages`}
 					</AlertTitle>
 					<AlertDescription>
-						Select posts to import. Pages, media, and comments coming later.
+						Select posts to import. Re-importing updates existing posts from the same site.
+						Pages import is available via API (<code className="text-xs">POST /api/import/wordpress/pages</code>).
 					</AlertDescription>
 				</Alert>
 			)}
@@ -207,7 +213,9 @@ export function WordPressImportFlow({ onComplete, compact = false }: WordPressIm
 					{/* Entity tabs stub */}
 					<div className="flex gap-2 border-b pb-2">
 						<Badge>Posts</Badge>
-						<Badge variant="outline" className="opacity-50">Pages (soon)</Badge>
+						<Badge variant="outline">
+							Pages ({discoverResult.entities.pages?.total ?? 0}) — API
+						</Badge>
 						<Badge variant="outline" className="opacity-50">Media (soon)</Badge>
 					</div>
 

@@ -1,5 +1,6 @@
 import { normalizeSiteUrl } from "../normalize-site-url";
 import { fetchWpJson, getWpTotal, getWpTotalPages } from "../fetch-wp-api";
+import { discoverWpPages } from "./pages-adapter";
 import { mapWpPost } from "../map-wp-post";
 import { stripHtml } from "../strip-html";
 import type {
@@ -127,20 +128,47 @@ export const discoverWordPressSite = async (params: {
 	}
 
 	if (postsInfo.total === 0) {
+		const pagesInfo = await discoverWpPages({ baseUrl });
+		if (pagesInfo.total === 0) {
+			return {
+				ok: false,
+				baseUrl,
+				siteName: postsInfo.siteName,
+				error: {
+					code: "no_posts",
+					message: "No public posts or pages found",
+					hint: "Publish content on WordPress or check that the REST API exposes published content.",
+				},
+				entities: {
+					posts: { supported: true, total: 0, reachable: true },
+					pages: {
+						supported: true,
+						total: 0,
+						reachable: pagesInfo.reachable,
+					},
+				},
+			};
+		}
+
 		return {
-			ok: false,
+			ok: true,
 			baseUrl,
 			siteName: postsInfo.siteName,
-			error: {
-				code: "no_posts",
-				message: "No public posts found",
-				hint: "Publish posts on WordPress or check that the REST API exposes published content.",
-			},
 			entities: {
 				posts: { supported: true, total: 0, reachable: true },
+				pages: {
+					supported: true,
+					total: pagesInfo.total,
+					reachable: pagesInfo.reachable,
+				},
+				media: { supported: false, total: 0, reachable: false },
+				comments: { supported: false, total: 0, reachable: false },
+				users: { supported: false, total: 0, reachable: false },
 			},
 		};
 	}
+
+	const pagesInfo = await discoverWpPages({ baseUrl });
 
 	return {
 		ok: true,
@@ -152,7 +180,11 @@ export const discoverWordPressSite = async (params: {
 				total: postsInfo.total,
 				reachable: true,
 			},
-			pages: { supported: false, total: 0, reachable: false },
+			pages: {
+				supported: true,
+				total: pagesInfo.total,
+				reachable: pagesInfo.reachable,
+			},
 			media: { supported: false, total: 0, reachable: false },
 			comments: { supported: false, total: 0, reachable: false },
 			users: { supported: false, total: 0, reachable: false },

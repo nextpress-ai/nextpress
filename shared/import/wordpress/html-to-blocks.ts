@@ -3,16 +3,23 @@ import { parse, HTMLElement, type Node } from "node-html-parser";
 import type { BlockConfig } from "../../schema-types";
 import { sanitizeHtml } from "../../sanitize-html";
 import { attachImportElementMeta } from "./extract-import-element-meta";
+import {
+	buildButtonsBlock,
+	buildColumnsBlock,
+	buildGalleryBlock,
+	buildSeparatorBlock,
+	isGutenbergButtons,
+	isGutenbergColumns,
+	isGutenbergGallery,
+	isUnwrappableGroup,
+} from "./map-gutenberg-layout";
 
 /**
  * Converts a WordPress `content.rendered` HTML string into native NextPress
  * blocks so imported posts are editable like any other content (instead of one
- * opaque HTML block). Anything we don't have a faithful native block for is
- * preserved losslessly as a `core/html` block.
- *
- * Content shapes intentionally match what the existing client blocks read
- * (e.g. lists use `{ ordered, values }`, quotes use `{ value }`) so the page
- * builder renders imported blocks correctly with no editor changes.
+ * opaque HTML block). Gutenberg layout wrappers (columns, buttons, gallery)
+ * map to native layout blocks; anything else unmappable is preserved as
+ * `core/html`.
  */
 
 export type HtmlToBlocksOptions = {
@@ -59,7 +66,7 @@ const buildHtmlFallback = (html: string): BlockConfig =>
 const buildParagraph = (el: HTMLElement): BlockConfig | null => {
 	const inner = el.innerHTML || "";
 	const text = el.text || "";
-	if (!text.trim() && !el.querySelector("img")) return null; // skip empty <p>
+	if (!text.trim() && !el.querySelector("img")) return null;
 	const block = hasInlineMarkup(inner, text)
 		? baseBlock("core/paragraph", "Paragraph", "basic", {
 				kind: "text",
@@ -139,8 +146,13 @@ const buildQuote = (el: HTMLElement): BlockConfig => {
 	return attachImportElementMeta({ block, el });
 };
 
-/** Maps a single top-level element to a native block (or html fallback). */
-const mapElement = (
+const childElements = (el: HTMLElement): HTMLElement[] =>
+	el.childNodes.filter(
+		(n): n is HTMLElement => n instanceof HTMLElement && !!n.rawTagName,
+	);
+
+/** Maps leaf / simple elements (no Gutenberg layout wrappers). */
+const mapLeafElement = (
 	el: HTMLElement,
 	opts: HtmlToBlocksOptions,
 ): BlockConfig | null => {
@@ -148,7 +160,6 @@ const mapElement = (
 
 	if (HEADING_TAGS.has(tag)) return buildHeading(el, Number(tag[1]));
 	if (tag === "p") {
-		// A paragraph that is really just an image wrapper → image block.
 		const img = el.querySelector("img");
 		if (img && !el.text.trim()) return buildImage(img, "", opts, el);
 		return buildParagraph(el);
@@ -156,8 +167,11 @@ const mapElement = (
 	if (tag === "ul" || tag === "ol") return buildList(el);
 	if (tag === "blockquote") return buildQuote(el);
 	if (tag === "img") return buildImage(el, "", opts);
+	if (tag === "hr") return buildSeparatorBlock({ el, factory: baseBlock });
 	if (tag === "figure") {
-		// Image figures → native image (with figcaption). Embeds/iframes/etc → html.
+		if (isGutenbergGallery(el)) {
+			return buildGalleryBlock({ el, factory: baseBlock, resolveImageUrl: opts.resolveImageUrl }) ?? buildHtmlFallback(el.toString());
+		}
 		const img = el.querySelector("img");
 		const hasEmbed = el.querySelector("iframe, video, audio, script, embed");
 		if (img && !hasEmbed) {
@@ -167,9 +181,53 @@ const mapElement = (
 		return buildHtmlFallback(el.toString());
 	}
 
-	// Tables, embeds, divs, sections, pre/code, hr, shortcodes, anything unknown:
-	// keep losslessly as an editable HTML block.
 	return buildHtmlFallback(el.toString());
+};
+
+/** Maps one element — unwraps Gutenberg groups or builds layout blocks. */
+const mapElement = (el: HTMLElement, opts: HtmlToBlocksOptions): BlockConfig[] => {
+	if (isUnwrappableGroup(el)) {
+		return mapElements(childElements(el), opts);
+	}
+	if (isGutenbergColumns(el)) {
+		return [
+			buildColumnsBlock({
+				el,
+				factory: baseBlock,
+				mapElements: (elements) => mapElements(elements, opts),
+			}),
+		];
+	}
+	if (isGutenbergButtons(el)) {
+		const block = buildButtonsBlock({ el, factory: baseBlock });
+		return block ? [block] : [buildHtmlFallback(el.toString())];
+	}
+	if (isGutenbergGallery(el)) {
+		const block = buildGalleryBlock({
+			el,
+			factory: baseBlock,
+			resolveImageUrl: opts.resolveImageUrl,
+		});
+		return block ? [block] : [buildHtmlFallback(el.toString())];
+	}
+
+	const leaf = mapLeafElement(el, opts);
+	return leaf ? [leaf] : [];
+};
+
+const mapElements = (elements: HTMLElement[], opts: HtmlToBlocksOptions): BlockConfig[] =>
+	elements.flatMap((el) => mapElement(el, opts));
+
+const mapNode = (node: Node, opts: HtmlToBlocksOptions): BlockConfig[] => {
+	if (isElement(node)) return mapElement(node, opts);
+	const text = (node.text || "").trim();
+	if (!text) return [];
+	return [
+		baseBlock("core/paragraph", "Paragraph", "basic", {
+			kind: "text",
+			value: text,
+		}),
+	];
 };
 
 /**
@@ -183,28 +241,8 @@ export const htmlToBlocks = (
 	if (!html || !html.trim()) return [];
 
 	const root = parse(html, { comment: false });
-	const blocks: BlockConfig[] = [];
+	const blocks = root.childNodes.flatMap((node) => mapNode(node, opts));
 
-	for (const node of root.childNodes) {
-		if (isElement(node)) {
-			const block = mapElement(node, opts);
-			if (block) blocks.push(block);
-			continue;
-		}
-		// Bare top-level text (rare) → paragraph.
-		const text = (node.text || "").trim();
-		if (text) {
-			blocks.push(
-				baseBlock("core/paragraph", "Paragraph", "basic", {
-					kind: "text",
-					value: text,
-				}),
-			);
-		}
-	}
-
-	// If we produced nothing, only preserve a fallback when real text would be
-	// lost (e.g. unmappable markup). Pure-empty input (e.g. `<p>&nbsp;</p>`) → [].
 	if (blocks.length === 0) {
 		return root.text.trim() ? [buildHtmlFallback(html)] : [];
 	}

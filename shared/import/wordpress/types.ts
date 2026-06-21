@@ -83,6 +83,8 @@ export type ImportContext = {
 	categoryNames: Map<number, string>;
 	tagNames: Map<number, string>;
 	existingWpIds: Set<number>;
+	/** When true, keep the original WP slug (re-import update, not a duplicate create). */
+	updatingExisting?: boolean;
 	resolveFeaturedImage: (params: {
 		featuredMediaId: number;
 	}) => Promise<string | null>;
@@ -99,11 +101,13 @@ export type MappedPost = Omit<NewPost, "id" | "createdAt" | "updatedAt">;
 
 export type ImportItemResult =
 	| { wpId: number; status: "imported"; postId: string; title: string }
+	| { wpId: number; status: "updated"; postId: string; title: string }
 	| { wpId: number; status: "skipped"; reason: string }
 	| { wpId: number; status: "failed"; reason: string };
 
 export type ImportBatchResult = {
 	imported: Extract<ImportItemResult, { status: "imported" }>[];
+	updated: Extract<ImportItemResult, { status: "updated" }>[];
 	skipped: Extract<ImportItemResult, { status: "skipped" }>[];
 	failed: Extract<ImportItemResult, { status: "failed" }>[];
 };

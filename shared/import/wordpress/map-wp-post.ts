@@ -50,7 +50,7 @@ export const mapWpPost = async (params: {
 	const slug = resolveUniqueSlug({
 		slug: raw.slug,
 		wpId,
-		isDuplicate: ctx.existingWpIds.has(wpId),
+		isDuplicate: ctx.existingWpIds.has(wpId) && !ctx.updatingExisting,
 	});
 	const status = WP_STATUS_MAP[raw.status] ?? "draft";
 	const excerpt = stripHtml(raw.excerpt.rendered);
