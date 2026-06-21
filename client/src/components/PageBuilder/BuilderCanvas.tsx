@@ -6,7 +6,7 @@ import { BlockAnimationRuntime } from './BlockAnimationRuntime';
 import { Layers } from 'lucide-react';
 import { useBlockActions } from './BlockActionsContext';
 import type { BlockConfig } from "@shared/schema-types";
-import { getBlockSiblingFlexItemStyles } from "@shared/block-container-placement";
+import { getBlockSiblingFlexItemStyles, PAGE_BLOCK_STACK_GAP } from "@shared/block-container-placement";
 
 export function BuilderCanvas({
   blocks,
@@ -40,6 +40,7 @@ export function BuilderCanvas({
                 role="region"
                 aria-label="Canvas"
                 className={`min-h-full p-4 flex flex-col items-stretch w-full ${snapshot.isDraggingOver ? 'bg-npb-accent/10' : ''}`}
+                style={{ gap: PAGE_BLOCK_STACK_GAP }}
               >
                 {blocks.length === 0 ? (
                   <div className="text-center py-12 text-npb-text-muted">

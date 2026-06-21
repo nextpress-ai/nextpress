@@ -180,17 +180,10 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 
 			const existingPosts = await models.posts.findMany({ limit: 5000 });
 
-			const resolveFeaturedImage = async (params: {
-				featuredMediaId: number;
-			}): Promise<string | null> => {
-				const remoteUrl = await fetchWpFeaturedImageUrl({
-					baseUrl: normalizedBaseUrl,
-					featuredMediaId: params.featuredMediaId,
-				});
-				if (!remoteUrl) return null;
-
-				if (featuredImageMode === "reference") return remoteUrl;
-
+			/** Downloads a remote image into uploads + records it as media. */
+			const sideloadAndRecord = async (
+				remoteUrl: string,
+			): Promise<string> => {
 				const sideloaded = await sideloadRemoteImage({
 					imageUrl: remoteUrl,
 					uploadDir,
@@ -222,6 +215,31 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 				return sideloaded.url;
 			};
 
+			const resolveFeaturedImage = async (params: {
+				featuredMediaId: number;
+			}): Promise<string | null> => {
+				const remoteUrl = await fetchWpFeaturedImageUrl({
+					baseUrl: normalizedBaseUrl,
+					featuredMediaId: params.featuredMediaId,
+				});
+				if (!remoteUrl) return null;
+				if (featuredImageMode === "reference") return remoteUrl;
+				return sideloadAndRecord(remoteUrl);
+			};
+
+			/**
+			 * Resolves inline content images. In reference mode we keep the remote
+			 * URL (null = no change). In copy mode we SSRF-validate then sideload.
+			 */
+			const resolveContentImage = async (params: {
+				imageUrl: string;
+			}): Promise<string | null> => {
+				if (featuredImageMode === "reference") return null;
+				const validated = await validateExternalUrl(params.imageUrl);
+				if (!validated.ok) return null;
+				return sideloadAndRecord(params.imageUrl);
+			};
+
 			const { err, result } = await safeTryAsync(async () =>
 				importer.importPosts({
 					baseUrl: normalizedBaseUrl,
@@ -231,6 +249,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 					featuredImageMode,
 					existingPosts,
 					resolveFeaturedImage,
+					resolveContentImage,
 					createPost: async (data) => {
 						const parsed = schemas.posts.insert.parse(data);
 						const post = await models.posts.create({

@@ -8,6 +8,7 @@ import { getGoogleFontUrl } from "@shared/google-fonts";
 import type { Post } from "@shared/schema-types";
 import type { BlockConfig } from "@shared/schema-types";
 import type { PageOther } from "@shared/schema-types";
+import { PAGE_BLOCK_STACK_GAP } from "@shared/block-container-placement";
 
 /**
  * Extended post data type for public page rendering.
@@ -211,11 +212,12 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
               </div>
             ) : (
               <div
-                className="flex flex-col items-stretch w-full min-w-0 overflow-x-clip"
+                className="mx-auto flex flex-col items-stretch w-full min-w-0 overflow-x-clip"
                 data-testid="page-builder-content"
                 style={{
                   maxWidth: design?.containerWidth || undefined,
                   padding: design?.padding || undefined,
+                  gap: PAGE_BLOCK_STACK_GAP,
                 }}
               >
                 <BlockAnimationRuntime contentKey={`${type}-${data.id}-${blocks.length}`} />

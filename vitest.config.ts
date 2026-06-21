@@ -34,6 +34,18 @@ export default defineConfig({
 					exclude: ["node_modules", "dist", "build", "**/*.e2e.{ts,tsx}"],
 				},
 			},
+			{
+				extends: true,
+				test: {
+					name: "shared",
+					environment: "node",
+					include: [
+						"shared/**/*.test.{ts,tsx}",
+						"shared/**/*.spec.{ts,tsx}",
+					],
+					exclude: ["node_modules", "dist", "build", "**/*.e2e.{ts,tsx}"],
+				},
+			},
 		],
 		coverage: {
 			provider: "v8",

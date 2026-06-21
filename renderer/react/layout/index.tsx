@@ -89,6 +89,9 @@ export function ColumnsBlock(block: BlockConfig) {
 							alignItems: columnAlignItems,
 							justifyContent: columnJustifyContent,
 							minWidth: 0,
+							// Match the client preview's `space-y-2` inter-child gap (8px)
+							// so column spacing is identical in preview and publish.
+							gap: "8px",
 						}}
 					>
 						{columnChildren.map((child) => (

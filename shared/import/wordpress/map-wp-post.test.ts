@@ -42,7 +42,11 @@ describe("mapWpPost", () => {
 		expect(mapped.excerpt).toBe("Short excerpt");
 		expect(mapped.blogId).toBe("blog-uuid");
 		expect(mapped.blocks).toHaveLength(1);
-		expect(mapped.blocks?.[0]?.name).toBe("core/html");
+		expect(mapped.blocks?.[0]?.name).toBe("core/paragraph");
+		expect(mapped.blocks?.[0]?.content).toMatchObject({
+			kind: "text",
+			value: "Content here",
+		});
 		expect(mapped.other?.categories).toEqual(["News"]);
 		expect(mapped.other?.tags).toEqual(["update"]);
 		expect(mapped.other?.import?.wpId).toBe(42);

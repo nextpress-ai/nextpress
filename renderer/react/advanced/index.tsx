@@ -1,5 +1,6 @@
 import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
+import { sanitizeHtml } from "@shared/sanitize-html";
 import { getRenderProps, parseTextContent, parseStructuredContent, parseHtmlContent, parseMarkdownContent } from "../render-helpers";
 
 export * from "./MarkdownBlock";
@@ -10,22 +11,61 @@ export * from "./MarkdownBlock";
  */
 export function QuoteBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
-	const content = parseTextContent(block.content);
-	const text = (content.value as string) || "";
-	const citation = content.citation as string | undefined;
+	// Quotes store inline HTML in `value` (matches the client block). Fall back to
+	// the legacy `{ kind: "text", value }` shape so old quotes still render.
+	const raw = (block.content || {}) as Record<string, unknown>;
+	const legacy = parseTextContent(block.content);
+	const valueHtml =
+		typeof raw.value === "string" && raw.value.trim()
+			? raw.value
+			: legacy.value
+				? `<p>${legacy.value as string}</p>`
+				: "";
+	const citation =
+		(raw.citation as string) ||
+		(raw.author as string) ||
+		(legacy.citation as string | undefined);
 
 	const mergedClassName = ["wp-block-quote", className]
 		.filter(Boolean)
 		.join(" ");
 
+	// Inline styling must match the client QuoteRenderer so preview and publish
+	// look identical (the public renderer has no editor stylesheet to fall back on).
+	const quoteStyle: React.CSSProperties = {
+		backgroundColor: "#f8fafc",
+		borderLeft: "4px solid #e2e8f0",
+		padding: "16px 20px",
+		borderRadius: "6px",
+		fontStyle: "italic",
+		fontFamily: 'Georgia, Cambria, "Times New Roman", Times, serif',
+		fontSize: "1.125rem",
+		lineHeight: 1.7,
+		...style,
+	};
+
 	return (
 		<blockquote
 			className={mergedClassName || undefined}
-			style={style}
+			style={quoteStyle}
 			{...attributes}
 		>
-			<p>{text}</p>
-			{citation && <cite>{citation}</cite>}
+			<div
+				style={{ whiteSpace: "pre-wrap" }}
+				dangerouslySetInnerHTML={{ __html: sanitizeHtml(valueHtml) }}
+			/>
+			{citation && (
+				<cite
+					style={{
+						display: "block",
+						marginTop: "10px",
+						fontSize: "0.95rem",
+						color: "#64748b",
+					}}
+				>
+					— {citation}
+				</cite>
+			)}
 		</blockquote>
 	);
 }
@@ -36,16 +76,51 @@ export function QuoteBlock(block: BlockConfig) {
  */
 export function ListBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
-	const content = parseTextContent(block.content);
-	const text = (content.value as string) || "";
-	const ordered = content.ordered as boolean | undefined;
-	const start = content.start as number | undefined;
+	// Lists store their `<li>` items as HTML in `values` (matches the client block).
+	const raw = (block.content || {}) as Record<string, unknown>;
+	const ordered = !!raw.ordered;
+	const valuesHtml = typeof raw.values === "string" ? raw.values : "";
 
 	const mergedClassName = ["wp-block-list", className]
 		.filter(Boolean)
 		.join(" ");
 
-	// Parse content into list items (simple line break splitting)
+	// Restore default markers + indent (global CSS reset strips them). Kept in
+	// sync with the client list renderer so preview and publish match.
+	const listType = raw.type as string | undefined;
+	const listStyle: React.CSSProperties = {
+		listStyleType: ordered ? "decimal" : "disc",
+		paddingLeft: "1.5em",
+		...style,
+		...(listType && !ordered
+			? { listStyleType: listType as React.CSSProperties["listStyleType"] }
+			: {}),
+	};
+
+	if (valuesHtml.trim()) {
+		const start = raw.start as number | undefined;
+		const orderedAttrs = ordered
+			? {
+					...(typeof start === "number" ? { start } : {}),
+					...(raw.reversed ? { reversed: true } : {}),
+				}
+			: {};
+		const ListTag = (ordered ? "ol" : "ul") as "ol" | "ul";
+		return (
+			<ListTag
+				className={mergedClassName || undefined}
+				style={listStyle}
+				{...attributes}
+				{...orderedAttrs}
+				dangerouslySetInnerHTML={{ __html: sanitizeHtml(valuesHtml) }}
+			/>
+		);
+	}
+
+	// Legacy fallback: `{ kind: "text", value }` with newline-separated items.
+	const legacy = parseTextContent(block.content);
+	const text = (legacy.value as string) || "";
+	const start = legacy.start as number | undefined;
 	const items = text
 		? text
 				.split("\n")
@@ -57,7 +132,7 @@ export function ListBlock(block: BlockConfig) {
 		return (
 			<ol
 				className={mergedClassName || undefined}
-				style={style}
+				style={listStyle}
 				start={start}
 				{...attributes}
 			>
@@ -70,7 +145,7 @@ export function ListBlock(block: BlockConfig) {
 	}
 
 	return (
-		<ul className={mergedClassName || undefined} style={style} {...attributes}>
+		<ul className={mergedClassName || undefined} style={listStyle} {...attributes}>
 			{items.map((item: string, index: number) => {
 				const itemKey = `${item}-${index}`;
 				return <li key={itemKey}>{item}</li>;

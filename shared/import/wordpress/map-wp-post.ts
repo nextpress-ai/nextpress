@@ -1,7 +1,6 @@
-import { randomUUID } from "node:crypto";
-import type { BlockConfig } from "../../schema-types";
 import type { ImportContext, MappedPost, WpPostRaw } from "./types";
 import { stripHtml } from "./strip-html";
+import { htmlToBlocks, collectImageUrls } from "./html-to-blocks";
 
 const WP_STATUS_MAP: Record<string, string> = {
 	publish: "publish",
@@ -11,20 +10,22 @@ const WP_STATUS_MAP: Record<string, string> = {
 	future: "draft",
 };
 
-const buildHtmlBlock = (html: string): BlockConfig => ({
-	id: randomUUID(),
-	name: "core/html",
-	type: "block",
-	parentId: null,
-	label: "HTML",
-	category: "advanced",
-	content: {
-		kind: "structured",
-		data: { content: html, className: "wp-import-content" },
-	},
-	styles: {},
-	other: {},
-});
+/**
+ * Pre-resolves every inline image URL (sideload in copy mode) so the synchronous
+ * HTML→blocks parser can swap remote URLs for local ones.
+ */
+const buildImageUrlMap = async (params: {
+	html: string;
+	ctx: ImportContext;
+}): Promise<Map<string, string>> => {
+	const map = new Map<string, string>();
+	if (!params.ctx.resolveContentImage) return map;
+	for (const url of collectImageUrls(params.html)) {
+		const resolved = await params.ctx.resolveContentImage({ imageUrl: url });
+		if (resolved) map.set(url, resolved);
+	}
+	return map;
+};
 
 const resolveUniqueSlug = (params: {
 	slug: string;
@@ -34,8 +35,10 @@ const resolveUniqueSlug = (params: {
 	params.isDuplicate ? `${params.slug}-imported-${params.wpId}` : params.slug;
 
 /**
- * Maps a WordPress REST post into a NextPress insert payload.
- * Content stays as a single HTML block until Gutenberg parsing is implemented.
+ * Maps a WordPress REST post into a NextPress insert payload. Post content is
+ * parsed into native NextPress blocks (heading/paragraph/image/list/quote/…)
+ * so it is editable like any other content; unmappable markup is preserved as
+ * `core/html`. The raw WP payload is kept in `other.import.raw` for reference.
  */
 export const mapWpPost = async (params: {
 	raw: WpPostRaw;
@@ -68,6 +71,12 @@ export const mapWpPost = async (params: {
 	const publishedAt =
 		status === "publish" && raw.date ? new Date(raw.date) : undefined;
 
+	const html = raw.content.rendered || "";
+	const imageUrlMap = await buildImageUrlMap({ html, ctx });
+	const blocks = htmlToBlocks(html, {
+		resolveImageUrl: (url) => imageUrlMap.get(url) ?? url,
+	});
+
 	return {
 		title,
 		slug,
@@ -81,7 +90,7 @@ export const mapWpPost = async (params: {
 		password: null,
 		parentId: null,
 		templateId: null,
-		blocks: raw.content.rendered ? [buildHtmlBlock(raw.content.rendered)] : [],
+		blocks,
 		settings: {},
 		other: {
 			categories: categoryNames,

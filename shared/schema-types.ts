@@ -95,7 +95,16 @@ export type NewSession = typeof sessions.$inferInsert;
  * Each content type has a unique 'kind' discriminator for type-safe handling
  */
 export type BlockContent =
-	| { kind: "text"; value: string; textAlign?: string; dropCap?: boolean }
+	| {
+			kind: "text";
+			value: string;
+			textAlign?: string;
+			dropCap?: boolean;
+			/** When "html", `value` holds sanitized inline HTML (e.g. links/bold from imports) and should be rendered as HTML, not escaped. */
+			format?: "html";
+			/** Heading level (1-6) for core/heading; ignored by other text blocks. */
+			level?: number;
+	  }
 	| { kind: "markdown"; value: string; textAlign?: string }
 	| {
 			kind: "media";

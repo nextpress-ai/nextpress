@@ -20,6 +20,12 @@ export const BLOCK_CONTAINER_PLACEMENT_KEYS = [
 ] as const;
 
 /**
+ * Vertical gap between top-level page blocks. Shared by preview, publish, and the
+ * editor canvas so dense layouts breathe consistently (flex `gap`, not per-block margin).
+ */
+export const PAGE_BLOCK_STACK_GAP = "1.5rem";
+
+/**
  * Removes editor-only placement controls from persisted inline styles before DOM use.
  */
 export function stripBlockContainerPlacementStyles(styles: CSSProperties | undefined): CSSProperties {

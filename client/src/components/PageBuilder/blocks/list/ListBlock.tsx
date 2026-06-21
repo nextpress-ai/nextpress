@@ -69,6 +69,10 @@ function ListRenderer({ content, styles }: ListRendererProps) {
   const listType: string | undefined = content?.type;
 
   const style: React.CSSProperties = {
+    // Restore default markers + indent (global CSS reset strips them). Kept in
+    // sync with the SSR list renderer so preview and publish match.
+    listStyleType: isOrdered ? 'decimal' : 'disc',
+    paddingLeft: '1.5em',
     ...styles,
     // For unordered lists, map `type` to CSS list-style-type if present
     ...(listType && !isOrdered ? { listStyleType: listType as React.CSSProperties['listStyleType'] } : {}),

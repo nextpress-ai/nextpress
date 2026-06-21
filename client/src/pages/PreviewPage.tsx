@@ -7,7 +7,10 @@ import type { BlockConfig, PageOther } from "@shared/schema-types";
 import BlockRenderer from "@/components/PageBuilder/BlockRenderer";
 import { BlockAnimationRuntime } from "@/components/PageBuilder/BlockAnimationRuntime";
 import { getGoogleFontUrl } from "@shared/google-fonts";
-import { getBlockSiblingFlexItemStyles } from "@shared/block-container-placement";
+import {
+  getBlockSiblingFlexItemStyles,
+  PAGE_BLOCK_STACK_GAP,
+} from "@shared/block-container-placement";
 
 interface PreviewPageProps {
   postId?: string;
@@ -129,7 +132,10 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-stretch w-full min-w-0 overflow-x-clip">
+          <div
+            className="flex flex-col items-stretch w-full min-w-0 overflow-x-clip"
+            style={{ gap: PAGE_BLOCK_STACK_GAP }}
+          >
             <BlockAnimationRuntime contentKey={`${contentType}-${contentId}-${blocks.length}`} />
             {blocks.map((block) => (
               <div

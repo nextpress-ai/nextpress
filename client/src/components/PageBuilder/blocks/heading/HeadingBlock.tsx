@@ -10,6 +10,7 @@ import type { JSX } from "react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
+import { sanitizeHtml } from "@shared/sanitize-html";
 
 // ============================================================================
 // TYPES
@@ -92,16 +93,33 @@ function HeadingRenderer({ content, styles }: HeadingRendererProps) {
     ...styles,
   };
 
+  const sharedClassName =
+    [
+      content.textAlign ? `has-text-align-${content.textAlign}` : "",
+      content.className,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
+  // `format: "html"` carries sanitized inline markup (e.g. imported headings with links).
+  if ((content as { format?: string })?.format === "html") {
+    return (
+      <BlockShell
+        as={Tag}
+        blockClass="wp-block-heading"
+        className={sharedClassName}
+        style={mergedStyles}
+        id={content.anchor}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(textContent) }}
+      />
+    );
+  }
+
   return (
     <BlockShell
       as={Tag}
       blockClass="wp-block-heading"
-      className={[
-        content.textAlign ? `has-text-align-${content.textAlign}` : "",
-        content.className,
-      ]
-        .filter(Boolean)
-        .join(" ") || undefined}
+      className={sharedClassName}
       style={mergedStyles}
       id={content.anchor}
     >

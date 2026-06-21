@@ -1,5 +1,6 @@
 import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
+import { sanitizeHtml } from "@shared/sanitize-html";
 import { getRenderProps, parseTextContent, parseStructuredContent } from "../render-helpers";
 
 // ─── SSR Icon Placeholder ──────────────────────────────────────────────────
@@ -93,6 +94,18 @@ export function HeadingBlock(block: BlockConfig) {
 
 	const attrs = { ...attributes, ...(anchor ? { id: anchor } : {}) };
 
+	// `format: "html"` carries sanitized inline markup (e.g. imported headings with links).
+	if (content.format === "html") {
+		return (
+			<Tag
+				className={mergedClassName || undefined}
+				style={mergedStyle}
+				{...attrs}
+				dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }}
+			/>
+		);
+	}
+
 	return (
 		<Tag className={mergedClassName || undefined} style={mergedStyle} {...attrs}>
 			{text}
@@ -128,6 +141,18 @@ export function ParagraphBlock(block: BlockConfig) {
 		...style,
 		...(effectiveTextAlign ? { textAlign: effectiveTextAlign } : {}),
 	};
+
+	// `format: "html"` carries sanitized inline markup (e.g. imported paragraphs with links/bold).
+	if (content.format === "html") {
+		return (
+			<p
+				className={mergedClassName || undefined}
+				style={mergedStyle}
+				{...attributes}
+				dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }}
+			/>
+		);
+	}
 
 	return (
 		<p

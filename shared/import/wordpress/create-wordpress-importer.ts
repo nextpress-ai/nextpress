@@ -44,6 +44,7 @@ export type WordPressImporter = {
 		featuredImageMode: FeaturedImageMode;
 		existingPosts: Array<{ other: unknown }>;
 		resolveFeaturedImage: ImportContext["resolveFeaturedImage"];
+		resolveContentImage?: ImportContext["resolveContentImage"];
 		createPost: (data: MappedPost) => Promise<{ id: string; title: string }>;
 	}) => Promise<ImportBatchResult>;
 	getSupportedEntities: () => WordPressEntity[];
@@ -70,6 +71,7 @@ export const createWordPressImporter = (): WordPressImporter => {
 				featuredImageMode,
 				existingPosts,
 				resolveFeaturedImage,
+				resolveContentImage,
 				createPost,
 			} = params;
 
@@ -88,6 +90,7 @@ export const createWordPressImporter = (): WordPressImporter => {
 				tagNames,
 				existingWpIds,
 				resolveFeaturedImage,
+				resolveContentImage,
 			};
 
 			const imported: ImportBatchResult["imported"] = [];

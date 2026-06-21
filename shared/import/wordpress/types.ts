@@ -86,6 +86,13 @@ export type ImportContext = {
 	resolveFeaturedImage: (params: {
 		featuredMediaId: number;
 	}) => Promise<string | null>;
+	/**
+	 * Resolves an inline content image URL to a (possibly sideloaded/local) URL.
+	 * Optional: when absent, inline images keep their original remote URLs.
+	 */
+	resolveContentImage?: (params: {
+		imageUrl: string;
+	}) => Promise<string | null>;
 };
 
 export type MappedPost = Omit<NewPost, "id" | "createdAt" | "updatedAt">;

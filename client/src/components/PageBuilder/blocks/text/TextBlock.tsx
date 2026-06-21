@@ -9,6 +9,7 @@ import { Type } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
+import { sanitizeHtml } from "@shared/sanitize-html";
 
 // ============================================================================
 // TYPES
@@ -57,17 +58,34 @@ function TextRenderer({ content, styles }: TextRendererProps) {
     ...(align ? { textAlign: align as React.CSSProperties["textAlign"] } : {}),
   };
 
+  const sharedClassName =
+    [
+      align ? `has-text-align-${align}` : "",
+      dropCap ? "has-drop-cap" : "",
+      extraClass,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
+  // `format: "html"` carries sanitized inline markup (e.g. imported paragraphs with links/bold).
+  if ((content as { format?: string })?.format === "html") {
+    return (
+      <BlockShell
+        as="p"
+        blockClass="wp-block-paragraph"
+        className={sharedClassName}
+        style={mergedStyles}
+        id={anchor}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(textContent) }}
+      />
+    );
+  }
+
   return (
     <BlockShell
       as="p"
       blockClass="wp-block-paragraph"
-      className={[
-        align ? `has-text-align-${align}` : "",
-        dropCap ? "has-drop-cap" : "",
-        extraClass,
-      ]
-        .filter(Boolean)
-        .join(" ") || undefined}
+      className={sharedClassName}
       style={mergedStyles}
       id={anchor}
     >
