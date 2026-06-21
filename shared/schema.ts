@@ -9,6 +9,7 @@ import {
 	integer,
 	bigint,
 	boolean,
+	index,
 } from "drizzle-orm/pg-core";
 
 export const sites = pgTable("sites", {
@@ -45,17 +46,75 @@ export const roles = pgTable("roles", {
 
 export const users = pgTable("users", {
 	id: uuid("id").primaryKey().defaultRandom(),
+	name: varchar("name"),
 	email: varchar("email").unique(),
+	emailVerified: boolean("email_verified").default(false).notNull(),
 	firstName: varchar("first_name"),
 	lastName: varchar("last_name"),
 	profileImageUrl: varchar("profile_image_url"),
 	username: varchar("username").unique().notNull(),
+	displayUsername: varchar("display_username"),
 	password: varchar("password"),
 	status: varchar("status").default("active"), // active, inactive, pending
 	createdAt: timestamp("created_at").defaultNow(),
 	updatedAt: timestamp("updated_at").defaultNow(),
 	other: jsonb("other").default({}),
 });
+
+/** Better Auth session store (separate from express-session `sessions` table). */
+export const authSessions = pgTable(
+	"auth_sessions",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		expiresAt: timestamp("expires_at").notNull(),
+		token: varchar("token").notNull().unique(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+		ipAddress: varchar("ip_address"),
+		userAgent: text("user_agent"),
+		userId: uuid("user_id")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull(),
+	},
+	(table) => [index("auth_sessions_user_id_idx").on(table.userId)],
+);
+
+/** Better Auth linked accounts (credential + OAuth providers). */
+export const accounts = pgTable(
+	"accounts",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		accountId: varchar("account_id").notNull(),
+		providerId: varchar("provider_id").notNull(),
+		userId: uuid("user_id")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull(),
+		accessToken: text("access_token"),
+		refreshToken: text("refresh_token"),
+		idToken: text("id_token"),
+		accessTokenExpiresAt: timestamp("access_token_expires_at"),
+		refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+		scope: text("scope"),
+		password: text("password"),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(table) => [index("accounts_user_id_idx").on(table.userId)],
+);
+
+/** Better Auth verification tokens (email verification, password reset). */
+export const verifications = pgTable(
+	"verifications",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		identifier: varchar("identifier").notNull(),
+		value: varchar("value").notNull(),
+		expiresAt: timestamp("expires_at").notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(table) => [index("verifications_identifier_idx").on(table.identifier)],
+);
 
 export const userRoles = pgTable("user_roles", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -243,6 +302,22 @@ export const usersRelations = relations(users, ({ many }) => ({
 	posts: many(posts),
 	roles: many(userRoles),
 	comments: many(comments),
+	authSessions: many(authSessions),
+	accounts: many(accounts),
+}));
+
+export const authSessionsRelations = relations(authSessions, ({ one }) => ({
+	user: one(users, {
+		fields: [authSessions.userId],
+		references: [users.id],
+	}),
+}));
+
+export const accountsRelations = relations(accounts, ({ one }) => ({
+	user: one(users, {
+		fields: [accounts.userId],
+		references: [users.id],
+	}),
 }));
 
 export const postsRelations = relations(posts, ({ one, many }) => ({

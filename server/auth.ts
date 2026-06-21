@@ -1,146 +1,98 @@
-import type { Request } from "express";
+import type { NextFunction, Request, Response } from "express";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth } from "./lib/better-auth";
 import { models } from "./storage";
 
-/**
- * Authentication service interface for unified auth handling
- */
-export interface AuthService {
-	/**
-	 * Get the current authenticated user from request
-	 * @param req - Express request object
-	 * @returns User object or null if not authenticated
-	 */
-	getCurrentUser(req: Request): Promise<any | null>;
+type RequestWithAuth = Request & {
+	authUserId?: string;
+	currentUser?: Record<string, unknown>;
+};
 
-	/**
-	 * Check if the request is authenticated
-	 * @param req - Express request object
-	 * @returns True if authenticated, false otherwise
-	 */
-	isAuthenticated(req: Request): boolean;
-
-	/**
-	 * Get the current user ID from request
-	 * @param req - Express request object
-	 * @returns User ID or null if not authenticated
-	 */
-	getCurrentUserId(req: Request): string | null;
-}
+export type AuthService = {
+	getCurrentUser: (
+		req: Request,
+	) => Promise<Record<string, unknown> | null>;
+	isAuthenticated: (req: Request) => boolean;
+	getCurrentUserId: (req: Request) => string | null;
+};
 
 /**
- * Unified authentication service implementation
- * Handles both local session auth and Replit auth
+ * Resolves the authenticated CMS user from a Better Auth session.
  */
-export class UnifiedAuthService implements AuthService {
-	/**
-	 * Get the current authenticated user from request
-	 * Checks both local session and Replit authentication
-	 */
-	async getCurrentUser(req: Request): Promise<any | null> {
-		try {
-			// Check for local session first
-			if ((req as any).session?.localUser) {
-				const user = await models.users.findById(
-					(req as any).session.localUser.id,
-				);
-				if (user) {
-					const { password: _password, ...userResponse } = user;
-					return userResponse;
+export function createAuthService(): AuthService {
+	return {
+		async getCurrentUser(req) {
+			try {
+				const session = await auth.api.getSession({
+					headers: fromNodeHeaders(req.headers),
+				});
+				if (!session?.user?.id) {
+					return null;
 				}
-			}
 
-			// Check for Replit auth
-			if (
-				(req as any).isAuthenticated &&
-				(req as any).isAuthenticated() &&
-				(req as any).user?.claims?.sub
-			) {
-				const userId = (req as any).user.claims.sub;
-				const user = await models.users.findById(userId);
-				if (user) {
-					return user;
+				const user = await models.users.findById(session.user.id);
+				if (!user) {
+					return null;
 				}
+
+				const { password: _password, ...userResponse } = user;
+				return userResponse;
+			} catch (error) {
+				console.error("Error getting current user:", error);
+				return null;
 			}
+		},
 
-			return null;
-		} catch (error) {
-			console.error("Error getting current user:", error);
-			return null;
-		}
-	}
+		isAuthenticated(req) {
+			return Boolean((req as RequestWithAuth).authUserId);
+		},
 
-	/**
-	 * Check if the request is authenticated
-	 * Returns true if either local session or Replit auth is valid
-	 */
-	isAuthenticated(req: Request): boolean {
-		// Check local session
-		if ((req as any).session?.localUser) {
-			return true;
-		}
+		getCurrentUserId(req) {
+			return (req as RequestWithAuth).authUserId ?? null;
+		},
+	};
+}
 
-		// Check Replit auth
-		if (
-			(req as any).isAuthenticated &&
-			(req as any).isAuthenticated() &&
-			(req as any).user?.claims?.sub
-		) {
-			return true;
-		}
+export const authService = createAuthService();
 
-		return false;
-	}
+/**
+ * Requires a valid Better Auth session before continuing.
+ */
+export async function requireAuth(
+	req: Request,
+	res: Response,
+	next: NextFunction,
+): Promise<void> {
+	try {
+		const session = await auth.api.getSession({
+			headers: fromNodeHeaders(req.headers),
+		});
 
-	/**
-	 * Get the current user ID from request
-	 * Returns user ID from either auth method
-	 */
-	getCurrentUserId(req: Request): string | null {
-		// Check local session first
-		if ((req as any).session?.localUser) {
-			return (req as any).session.localUser.id;
+		if (!session?.user?.id) {
+			res.status(401).json({ message: "Unauthorized" });
+			return;
 		}
 
-		// Check Replit auth
-		if (
-			(req as any).isAuthenticated &&
-			(req as any).isAuthenticated() &&
-			(req as any).user?.claims?.sub
-		) {
-			return (req as any).user.claims.sub;
-		}
-
-		return null;
+		(req as RequestWithAuth).authUserId = session.user.id;
+		next();
+	} catch (error) {
+		console.error("Error in requireAuth middleware:", error);
+		res.status(401).json({ message: "Unauthorized" });
 	}
 }
 
-// Export singleton instance
-export const authService = new UnifiedAuthService();
-
 /**
- * Middleware to check authentication using unified auth service
- * @param req - Express request object
- * @param res - Express response object
- * @param next - Express next function
+ * Attaches the full CMS user record when a session exists.
  */
-export function requireAuth(req: Request, res: any, next: any) {
-	if (!authService.isAuthenticated(req)) {
-		return res.status(401).json({ message: "Unauthorized" });
-	}
-	next();
-}
-
-/**
- * Get current user middleware - adds user to request object
- * @param req - Express request object
- * @param res - Express response object
- * @param next - Express next function
- */
-export async function getCurrentUser(req: Request, res: any, next: any) {
+export async function getCurrentUser(
+	req: Request,
+	res: Response,
+	next: NextFunction,
+): Promise<void> {
 	try {
 		const user = await authService.getCurrentUser(req);
 		if (user) {
-			(req as any).currentUser = user;
+			(req as RequestWithAuth).currentUser = user;
 		}
 		next();
 	} catch (error) {

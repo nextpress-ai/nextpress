@@ -14,11 +14,11 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 import { BrandedFormLayout } from '@/components/auth';
+import { authClient } from '@/lib/auth-client';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -45,10 +45,23 @@ export default function Login() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest('POST', '/api/auth/login', data);
-      const user = await response.json();
+      const signIn = data.username.includes('@')
+        ? authClient.signIn.email({
+            email: data.username,
+            password: data.password,
+          })
+        : authClient.signIn.username({
+            username: data.username,
+            password: data.password,
+          });
 
-      queryClient.setQueryData(['/api/auth/user'], user);
+      const result = await signIn;
+
+      if (result.error) {
+        throw new Error(result.error.message || 'Login failed');
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
 
       toast({
         title: 'Success',

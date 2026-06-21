@@ -66,6 +66,7 @@
     "@types/react-helmet": "^6.1.11",
     "@uiw/react-md-editor": "^4.0.11",
     "bcrypt": "^6.0.0",
+    "better-auth": "^1.6.20",
     "buffer-utils": "^1.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

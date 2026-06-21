@@ -1,9 +1,10 @@
 import type { Express } from 'express';
 import type { Server } from 'node:http';
 import { createServer } from 'node:http';
+import { toNodeHandler } from 'better-auth/node';
+import { auth } from '../lib/better-auth';
 import { buildDeps } from './shared/deps';
 import { initializeDefaultRolesAndSite } from './init/initialize-default';
-import { setupAuth } from '../replitAuth';
 import hooks from '../hooks';
 import { createAuthRoutes } from './auth.routes';
 import { createUsersRoutes } from './users.routes';
@@ -54,8 +55,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize default roles and site on first run
   await initializeDefaultRolesAndSite(deps);
 
-  // Setup authentication middleware
-  setupAuth(app);
+  // Compatibility CMS user endpoint (must register before Better Auth catch-all)
+  app.use('/api/auth', createAuthRoutes(deps));
+
+  // Better Auth handler (sign-in, sign-up, sign-out, get-session, etc.)
+  app.all('/api/auth/*', toNodeHandler(auth));
+
+  // JSON body parsing for all non-Better-Auth routes
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
 
   // ============================================
   // Setup Wizard Routes (must be before setupCheck middleware)
@@ -77,7 +85,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount route modules
   // ============================================
 
-  app.use('/api/auth', createAuthRoutes(deps));
   app.use('/api/users', createUsersRoutes(deps));
 
   app.use('/api/posts', createPostsRoutes(deps));

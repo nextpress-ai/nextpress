@@ -47,6 +47,7 @@ export default defineConfig({
       "react/jsx-runtime",
       "react-markdown",
       "remark-gfm",
+      "better-auth/react",
     ],
   },
 });

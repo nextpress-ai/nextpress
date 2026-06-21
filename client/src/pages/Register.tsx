@@ -20,13 +20,13 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { getZodSchema } from "@shared/zod-schema";
 import type { NewUser } from "@shared/schema-types";
 import { Eye, EyeOff } from "lucide-react";
 import { BrandedFormLayout } from "@/components/auth";
+import { authClient } from "@/lib/auth-client";
 
 type UserFormData = NewUser & { role?: string };
 
@@ -55,10 +55,24 @@ export default function Register() {
 	const onSubmit = async (data: UserFormData) => {
 		setIsLoading(true);
 		try {
-			const response = await apiRequest("POST", "/api/auth/register", data);
-			const user = await response.json();
+			const displayName =
+				[data.firstName, data.lastName].filter(Boolean).join(" ").trim() ||
+				data.username;
 
-			queryClient.setQueryData(["/api/auth/user"], user);
+			const result = await authClient.signUp.email({
+				email: data.email,
+				password: data.password,
+				name: displayName,
+				username: data.username,
+				firstName: data.firstName,
+				lastName: data.lastName,
+			});
+
+			if (result.error) {
+				throw new Error(result.error.message || "Registration failed");
+			}
+
+			await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
 
 			toast({
 				title: "Success",

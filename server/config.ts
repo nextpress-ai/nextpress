@@ -90,6 +90,33 @@ export function getOptionalCaddyAcmeEmail(): string | undefined {
 }
 
 /**
+ * Better Auth base URL (public origin). Falls back to local dev URL.
+ */
+export function getAuthBaseUrl(): string {
+	const fromEnv = process.env.BETTER_AUTH_URL?.trim();
+	if (fromEnv && fromEnv.length > 0) {
+		return fromEnv.replace(/\/+$/, "");
+	}
+	const port = process.env.PORT || "5000";
+	return `http://localhost:${port}`;
+}
+
+/**
+ * Better Auth signing secret. Reuses SESSION_SECRET when BETTER_AUTH_SECRET is unset.
+ */
+export function getAuthSecret(): string {
+	const fromEnv = process.env.BETTER_AUTH_SECRET?.trim();
+	if (fromEnv && fromEnv.length > 0) {
+		return fromEnv;
+	}
+	const sessionSecret = process.env.SESSION_SECRET?.trim();
+	if (sessionSecret && sessionSecret.length > 0) {
+		return sessionSecret;
+	}
+	return "dev-better-auth-secret-change-in-production";
+}
+
+/**
  * Expected public IPv4 for domain verification (A records should include this).
  * Set in deployment when the app should confirm DNS points at this machine.
  */

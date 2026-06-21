@@ -108,7 +108,7 @@ export function createUsersRoutes(deps: Deps): Router {
    */
   router.delete('/:id', deps.requireAuth, asyncHandler(async (req, res) => {
     // Prevent deletion of current user
-    const currentUserId = (req as any).user?.claims?.sub;
+    const currentUserId = deps.authService.getCurrentUserId(req);
     if (req.params.id === currentUserId) {
       return res
         .status(400)

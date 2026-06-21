@@ -13,16 +13,61 @@ beforeAll(async () => {
   await client.exec(`
 		CREATE TABLE IF NOT EXISTS users (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			name VARCHAR,
 			email VARCHAR UNIQUE,
+			email_verified BOOLEAN DEFAULT false NOT NULL,
 			first_name VARCHAR,
 			last_name VARCHAR,
 			profile_image_url VARCHAR,
 			username VARCHAR UNIQUE NOT NULL,
+			display_username VARCHAR,
 			password VARCHAR,
 			status VARCHAR DEFAULT 'active',
 			created_at TIMESTAMP DEFAULT NOW(),
 			updated_at TIMESTAMP DEFAULT NOW(),
 			other JSONB DEFAULT '{}'
+		)
+	`);
+
+  await client.exec(`
+		CREATE TABLE IF NOT EXISTS auth_sessions (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			expires_at TIMESTAMP NOT NULL,
+			token VARCHAR NOT NULL UNIQUE,
+			created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+			updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+			ip_address VARCHAR,
+			user_agent TEXT,
+			user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+		)
+	`);
+
+  await client.exec(`
+		CREATE TABLE IF NOT EXISTS accounts (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			account_id VARCHAR NOT NULL,
+			provider_id VARCHAR NOT NULL,
+			user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			access_token TEXT,
+			refresh_token TEXT,
+			id_token TEXT,
+			access_token_expires_at TIMESTAMP,
+			refresh_token_expires_at TIMESTAMP,
+			scope TEXT,
+			password TEXT,
+			created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+			updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+		)
+	`);
+
+  await client.exec(`
+		CREATE TABLE IF NOT EXISTS verifications (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			identifier VARCHAR NOT NULL,
+			value VARCHAR NOT NULL,
+			expires_at TIMESTAMP NOT NULL,
+			created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+			updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 		)
 	`);
 

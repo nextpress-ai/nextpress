@@ -4,6 +4,21 @@ Per **AGENTS.md → Workflow**: use `task.md` for work **>30min**; at **task end
 
 ---
 
+## 2026-06-21 — Better Auth migration
+
+Intent: [`docs/internal/intent-better-auth.md`](docs/internal/intent-better-auth.md)
+
+### Summary
+
+- **Replaced** Replit OIDC + express-session + `/api/auth/login|register|logout` with **Better Auth** (`better-auth` package).
+- **Kept** existing `users` table (added `name`, `email_verified`, `display_username`); passwords live in `accounts` (`credential` provider); bcrypt preserved.
+- **Server**: `server/lib/better-auth.ts`, `toNodeHandler(auth)` at `/api/auth/*`, `GET /api/auth/user` compatibility route.
+- **Client**: `client/src/lib/auth-client.ts`; Login/Register use `authClient.signIn` / `signUp`; logout uses `signOut`.
+- **Removed**: `server/replitAuth.ts` → `/trash/replit-auth-20260621/`.
+- **Env**: `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (optional; see `getAuthBaseUrl` / `getAuthSecret` in `server/config.ts`).
+
+---
+
 ## 2026-05-15 — Page builder editor UI (verified in workspace)
 
 - **Editor sidebar shell**: `BuilderSidebar` root uses class `npb-editor-sidebar` (dark zinc chrome: `bg-zinc-950`, `border-zinc-700`, etc.).

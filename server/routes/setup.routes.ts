@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Deps } from './shared/deps';
 import { asyncHandler } from './shared/async-handler';
+import { auth } from '../lib/better-auth';
 import { updateCaddyConfig } from '../utils/caddy';
 import {
   getCaddyTlsHostnames,
@@ -125,13 +126,15 @@ export function createSetupRoutes(deps: Deps): Router {
     // Generate username from email if not provided
     const finalUsername = username || email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
 
-    const bcrypt = await import('bcrypt');
     const existingEmailUser = await deps.models.users.findByEmail(email);
     let adminUser = existingEmailUser;
 
     if (adminUser) {
-      const passwordMatch = await bcrypt.compare(password, adminUser.password || '');
-      if (!passwordMatch) {
+      try {
+        await auth.api.signInEmail({
+          body: { email, password },
+        });
+      } catch {
         return res.status(400).json({
           error: 'Email taken',
           message: 'An account with this email already exists',
@@ -146,14 +149,30 @@ export function createSetupRoutes(deps: Deps): Router {
         });
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-      adminUser = await deps.models.users.create({
-        email,
-        username: finalUsername,
-        password: hashedPassword,
-        firstName: 'Admin',
-        status: 'active',
+      const signUpResult = await auth.api.signUpEmail({
+        body: {
+          email,
+          password,
+          name: 'Admin',
+          username: finalUsername,
+          firstName: 'Admin',
+        },
       });
+
+      if (!signUpResult?.user?.id) {
+        return res.status(500).json({
+          error: 'Setup failed',
+          message: 'Could not create admin account',
+        });
+      }
+
+      adminUser = await deps.models.users.findById(signUpResult.user.id);
+      if (!adminUser) {
+        return res.status(500).json({
+          error: 'Setup failed',
+          message: 'Admin account was created but could not be loaded',
+        });
+      }
     }
 
     // Get admin role

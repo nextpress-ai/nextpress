@@ -30,16 +30,10 @@ export default function AdminTopBar() {
           type="button"
           onClick={async () => {
             try {
-              // Try local logout first
-              const response = await fetch('/api/auth/logout', { method: 'POST' });
-              if (response.ok) {
-                window.location.href = '/';
-              } else {
-                throw new Error('Local logout failed');
-              }
+              await authClient.signOut();
+              window.location.href = '/';
             } catch {
-              // Fallback to Replit logout if local logout fails
-              window.location.href = '/api/logout';
+              window.location.href = '/';
             }
           }}
           className="cursor-pointer text-xs text-zinc-400 hover:text-white"
