@@ -15,7 +15,7 @@ export function OptionButton({ isActive, onClick, children, ariaLabel }: OptionB
       aria-label={ariaLabel}
       className={cn(
         'h-9 px-3 text-sm font-semibold rounded-[var(--npb-radius-input)] transition-all',
-        'transition-transform duration-[var(--npb-duration-fast)] ease-[var(--npb-ease-out)]',
+        'transition-transform duration-npb-fast ease-npb-out',
         'active:scale-[0.97]',
         isActive
           ? 'bg-npb-interactive-bg-active text-npb-interactive-text-active'

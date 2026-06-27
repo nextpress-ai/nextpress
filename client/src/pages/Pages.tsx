@@ -20,6 +20,8 @@ import { Plus, Search, Trash2, Eye, Pencil, Home } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { CreatePageModal } from "@/components/Pages/CreatePageModal";
 import { apiRequest } from "@/lib/queryClient";
+import { appendSiteIdToUrl, buildSiteOptionUrl } from "@/lib/site-api";
+import { useActiveSite } from "@/hooks/useActiveSite";
 import { useToast } from "@/hooks/use-toast";
 import type { Page } from "@shared/schema-types";
 
@@ -37,6 +39,7 @@ interface OptionApiResponse {
 }
 
 export default function Pages() {
+  const { activeSiteId } = useActiveSite();
   const [search, setSearch] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [page, setPage] = useState(1);
@@ -64,13 +67,15 @@ export default function Pages() {
   }, [location, setLocation]);
 
   const { data: pagesData, isLoading } = useQuery<PagesApiResponse>({
-    queryKey: ['/api/pages', { status: 'any', page, per_page: 10 }],
+    queryKey: ['/api/pages', { status: 'any', page, per_page: 10, siteId: activeSiteId }],
+    enabled: !!activeSiteId,
   });
 
   const { data: homepageOption } = useQuery<OptionApiResponse | null>({
-    queryKey: ['/api/options/homepage_page_slug'],
+    queryKey: ['/api/options/homepage_page_slug', { siteId: activeSiteId }],
+    enabled: !!activeSiteId,
     queryFn: async () => {
-      const response = await fetch('/api/options/homepage_page_slug');
+      const response = await fetch(buildSiteOptionUrl({ name: 'homepage_page_slug', siteId: activeSiteId }));
       if (response.status === 404) return null;
       if (!response.ok) throw new Error('Failed to load homepage setting');
       return response.json() as Promise<OptionApiResponse>;
@@ -106,10 +111,14 @@ export default function Pages() {
         throw new Error('Page slug is required to set the homepage');
       }
 
-      const response = await apiRequest('POST', '/api/options', {
-        name: 'homepage_page_slug',
-        value: targetPage.slug,
-      });
+      const response = await apiRequest(
+        'POST',
+        appendSiteIdToUrl('/api/options', activeSiteId),
+        {
+          name: 'homepage_page_slug',
+          value: targetPage.slug,
+        },
+      );
       return response.json() as Promise<OptionApiResponse>;
     },
     onSuccess: () => {
@@ -117,7 +126,9 @@ export default function Pages() {
         title: "Success",
         description: "Homepage updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/options/homepage_page_slug'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/options/homepage_page_slug', { siteId: activeSiteId }],
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/public/homepage'] });
       queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
     },

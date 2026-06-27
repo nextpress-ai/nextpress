@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import type { Deps } from "./shared/deps";
 import { asyncHandler } from "./shared/async-handler";
 import { safeTryAsync } from "../utils";
@@ -9,7 +9,9 @@ import {
 	createWordPressImporter,
 	fetchWpFeaturedImageUrl,
 } from "@shared/import/wordpress/create-wordpress-importer";
+import { buildImportedWpMap } from "@shared/import/wordpress/build-imported-wp-map";
 import type { FeaturedImageMode } from "@shared/import/wordpress/types";
+import { resolveRequestSite } from "./shared/resolve-request-site";
 
 const importer = createWordPressImporter();
 
@@ -50,7 +52,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 	router.post(
 		"/discover",
 		requireAuth,
-		asyncHandler(async (req: { body?: { siteUrl?: string }; user?: { id?: string } }, res) => {
+		asyncHandler(async (req: Request, res: Response) => {
 			const userId = authService.getCurrentUserId(req);
 			if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
@@ -75,7 +77,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 				importer.discoverSite({ siteUrl: normalizedBaseUrl }),
 			);
 
-			if (err) {
+			if (err || !result) {
 				console.error("WordPress discover error:", err);
 				return res.status(500).json({ message: "Discovery failed" });
 			}
@@ -115,7 +117,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 				}),
 			);
 
-			if (err) {
+			if (err || !result) {
 				console.error("WordPress list error:", err);
 				return res.status(502).json({ message: "Failed to list WordPress posts" });
 			}
@@ -133,14 +135,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 	router.post(
 		"/posts",
 		requireAuth,
-		asyncHandler(async (req: {
-			body?: {
-				baseUrl?: string;
-				blogId?: string;
-				wpIds?: number[];
-				featuredImageMode?: FeaturedImageMode;
-			};
-		}, res) => {
+		asyncHandler(async (req: Request, res: Response) => {
 			const userId = authService.getCurrentUserId(req);
 			if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
@@ -200,6 +195,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 					size: sideloaded.size,
 					url: sideloaded.url,
 					authorId: userId,
+					siteId: blog.siteId ? String(blog.siteId) : String((await models.sites.findDefaultSite())?.id ?? ""),
 				});
 
 				await models.media.create({
@@ -210,6 +206,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 					size: Number(mediaData.size),
 					url: String(mediaData.url),
 					authorId: String(mediaData.authorId),
+					siteId: String(mediaData.siteId),
 				});
 
 				return sideloaded.url;
@@ -281,7 +278,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 				}),
 			);
 
-			if (err) {
+			if (err || !result) {
 				console.error("WordPress import error:", err);
 				return res.status(500).json({ message: "Import failed" });
 			}
@@ -306,6 +303,47 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 			);
 
 			res.json({ ...result, imported: enrichedImported, updated: enrichedUpdated });
+		}),
+	);
+
+	router.get(
+		"/status",
+		requireAuth,
+		asyncHandler(async (req, res) => {
+			const baseUrl = req.query.baseUrl;
+			const entity = req.query.entity;
+
+			if (!baseUrl || typeof baseUrl !== "string") {
+				return res.status(400).json({ message: "baseUrl is required" });
+			}
+			if (entity !== "posts" && entity !== "pages") {
+				return res.status(400).json({ message: "entity must be posts or pages" });
+			}
+
+			const validated = await validateExternalUrl(baseUrl);
+			if (!validated.ok) {
+				return res.status(400).json({ message: validated.message });
+			}
+
+			const pathname = validated.url.pathname.replace(/\/+$/, "");
+			const normalizedBaseUrl = `${validated.url.origin}${pathname}`;
+
+			const items =
+				entity === "posts"
+					? await models.posts.findMany({ limit: 5000 })
+					: await models.pages.findMany({ limit: 5000 });
+
+			const importedMap = buildImportedWpMap({
+				items,
+				domain: normalizedBaseUrl,
+			});
+
+			const imported: Record<string, { nextpressId: string }> = {};
+			importedMap.forEach((entry, wpId) => {
+				imported[String(wpId)] = entry;
+			});
+
+			res.json({ imported });
 		}),
 	);
 
@@ -340,7 +378,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 				}),
 			);
 
-			if (err) {
+			if (err || !result) {
 				console.error("WordPress pages list error:", err);
 				return res.status(502).json({ message: "Failed to list WordPress pages" });
 			}
@@ -358,14 +396,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 	router.post(
 		"/pages",
 		requireAuth,
-		asyncHandler(async (req: {
-			body?: {
-				baseUrl?: string;
-				siteId?: string;
-				wpIds?: number[];
-				featuredImageMode?: FeaturedImageMode;
-			};
-		}, res) => {
+		asyncHandler(async (req: Request, res: Response) => {
 			const userId = authService.getCurrentUserId(req);
 			if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
@@ -373,13 +404,10 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 				return res.status(429).json({ message: "Import rate limit exceeded. Try again shortly." });
 			}
 
-			const { baseUrl, siteId, wpIds, featuredImageMode: modeInput } = req.body ?? {};
+			const { baseUrl, siteId: siteIdInput, wpIds, featuredImageMode: modeInput } = req.body ?? {};
 
 			if (!baseUrl || typeof baseUrl !== "string") {
 				return res.status(400).json({ message: "baseUrl is required" });
-			}
-			if (!siteId || typeof siteId !== "string") {
-				return res.status(400).json({ message: "siteId is required" });
 			}
 			if (!Array.isArray(wpIds) || wpIds.length === 0) {
 				return res.status(400).json({ message: "wpIds must be a non-empty array" });
@@ -396,6 +424,21 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 			const pathname = validated.url.pathname.replace(/\/+$/, "");
 			const normalizedBaseUrl = `${validated.url.origin}${pathname}`;
 			const featuredImageMode = parseFeaturedImageMode(modeInput);
+
+			let siteId = typeof siteIdInput === "string" ? siteIdInput : "";
+			if (!siteId) {
+				const defaultSite = await models.sites.findDefaultSite();
+				if (!defaultSite?.id) {
+					return res.status(400).json({ message: "No site found" });
+				}
+				siteId = String(defaultSite.id);
+			}
+
+			try {
+				await resolveRequestSite({ models, userId, siteId });
+			} catch {
+				return res.status(403).json({ message: "Site not accessible" });
+			}
 
 			const site = await models.sites.findById(siteId);
 			if (!site) {
@@ -419,6 +462,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 					size: sideloaded.size,
 					url: sideloaded.url,
 					authorId: userId,
+					siteId,
 				});
 				await models.media.create({
 					...mediaData,
@@ -428,6 +472,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 					size: Number(mediaData.size),
 					url: String(mediaData.url),
 					authorId: String(mediaData.authorId),
+					siteId: String(mediaData.siteId),
 				});
 				return sideloaded.url;
 			};
@@ -491,7 +536,7 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 				}),
 			);
 
-			if (err) {
+			if (err || !result) {
 				console.error("WordPress page import error:", err);
 				return res.status(500).json({ message: "Import failed" });
 			}

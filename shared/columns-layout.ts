@@ -224,7 +224,9 @@ export function readColumnLayoutFromBlock(block: ColumnLayoutBlock): ColumnLayou
 		return normalizeColumnLayoutWithChildren(fromSettings as ColumnLayout[], block.children ?? []);
 	}
 
-	const data = readColumnsData(block.content ?? {});
+	const data = readColumnsData(
+		block.content ?? ({ kind: "structured", data: {} } as BlockContent),
+	);
 	const fromContent = (data as { columnLayout?: ColumnLayout[] }).columnLayout;
 	if (Array.isArray(fromContent) && fromContent.length > 0) {
 		return normalizeColumnLayoutWithChildren(fromContent, block.children ?? []);

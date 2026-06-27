@@ -1,6 +1,6 @@
 {
   "name": "nextpress-workspace",
-  "version": "1.0.12",
+  "version": "1.3.0",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -9,8 +9,9 @@
     "build:server": "tsup",
     "start": "NODE_ENV=production node dist/index.js",
     "update-versions": "tsx scripts/bump-version.ts",
-    "deploy": "pnpm -s update-versions && bash ./deploy.sh",
+    "deploy": "bash ./deploy.sh",
     "version:bump": "tsx scripts/bump-version.ts",
+    "version:set": "tsx scripts/bump-version.ts --set",
     "check": "tsc --project tsconfig.server.json --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",

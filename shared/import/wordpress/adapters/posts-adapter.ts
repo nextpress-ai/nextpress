@@ -118,8 +118,8 @@ export const discoverWordPressSite = async (params: {
 			baseUrl,
 			error: {
 				code: "not_wordpress",
-				message: "Could not reach WordPress REST API",
-				hint: "Confirm this is WordPress with /wp-json enabled and not blocked by a firewall.",
+				message: "Could not connect to this WordPress site",
+				hint: "Make sure the site is online and publicly reachable. Security or firewall plugins sometimes block WordPress from being read by other apps—check those settings if the site works in a browser.",
 			},
 			entities: {
 				posts: { supported: true, total: 0, reachable: false },
@@ -137,7 +137,7 @@ export const discoverWordPressSite = async (params: {
 				error: {
 					code: "no_posts",
 					message: "No public posts or pages found",
-					hint: "Publish content on WordPress or check that the REST API exposes published content.",
+					hint: "Publish at least one public post or page on WordPress, then run Discover again.",
 				},
 				entities: {
 					posts: { supported: true, total: 0, reachable: true },

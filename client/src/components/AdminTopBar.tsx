@@ -2,6 +2,8 @@ import { Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/ThemeProvider';
 import { Button } from '@/components/ui/button';
+import { SiteSwitcher } from '@/components/SiteSwitcher';
+import { authClient } from '@/lib/auth-client';
 
 export default function AdminTopBar() {
   const { user } = useAuth();
@@ -11,6 +13,7 @@ export default function AdminTopBar() {
     <div className="admin-top-bar fixed top-0 left-0 right-0 z-50 flex h-8 items-center justify-between px-4">
       <div className="flex items-center gap-4">
         <div className="text-sm font-semibold text-white">NextPress</div>
+        <SiteSwitcher />
       </div>
       <div className="flex items-center gap-3">
         <Button

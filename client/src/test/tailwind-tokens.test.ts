@@ -77,7 +77,7 @@ describe('Token Data Exports', () => {
     expect(unitCategories).toEqual({
       spacing: ['px', 'rem', 'em', '%'],
       font: ['px', 'rem', 'em'],
-      dimension: ['px', 'rem', '%', 'vw', 'vh'],
+      dimension: ['px', 'rem', '%', 'vw', 'vh', 'dvh', 'dvw', 'svh'],
       border: ['px', 'rem', '%'],
     });
   });

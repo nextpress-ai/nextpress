@@ -31,6 +31,8 @@ import TokenColorPicker from './TokenColorPicker';
 import { useContentLists } from '@/hooks/useContentLists';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { appendSiteIdToUrl, buildSiteOptionUrl } from '@/lib/site-api';
+import { useActiveSite } from '@/hooks/useActiveSite';
 import type {
   Page,
   Post,
@@ -95,16 +97,19 @@ export default function PageSettingsModal({
   const { pages, templates } = useContentLists();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { activeSiteId } = useActiveSite();
 
   const { data: homepageOption } = useQuery<OptionApiResponse | null>({
-    queryKey: ['/api/options/homepage_page_slug'],
+    queryKey: ['/api/options/homepage_page_slug', { siteId: activeSiteId }],
     queryFn: async () => {
-      const response = await fetch('/api/options/homepage_page_slug');
+      const response = await fetch(
+        buildSiteOptionUrl({ name: 'homepage_page_slug', siteId: activeSiteId }),
+      );
       if (response.status === 404) return null;
       if (!response.ok) throw new Error('Failed to load homepage setting');
       return response.json() as Promise<OptionApiResponse>;
     },
-    enabled: open && contentType === 'page' && !isTemplate,
+    enabled: open && contentType === 'page' && !isTemplate && Boolean(activeSiteId),
   });
 
   // Extract current other field data
@@ -219,7 +224,7 @@ export default function PageSettingsModal({
       const updatedPage = await response.json();
 
       if (contentType === 'page' && (setAsHomepage || isCurrentHomepage) && slug) {
-        await apiRequest('POST', '/api/options', {
+        await apiRequest('POST', appendSiteIdToUrl('/api/options', activeSiteId), {
           name: 'homepage_page_slug',
           value: slug,
         });
@@ -245,7 +250,9 @@ export default function PageSettingsModal({
           ? ['/api/posts']
           : ['/api/pages'];
       queryClient.invalidateQueries({ queryKey });
-      queryClient.invalidateQueries({ queryKey: ['/api/options/homepage_page_slug'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/options/homepage_page_slug', { siteId: activeSiteId }],
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/public/homepage'] });
 
       toast({

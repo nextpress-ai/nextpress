@@ -11,10 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Check, Trash2, AlertTriangle, MessageCircle, Edit } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { apiRequest } from "@/lib/queryClient";
+import { useActiveSite } from "@/hooks/useActiveSite";
 import { useToast } from "@/hooks/use-toast";
 import type { Comment } from "@shared/schema-types";
 
 export default function CommentsPage() {
+  const { activeSiteId } = useActiveSite();
   const [search, setSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [page, setPage] = useState(1);
@@ -26,7 +28,7 @@ export default function CommentsPage() {
 
   // Get comments query parameters
   const getQueryParams = () => {
-    const params: any = { per_page: 20, page };
+    const params: Record<string, string | number> = { per_page: 20, page, siteId: activeSiteId };
     if (selectedStatus !== "all") {
       params.status = selectedStatus;
     }
@@ -35,6 +37,7 @@ export default function CommentsPage() {
 
   const { data: commentsData, isLoading } = useQuery({
     queryKey: ['/api/comments', getQueryParams()],
+    enabled: Boolean(activeSiteId),
   });
 
   const approveMutation = useMutation({

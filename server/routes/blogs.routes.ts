@@ -3,6 +3,7 @@ import type { Deps } from './shared/deps';
 import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
 import { generateSlug } from './shared/slug';
+import { readRequestSiteId, resolveRequestSite } from './shared/resolve-request-site';
 
 /**
  * Builds a PostList block config pre-configured for a specific blog.
@@ -48,7 +49,7 @@ function buildBlogPostListBlock(blogId: string) {
  */
 export function createBlogsRoutes(deps: Deps): Router {
   const router = Router();
-  const { models, hooks, requireAuth, CONFIG, parsePaginationParams, parseStatusParam, schemas } = deps;
+  const { models, hooks, requireAuth, authService, CONFIG, parsePaginationParams, parseStatusParam, schemas } = deps;
   const blogSchemas = schemas.blogs;
 
   /**
@@ -60,20 +61,25 @@ export function createBlogsRoutes(deps: Deps): Router {
       const { err, result } = await safeTryAsync(async () => {
         const { page, limit, offset } = parsePaginationParams(req.query, 20);
         const { status } = req.query;
+        const siteId =
+          typeof req.query.siteId === 'string' && req.query.siteId.trim()
+            ? req.query.siteId.trim()
+            : undefined;
 
         const actualStatus = status ? parseStatusParam(status as string) : null;
 
-        const blogs = await models.blogs.findMany({
-          where: actualStatus ? 'status' : undefined,
-          equals: actualStatus || undefined,
-          limit,
-          offset,
-        });
+        const filters = [
+          ...(actualStatus ? [{ where: 'status', equals: actualStatus }] : []),
+          ...(siteId ? [{ where: 'siteId', equals: siteId }] : []),
+        ];
+
+        const blogs =
+          filters.length > 0
+            ? await models.blogs.findManyWhere(filters, { limit, offset })
+            : await models.blogs.findMany({ limit, offset });
 
         const total = await models.blogs.count({
-          where: actualStatus
-            ? [{ where: 'status', equals: actualStatus }]
-            : undefined,
+          where: filters.length > 0 ? filters : undefined,
         });
 
         return {
@@ -135,6 +141,12 @@ export function createBlogsRoutes(deps: Deps): Router {
         }
 
         // Generate slug before validation so the required field is present
+        const site = await resolveRequestSite({
+          models,
+          userId,
+          siteId: readRequestSiteId(req) ?? req.body?.siteId,
+        });
+
         const slugValue = req.body.slug
           ? String(req.body.slug)
           : generateSlug(String(name));
@@ -143,6 +155,7 @@ export function createBlogsRoutes(deps: Deps): Router {
           ...req.body,
           slug: slugValue,
           authorId: userId,
+          siteId: site.id,
         });
 
         const blogData = {
@@ -150,21 +163,12 @@ export function createBlogsRoutes(deps: Deps): Router {
           name: String(parsedData.name),
           slug: String(parsedData.slug),
           authorId: String(parsedData.authorId),
+          siteId: String(parsedData.siteId),
         };
 
         const blog = await models.blogs.create(blogData);
 
-        // Resolve siteId: use blog's siteId or fall back to default site
-        let siteId = blog.siteId ? String(blog.siteId) : null;
-        if (!siteId) {
-          const defaultSite = await models.sites.findDefaultSite();
-          if (!defaultSite?.id) {
-            console.warn('No default site found — blog page will not be created');
-            hooks.doAction('save_blog', blog);
-            return blog;
-          }
-          siteId = String(defaultSite.id);
-        }
+        const siteId = String(site.id);
 
         // Auto-create the blog's index page with a PostList block
         const blogPage = await models.pages.create({

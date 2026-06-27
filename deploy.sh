@@ -8,11 +8,14 @@
 # Options:
 #   --with-db     Run database migration (pnpm db:push) before build
 #   --skip-build  Skip project build (pnpm build)
-#   --skip-push   Skip Docker Hub push confirmation
+#   --version X.Y.Z  Set release version explicitly (skip auto bump rule)
+#   --skip-push     Skip Docker Hub push confirmation
+#   --skip-release  Skip git tag + GitHub release publish
 #   -h, --help    Show help message
 #
 # Requirements:
-#   - pnpm, docker, docker compose, jq installed
+#   - pnpm, docker, docker compose, jq, git, gh (authenticated) installed
+#   - clean git working tree (no uncommitted changes)
 #   - .env file with POSTGRES_PASSWORD, SESSION_SECRET
 #
 
@@ -27,9 +30,19 @@ echo "==> NextPress deploy starting (v${VERSION})"
 SKIP_DB=true
 SKIP_BUILD=false
 SKIP_PUSH=false
+SKIP_RELEASE=false
+DEPLOY_VERSION=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --version)
+      DEPLOY_VERSION="${2:-}"
+      if [[ -z "$DEPLOY_VERSION" ]]; then
+        echo "Error: --version requires a semver value (e.g. 1.2.0)"
+        exit 1
+      fi
+      shift 2
+      ;;
     --with-db)
       SKIP_DB=false
       shift
@@ -42,13 +55,19 @@ while [[ $# -gt 0 ]]; do
       SKIP_PUSH=true
       shift
       ;;
+    --skip-release)
+      SKIP_RELEASE=true
+      shift
+      ;;
     -h|--help)
       echo "Usage: ./deploy.sh [OPTIONS]"
       echo ""
       echo "Options:"
       echo "  --with-db     Run database migration (pnpm db:push)"
       echo "  --skip-build  Skip project build (pnpm build)"
-      echo "  --skip-push   Skip Docker Hub push (build & verify only)"
+      echo "  --version X.Y.Z Set release version explicitly"
+      echo "  --skip-push     Skip Docker Hub push (build & verify only)"
+      echo "  --skip-release  Skip git tag and GitHub release publish"
       echo "  -h, --help    Show this help message"
       exit 0
       ;;
@@ -142,9 +161,37 @@ docker_logged_in() {
 print_header "NEXTPRESS DEPLOY"
 
 # ============================================
+# Step 0: Clean git tree + version bump
+# ============================================
+print_step "0/10" "Git tree and version bump..."
+
+# shellcheck source=scripts/assert-clean-git-tree.sh
+source "$(dirname "$0")/scripts/assert-clean-git-tree.sh"
+if ! assert_clean_git_tree; then
+  exit 1
+fi
+print_success "Working tree is clean"
+
+if [[ -n "$DEPLOY_VERSION" ]]; then
+  if ! pnpm -s version:bump --set "$DEPLOY_VERSION"; then
+    print_error "Version set failed"
+    exit 1
+  fi
+  print_success "Version set to ${DEPLOY_VERSION} (beta-v${DEPLOY_VERSION})"
+else
+  if ! pnpm -s version:bump; then
+    print_error "Version bump failed"
+    exit 1
+  fi
+  print_success "Version bumped to $(get_version) (beta-v$(get_version))"
+fi
+VERSION="$(get_version)"
+readonly VERSION_TAG="beta-v${VERSION}"
+
+# ============================================
 # Step 1: Pre-flight Checks
 # ============================================
-print_step "1/9" "Pre-flight checks..."
+print_step "1/10" "Pre-flight checks..."
 
 if [[ ! -f "package.json" ]]; then
   print_error "package.json not found. Run this script from the project root."
@@ -168,13 +215,24 @@ if ! docker compose version >/dev/null 2>&1; then
 fi
 print_success "docker compose installed"
 
+if [[ "$SKIP_RELEASE" != true ]]; then
+  if ! command_exists gh; then
+    print_error "gh CLI is required for GitHub release publish (or pass --skip-release)"
+    exit 1
+  fi
+  if ! gh auth status >/dev/null 2>&1; then
+    print_error "gh is not authenticated. Run: gh auth login"
+    exit 1
+  fi
+  print_success "gh CLI authenticated"
+fi
+
 VERSION=$(get_version)
 if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
   print_error "Could not read version from package.json"
   exit 1
 fi
-readonly VERSION_TAG="beta-v${VERSION}"
-print_success "Version: ${VERSION} → ${VERSION_TAG}"
+print_success "Deploying version ${VERSION} (${VERSION_TAG})"
 
 if [[ ! -f ".env" ]]; then
   print_error ".env file not found"
@@ -209,7 +267,7 @@ fi
 # ============================================
 # Step 2: Database Migration (Optional)
 # ============================================
-print_step "2/9" "Database migration..."
+print_step "2/10" "Database migration..."
 
 if [[ "$SKIP_DB" == true ]]; then
   print_warning "Skipped (use --with-db to run)"
@@ -224,7 +282,7 @@ fi
 # ============================================
 # Step 3: Project Build
 # ============================================
-print_step "3/9" "Project build..."
+print_step "3/10" "Project build..."
 
 if [[ "$SKIP_BUILD" == true ]]; then
   print_warning "Skipped (remove --skip-build to run)"
@@ -239,7 +297,7 @@ fi
 # ============================================
 # Step 4: Cleanup Existing Containers
 # ============================================
-print_step "4/9" "Cleanup existing containers..."
+print_step "4/10" "Cleanup existing containers..."
 
 docker compose down 2>/dev/null || true
 print_success "docker compose down completed"
@@ -247,7 +305,7 @@ print_success "docker compose down completed"
 # ============================================
 # Step 5: Build, migrate, and start with Docker Compose
 # ============================================
-print_step "5/9" "Docker Compose build, migrate, and start..."
+print_step "5/10" "Docker Compose build, migrate, and start..."
 
 if ! docker compose build app; then
   print_error "docker compose build failed"
@@ -276,7 +334,7 @@ print_success "Containers started"
 # ============================================
 # Step 6: Health Check
 # ============================================
-print_step "6/9" "Health check..."
+print_step "6/10" "Health check..."
 
 print_info "Waiting for app to be ready (max ${HEALTH_TIMEOUT}s)..."
 
@@ -316,7 +374,7 @@ fi
 # ============================================
 # Step 7: Stop Containers
 # ============================================
-print_step "7/9" "Stop containers..."
+print_step "7/10" "Stop containers..."
 
 docker compose down
 print_success "Containers stopped"
@@ -327,7 +385,7 @@ IMAGE_SIZE=$(docker images "${COMPOSE_IMAGE}:latest" --format "{{.Size}}" 2>/dev
 # ============================================
 # Step 8: Tag Image for Docker Hub
 # ============================================
-print_step "8/9" "Tag image for Docker Hub..."
+print_step "8/10" "Tag image for Docker Hub..."
 
 docker tag "${COMPOSE_IMAGE}:latest" "${DOCKER_HUB_IMAGE}:${VERSION_TAG}"
 print_success "Tagged: ${DOCKER_HUB_IMAGE}:${VERSION_TAG}"
@@ -340,7 +398,9 @@ print_info "Image size: ${IMAGE_SIZE}"
 # ============================================
 # Step 9: Push to Docker Hub
 # ============================================
-print_step "9/9" "Push to Docker Hub..."
+print_step "9/10" "Push to Docker Hub..."
+
+DOCKER_PUSHED=false
 
 if [[ "$SKIP_PUSH" == true ]]; then
   print_warning "Skipped (remove --skip-push to push)"
@@ -372,7 +432,26 @@ else
       exit 1
     fi
     print_success "Pushed: ${DOCKER_HUB_IMAGE}:latest"
+    DOCKER_PUSHED=true
   fi
+fi
+
+# ============================================
+# Step 10: Git tag + GitHub release
+# ============================================
+print_step "10/10" "Git tag and GitHub release..."
+
+if [[ "$SKIP_RELEASE" == true ]]; then
+  print_warning "Skipped (--skip-release)"
+elif [[ "$DOCKER_PUSHED" != true ]]; then
+  print_warning "Skipped (Docker image was not pushed)"
+else
+  if ! pnpm exec tsx scripts/publish-github-release.ts; then
+    print_error "GitHub release publish failed"
+    exit 1
+  fi
+  print_success "Published GitHub release v${VERSION}"
+  print_info "Release: https://github.com/pabloh3/nextpress1/releases/tag/v${VERSION}"
 fi
 
 # ============================================

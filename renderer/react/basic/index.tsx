@@ -89,7 +89,9 @@ export function HeadingBlock(block: BlockConfig) {
 		fontSize: HEADING_FONT_SIZES[level],
 		fontWeight: HEADING_FONT_WEIGHTS[level],
 		...style,
-		...(textAlign ? { textAlign } : {}),
+		...(textAlign
+			? { textAlign: textAlign as React.CSSProperties["textAlign"] }
+			: {}),
 	};
 
 	const attrs = { ...attributes, ...(anchor ? { id: anchor } : {}) };
@@ -139,7 +141,9 @@ export function ParagraphBlock(block: BlockConfig) {
 
 	const mergedStyle: React.CSSProperties = {
 		...style,
-		...(effectiveTextAlign ? { textAlign: effectiveTextAlign } : {}),
+		...(effectiveTextAlign
+			? { textAlign: effectiveTextAlign as React.CSSProperties["textAlign"] }
+			: {}),
 	};
 
 	// `format: "html"` carries sanitized inline markup (e.g. imported paragraphs with links/bold).

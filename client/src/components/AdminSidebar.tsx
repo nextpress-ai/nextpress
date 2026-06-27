@@ -6,6 +6,7 @@ import {
   Image,
   MessageCircle,
   Paintbrush,
+  Globe,
   Layout,
   Plug,
   Users,
@@ -13,6 +14,7 @@ import {
   Download,
 } from 'lucide-react';
 import { NEXTPRESS_CONFIG } from '../../../config';
+import { WhatsNewSidebarBanner } from '@/components/admin/WhatsNewSidebarBanner';
 
 type MenuItem = {
   label: string;
@@ -31,6 +33,7 @@ const menuItems: MenuItem[] = [
   { label: 'Templates', path: '/admin/templates', icon: Layout, section: 'Appearance' },
   { label: 'Import WordPress', path: '/admin/import/wordpress', icon: Download, section: 'Tools' },
   { label: 'Plugins', path: '/admin/plugins', icon: Plug, section: 'System' },
+  { label: 'Sites', path: '/admin/sites', icon: Globe, section: 'System' },
   { label: 'Users', path: '/admin/users', icon: Users, section: 'System' },
   { label: 'Settings', path: '/admin/settings', icon: Cog, section: 'System' },
 ];
@@ -101,6 +104,8 @@ export default function AdminSidebar() {
               </div>
             ))}
         </nav>
+
+        <WhatsNewSidebarBanner />
 
         <div className="border-t border-white/10 px-4 py-3 text-[11px] text-white/60">
           v{NEXTPRESS_CONFIG.version}

@@ -3,22 +3,34 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, File, MessageCircle, Users, Plus, ExternalLink } from 'lucide-react';
 import { AdminLayout } from '@/components/AdminLayout';
+import { useActiveSite } from '@/hooks/useActiveSite';
 import { ThemeColorPreview } from '@/components/themes/theme-color-preview';
 import { Link } from 'wouter';
 import type { Theme } from '@shared/schema-types';
 
 export default function Dashboard() {
+  const { activeSiteId } = useActiveSite();
+
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['/api/dashboard/stats'],
+    queryKey: ['/api/dashboard/stats', { siteId: activeSiteId }],
+    enabled: !!activeSiteId,
   });
 
   const { data: recentPosts, isLoading: postsLoading } = useQuery({
-    queryKey: ['/api/posts', { status: 'publish', per_page: 5 }],
+    queryKey: ['/api/posts', { status: 'publish', per_page: 5, siteId: activeSiteId }],
+    enabled: !!activeSiteId,
   });
 
-  const { data: activeTheme } = useQuery({
-    queryKey: ['/api/themes/active'],
+  const { data: siteInfo } = useQuery<{ status: boolean; data: { activeThemeId: string | null } }>({
+    queryKey: ['/api/site', { siteId: activeSiteId }],
+    enabled: !!activeSiteId,
   });
+
+  const { data: themes } = useQuery<Theme[]>({
+    queryKey: ['/api/themes'],
+  });
+
+  const activeTheme = themes?.find((theme) => theme.id === siteInfo?.data?.activeThemeId);
 
   const statsItems = [
     { label: 'Posts', value: (stats as { posts?: number })?.posts ?? 0, icon: FileText, href: '/admin/posts' },

@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { createModel, type DatabaseInstance } from "@shared/create-models";
+import { normalizeSiteHostname } from "./utils/validate-domain";
 import {
 	sites,
 	roles,
@@ -323,14 +324,18 @@ export function createOptionModel(dbInstance: DatabaseInstance = db) {
 	const baseModel = createModel(options, dbInstance);
 	return {
 		...baseModel,
-		async getOption(name: string) {
-			return baseModel.findFirst([{ where: "name", equals: name }]);
+		async getOption(name: string, siteId: string) {
+			return baseModel.findFirst([
+				{ where: "siteId", equals: siteId },
+				{ where: "name", equals: name },
+			]);
 		},
-		async setOption(data: { name: string; value: string }) {
-			const existing = await this.getOption(data.name);
+		async setOption(data: { name: string; value: string; siteId: string }) {
+			const existing = await this.getOption(data.name, data.siteId);
 			if (existing) {
 				return baseModel.update(existing.id, {
 					value: data.value,
+					updatedAt: new Date(),
 				});
 			}
 			return baseModel.create(data as any);
@@ -451,6 +456,20 @@ export function createSiteModel(dbInstance: DatabaseInstance = db) {
 		async findByOwner(ownerId: string) {
 			return baseModel.findManyWhere([{ where: "ownerId", equals: ownerId }]);
 		},
+
+		/** Match a site by hostname derived from sites.siteUrl. */
+		async findByHostname(hostname: string) {
+			const normalized = hostname.trim().toLowerCase();
+			if (!normalized) return undefined;
+
+			const allSites = await baseModel.findMany();
+			for (const site of allSites) {
+				if (!site.siteUrl) continue;
+				const siteHost = normalizeSiteHostname(site.siteUrl);
+				if (siteHost === normalized) return site;
+			}
+			return undefined;
+		},
 		
 		/**
 		 * Get site settings merged with defaults
@@ -463,11 +482,13 @@ export function createSiteModel(dbInstance: DatabaseInstance = db) {
 		 * const settings = await siteModel.getSettings();
 		 * console.log(settings.general.siteName);
 		 */
-		async getSettings() {
+		async getSettings(siteId?: string) {
 			const { DEFAULT_SETTINGS } = await import("@shared/settings-default");
 			const { deepMerge } = await import("./utils/deep-merge");
-			
-			const site = await this.findDefaultSite();
+
+			const site = siteId
+				? await baseModel.findById(siteId)
+				: await this.findDefaultSite();
 			if (!site) {
 				return DEFAULT_SETTINGS;
 			}
@@ -489,14 +510,16 @@ export function createSiteModel(dbInstance: DatabaseInstance = db) {
 		 *   general: { siteName: 'My New Site' }
 		 * });
 		 */
-		async updateSettings(partial: any) {
+		async updateSettings(partial: any, siteId?: string) {
 			const { DEFAULT_SETTINGS } = await import("@shared/settings-default");
 			const { deepMerge } = await import("./utils/deep-merge");
 			const { settingsSchema } = await import("@shared/settings-schema");
 
-			const site = await this.findDefaultSite();
+			const site = siteId
+				? await baseModel.findById(siteId)
+				: await this.findDefaultSite();
 			if (!site) {
-				throw new Error("Default site not found");
+				throw new Error("Site not found");
 			}
 
 			const currentSettings = site.settings || {};

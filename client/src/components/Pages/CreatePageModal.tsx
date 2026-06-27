@@ -27,6 +27,7 @@ import {
   resolveCreatePageError,
 } from "@/lib/sonner-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useActiveSite } from "@/hooks/useActiveSite";
 import { reIdTemplateBlocks } from "@/lib/re-id-template-blocks";
 import { useContentLists } from "@/hooks/useContentLists";
 import { FilePlus } from "lucide-react";
@@ -81,6 +82,7 @@ export function CreatePageModal({
 
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const { activeSiteId } = useActiveSite();
   const { pages, templates } = useContentLists();
 
   // Update title when initialTitle changes
@@ -175,6 +177,7 @@ export function CreatePageModal({
         title: data.title || "Untitled",
         slug: data.slug || generateSlug(data.title) || `untitled-${Date.now()}`,
         status: "draft", // Always draft on creation
+        siteId: activeSiteId,
         blocks: starterBlocks,
         allowComments: data.allowComments,
         password: data.password || undefined,

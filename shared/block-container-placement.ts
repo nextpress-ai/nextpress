@@ -337,7 +337,9 @@ export function getContainerChildrenStackStyle(
 
 	if (childOuterDisplay === "flex") {
 		out.flexDirection = siblingFlexDirection;
-		out.flexWrap = parentDisplay === "flex" ? layout.flexWrap : undefined;
+		out.flexWrap = (
+			parentDisplay === "flex" ? layout.flexWrap : undefined
+		) as CSSProperties["flexWrap"] | undefined;
 		out.alignItems = layout.alignItems;
 		out.justifyContent = layout.justifyContent;
 	}

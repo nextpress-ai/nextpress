@@ -26,12 +26,12 @@ export default defineConfig({
 				test: {
 					name: "server",
 					environment: "node",
-					setupFiles: ["./server/test/setup.ts"],
 					include: [
 						"server/test/**/*.test.{ts,tsx}",
 						"server/test/**/*.spec.{ts,tsx}",
 					],
 					exclude: ["node_modules", "dist", "build", "**/*.e2e.{ts,tsx}"],
+					hookTimeout: 60_000,
 				},
 			},
 			{

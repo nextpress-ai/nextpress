@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLoadingShell } from '@/components/app-loading-shell';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { ActiveSiteProvider } from '@/hooks/useActiveSite';
 import PublicPageView from '@/pages/PublicPageView';
 
 const NotFound = lazy(() => import('@/pages/not-found'));
@@ -19,6 +20,7 @@ const Comments = lazy(() => import('@/pages/Comments'));
 const Themes = lazy(() => import('@/pages/Themes'));
 const Users = lazy(() => import('@/pages/Users'));
 const Settings = lazy(() => import('@/pages/Settings'));
+const Sites = lazy(() => import('@/pages/Sites'));
 const Login = lazy(() => import('@/pages/Login'));
 const Register = lazy(() => import('@/pages/Register'));
 const PageBuilderEditor = lazy(() => import('@/pages/PageBuilderEditor'));
@@ -46,8 +48,8 @@ function Router() {
     retry: false,
   });
 
-  // Show loading while checking setup status
-  if (isCheckingSetup) {
+  // Show loading while checking setup status or auth
+  if (isCheckingSetup || isLoading) {
     return <AppLoadingShell />;
   }
 
@@ -66,98 +68,100 @@ function Router() {
     );
   }
 
-  return (
+  const routes = (
     <Suspense fallback={<RouteFallback />}>
-    <Switch>
-      {/* Setup route - redirects to login if already setup */}
-      <Route path="/setup" component={Setup} />
-      
-      {/* Auth routes - always available */}
-      <Route path="/admin/login" component={Login} />
-      <Route path="/admin/register" component={Register} />
+      <Switch>
+        {/* Setup route - redirects to login if already setup */}
+        <Route path="/setup" component={Setup} />
 
-      {/* Preview routes - available to everyone */}
-      <Route
-        path="/preview/post/:id"
-        component={({ params }: any) => (
-          <PreviewPage postId={params.id} type="post" />
-        )}
-      />
-      <Route
-        path="/preview/page/:id"
-        component={({ params }: any) => (
-          <PreviewPage postId={params.id} type="page" />
-        )}
-      />
-      <Route
-        path="/preview/template/:id"
-        component={({ params }: any) => (
-          <PreviewPage templateId={params.id} type="template" />
-        )}
-      />
+        {/* Auth routes - always available */}
+        <Route path="/admin/login" component={Login} />
+        <Route path="/admin/register" component={Register} />
 
-      {/* Public routes - published content available to everyone */}
-      <Route
-        path="/page/:slug"
-        component={({ params }: any) => (
-          <PublicPageView slug={params.slug} type="page" />
-        )}
-      />
-      <Route
-        path="/post/:slug"
-        component={({ params }: any) => (
-          <PublicPageView slug={params.slug} type="post" />
-        )}
-      />
-      <Route path="/" component={() => <PublicPageView type="homepage" />} />
+        {/* Preview routes - available to everyone */}
+        <Route
+          path="/preview/post/:id"
+          component={({ params }: { params: { id: string } }) => (
+            <PreviewPage postId={params.id} type="post" />
+          )}
+        />
+        <Route
+          path="/preview/page/:id"
+          component={({ params }: { params: { id: string } }) => (
+            <PreviewPage postId={params.id} type="page" />
+          )}
+        />
+        <Route
+          path="/preview/template/:id"
+          component={({ params }: { params: { id: string } }) => (
+            <PreviewPage templateId={params.id} type="template" />
+          )}
+        />
 
-      {/* Conditional routes based on auth state */}
-      {isLoading ? (
-        <AppLoadingShell />
-      ) : !isAuthenticated ? (
-        <>
+        {/* Public routes - published content available to everyone */}
+        <Route
+          path="/page/:slug"
+          component={({ params }: { params: { slug: string } }) => (
+            <PublicPageView slug={params.slug} type="page" />
+          )}
+        />
+        <Route
+          path="/post/:slug"
+          component={({ params }: { params: { slug: string } }) => (
+            <PublicPageView slug={params.slug} type="post" />
+          )}
+        />
+        <Route path="/" component={() => <PublicPageView type="homepage" />} />
+
+        {isAuthenticated ? (
+          <>
+            <Route path="/admin" component={Dashboard} />
+            <Route path="/admin/dashboard" component={Dashboard} />
+            <Route path="/admin/posts" component={Posts} />
+            <Route path="/admin/pages" component={Pages} />
+            <Route path="/admin/media" component={Media} />
+            <Route path="/admin/comments" component={Comments} />
+            <Route path="/admin/themes" component={Themes} />
+            <Route path="/admin/templates" component={Templates} />
+            <Route path="/admin/plugins" component={Plugins} />
+            <Route path="/admin/import/wordpress" component={ImportWordPress} />
+            <Route path="/admin/users" component={Users} />
+            <Route path="/admin/sites" component={Sites} />
+            <Route path="/admin/settings" component={Settings} />
+            <Route
+              path="/admin/page-builder/template/:id"
+              component={({ params }: { params: { id: string } }) => (
+                <PageBuilderEditor postId={params.id} type="template" />
+              )}
+            />
+            <Route
+              path="/admin/page-builder/:type/:id"
+              component={({ params }: { params: { type: string; id: string } }) => {
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id);
+                return (
+                  <PageBuilderEditor
+                    postId={params.id}
+                    type={params.type as 'post' | 'page'}
+                    isSlug={params.type === 'page' && !isUUID}
+                  />
+                );
+              }}
+            />
+            <Route path="/admin/page-builder" component={() => <PageBuilderEditor />} />
+          </>
+        ) : (
           <Route path="/admin" component={Login} />
-          <Route component={NotFound} />
-        </>
-      ) : (
-        <>
-          <Route path="/admin" component={Dashboard} />
-          <Route path="/admin/dashboard" component={Dashboard} />
-          <Route path="/admin/posts" component={Posts} />
-          <Route path="/admin/pages" component={Pages} />
-          <Route path="/admin/media" component={Media} />
-          <Route path="/admin/comments" component={Comments} />
-          <Route path="/admin/themes" component={Themes} />
-          <Route path="/admin/templates" component={Templates} />
-          <Route path="/admin/plugins" component={Plugins} />
-          <Route path="/admin/import/wordpress" component={ImportWordPress} />
-          <Route path="/admin/users" component={Users} />
-          <Route path="/admin/settings" component={Settings} />
-          <Route
-            path="/admin/page-builder/template/:id"
-            component={({ params }: any) => (
-              <PageBuilderEditor postId={params.id} type="template" />
-            )}
-          />
-          <Route
-            path="/admin/page-builder/:type/:id"
-            component={({ params }: any) => {
-              const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id);
-              return (
-                <PageBuilderEditor
-                  postId={params.id}
-                  type={params.type as 'post' | 'page'}
-                  isSlug={params.type === 'page' && !isUUID}
-                />
-              );
-            }}
-          />
-          <Route path="/admin/page-builder" component={() => <PageBuilderEditor />} />
-          <Route component={NotFound} />
-        </>
-      )}
-    </Switch>
+        )}
+
+        <Route component={NotFound} />
+      </Switch>
     </Suspense>
+  );
+
+  return isAuthenticated ? (
+    <ActiveSiteProvider>{routes}</ActiveSiteProvider>
+  ) : (
+    routes
   );
 }
 

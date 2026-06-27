@@ -12,6 +12,8 @@ import type { PageRenderOptions } from "../../renderer/templates/page";
 import type { BlockConfig } from "@shared/schema-types";
 import type { BlockAnimation } from "@shared/schema-types";
 import { enrichPostForApi } from "@shared/posts/post-other";
+import { resolveSiteRenderContext } from "./shared/resolve-site-render-context";
+import { getSiteBlogIds } from "./shared/site-content";
 
 import { generateBlockAnimationCSS, getEntryAnimationBaseCSS } from "@shared/animation-utils";
 
@@ -35,7 +37,7 @@ const __dirname = path.dirname(__filename);
  */
 export function createRenderRoutes(deps: Deps): Router {
 	const router = Router();
-	const { models, themeManager, getSiteSettings } = deps;
+	const { models, themeManager } = deps;
 
 	/**
 	 * GET /renderer/scripts/hydrate.js - Serve hydration script
@@ -80,9 +82,9 @@ export function createRenderRoutes(deps: Deps): Router {
 	 * GET /robots.txt - Serve robots.txt with sensible defaults
 	 * References site URL for sitemap location
 	 */
-	router.get("/robots.txt", (req, res) => {
-		const settings = getSiteSettings(req);
-		const siteUrl = settings?.url || `${req.protocol}://${req.get("host")}`;
+	router.get("/robots.txt", asyncHandler(async (req, res) => {
+		const context = await resolveSiteRenderContext({ models, req });
+		const siteUrl = context?.settings.url || `${req.protocol}://${req.get("host")}`;
 
 		const lines: string[] = [
 			"User-agent: *",
@@ -94,7 +96,7 @@ export function createRenderRoutes(deps: Deps): Router {
 
 		res.setHeader("Content-Type", "text/plain");
 		res.send(lines.join("\n"));
-	});
+	}));
 
 	/**
 	 * GET /posts/:id - Render single post as HTML
@@ -104,6 +106,12 @@ export function createRenderRoutes(deps: Deps): Router {
 		"/posts/:id",
 		asyncHandler(async (req, res) => {
 			const { err } = await safeTryAsync(async () => {
+				const context = await resolveSiteRenderContext({ models, req });
+				if (!context) {
+					const html = themeManager.render404();
+					return res.status(404).send(html);
+				}
+
 				const postId = req.params.id;
 				const post = await models.posts.findById(postId);
 
@@ -112,12 +120,15 @@ export function createRenderRoutes(deps: Deps): Router {
 					return res.status(404).send(html);
 				}
 
-				// Get site settings for theme context
-				const siteSettings = getSiteSettings(req);
+				const blogIds = await getSiteBlogIds({ models, siteId: context.site.id });
+				if (!post.blogId || !blogIds.includes(post.blogId)) {
+					const html = themeManager.render404();
+					return res.status(404).send(html);
+				}
 
 				const html = await themeManager.renderContent("single-post", {
 					post: enrichPostForApi(post),
-					site: siteSettings,
+					site: context.settings,
 				});
 
 				res.setHeader("Content-Type", "text/html");
@@ -141,19 +152,23 @@ export function createRenderRoutes(deps: Deps): Router {
 		"/pages/:id",
 		asyncHandler(async (req, res) => {
 			const { err } = await safeTryAsync(async () => {
-				const pageId = req.params.id;
-				const page = await models.pages.findById(pageId);
-
-				if (!page) {
+				const context = await resolveSiteRenderContext({ models, req });
+				if (!context) {
 					const html = themeManager.render404();
 					return res.status(404).send(html);
 				}
 
-				const siteSettings = getSiteSettings(req);
+				const pageId = req.params.id;
+				const page = await models.pages.findById(pageId);
+
+				if (!page || page.siteId !== context.site.id) {
+					const html = themeManager.render404();
+					return res.status(404).send(html);
+				}
 
 				const html = await themeManager.renderContent("page", {
 					page,
-					site: siteSettings,
+					site: context.settings,
 				});
 
 				res.setHeader("Content-Type", "text/html");
@@ -177,17 +192,27 @@ export function createRenderRoutes(deps: Deps): Router {
 		"/home",
 		asyncHandler(async (req, res) => {
 			const { err } = await safeTryAsync(async () => {
-				const posts = await models.posts.findMany({
-					where: "status",
-					equals: "publish",
-					limit: 10,
-				});
+				const context = await resolveSiteRenderContext({ models, req });
+				if (!context) {
+					const html = themeManager.render404();
+					return res.status(404).send(html);
+				}
 
-				const siteSettings = getSiteSettings(req);
+				const blogIds = await getSiteBlogIds({ models, siteId: context.site.id });
+				const posts =
+					blogIds.length > 0
+						? await models.posts.findManyWhere(
+								[
+									{ where: "status", equals: "publish" },
+									{ where: "blogId", in: blogIds },
+								],
+								{ limit: 10 },
+							)
+						: [];
 
 				const html = await themeManager.renderContent("home", {
-					posts: posts,
-					site: siteSettings,
+					posts: posts.map(enrichPostForApi),
+					site: context.settings,
 				});
 
 				res.setHeader("Content-Type", "text/html");

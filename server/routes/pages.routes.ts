@@ -15,6 +15,7 @@ import { coerceDates } from './shared/date-coerce';
 async function validateSlugUniqueness(
 	models: any,
 	slug: string,
+	siteId: string,
 	excludePageId?: string
 ) {
 	const normalizedSlug = normalizePageSlug(slug);
@@ -22,14 +23,13 @@ async function validateSlugUniqueness(
 		throw new Error('URL slug is required');
 	}
 
-	// Slug is globally unique in the database — check by slug, not site scope.
-	const existingPage = await models.pages.findBySlug(normalizedSlug);
+	const existingPage = await models.pages.findBySiteAndSlug(siteId, normalizedSlug);
 
 	if (existingPage) {
 		if (excludePageId && existingPage.id === excludePageId) {
 			return normalizedSlug;
 		}
-		throw new Error(`Slug "${normalizedSlug}" already exists`);
+		throw new Error(`Slug "${normalizedSlug}" already exists on this site`);
 	}
 
 	return normalizedSlug;
@@ -66,21 +66,32 @@ export function createPagesRoutes(deps: Deps): Router {
           CONFIG.PAGINATION.DEFAULT_POSTS_PER_PAGE
         );
         const { status = CONFIG.STATUS.PUBLISH } = req.query;
+        const siteId =
+          typeof req.query.siteId === 'string' && req.query.siteId.trim()
+            ? req.query.siteId.trim()
+            : undefined;
 
         // Handle 'any' status to show all pages (for admin interface)
         const actualStatus = parseStatusParam(status as string);
 
-        const pages = await models.pages.findMany({
-          where: 'status',
-          equals: actualStatus,
-          limit,
-          offset,
-        });
+        const filters: Array<{ where: string; equals?: unknown }> = [];
+        if (actualStatus) {
+          filters.push({ where: 'status', equals: actualStatus });
+        }
+        if (siteId) {
+          filters.push({ where: 'siteId', equals: siteId });
+        }
+
+        const pages =
+          filters.length > 0
+            ? await models.pages.findManyWhere(filters, {
+                limit,
+                offset,
+              })
+            : await models.pages.findMany({ limit, offset });
 
         const total = await models.pages.count({
-          where: actualStatus
-            ? [{ where: 'status', equals: actualStatus }]
-            : undefined,
+          where: filters.length > 0 ? filters : undefined,
         });
 
         return {
@@ -173,7 +184,7 @@ export function createPagesRoutes(deps: Deps): Router {
           typeof parsedData.slug === 'string' && parsedData.slug.trim() !== ''
             ? parsedData.slug
             : title;
-        const normalizedSlug = await validateSlugUniqueness(models, rawSlug);
+        const normalizedSlug = await validateSlugUniqueness(models, rawSlug, siteId);
 
         const pageData = {
           ...parsedData,
@@ -239,7 +250,12 @@ export function createPagesRoutes(deps: Deps): Router {
         
         let nextSlug = existingPage.slug;
         if (parsed.slug && parsed.slug !== existingPage.slug) {
-          nextSlug = await validateSlugUniqueness(models, parsed.slug, id);
+          nextSlug = await validateSlugUniqueness(
+            models,
+            parsed.slug,
+            String(existingPage.siteId),
+            id,
+          );
         }
 
         const pageData = {

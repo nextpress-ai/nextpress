@@ -248,7 +248,8 @@ export const buildSeparatorBlock = (params: {
 }): BlockConfig =>
 	attachImportElementMeta({
 		block: params.factory("core/separator", "Separator", "layout", {
-			className: "",
-		} as BlockConfig["content"]),
+			kind: "structured",
+			data: { className: "" },
+		}),
 		el: params.el,
 	});

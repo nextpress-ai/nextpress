@@ -43,6 +43,8 @@ describe("mapWpPost", () => {
 		expect(mapped.blogId).toBe("blog-uuid");
 		expect(mapped.blocks).toHaveLength(1);
 		expect(mapped.blocks?.[0]?.name).toBe("core/paragraph");
+		expect(mapped.blocks?.[0]?.styles?.padding).toBe("20px");
+		expect(mapped.blocks?.[0]?.other?.units).toMatchObject({ spacing: "px" });
 		expect(mapped.blocks?.[0]?.content).toMatchObject({
 			kind: "text",
 			value: "Content here",
@@ -67,5 +69,18 @@ describe("mapWpPost", () => {
 		const raw = mapped.other?.import?.raw as WpPostRaw;
 		expect(raw.id).toBe(42);
 		expect(raw.link).toBe("https://example.com/hello-world/");
+	});
+
+	it("handles WP pages without categories or tags", async () => {
+		const pageRaw: WpPostRaw = {
+			...baseRaw,
+			categories: undefined,
+			tags: undefined,
+		};
+
+		const mapped = await mapWpPost({ raw: pageRaw, ctx: buildCtx() });
+
+		expect(mapped.other?.categories).toEqual([]);
+		expect(mapped.other?.tags).toEqual([]);
 	});
 });

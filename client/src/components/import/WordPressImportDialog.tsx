@@ -6,6 +6,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { WordPressImportFlow } from "./WordPressImportFlow";
+import { WordPressExperimentalBadge } from "./WordPressExperimentalBadge";
 
 export type WordPressImportDialogProps = {
 	open: boolean;
@@ -18,9 +19,12 @@ export function WordPressImportDialog({ open, onOpenChange }: WordPressImportDia
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle>Import from WordPress</DialogTitle>
+					<DialogTitle className="flex items-center gap-2">
+						Import from WordPress
+						<WordPressExperimentalBadge />
+					</DialogTitle>
 					<DialogDescription>
-						Connect to a WordPress site and import published posts.
+						Connect to a WordPress site and import published posts or pages.
 					</DialogDescription>
 				</DialogHeader>
 				<WordPressImportFlow

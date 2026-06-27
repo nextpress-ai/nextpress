@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Deps } from './shared/deps';
+import { readRequestSiteId, resolveRequestSite } from './shared/resolve-request-site';
 
 /**
  * Creates themes, plugins and hooks routes
@@ -12,7 +13,7 @@ import type { Deps } from './shared/deps';
  */
 export function createThemesRoutes(deps: Deps) {
   const router = Router();
-  const { models, requireAuth, hooks } = deps;
+  const { models, requireAuth, authService, hooks } = deps;
 
   /**
    * GET /api/themes
@@ -51,18 +52,27 @@ export function createThemesRoutes(deps: Deps) {
    */
   router.post('/themes/:id/activate', requireAuth, async (req, res) => {
     try {
+      const userId = authService.getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
       const id = req.params.id;
       const theme = await models.themes.setActiveTheme(id);
 
-      const site = await models.sites.findDefaultSite();
-      if (site) {
-        await models.sites.update(site.id, { activeThemeId: id });
-      }
+      const site = await resolveRequestSite({
+        models,
+        userId,
+        siteId: readRequestSiteId(req),
+      });
+      await models.sites.update(site.id, { activeThemeId: id });
 
-      res.json(theme);
+      res.json({ ...theme, siteId: site.id });
     } catch (error) {
       console.error('Error activating theme:', error);
-      res.status(500).json({ message: 'Failed to activate theme' });
+      const message = error instanceof Error ? error.message : 'Failed to activate theme';
+      const status = message === 'Site not accessible' ? 403 : 500;
+      res.status(status).json({ message });
     }
   });
 

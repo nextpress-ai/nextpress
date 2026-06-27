@@ -18,15 +18,19 @@ export const normalizeSetupSiteUrl = (domain: string): string => {
 	}
 
 	if (shouldSkipPublicDnsCheck(hostname)) {
-		if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-			try {
-				const parsed = new URL(trimmed);
-				return `http://${parsed.host}`.replace(/\/+$/, '');
-			} catch {
-				return `http://${hostname}`.replace(/\/+$/, '');
+		const localHost = (() => {
+			if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+				try {
+					return new URL(trimmed).host;
+				} catch {
+					return hostname;
+				}
 			}
-		}
-		return `http://${hostname}`.replace(/\/+$/, '');
+			const hostSegment = trimmed.replace(/\/+$/, '').split('/')[0];
+			return hostSegment || hostname;
+		})();
+
+		return `http://${localHost}`.replace(/\/+$/, '');
 	}
 
 	if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {

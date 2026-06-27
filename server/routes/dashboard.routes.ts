@@ -1,52 +1,65 @@
 import { Router } from 'express';
 import type { Deps } from './shared/deps';
+import { asyncHandler } from './shared/async-handler';
+import { readRequestSiteId, resolveRequestSite } from './shared/resolve-request-site';
+import { getSiteBlogIds } from './shared/site-content';
 
 /**
- * Creates dashboard routes
- * Provides aggregated statistics for admin dashboard
+ * Dashboard routes — stats scoped to active site when siteId is provided.
  */
 export function createDashboardRoutes(deps: Deps) {
   const router = Router();
-  const { models, requireAuth } = deps;
+  const { models, requireAuth, authService } = deps;
 
-  /**
-   * GET /api/dashboard/stats
-   * Get dashboard statistics (posts, pages, comments, users counts)
-   * Auth: Required
-   */
-  router.get('/stats', requireAuth, async (_req, res) => {
+  router.get('/stats', requireAuth, asyncHandler(async (req, res) => {
     try {
-      const [postsCount, pagesCount, commentsCount, usersCount] =
-        await Promise.all([
-          models.posts.count({
-            where: [
-              { where: 'status', equals: 'publish' },
-              // Removed type filter; update this if new schema provides a way to distinguish posts
-            ],
-          }),
-          models.posts.count({
-            where: [
-              { where: 'status', equals: 'publish' },
-              // Removed type filter; update this if new schema provides a way to distinguish pages
-            ],
-          }),
-          models.comments.count({
-            where: [{ where: 'status', equals: 'approved' }],
-          }),
-          1, // Simplified for now
-        ]);
+      const userId = authService.getCurrentUserId(req);
+      if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+      const site = await resolveRequestSite({
+        models,
+        userId,
+        siteId: readRequestSiteId(req),
+      });
+
+      const blogIds = await getSiteBlogIds({ models, siteId: site.id });
+      const postFilters = [
+        { where: 'status', equals: 'publish' },
+        ...(blogIds.length > 0 ? [{ where: 'blogId', in: blogIds }] : [{ where: 'blogId', equals: '__none__' }]),
+      ];
+
+      const [postsCount, pagesCount, commentsCount, usersCount] = await Promise.all([
+        blogIds.length > 0
+          ? models.posts.count({ where: postFilters })
+          : Promise.resolve(0),
+        models.pages.count({
+          where: [
+            { where: 'status', equals: 'publish' },
+            { where: 'siteId', equals: site.id },
+          ],
+        }),
+        blogIds.length > 0
+          ? models.comments.count({
+              where: [{ where: 'status', equals: 'approved' }],
+            })
+          : Promise.resolve(0),
+        models.users.count({}),
+      ]);
 
       res.json({
         posts: postsCount,
         pages: pagesCount,
         comments: commentsCount,
         users: usersCount,
+        siteId: site.id,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
-      res.status(500).json({ message: 'Failed to fetch dashboard stats' });
+      const message = error instanceof Error ? error.message : 'Failed to fetch dashboard stats';
+      const status = message === 'Site not accessible' ? 403 : 500;
+      res.status(status).json({ message });
     }
-  });
+  }));
 
   return router;
 }

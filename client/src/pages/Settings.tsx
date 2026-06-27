@@ -13,6 +13,8 @@ import { Save, Globe, Database, Code, Shield, Bell, Upload, X, ImageIcon, Home, 
 import { AdminLayout } from '@/components/AdminLayout';
 import { Spinner } from '@/components/ui/spinner';
 import { apiRequest } from '@/lib/queryClient';
+import { appendSiteIdToUrl, buildSiteOptionUrl } from '@/lib/site-api';
+import { useActiveSite } from '@/hooks/useActiveSite';
 import { useToast } from '@/hooks/use-toast';
 import MediaPickerDialog from '@/components/media/MediaPickerDialog';
 import {
@@ -83,6 +85,7 @@ interface PublishedPagesForHomeResponse {
  * These are stored in the sites table directly (not in settings JSONB)
  */
 interface SiteInfo {
+  id: string;
   logoUrl: string | null;
   faviconUrl: string | null;
   activeThemeId: string | null;
@@ -212,6 +215,7 @@ function SiteHomepageField({
 }
 
 export default function Settings() {
+  const { activeSiteId } = useActiveSite();
   const [formData, setFormData] = useState<Settings | null>(null);
   const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -252,7 +256,8 @@ export default function Settings() {
     status: boolean;
     data: Settings;
   }>({
-    queryKey: ['/api/settings'],
+    queryKey: ['/api/settings', { siteId: activeSiteId }],
+    enabled: !!activeSiteId,
   });
 
   // Fetch site info (logo, favicon, theme)
@@ -260,7 +265,8 @@ export default function Settings() {
     status: boolean;
     data: SiteInfo;
   }>({
-    queryKey: ['/api/site'],
+    queryKey: ['/api/site', { siteId: activeSiteId }],
+    enabled: !!activeSiteId,
     retry: 1, // Only retry once
   });
 
@@ -281,9 +287,10 @@ export default function Settings() {
   }
 
   const { data: homepageOption } = useQuery<HomepageOptionResponse | null>({
-    queryKey: ['/api/options/homepage_page_slug'],
+    queryKey: ['/api/options/homepage_page_slug', { siteId: activeSiteId }],
+    enabled: !!activeSiteId,
     queryFn: async () => {
-      const response = await fetch('/api/options/homepage_page_slug');
+      const response = await fetch(buildSiteOptionUrl({ name: 'homepage_page_slug', siteId: activeSiteId }));
       if (response.status === 404) return null;
       if (!response.ok) throw new Error('Failed to load homepage setting');
       return response.json() as Promise<HomepageOptionResponse>;
@@ -291,15 +298,26 @@ export default function Settings() {
   });
 
   const { data: publishedPagesForHome } = useQuery<PublishedPagesForHomeResponse>({
-    queryKey: ['/api/pages', { status: 'publish', page: 1, per_page: 100 }],
+    queryKey: ['/api/pages', { status: 'publish', page: 1, per_page: 100, siteId: activeSiteId }],
+    enabled: !!activeSiteId,
   });
+
+  useEffect(() => {
+    setFormData(null);
+    setSiteInfo(null);
+    setValidationErrors({});
+  }, [activeSiteId]);
 
   const homepageSelectMutation = useMutation({
     mutationFn: async (slug: string) => {
-      const response = await apiRequest('POST', '/api/options', {
-        name: 'homepage_page_slug',
-        value: slug,
-      });
+      const response = await apiRequest(
+        'POST',
+        appendSiteIdToUrl('/api/options', activeSiteId),
+        {
+          name: 'homepage_page_slug',
+          value: slug,
+        },
+      );
       return response.json() as Promise<HomepageOptionResponse>;
     },
     onSuccess: (_data, slug) => {
@@ -345,12 +363,13 @@ export default function Settings() {
     if (!isSiteInfoLoading && !siteInfoResponse && !siteInfo) {
       console.log('Setting default site info due to failed load');
       setSiteInfo({
+        id: activeSiteId,
         logoUrl: null,
         faviconUrl: null,
         activeThemeId: null,
       });
     }
-  }, [siteInfoResponse, siteInfo, isSiteInfoLoading]);
+  }, [siteInfoResponse, siteInfo, isSiteInfoLoading, activeSiteId]);
 
   useEffect(() => {
     return () => {
@@ -363,7 +382,11 @@ export default function Settings() {
   // Save mutation - sends entire nested structure via PATCH
   const saveMutation = useMutation({
     mutationFn: async (data: Settings) => {
-      const response = await apiRequest('PATCH', '/api/settings', data);
+      const response = await apiRequest(
+        'PATCH',
+        appendSiteIdToUrl('/api/settings', activeSiteId),
+        data,
+      );
       return response.json();
     },
     onSuccess: () => {
@@ -437,7 +460,11 @@ export default function Settings() {
   // Save site info mutation (logo, favicon, theme)
   const saveSiteInfoMutation = useMutation({
     mutationFn: async (data: Partial<SiteInfo>) => {
-      const response = await apiRequest('PATCH', '/api/site', data);
+      const response = await apiRequest(
+        'PATCH',
+        appendSiteIdToUrl('/api/site', activeSiteId),
+        data,
+      );
       return response.json();
     },
     onSuccess: () => {
@@ -748,7 +775,7 @@ export default function Settings() {
     { label: 'Theme Engine', value: 'Multi-Renderer' },
   ];
 
-  if (isLoading || (isSiteInfoLoading && !siteInfoError) || (isThemesLoading && !themesError) || !formData) {
+  if (!activeSiteId || isLoading || (isSiteInfoLoading && !siteInfoError) || (isThemesLoading && !themesError) || !formData) {
     return (
       <AdminLayout title="Settings">
         <div className="flex items-center justify-center py-12">

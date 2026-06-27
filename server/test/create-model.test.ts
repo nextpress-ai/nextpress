@@ -41,18 +41,19 @@ describe('createModel - Generic CRUD Operations', () => {
       updatedAt: new Date(),
     };
 
+    testSite = {
+      id: generateId(),
+      name: 'Test Site',
+      ownerId: testUser.id,
+    };
+
     testBlog = {
       id: generateId(),
       name: 'Test Blog',
       description: 'A test blog',
       slug: 'test-blog',
       authorId: testUser.id,
-    };
-
-    testSite = {
-      id: generateId(),
-      name: 'Test Site',
-      ownerId: testUser.id,
+      siteId: testSite.id,
     };
 
     testPost = {
@@ -451,6 +452,7 @@ describe('createModel - Generic CRUD Operations', () => {
         size: 1024,
         url: '/uploads/test.jpg',
         authorId: testUser.id,
+        siteId: testSite.id,
       };
 
       const created = await mediaModel.create(newMedia);
@@ -516,6 +518,7 @@ describe('createModel - Generic CRUD Operations', () => {
         id: generateId(),
         name: 'site_title',
         value: 'My Site',
+        siteId: testSite.id,
       };
 
       const created = await optionModel.create(newOption);

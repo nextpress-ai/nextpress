@@ -4,6 +4,26 @@ Per **AGENTS.md → Workflow**: use `task.md` for work **>30min**; at **task end
 
 ---
 
+## 2026-06-21 — Consumer-facing copy & What's New
+
+### Rules (see **`docs/internal/COPYWRITING.md`** and **AGENTS.md → Consumer-facing copy**)
+
+- Admin UI copy is for **site owners**, not engineers. No em dashes. No API names, filter/query jargon, "UX", or implementation detail unless it directly helps the user act.
+- **What's New** highlights in `shared/release/release-manifest.ts` with `kind`:
+  - `update` → orange **New feature**
+  - `fix` → red **Bug fix**
+  - `improvement` → blue **Improvement**
+- UI rendering: `WhatsNewHighlightItem` + `RELEASE_HIGHLIGHT_META` in `shared/release/release-highlight-meta.ts`.
+- Deploy GitHub release notes (`scripts/publish-github-release.ts`) may stay technical (Docker tag, CLI); in-app dialog stays plain language.
+
+### Version bump (deploy)
+
+- Default: patch +1; at patch **10** roll to next minor (`1.0.10` → `1.1.0`). See `shared/release/bump-version.ts`.
+- Manual: `pnpm version:bump --minor|--major|--patch`, `pnpm version:set 1.2.0`, `pnpm deploy -- --version 1.2.0`.
+- Deploy requires **clean git tree**; publishes GitHub release tag `vX.Y.Z` after Docker push.
+
+---
+
 ## 2026-06-21 — Better Auth migration
 
 Intent: [`docs/internal/intent-better-auth.md`](docs/internal/intent-better-auth.md)

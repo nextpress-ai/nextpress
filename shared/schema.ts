@@ -10,6 +10,7 @@ import {
 	bigint,
 	boolean,
 	index,
+	uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const sites = pgTable("sites", {
@@ -131,31 +132,35 @@ export const userRoles = pgTable("user_roles", {
 	updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const pages = pgTable("pages", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	title: varchar("title").notNull(),
-	slug: varchar("slug").notNull().unique(),
-	siteId: uuid("site_id")
-		.references(() => sites.id)
-		.notNull(),
-	status: varchar("status").default("draft"), // publish, draft, private, trash
-	authorId: uuid("author_id")
-		.references(() => users.id)
-		.notNull(),
-	featuredImage: varchar("featured_image"),
-	publishedAt: timestamp("published_at"),
-	allowComments: boolean("allow_comments").default(true),
-	password: varchar("password"),
-	parentId: uuid("parent_id"),
-	menuOrder: integer("menu_order").default(0),
-	templateId: uuid("template_id").references(() => templates.id),
-	blocks: jsonb("blocks").default([]),
-	version: integer("version").notNull().default(0),
-	history: jsonb("history").default([]),
-	createdAt: timestamp("created_at").defaultNow(),
-	updatedAt: timestamp("updated_at").defaultNow(),
-	other: jsonb("other").default({}),
-});
+export const pages = pgTable(
+	"pages",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		title: varchar("title").notNull(),
+		slug: varchar("slug").notNull(),
+		siteId: uuid("site_id")
+			.references(() => sites.id)
+			.notNull(),
+		status: varchar("status").default("draft"), // publish, draft, private, trash
+		authorId: uuid("author_id")
+			.references(() => users.id)
+			.notNull(),
+		featuredImage: varchar("featured_image"),
+		publishedAt: timestamp("published_at"),
+		allowComments: boolean("allow_comments").default(true),
+		password: varchar("password"),
+		parentId: uuid("parent_id"),
+		menuOrder: integer("menu_order").default(0),
+		templateId: uuid("template_id").references(() => templates.id),
+		blocks: jsonb("blocks").default([]),
+		version: integer("version").notNull().default(0),
+		history: jsonb("history").default([]),
+		createdAt: timestamp("created_at").defaultNow(),
+		updatedAt: timestamp("updated_at").defaultNow(),
+		other: jsonb("other").default({}),
+	},
+	(table) => [uniqueIndex("pages_site_slug_unique").on(table.siteId, table.slug)],
+);
 
 export const templates = pgTable("templates", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -212,31 +217,44 @@ export const plugins = pgTable("plugins", {
 	other: jsonb("other").default({}),
 });
 
-export const options = pgTable("options", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	name: varchar("name").notNull(),
-	value: varchar("value").notNull(),
-	createdAt: timestamp("created_at").defaultNow(),
-	updatedAt: timestamp("updated_at").defaultNow(),
-	other: jsonb("other").default({}),
-});
+export const options = pgTable(
+	"options",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		siteId: uuid("site_id")
+			.references(() => sites.id)
+			.notNull(),
+		name: varchar("name").notNull(),
+		value: varchar("value").notNull(),
+		createdAt: timestamp("created_at").defaultNow(),
+		updatedAt: timestamp("updated_at").defaultNow(),
+		other: jsonb("other").default({}),
+	},
+	(table) => [uniqueIndex("options_site_name_unique").on(table.siteId, table.name)],
+);
 
-export const blogs = pgTable("blogs", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	name: varchar("name").notNull(),
-	description: text("description"),
-	slug: varchar("slug").notNull(),
-	status: varchar("status").default("draft"), // publish, draft, private,
-	createdAt: timestamp("created_at").defaultNow(),
-	updatedAt: timestamp("updated_at").defaultNow(),
-	siteId: uuid("site_id").references(() => sites.id),
-	authorId: uuid("author_id")
-		.references(() => users.id)
-		.notNull(),
-	pageId: uuid("page_id").references(() => pages.id),
-	settings: jsonb("settings").default({}),
-	other: jsonb("other").default({}),
-});
+export const blogs = pgTable(
+	"blogs",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		name: varchar("name").notNull(),
+		description: text("description"),
+		slug: varchar("slug").notNull(),
+		status: varchar("status").default("draft"), // publish, draft, private,
+		createdAt: timestamp("created_at").defaultNow(),
+		updatedAt: timestamp("updated_at").defaultNow(),
+		siteId: uuid("site_id")
+			.references(() => sites.id)
+			.notNull(),
+		authorId: uuid("author_id")
+			.references(() => users.id)
+			.notNull(),
+		pageId: uuid("page_id").references(() => pages.id),
+		settings: jsonb("settings").default({}),
+		other: jsonb("other").default({}),
+	},
+	(table) => [uniqueIndex("blogs_site_slug_unique").on(table.siteId, table.slug)],
+);
 
 export const posts = pgTable("posts", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -287,6 +305,9 @@ export const media = pgTable("media", {
 	mimeType: varchar("mime_type").notNull(),
 	size: integer("size").notNull(), // Size in bytes
 	url: varchar("url").notNull(),
+	siteId: uuid("site_id")
+		.references(() => sites.id)
+		.notNull(),
 	authorId: uuid("author_id")
 		.references(() => users.id)
 		.notNull(),

@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import type { Options as ReactMarkdownOptions } from "react-markdown";
 import type { BlockConfig } from "@shared/schema-types";
 import { getRenderProps, parseMarkdownContent } from "../render-helpers";
 
@@ -19,7 +20,9 @@ export function MarkdownBlock(block: BlockConfig) {
 	const { content } = parseMarkdownContent(block.content);
 	const blockClass = ["wp-block-markdown", className].filter(Boolean).join(" ");
 
-	const [remarkPlugins, setRemarkPlugins] = React.useState<Array<unknown>>([]);
+	const [remarkPlugins, setRemarkPlugins] = React.useState<
+		ReactMarkdownOptions["remarkPlugins"]
+	>([]);
 
 	useMountEffect(() => {
 		import("remark-gfm").then((m) => {

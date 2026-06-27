@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Plus, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { appendSiteIdToUrl } from "@/lib/site-api";
+import { useActiveSite } from "@/hooks/useActiveSite";
 import { useToast } from "@/hooks/use-toast";
 import type { Blog } from "@shared/schema-types";
 
@@ -95,6 +97,7 @@ interface CreatePostDialogProps {
 export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { activeSiteId } = useActiveSite();
 
   // Dialog state - step is separate for clarity
   const [step, setStep] = useState<DialogStep>("select-blog");
@@ -102,8 +105,8 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
 
   // Fetch existing blogs
   const { data: blogsData, isLoading: blogsLoading, refetch: refetchBlogs } = useQuery<BlogsResponse>({
-    queryKey: ["/api/blogs", { status: "any" }],
-    enabled: open,
+    queryKey: ["/api/blogs", { status: "any", siteId: activeSiteId }],
+    enabled: open && Boolean(activeSiteId),
   });
 
   const blogs = blogsData?.blogs ?? [];
@@ -125,11 +128,15 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
 
     dispatchForm({ type: 'SET_CREATING_BLOG', payload: true });
     try {
-      const response = await apiRequest("POST", "/api/blogs", {
-        name: form.newBlogName.trim(),
-        description: form.newBlogDescription.trim() || undefined,
-        status: "publish",
-      });
+      const response = await apiRequest(
+        "POST",
+        appendSiteIdToUrl("/api/blogs", activeSiteId),
+        {
+          name: form.newBlogName.trim(),
+          description: form.newBlogDescription.trim() || undefined,
+          status: "publish",
+        },
+      );
       const blog = await response.json();
 
       toast({ title: "Blog created", description: `"${blog.name}" is ready` });

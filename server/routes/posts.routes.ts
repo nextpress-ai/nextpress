@@ -4,6 +4,7 @@ import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
 import { coerceDates } from './shared/date-coerce';
 import { enrichPostForApi } from '@shared/posts/post-other';
+import { getSiteBlogIds } from './shared/site-content';
 
 /**
  * Creates Posts CRUD routes for the NextPress API.
@@ -35,17 +36,32 @@ export function createPostsRoutes(deps: Deps): Router {
           CONFIG.PAGINATION.DEFAULT_POSTS_PER_PAGE
         );
         const { status = CONFIG.STATUS.PUBLISH, blog_id } = req.query;
+        const siteId =
+          typeof req.query.siteId === 'string' && req.query.siteId.trim()
+            ? req.query.siteId.trim()
+            : undefined;
 
         // Handle 'any' status to show all posts (for admin interface)
         const actualStatus = parseStatusParam(status as string);
 
-        // Build combined filter array for status + blogId
-        const filters: Array<{ where: string; equals: unknown }> = [];
+        const filters: Array<{ where: string; equals?: unknown; in?: unknown[] }> = [];
         if (actualStatus) {
           filters.push({ where: 'status', equals: actualStatus });
         }
         if (blog_id && typeof blog_id === 'string') {
           filters.push({ where: 'blogId', equals: blog_id });
+        } else if (siteId) {
+          const blogIds = await getSiteBlogIds({ models, siteId });
+          if (blogIds.length === 0) {
+            return {
+              posts: [],
+              total: 0,
+              page,
+              per_page: limit,
+              total_pages: 0,
+            };
+          }
+          filters.push({ where: 'blogId', in: blogIds });
         }
 
         const posts = filters.length > 0

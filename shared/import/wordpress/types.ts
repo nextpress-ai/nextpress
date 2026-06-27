@@ -1,4 +1,4 @@
-import type { NewPost } from "../../schema-types";
+import type { BlockConfig, NewPost } from "../../schema-types";
 
 export type WordPressEntity = "posts" | "pages" | "media" | "comments" | "users";
 
@@ -21,12 +21,12 @@ export type WpPostRaw = {
 	slug: string;
 	status: string;
 	link: string;
-	title: { rendered: string };
-	content: { rendered: string };
-	excerpt: { rendered: string };
+	title?: { rendered?: string };
+	content?: { rendered?: string };
+	excerpt?: { rendered?: string };
 	featured_media: number;
-	categories: number[];
-	tags: number[];
+	categories?: number[];
+	tags?: number[];
 };
 
 export type WpMediaRaw = {
@@ -67,6 +67,10 @@ export type WpDiscoverResult = {
 	>;
 };
 
+export type WpImportStatusResponse = {
+	imported: Record<string, { nextpressId: string }>;
+};
+
 export type WpListResult = {
 	items: WpPostPreview[];
 	total: number;
@@ -97,7 +101,26 @@ export type ImportContext = {
 	}) => Promise<string | null>;
 };
 
-export type MappedPost = Omit<NewPost, "id" | "createdAt" | "updatedAt">;
+export type WordPressPostImportOther = {
+	categories?: string[];
+	tags?: string[];
+	import?: {
+		source?: string;
+		domain?: string;
+		wpId?: number;
+		wpLink?: string;
+		importedAt?: string;
+		raw?: Record<string, unknown>;
+	};
+};
+
+export type MappedPost = Omit<
+	NewPost,
+	"id" | "createdAt" | "updatedAt" | "other" | "blocks"
+> & {
+	other: WordPressPostImportOther;
+	blocks: BlockConfig[];
+};
 
 export type ImportItemResult =
 	| { wpId: number; status: "imported"; postId: string; title: string }

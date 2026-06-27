@@ -789,6 +789,67 @@
   color: rgb(147 197 253);
 }
 
+.np-sidebar-attention-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgb(249 115 22);
+  box-shadow: 0 0 0 0 rgb(249 115 22 / 0.55);
+  animation: np-sidebar-beacon 1.35s ease-in-out infinite;
+}
+
+.np-sidebar-attention-dot--urgent {
+  animation: np-sidebar-beacon-urgent 0.95s ease-in-out infinite;
+}
+
+.np-sidebar-attention-banner--update {
+  animation: np-sidebar-banner-glow 1.8s ease-in-out infinite;
+}
+
+@keyframes np-sidebar-beacon {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgb(249 115 22 / 0.55);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 5px rgb(249 115 22 / 0);
+  }
+}
+
+@keyframes np-sidebar-beacon-urgent {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(249 115 22 / 0.75);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.15);
+    box-shadow: 0 0 0 7px rgb(249 115 22 / 0);
+  }
+}
+
+@keyframes np-sidebar-banner-glow {
+  0%,
+  100% {
+    border-color: rgb(249 115 22 / 0.45);
+  }
+  50% {
+    border-color: rgb(251 146 60 / 0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .np-sidebar-attention-dot,
+  .np-sidebar-attention-dot--urgent,
+  .np-sidebar-attention-banner--update {
+    animation: none;
+  }
+}
+
 .admin-surface {
   border: 0;
   background-color: var(--npb-surface-raised);

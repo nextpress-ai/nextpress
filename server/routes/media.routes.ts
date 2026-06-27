@@ -4,6 +4,7 @@ import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
+import { readRequestSiteId, resolveRequestSite } from './shared/resolve-request-site';
 
 /**
  * Creates media routes for file upload and management.
@@ -41,16 +42,24 @@ export function createMediaRoutes(deps: Deps): Router {
           CONFIG.PAGINATION.DEFAULT_MEDIA_PER_PAGE
         );
         const { mime_type } = req.query;
+        const siteId =
+          typeof req.query.siteId === 'string' && req.query.siteId.trim()
+            ? req.query.siteId.trim()
+            : undefined;
 
-        const mediaItems = await models.media.findMany(
-          mime_type
-            ? { limit, offset, where: 'mimeType', equals: mime_type as string }
-            : { limit, offset }
-        );
+        const filters = [
+          ...(mime_type ? [{ where: 'mimeType', equals: mime_type as string }] : []),
+          ...(siteId ? [{ where: 'siteId', equals: siteId }] : []),
+        ];
 
-        const total = await models.media.count(
-          mime_type ? { where: [{ where: 'mimeType', equals: mime_type as string }] } : {}
-        );
+        const mediaItems =
+          filters.length > 0
+            ? await models.media.findManyWhere(filters, { limit, offset })
+            : await models.media.findMany({ limit, offset });
+
+        const total = await models.media.count({
+          where: filters.length > 0 ? filters : undefined,
+        });
 
         return {
           media: mediaItems,
@@ -94,6 +103,12 @@ export function createMediaRoutes(deps: Deps): Router {
           throw new Error('User not authenticated');
         }
 
+        const site = await resolveRequestSite({
+          models,
+          userId,
+          siteId: readRequestSiteId(req),
+        });
+
         const file = req.file;
         if (!file) {
           throw new Error('No file uploaded');
@@ -114,11 +129,12 @@ export function createMediaRoutes(deps: Deps): Router {
           caption: caption || '',
           description: description || '',
           authorId: userId,
+          siteId: site.id,
         });
 
-        // Use parsedData directly, ensuring proper types
         const mediaData = {
           authorId: String(parsedData.authorId),
+          siteId: String(parsedData.siteId),
           filename: String(parsedData.filename),
           originalName: String(parsedData.originalName),
           mimeType: String(parsedData.mimeType),

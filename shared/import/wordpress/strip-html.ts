@@ -1,8 +1,9 @@
 /**
  * Strips HTML tags from WP rendered fields (title, excerpt).
  */
-export const stripHtml = (html: string): string =>
-	html
+export const stripHtml = (html: string | undefined | null): string => {
+	if (!html) return "";
+	return html
 		.replace(/<[^>]*>/g, " ")
 		.replace(/&nbsp;/g, " ")
 		.replace(/&amp;/g, "&")
@@ -12,3 +13,4 @@ export const stripHtml = (html: string): string =>
 		.replace(/&#039;/g, "'")
 		.replace(/\s+/g, " ")
 		.trim();
+};

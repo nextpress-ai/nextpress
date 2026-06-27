@@ -34,7 +34,9 @@ export function ImageBlock(block: BlockConfig) {
 		...style,
 		...(width ? { width } : {}),
 		...(height ? { height } : {}),
-		...(objectFit ? { objectFit } : {}),
+		...(objectFit
+			? { objectFit: objectFit as React.CSSProperties["objectFit"] }
+			: {}),
 	};
 
 	const image = <img src={url} alt={alt || ""} style={imageStyle} />;

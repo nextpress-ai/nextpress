@@ -3,6 +3,9 @@
  * Centralizes all hardcoded values for better maintainability
  */
 
+import fs from "node:fs";
+import path from "node:path";
+
 export const CONFIG = {
 	// Upload configuration
 	UPLOAD: {
@@ -178,4 +181,32 @@ export function parseStatusParam(
 	status: string | undefined,
 ): string | undefined {
 	return status === CONFIG.STATUS.ANY ? undefined : status;
+}
+
+/** App semver baked into package.json / config.ts. */
+export function readInstalledAppVersion(): string {
+	try {
+		const packagePath = path.join(process.cwd(), "package.json");
+		const raw = fs.readFileSync(packagePath, "utf8");
+		const parsed = JSON.parse(raw) as { version?: string };
+		if (typeof parsed.version === "string" && parsed.version.trim()) {
+			return parsed.version.trim();
+		}
+	} catch {
+		/* fall through */
+	}
+	return "0.0.0";
+}
+
+/** Production install directory for the nextpress CLI (`/opt/nextpress` by default). */
+export function getNextpressInstallDir(): string | null {
+	const raw = process.env.NEXTPRESS_INSTALL_DIR?.trim();
+	if (raw && raw.length > 0) return raw;
+	if (process.env.NODE_ENV === "production") return "/opt/nextpress";
+	return null;
+}
+
+/** Opt-in flag — host must set this to allow POST /api/system/upgrade/run. */
+export function getAutoUpgradeEnabled(): boolean {
+	return process.env.NEXTPRESS_AUTO_UPGRADE?.trim() === "true";
 }

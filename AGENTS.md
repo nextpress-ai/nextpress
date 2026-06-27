@@ -28,6 +28,16 @@
 - Check `data?.length > 0` before `.map()`. `useMemo`, `useCallback`, `React.memo`
 - Build complex UIs from small, focused components
 
+## Consumer-facing copy (admin UI)
+
+Read **`docs/internal/COPYWRITING.md`** before any user-facing strings. Summary:
+
+- **Audience**: site owners and editors, not developers. Write what changed **for them**, not how it was implemented.
+- **No em dashes** in UI copy. No API names, filter/query jargon, "UX", or implementation detail unless it clearly helps the user act.
+- **What's New** (`shared/release/release-manifest.ts`): each item has a `kind` with badge color: `update` orange **New feature**, `fix` red **Bug fix**, `improvement` blue **Improvement**.
+- Reframe internal fixes as user-visible outcomes ("Pages list shows all your pages", not "status=any filter fixed").
+- GitHub release notes for deploy may include Docker/CLI details; in-app What's New stays plain language.
+
 ## Philosophy
 
 - **Plan first** → systematize → implement. Never rush. Break complex tasks into phases

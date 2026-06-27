@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import type { Deps } from './shared/deps';
 import { asyncHandler } from './shared/async-handler';
+import { getSitePostIds } from './shared/site-content';
 
 /**
  * Creates comment routes with CRUD operations and status management.
  * Handles comment approval, spam marking, and fires WordPress-style hooks.
  * 
  * Endpoints:
- * - GET    /api/comments          - List comments with filters (post_id, status)
+ * - GET    /api/comments          - List comments with filters (post_id, status, siteId)
  * - POST   /api/comments          - Create new comment (fires new_comment hook)
  * - GET    /api/comments/:id      - Get single comment (auth required)
  * - PUT    /api/comments/:id      - Update comment (auth required, fires edit_comment hook)
@@ -29,13 +30,31 @@ export function createCommentsRoutes(deps: Deps): Router {
         page = 1,
         per_page = 10,
       } = req.query;
+      const siteId =
+        typeof req.query.siteId === 'string' && req.query.siteId.trim()
+          ? req.query.siteId.trim()
+          : undefined;
       const limit = parseInt(per_page as string);
       const offset = (parseInt(page as string) - 1) * limit;
 
-      const filters = [
+      const filters: Array<{ where: string; equals?: unknown; in?: unknown[] }> = [
         ...(post_id ? [{ where: 'postId', equals: post_id }] : []),
-        ...(status ? [{ where: 'status', equals: status }] : []),
+        ...(status && status !== 'all' ? [{ where: 'status', equals: status }] : []),
       ];
+
+      if (siteId) {
+        const postIds = await getSitePostIds({ models, siteId });
+        if (postIds.length === 0) {
+          return res.json({
+            comments: [],
+            total: 0,
+            page: parseInt(page as string),
+            per_page: limit,
+            total_pages: 0,
+          });
+        }
+        filters.push({ where: 'postId', in: postIds });
+      }
 
       const comments = await models.comments.findManyWhere(filters, {
         limit,

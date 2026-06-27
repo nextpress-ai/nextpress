@@ -13,41 +13,12 @@ import type {
 	WordPressEntity,
 } from "./types";
 import type { MappedPage } from "./map-wp-page";
-import { parsePostOther } from "../../posts/post-other";
+import { buildImportedWpMap } from "./build-imported-wp-map";
 
 const IMPORT_DELAY_MS = 150;
 
 const delay = (ms: number): Promise<void> =>
 	new Promise((resolve) => setTimeout(resolve, ms));
-
-const collectExistingWpIds = (params: {
-	posts: Array<{ other: unknown }>;
-	domain: string;
-}): Set<number> => {
-	const ids = new Set<number>();
-	params.posts.forEach((post) => {
-		const parsed = parsePostOther(post.other);
-		if (parsed.import?.source === "wordpress" && parsed.import.domain === params.domain) {
-			ids.add(parsed.import.wpId);
-		}
-	});
-	return ids;
-};
-
-/** Maps WordPress wpId → NextPress post id for re-import updates. */
-const buildExistingPostIdByWpId = (params: {
-	posts: Array<{ id: string; other: unknown }>;
-	domain: string;
-}): Map<number, string> => {
-	const map = new Map<number, string>();
-	params.posts.forEach((post) => {
-		const parsed = parsePostOther(post.other);
-		if (parsed.import?.source === "wordpress" && parsed.import.domain === params.domain) {
-			map.set(parsed.import.wpId, post.id);
-		}
-	});
-	return map;
-};
 
 export type WordPressImporter = {
 	discoverSite: typeof discoverWordPressSite;
@@ -115,14 +86,11 @@ export const createWordPressImporter = (): WordPressImporter => {
 			} = params;
 
 			const { categoryNames, tagNames } = await fetchWpTermMaps({ baseUrl });
-			const existingWpIds = collectExistingWpIds({
-				posts: existingPosts,
+			const existingPostIdByWpId = buildImportedWpMap({
+				items: existingPosts,
 				domain: baseUrl,
 			});
-			const existingPostIdByWpId = buildExistingPostIdByWpId({
-				posts: existingPosts,
-				domain: baseUrl,
-			});
+			const existingWpIds = new Set(existingPostIdByWpId.keys());
 
 			const ctx: ImportContext = {
 				baseUrl,
@@ -142,7 +110,7 @@ export const createWordPressImporter = (): WordPressImporter => {
 			const failed: ImportBatchResult["failed"] = [];
 
 			for (const wpId of wpIds) {
-				const existingPostId = existingPostIdByWpId.get(wpId);
+				const existingPostId = existingPostIdByWpId.get(wpId)?.nextpressId;
 
 				try {
 					const raw = await postsAdapter.fetchOne({ baseUrl, wpId });
@@ -169,7 +137,7 @@ export const createWordPressImporter = (): WordPressImporter => {
 					} else {
 						const created = await createPost(mapped);
 						existingWpIds.add(wpId);
-						existingPostIdByWpId.set(wpId, created.id);
+						existingPostIdByWpId.set(wpId, { nextpressId: created.id });
 
 						imported.push({
 							wpId,
@@ -207,14 +175,11 @@ export const createWordPressImporter = (): WordPressImporter => {
 			} = params;
 
 			const { categoryNames, tagNames } = await fetchWpTermMaps({ baseUrl });
-			const existingWpIds = collectExistingWpIds({
-				posts: existingPages,
+			const existingPageIdByWpId = buildImportedWpMap({
+				items: existingPages,
 				domain: baseUrl,
 			});
-			const existingPageIdByWpId = buildExistingPostIdByWpId({
-				posts: existingPages,
-				domain: baseUrl,
-			});
+			const existingWpIds = new Set(existingPageIdByWpId.keys());
 
 			const imported: ImportBatchResult["imported"] = [];
 			const updated: ImportBatchResult["updated"] = [];
@@ -222,7 +187,7 @@ export const createWordPressImporter = (): WordPressImporter => {
 			const failed: ImportBatchResult["failed"] = [];
 
 			for (const wpId of wpIds) {
-				const existingPageId = existingPageIdByWpId.get(wpId);
+				const existingPageId = existingPageIdByWpId.get(wpId)?.nextpressId;
 
 				try {
 					const raw = await pagesAdapter.fetchOne({ baseUrl, wpId });
@@ -259,7 +224,7 @@ export const createWordPressImporter = (): WordPressImporter => {
 					} else {
 						const created = await createPage(mapped);
 						existingWpIds.add(wpId);
-						existingPageIdByWpId.set(wpId, created.id);
+						existingPageIdByWpId.set(wpId, { nextpressId: created.id });
 						imported.push({
 							wpId,
 							status: "imported",

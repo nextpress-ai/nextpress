@@ -170,7 +170,7 @@ describe('PagesMenu', () => {
     });
 
     const currentPageItem = screen.getByText('About Page').closest('[role]');
-    expect(currentPageItem).toHaveClass('bg-blue-50/80');
+    expect(currentPageItem).toHaveClass('bg-npb-accent/10');
   });
 
   test('displays page status in command palette', async () => {

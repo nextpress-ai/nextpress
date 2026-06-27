@@ -12,6 +12,8 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { CreatePostDialog } from "@/components/posts/CreatePostDialog";
 import { WordPressImportDialog } from "@/components/import/WordPressImportDialog";
 import { apiRequest } from "@/lib/queryClient";
+import { appendSiteIdToUrl } from "@/lib/site-api";
+import { useActiveSite } from "@/hooks/useActiveSite";
 import { useToast } from "@/hooks/use-toast";
 import type { EnrichedPost } from "@shared/posts/post-other";
 
@@ -24,6 +26,7 @@ interface PostsResponse {
 }
 
 export default function Posts() {
+  const { activeSiteId } = useActiveSite();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -34,7 +37,8 @@ export default function Posts() {
   const queryClient = useQueryClient();
 
   const { data: postsData, isLoading } = useQuery<PostsResponse>({
-    queryKey: ['/api/posts', { status: 'any', type: 'post', page, per_page: 10 }],
+    queryKey: ['/api/posts', { status: 'any', type: 'post', page, per_page: 10, siteId: activeSiteId }],
+    enabled: !!activeSiteId,
   });
 
   const deleteMutation = useMutation({

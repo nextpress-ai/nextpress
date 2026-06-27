@@ -11,10 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, Search, Edit, Trash2, Download, Image, FileText, Film, Music, File } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { apiRequest } from "@/lib/queryClient";
+import { appendSiteIdToUrl } from "@/lib/site-api";
+import { useActiveSite } from "@/hooks/useActiveSite";
 import { useToast } from "@/hooks/use-toast";
 import type { Media } from "@shared/schema-types";
 
 export default function MediaPage() {
+  const { activeSiteId } = useActiveSite();
   const [search, setSearch] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -29,7 +32,7 @@ export default function MediaPage() {
 
   // Get media query parameters
   const getQueryParams = () => {
-    const params: any = { per_page: 20, page };
+    const params: Record<string, string | number> = { per_page: 20, page, siteId: activeSiteId };
     if (selectedFilter !== "all") {
       params.mime_type = selectedFilter;
     }
@@ -38,11 +41,12 @@ export default function MediaPage() {
 
   const { data: mediaData, isLoading } = useQuery({
     queryKey: ['/api/media', getQueryParams()],
+    enabled: !!activeSiteId,
   });
 
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const res = await fetch('/api/media', {
+      const res = await fetch(appendSiteIdToUrl('/api/media', activeSiteId), {
         method: 'POST',
         body: formData,
         credentials: 'include',

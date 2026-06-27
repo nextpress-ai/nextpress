@@ -125,6 +125,15 @@ sidebar: {
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out'
+  		},
+  		transitionDuration: {
+  			'npb-fast': 'var(--npb-duration-fast)',
+  			'npb-normal': 'var(--npb-duration-normal)',
+  			'npb-slow': 'var(--npb-duration-slow)',
+  		},
+  		transitionTimingFunction: {
+  			'npb-out': 'var(--npb-ease-out)',
+  			'npb-in-out': 'var(--npb-ease-in-out)',
   		}
   	}
   },

@@ -68,6 +68,7 @@ describe('Specialized Model Factories', () => {
     description: 'A test blog',
     slug: 'test-blog',
     authorId: testUuids.user1,
+    siteId: testUuids.site1,
   };
 
   beforeEach(async () => {
@@ -88,6 +89,12 @@ describe('Specialized Model Factories', () => {
     // Insert test user first (required for blog foreign key)
     await testDb.insert(users).values(testUser);
 
+    await testDb.insert(sites).values({
+      id: testUuids.site1,
+      name: 'Test Site',
+      ownerId: testUuids.user1,
+    });
+
     // Insert test blogs
     await testDb.insert(blogs).values(testBlog);
     await testDb.insert(blogs).values({
@@ -96,6 +103,7 @@ describe('Specialized Model Factories', () => {
       description: 'Another test blog',
       slug: 'another-blog',
       authorId: testUuids.user1,
+      siteId: testUuids.site1,
     });
   });
 
@@ -393,13 +401,6 @@ describe('Specialized Model Factories', () => {
         // Ignore if page doesn't exist
       }
 
-      // Create test site first
-      await testDb.insert(sites).values({
-        id: testUuids.site1,
-        name: 'Test Site',
-        ownerId: testUuids.user1,
-      });
-
       // Create test page using model methods
       await pageModel.create({
         id: testUuids.page1,
@@ -462,6 +463,7 @@ describe('Specialized Model Factories', () => {
         size: 1024,
         url: '/uploads/test.jpg',
         authorId: testUuids.user1,
+        siteId: testUuids.site1,
       });
       await mediaModel.create({
         id: testUuids.media2,
@@ -471,6 +473,7 @@ describe('Specialized Model Factories', () => {
         size: 2048,
         url: '/uploads/video.mp4',
         authorId: testUuids.user1,
+        siteId: testUuids.site1,
       });
     });
 
@@ -657,9 +660,10 @@ describe('Specialized Model Factories', () => {
         id: testUuids.option1,
         name: 'site_title',
         value: 'My Site',
+        siteId: testUuids.site1,
       });
 
-      const option = await optionModel.getOption('site_title');
+      const option = await optionModel.getOption('site_title', testUuids.site1);
       expect(option).toBeDefined();
       expect(option?.name).toBe('site_title');
       expect(option?.value).toBe('My Site');
@@ -669,6 +673,7 @@ describe('Specialized Model Factories', () => {
       const newOption = await optionModel.setOption({
         name: 'site_description',
         value: 'My site description',
+        siteId: testUuids.site1,
       });
 
       expect(newOption.name).toBe('site_description');
@@ -680,11 +685,13 @@ describe('Specialized Model Factories', () => {
         id: testUuids.option1,
         name: 'site_title',
         value: 'Old Title',
+        siteId: testUuids.site1,
       });
 
       const updatedOption = await optionModel.setOption({
         name: 'site_title',
         value: 'New Title',
+        siteId: testUuids.site1,
       });
 
       expect(updatedOption.name).toBe('site_title');
@@ -692,7 +699,7 @@ describe('Specialized Model Factories', () => {
     });
 
     it('should return undefined for non-existent option', async () => {
-      const option = await optionModel.getOption('non_existent');
+      const option = await optionModel.getOption('non_existent', testUuids.site1);
       expect(option).toBeUndefined();
     });
   });
@@ -828,13 +835,6 @@ describe('Specialized Model Factories', () => {
       } catch (error) {
         // Ignore if doesn't exist
       }
-
-      // Create test site first
-      await testDb.insert(sites).values({
-        id: testUuids.site1,
-        name: 'Test Site',
-        ownerId: testUuids.user1,
-      });
     });
 
     it('should store and retrieve blocks in templates', async () => {

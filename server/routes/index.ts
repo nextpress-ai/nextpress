@@ -18,12 +18,14 @@ import { createThemesRoutes } from './themes.routes';
 import { createOptionsRoutes } from './options.routes';
 import { createSettingsRoutes } from './settings.routes';
 import { createSiteRoutes } from './site.routes';
+import { createSitesRoutes } from './sites.routes';
 import { createDashboardRoutes } from './dashboard.routes';
 import { createPreviewRoutes } from './preview.routes';
 import { createPublicRoutes } from './public.routes';
 import { createRenderRoutes } from './render.routes';
 import { createSetupRoutes } from './setup.routes';
 import { createWordPressImportRoutes } from './import.wordpress.routes';
+import { createSystemRoutes } from './system.routes';
 import { setupCheck } from '../middleware/setupCheck';
 import express from 'express';
 import fs from 'node:fs';
@@ -100,9 +102,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use('/api/options', createOptionsRoutes(deps));
   app.use('/api/settings', createSettingsRoutes(deps));
+  app.use('/api/sites', createSitesRoutes(deps));
   app.use('/api/site', createSiteRoutes(deps));
   app.use('/api/dashboard', createDashboardRoutes(deps));
   app.use('/api/import/wordpress', createWordPressImportRoutes(deps));
+  app.use('/api/system', createSystemRoutes(deps));
 
   app.use('/api/preview', createPreviewRoutes(deps));
   app.use('/api/public', createPublicRoutes(deps));

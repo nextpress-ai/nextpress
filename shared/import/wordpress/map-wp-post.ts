@@ -1,6 +1,7 @@
 import type { ImportContext, MappedPost, WpPostRaw } from "./types";
 import { stripHtml } from "./strip-html";
 import { htmlToBlocks, collectImageUrls } from "./html-to-blocks";
+import { applyImportBlocksDefaults } from "./import-defaults";
 
 const WP_STATUS_MAP: Record<string, string> = {
 	publish: "publish",
@@ -46,20 +47,20 @@ export const mapWpPost = async (params: {
 }): Promise<MappedPost> => {
 	const { raw, ctx } = params;
 	const wpId = raw.id;
-	const title = stripHtml(raw.title.rendered) || `Imported post ${wpId}`;
+	const title = stripHtml(raw.title?.rendered) || `Imported post ${wpId}`;
 	const slug = resolveUniqueSlug({
 		slug: raw.slug,
 		wpId,
 		isDuplicate: ctx.existingWpIds.has(wpId) && !ctx.updatingExisting,
 	});
 	const status = WP_STATUS_MAP[raw.status] ?? "draft";
-	const excerpt = stripHtml(raw.excerpt.rendered);
+	const excerpt = stripHtml(raw.excerpt?.rendered);
 
-	const categoryNames = raw.categories
+	const categoryNames = (raw.categories ?? [])
 		.map((id) => ctx.categoryNames.get(id))
 		.filter((name): name is string => !!name);
 
-	const tagNames = raw.tags
+	const tagNames = (raw.tags ?? [])
 		.map((id) => ctx.tagNames.get(id))
 		.filter((name): name is string => !!name);
 
@@ -71,11 +72,13 @@ export const mapWpPost = async (params: {
 	const publishedAt =
 		status === "publish" && raw.date ? new Date(raw.date) : undefined;
 
-	const html = raw.content.rendered || "";
+	const html = raw.content?.rendered ?? "";
 	const imageUrlMap = await buildImageUrlMap({ html, ctx });
-	const blocks = htmlToBlocks(html, {
-		resolveImageUrl: (url) => imageUrlMap.get(url) ?? url,
-	});
+	const blocks = applyImportBlocksDefaults(
+		htmlToBlocks(html, {
+			resolveImageUrl: (url) => imageUrlMap.get(url) ?? url,
+		}),
+	);
 
 	return {
 		title,

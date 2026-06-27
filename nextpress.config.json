@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "2026.04.28.001",
-  "previousSchemaVersion": "legacy",
+  "schemaVersion": "2026.06.21.001",
+  "previousSchemaVersion": "2026.04.28.001",
   "schemaPath": "shared/schema.ts",
   "hasSchemaChanges": true
 }

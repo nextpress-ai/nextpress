@@ -4,8 +4,9 @@ import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
 import { partialSettingsSchema } from '@shared/settings-schema';
 import { getOptionalCaddyAcmeEmail } from '../config';
-import { updateCaddyConfig } from '../utils/caddy';
+import { updateCaddyConfig, syncCaddyFromSites } from '../utils/caddy';
 import { getCaddyTlsHostnames, validateDomain } from '../utils/validate-domain';
+import { readRequestSiteId, resolveRequestSite } from './shared/resolve-request-site';
 
 /**
  * Creates settings routes for site-wide configuration management
@@ -22,7 +23,7 @@ import { getCaddyTlsHostnames, validateDomain } from '../utils/validate-domain';
  */
 export function createSettingsRoutes(deps: Deps): Router {
   const router = Router();
-  const { models, requireAuth } = deps;
+  const { models, requireAuth, authService } = deps;
 
   /**
    * GET /api/settings
@@ -32,17 +33,29 @@ export function createSettingsRoutes(deps: Deps): Router {
   router.get(
     '/',
     requireAuth,
-    asyncHandler(async (_req, res) => {
+    asyncHandler(async (req, res) => {
+      const userId = authService.getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
       const { err, result } = await safeTryAsync(async () => {
-        const settings = await models.sites.getSettings();
-        return { status: true, data: settings };
+        const site = await resolveRequestSite({
+          models,
+          userId,
+          siteId: readRequestSiteId(req),
+        });
+        const settings = await models.sites.getSettings(site.id);
+        return { status: true, data: settings, siteId: site.id };
       });
 
       if (err) {
         console.error('Error fetching settings:', err);
-        return res.status(500).json({
+        const message = err instanceof Error ? err.message : 'Failed to fetch settings';
+        const status = message === 'Site not accessible' ? 403 : 500;
+        return res.status(status).json({
           status: false,
-          message: 'Failed to fetch settings',
+          message,
         });
       }
 
@@ -63,6 +76,11 @@ export function createSettingsRoutes(deps: Deps): Router {
     asyncHandler(async (req, res) => {
       // Log incoming payload for debugging
       console.log('PATCH /api/settings - Received payload:', JSON.stringify(req.body, null, 2));
+
+      const userId = authService.getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
       
       // Validate partial payload first (before safeTryAsync)
       const validationResult = partialSettingsSchema.safeParse(req.body);
@@ -77,9 +95,15 @@ export function createSettingsRoutes(deps: Deps): Router {
       }
 
       const { err, result } = await safeTryAsync(async () => {
+        const site = await resolveRequestSite({
+          models,
+          userId,
+          siteId: readRequestSiteId(req),
+        });
+
         // If updating siteUrl, validate domain resolves then update Caddyfile
         if (validationResult.data.general?.siteUrl) {
-          const oldSettings = await models.sites.getSettings();
+          const oldSettings = await models.sites.getSettings(site.id);
           const oldUrl = oldSettings.general?.siteUrl;
           const newUrl = validationResult.data.general.siteUrl;
           
@@ -106,21 +130,26 @@ export function createSettingsRoutes(deps: Deps): Router {
             if (!caddyResult.success) {
               return { status: false, message: `Domain saved but Caddy configuration failed: ${caddyResult.message}` };
             }
+
+            await syncCaddyFromSites({ models });
           }
         }
 
         const updatedSettings = await models.sites.updateSettings(
-          validationResult.data
+          validationResult.data,
+          site.id,
         );
 
-        return { status: true, data: updatedSettings };
+        return { status: true, data: updatedSettings, siteId: site.id };
       });
 
       if (err) {
         console.error('Error updating settings:', err);
-        return res.status(500).json({
+        const message = err instanceof Error ? err.message : 'Failed to update settings';
+        const status = message === 'Site not accessible' ? 403 : 500;
+        return res.status(status).json({
           status: false,
-          message: 'Failed to update settings',
+          message,
         });
       }
 

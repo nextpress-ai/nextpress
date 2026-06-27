@@ -3,6 +3,7 @@ import type { Deps } from './shared/deps';
 import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
 import { z } from 'zod';
+import { readRequestSiteId, resolveRequestSite } from './shared/resolve-request-site';
 
 /**
  * Site information routes for managing site-level fields
@@ -25,7 +26,7 @@ const siteInfoSchema = z.object({
 
 export function createSiteRoutes(deps: Deps): Router {
   const router = Router();
-  const { models, requireAuth } = deps;
+  const { models, requireAuth, authService } = deps;
 
   /**
    * GET /api/site
@@ -35,17 +36,23 @@ export function createSiteRoutes(deps: Deps): Router {
   router.get(
     '/',
     requireAuth,
-    asyncHandler(async (_req, res) => {
+    asyncHandler(async (req, res) => {
+      const userId = authService.getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
       const { err, result } = await safeTryAsync(async () => {
-        const site = await models.sites.findDefaultSite();
-        
-        if (!site) {
-          throw new Error('Site not found');
-        }
+        const site = await resolveRequestSite({
+          models,
+          userId,
+          siteId: readRequestSiteId(req),
+        });
 
         return {
           status: true,
           data: {
+            id: site.id,
             logoUrl: site.logoUrl,
             faviconUrl: site.faviconUrl,
             activeThemeId: site.activeThemeId,
@@ -55,9 +62,11 @@ export function createSiteRoutes(deps: Deps): Router {
 
       if (err) {
         console.error('Error fetching site info:', err);
-        return res.status(500).json({
+        const message = err instanceof Error ? err.message : 'Failed to fetch site information';
+        const status = message === 'Site not accessible' ? 403 : 500;
+        return res.status(status).json({
           status: false,
-          message: 'Failed to fetch site information',
+          message,
         });
       }
 
@@ -76,6 +85,11 @@ export function createSiteRoutes(deps: Deps): Router {
     asyncHandler(async (req, res) => {
       console.log('PATCH /api/site - Received payload:', JSON.stringify(req.body, null, 2));
 
+      const userId = authService.getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
       // Validate payload
       const validationResult = siteInfoSchema.safeParse(req.body);
 
@@ -89,11 +103,11 @@ export function createSiteRoutes(deps: Deps): Router {
       }
 
       const { err, result } = await safeTryAsync(async () => {
-        const site = await models.sites.findDefaultSite();
-        
-        if (!site) {
-          throw new Error('Site not found');
-        }
+        const site = await resolveRequestSite({
+          models,
+          userId,
+          siteId: readRequestSiteId(req),
+        });
 
         // Update only provided fields
         const updateData: any = {
@@ -118,6 +132,7 @@ export function createSiteRoutes(deps: Deps): Router {
         return {
           status: true,
           data: {
+            id: site.id,
             logoUrl: updatedSite?.logoUrl,
             faviconUrl: updatedSite?.faviconUrl,
             activeThemeId: updatedSite?.activeThemeId,
@@ -127,9 +142,11 @@ export function createSiteRoutes(deps: Deps): Router {
 
       if (err) {
         console.error('Error updating site info:', err);
-        return res.status(500).json({
+        const message = err instanceof Error ? err.message : 'Failed to update site information';
+        const status = message === 'Site not accessible' ? 403 : 500;
+        return res.status(status).json({
           status: false,
-          message: 'Failed to update site information',
+          message,
         });
       }
 

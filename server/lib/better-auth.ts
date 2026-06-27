@@ -1,16 +1,25 @@
 import bcrypt from "bcrypt";
+import { randomUUID } from "node:crypto";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { username } from "better-auth/plugins";
-import {
-	accounts,
-	authSessions,
-	users,
-	verifications,
-} from "@shared/schema";
+import * as schema from "@shared/schema";
 import { db } from "../db";
 import { getAuthBaseUrl, getAuthSecret } from "../config";
 import { models } from "../storage";
+
+/** Drizzle tables keyed for Better Auth modelName lookups (users, auth_sessions, …). */
+const authSchema = {
+	...schema,
+	user: schema.users,
+	users: schema.users,
+	session: schema.authSessions,
+	auth_sessions: schema.authSessions,
+	account: schema.accounts,
+	accounts: schema.accounts,
+	verification: schema.verifications,
+	verifications: schema.verifications,
+};
 
 /**
  * Better Auth instance for NextPress.
@@ -22,12 +31,7 @@ export const auth = betterAuth({
 	trustedOrigins: [getAuthBaseUrl()],
 	database: drizzleAdapter(db, {
 		provider: "pg",
-		schema: {
-			user: users,
-			session: authSessions,
-			account: accounts,
-			verification: verifications,
-		},
+		schema: authSchema,
 	}),
 	emailAndPassword: {
 		enabled: true,
@@ -82,6 +86,17 @@ export const auth = betterAuth({
 	},
 	verification: {
 		modelName: "verifications",
+	},
+	advanced: {
+		database: {
+			/** Auth tables use uuid columns; users.id is DB-generated via defaultRandom(). */
+			generateId: ({ model }) => {
+				if (model === "user" || model === "users") {
+					return false;
+				}
+				return randomUUID();
+			},
+		},
 	},
 	plugins: [username()],
 	databaseHooks: {

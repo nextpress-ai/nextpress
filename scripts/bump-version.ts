@@ -1,161 +1,190 @@
 import fs from "node:fs";
 import path from "node:path";
+import {
+	bumpDeployVersion,
+	bumpVersion,
+	formatSemver,
+	parseSemver,
+	type BumpKind,
+} from "../shared/release/bump-version";
 
 type Result<T> = { status: true; data: T } | { status: false; message: string };
 
-function readText(filePath: string): Result<string> {
-  try {
-    return { status: true, data: fs.readFileSync(filePath, "utf8") };
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    return { status: false, message: `Failed reading ${filePath}: ${message}` };
-  }
-}
+const readText = (filePath: string): Result<string> => {
+	try {
+		return { status: true, data: fs.readFileSync(filePath, "utf8") };
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e);
+		return { status: false, message: `Failed reading ${filePath}: ${message}` };
+	}
+};
 
-function writeText(filePath: string, text: string): Result<null> {
-  try {
-    fs.writeFileSync(filePath, text, "utf8");
-    return { status: true, data: null };
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    return { status: false, message: `Failed writing ${filePath}: ${message}` };
-  }
-}
+const writeText = (filePath: string, text: string): Result<null> => {
+	try {
+		fs.writeFileSync(filePath, text, "utf8");
+		return { status: true, data: null };
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e);
+		return { status: false, message: `Failed writing ${filePath}: ${message}` };
+	}
+};
 
-function parseSemver(raw: string): Result<{ major: number; minor: number; patch: number }> {
-  const match = raw.trim().match(/^(\d+)\.(\d+)\.(\d+)$/);
-  if (!match) {
-    return { status: false, message: `Expected semver x.y.z, got: "${raw}"` };
-  }
-  const major = Number(match[1]);
-  const minor = Number(match[2]);
-  const patch = Number(match[3]);
-  if ([major, minor, patch].some((n) => !Number.isFinite(n))) {
-    return { status: false, message: `Invalid semver numbers: "${raw}"` };
-  }
-  return { status: true, data: { major, minor, patch } };
-}
+const updatePackageJsonVersion = (packageJsonPath: string, nextVersion: string): Result<null> => {
+	const raw = readText(packageJsonPath);
+	if (!raw.status) return raw;
 
-function formatSemver(v: { major: number; minor: number; patch: number }): string {
-  return `${v.major}.${v.minor}.${v.patch}`;
-}
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(raw.data);
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e);
+		return { status: false, message: `Invalid JSON in ${packageJsonPath}: ${message}` };
+	}
 
-function bumpPatch(version: string): Result<{ before: string; after: string }> {
-  const parsed = parseSemver(version);
-  if (!parsed.status) return parsed;
-  const before = version.trim();
-  const after = formatSemver({
-    major: parsed.data.major,
-    minor: parsed.data.minor,
-    patch: parsed.data.patch + 1,
-  });
-  return { status: true, data: { before, after } };
-}
+	if (!parsed || typeof parsed !== "object") {
+		return { status: false, message: `Invalid structure in ${packageJsonPath}` };
+	}
 
-function updatePackageJsonVersion(packageJsonPath: string, nextVersion: string): Result<null> {
-  const raw = readText(packageJsonPath);
-  if (!raw.status) return raw;
+	const pkg = parsed as Record<string, unknown>;
+	if (typeof pkg.version !== "string") {
+		return { status: false, message: `Missing "version" string in ${packageJsonPath}` };
+	}
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw.data);
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    return { status: false, message: `Invalid JSON in ${packageJsonPath}: ${message}` };
-  }
+	pkg.version = nextVersion;
+	return writeText(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`);
+};
 
-  if (!parsed || typeof parsed !== "object") {
-    return { status: false, message: `Invalid structure in ${packageJsonPath}` };
-  }
+const updateConfigTsVersion = (configPath: string, nextVersion: string): Result<null> => {
+	const raw = readText(configPath);
+	if (!raw.status) return raw;
 
-  const pkg = parsed as Record<string, unknown>;
-  if (typeof pkg.version !== "string") {
-    return { status: false, message: `Missing "version" string in ${packageJsonPath}` };
-  }
+	const pattern = /(version:\s*)['"](\d+\.\d+\.\d+)['"]/;
+	if (!pattern.test(raw.data)) {
+		return { status: false, message: `Could not find NEXTPRESS_CONFIG.version in ${configPath}` };
+	}
 
-  pkg.version = nextVersion;
-  const updated = `${JSON.stringify(pkg, null, 2)}\n`;
-  return writeText(packageJsonPath, updated);
-}
+	return writeText(configPath, raw.data.replace(pattern, `$1'${nextVersion}'`));
+};
 
-function updateConfigTsVersion(configPath: string, nextVersion: string): Result<null> {
-  const raw = readText(configPath);
-  if (!raw.status) return raw;
+const updateStandaloneCliVersion = (cliScriptPath: string, nextVersion: string): Result<null> => {
+	const raw = readText(cliScriptPath);
+	if (!raw.status) return raw;
 
-  const pattern = /(version:\s*)['"](\d+\.\d+\.\d+)['"]/;
-  if (!pattern.test(raw.data)) {
-    return { status: false, message: `Could not find NEXTPRESS_CONFIG.version in ${configPath}` };
-  }
+	const pattern = /(readonly CLI_VERSION="nextpress )(\d+\.\d+\.\d+)(")/;
+	if (!pattern.test(raw.data)) {
+		return {
+			status: false,
+			message: `Could not find CLI_VERSION="nextpress x.y.z" in ${cliScriptPath}`,
+		};
+	}
 
-  const updated = raw.data.replace(pattern, `$1'${nextVersion}'`);
-  return writeText(configPath, updated);
-}
+	return writeText(cliScriptPath, raw.data.replace(pattern, `$1${nextVersion}$3`));
+};
 
-function updateStandaloneCliVersion(cliScriptPath: string, nextVersion: string): Result<null> {
-  const raw = readText(cliScriptPath);
-  if (!raw.status) return raw;
+const fail = (message: string): never => {
+	console.error(message);
+	process.exit(1);
+};
 
-  const pattern = /(readonly CLI_VERSION="nextpress )(\d+\.\d+\.\d+)(")/;
-  if (!pattern.test(raw.data)) {
-    return {
-      status: false,
-      message: `Could not find CLI_VERSION="nextpress x.y.z" in ${cliScriptPath}`,
-    };
-  }
+const log = (message: string): void => {
+	console.log(message);
+};
 
-  const updated = raw.data.replace(pattern, `$1${nextVersion}$3`);
-  return writeText(cliScriptPath, updated);
-}
+const printUsage = (): void => {
+	log(`Usage:
+  pnpm version:bump                 Deploy rule (patch+1, or minor+1 when patch is 10)
+  pnpm version:bump --patch         Force patch bump
+  pnpm version:bump --minor         Force minor bump (reset patch to 0)
+  pnpm version:bump --major         Force major bump (reset minor/patch to 0)
+  pnpm version:bump --set 1.2.0     Set an explicit semver
+  pnpm version:set 1.2.0            Alias for --set`);
+};
 
-function fail(message: string): never {
-  // eslint-disable-next-line no-console
-  console.error(message);
-  process.exit(1);
-}
+const resolveNextVersion = (params: {
+	current: string;
+	args: string[];
+}): string => {
+	const { args, current } = params;
 
-function log(message: string): void {
-  // eslint-disable-next-line no-console
-  console.log(message);
-}
+	if (args[0] === "--set" || args[0] === "set") {
+		const target = args[1];
+		if (!target || !parseSemver(target)) {
+			fail(`Expected semver x.y.z after --set, got: "${target ?? ""}"`);
+		}
+		return formatSemver(parseSemver(target)!);
+	}
 
-function main(): void {
-  const repoRoot = path.resolve(import.meta.dirname, "..");
-  const packageJsonPath = path.join(repoRoot, "package.json");
-  const configPath = path.join(repoRoot, "config.ts");
-  const cliScriptPath = path.join(repoRoot, "scripts", "nextpress");
+	const kindByFlag: Record<string, BumpKind> = {
+		"--patch": "patch",
+		"--minor": "minor",
+		"--major": "major",
+		"--deploy": "deploy",
+	};
 
-  const pkgRaw = readText(packageJsonPath);
-  if (!pkgRaw.status) fail(pkgRaw.message);
+	if (args[0] === "--help" || args[0] === "-h") {
+		printUsage();
+		process.exit(0);
+	}
 
-  let current: unknown;
-  try {
-    current = JSON.parse(pkgRaw.data);
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    fail(`Invalid JSON in ${packageJsonPath}: ${message}`);
-  }
+	const kind = args[0] ? kindByFlag[args[0]] ?? "deploy" : "deploy";
+	if (args[0] && !kindByFlag[args[0]] && args[0] !== "--set") {
+		const direct = parseSemver(args[0]);
+		if (direct) return formatSemver(direct);
+		fail(`Unknown option: ${args[0]}`);
+	}
 
-  const pkg = current as Record<string, unknown>;
-  const currentVersion = typeof pkg.version === "string" ? pkg.version : "";
-  if (!currentVersion) fail(`Missing "version" string in ${packageJsonPath}`);
+	const next = bumpVersion({ current, kind });
+	if (!next) fail(`Invalid current version in package.json: "${current}"`);
+	return next;
+};
 
-  const bumped = bumpPatch(currentVersion);
-  if (!bumped.status) fail(bumped.message);
+const applyVersion = (params: {
+	repoRoot: string;
+	nextVersion: string;
+	before: string;
+}): void => {
+	const packageJsonPath = path.join(params.repoRoot, "package.json");
+	const configPath = path.join(params.repoRoot, "config.ts");
+	const cliScriptPath = path.join(params.repoRoot, "scripts", "nextpress");
 
-  const nextVersion = bumped.data.after;
+	const r1 = updatePackageJsonVersion(packageJsonPath, params.nextVersion);
+	if (!r1.status) fail(r1.message);
+	const r2 = updateConfigTsVersion(configPath, params.nextVersion);
+	if (!r2.status) fail(r2.message);
+	const r3 = updateStandaloneCliVersion(cliScriptPath, params.nextVersion);
+	if (!r3.status) fail(r3.message);
 
-  const r1 = updatePackageJsonVersion(packageJsonPath, nextVersion);
-  if (!r1.status) fail(r1.message);
-  const r2 = updateConfigTsVersion(configPath, nextVersion);
-  if (!r2.status) fail(r2.message);
-  const r3 = updateStandaloneCliVersion(cliScriptPath, nextVersion);
-  if (!r3.status) fail(r3.message);
+	log(`Version bumped: ${params.before} -> ${params.nextVersion}`);
+	log("- updated: package.json");
+	log("- updated: config.ts");
+	log("- updated: scripts/nextpress");
+};
 
-  log(`Version bumped: ${bumped.data.before} -> ${nextVersion}`);
-  log(`- updated: package.json`);
-  log(`- updated: config.ts`);
-  log(`- updated: scripts/nextpress`);
-}
+/** CLI entry — bumps or sets semver across package.json, config.ts, and scripts/nextpress. */
+const main = (): void => {
+	const repoRoot = path.resolve(import.meta.dirname, "..");
+	const packageJsonPath = path.join(repoRoot, "package.json");
+	const pkgRaw = readText(packageJsonPath);
+	if (!pkgRaw.status) fail(pkgRaw.message);
+
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(pkgRaw.data);
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e);
+		fail(`Invalid JSON in ${packageJsonPath}: ${message}`);
+	}
+
+	const pkg = parsed as Record<string, unknown>;
+	const currentVersion = typeof pkg.version === "string" ? pkg.version : "";
+	if (!currentVersion) fail(`Missing "version" string in ${packageJsonPath}`);
+
+	const nextVersion = resolveNextVersion({
+		current: currentVersion,
+		args: process.argv.slice(2),
+	});
+
+	applyVersion({ repoRoot, nextVersion, before: currentVersion });
+};
 
 main();
-
