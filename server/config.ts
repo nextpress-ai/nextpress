@@ -100,6 +100,10 @@ export function getAuthBaseUrl(): string {
 	if (fromEnv && fromEnv.length > 0) {
 		return fromEnv.replace(/\/+$/, "");
 	}
+	const siteUrl = process.env.SITE_URL?.trim();
+	if (siteUrl && siteUrl.length > 0) {
+		return siteUrl.replace(/\/+$/, "");
+	}
 	const port = process.env.PORT || "5000";
 	return `http://localhost:${port}`;
 }

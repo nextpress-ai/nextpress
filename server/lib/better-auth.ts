@@ -6,6 +6,7 @@ import { username } from "better-auth/plugins";
 import * as schema from "@shared/schema";
 import { db } from "../db";
 import { getAuthBaseUrl, getAuthSecret } from "../config";
+import { resolveAuthTrustedOrigins } from "./auth-trusted-origins";
 import { models } from "../storage";
 
 /** Drizzle tables keyed for Better Auth modelName lookups (users, auth_sessions, …). */
@@ -28,7 +29,7 @@ const authSchema = {
 export const auth = betterAuth({
 	baseURL: getAuthBaseUrl(),
 	secret: getAuthSecret(),
-	trustedOrigins: [getAuthBaseUrl()],
+	trustedOrigins: async () => resolveAuthTrustedOrigins(),
 	database: drizzleAdapter(db, {
 		provider: "pg",
 		schema: authSchema,
