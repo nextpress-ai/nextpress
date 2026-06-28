@@ -8,11 +8,3 @@ allowBuilds:
   bufferutil: true
   es5-ext: true
   esbuild: true
-
-onlyBuiltDependencies:
-  - '@tailwindcss/oxide'
-  - bcrypt
-  - better-sqlite3
-  - bufferutil
-  - es5-ext
-  - esbuild

@@ -6,8 +6,8 @@ WORKDIR /app
 # Install pnpm (11.x needs Node >= 22.13 for node:sqlite)
 RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy package files (workspace config authorizes native build scripts for pnpm 11)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install all dependencies (including dev for build)
 RUN pnpm install --frozen-lockfile
@@ -26,8 +26,8 @@ WORKDIR /app
 # Install pnpm for running drizzle-kit
 RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy package files (workspace config authorizes native build scripts for pnpm 11)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install production dependencies only
 RUN pnpm install --prod
