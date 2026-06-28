@@ -122,6 +122,18 @@ const main = (): void => {
 			console.log(`Tag ${tag} already exists; skipping tag creation`);
 		}
 
+		const pushHead = run("git", ["push", "origin", "HEAD"]);
+		if (!pushHead.ok) {
+			console.error(pushHead.message);
+			process.exit(1);
+		}
+
+		const pushTag = run("git", ["push", "origin", tag]);
+		if (!pushTag.ok) {
+			console.error(pushTag.message);
+			process.exit(1);
+		}
+
 		if (!releaseExists(tag)) {
 			const release = run("gh", [
 				"release",
@@ -138,18 +150,6 @@ const main = (): void => {
 			}
 		} else {
 			console.log(`GitHub release ${tag} already exists; skipping release create`);
-		}
-
-		const pushHead = run("git", ["push", "origin", "HEAD"]);
-		if (!pushHead.ok) {
-			console.error(pushHead.message);
-			process.exit(1);
-		}
-
-		const pushTag = run("git", ["push", "origin", tag]);
-		if (!pushTag.ok) {
-			console.error(pushTag.message);
-			process.exit(1);
 		}
 
 		console.log(`Published GitHub release ${tag}`);
