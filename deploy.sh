@@ -154,6 +154,26 @@ docker_logged_in() {
   [[ -f ~/.docker/config.json ]] && grep -q "auth" ~/.docker/config.json 2>/dev/null
 }
 
+# Postgres must accept connections before drizzle-kit migrate (race on fresh volumes).
+wait_for_postgres() {
+  local timeout="${1:-60}"
+  local elapsed=0
+
+  print_info "Waiting for Postgres to be ready (max ${timeout}s)..."
+  while [[ $elapsed -lt $timeout ]]; do
+    if docker compose exec -T postgres pg_isready -U postgres -d nextpress >/dev/null 2>&1; then
+      print_success "Postgres is ready"
+      return 0
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+
+  print_error "Postgres did not become ready within ${timeout}s"
+  docker compose logs postgres --tail 30 2>/dev/null || true
+  return 1
+}
+
 # ============================================
 # Main Script
 # ============================================
@@ -319,8 +339,13 @@ if ! docker compose up -d postgres; then
 fi
 print_success "Postgres started"
 
+if ! wait_for_postgres 60; then
+  exit 1
+fi
+
 if ! docker compose run --rm --no-deps app pnpm drizzle-kit migrate; then
   print_error "Database migration failed"
+  docker compose logs postgres --tail 30 2>/dev/null || true
   exit 1
 fi
 print_success "Database migrations applied"
