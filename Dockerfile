@@ -1,10 +1,10 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm (11.x needs Node >= 22.13 for node:sqlite)
+RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
@@ -19,12 +19,12 @@ COPY . .
 RUN pnpm build
 
 # Runtime stage
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
 # Install pnpm for running drizzle-kit
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
