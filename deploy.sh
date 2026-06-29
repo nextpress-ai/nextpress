@@ -10,7 +10,7 @@
 #   --skip-build  Skip project build (pnpm build)
 #   --version X.Y.Z  Set release version explicitly (skip auto bump rule)
 #   --skip-push     Skip Docker Hub push confirmation
-#   --skip-release  Skip git tag + GitHub release publish
+#   --skip-release  Skip version bump, git tag, and GitHub release publish
 #   -h, --help    Show help message
 #
 # Requirements:
@@ -67,7 +67,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --skip-build  Skip project build (pnpm build)"
       echo "  --version X.Y.Z Set release version explicitly"
       echo "  --skip-push     Skip Docker Hub push (build & verify only)"
-      echo "  --skip-release  Skip git tag and GitHub release publish"
+      echo "  --skip-release  Skip version bump, git tag, and GitHub release publish"
       echo "  -h, --help    Show this help message"
       exit 0
       ;;
@@ -192,7 +192,9 @@ if ! assert_clean_git_tree; then
 fi
 print_success "Working tree is clean"
 
-if [[ -n "$DEPLOY_VERSION" ]]; then
+if [[ "$SKIP_RELEASE" == true ]]; then
+  print_warning "Skipped version bump (--skip-release; using current version)"
+elif [[ -n "$DEPLOY_VERSION" ]]; then
   if ! pnpm -s version:bump --set "$DEPLOY_VERSION"; then
     print_error "Version set failed"
     exit 1
