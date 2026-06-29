@@ -29,7 +29,7 @@ const authSchema = {
 export const auth = betterAuth({
 	baseURL: getAuthBaseUrl(),
 	secret: getAuthSecret(),
-	trustedOrigins: async () => resolveAuthTrustedOrigins(),
+	trustedOrigins: async (request?: Request) => resolveAuthTrustedOrigins(request),
 	database: drizzleAdapter(db, {
 		provider: "pg",
 		schema: authSchema,

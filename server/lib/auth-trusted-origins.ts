@@ -1,43 +1,6 @@
 import { getAuthBaseUrl } from "../config";
 import { models } from "../storage";
-import {
-	getCaddyTlsHostnames,
-	shouldSkipPublicDnsCheck,
-} from "../utils/validate-domain";
-
-/** Builds origin strings (scheme + host) for a stored site URL and its TLS hostnames. */
-const expandSiteUrlOrigins = (siteUrl: string): string[] => {
-	const trimmed = siteUrl.trim();
-	if (!trimmed) return [];
-
-	try {
-		const parsed = new URL(
-			trimmed.startsWith("http://") || trimmed.startsWith("https://")
-				? trimmed
-				: `https://${trimmed}`,
-		);
-		const origins = new Set<string>();
-		const addOrigin = (scheme: string, host: string): void => {
-			origins.add(`${scheme}//${host}`);
-		};
-
-		addOrigin(parsed.protocol, parsed.host);
-
-		for (const host of getCaddyTlsHostnames(trimmed)) {
-			addOrigin(parsed.protocol, host);
-			if (shouldSkipPublicDnsCheck(host)) {
-				addOrigin("http:", host);
-				if (parsed.port) {
-					addOrigin("http:", `${host}:${parsed.port}`);
-				}
-			}
-		}
-
-		return [...origins];
-	} catch {
-		return [];
-	}
-};
+import { expandSiteUrlOrigins, getRequestSelfOrigin } from "./origin-utils";
 
 /** Origins from deployment env (BETTER_AUTH_URL, SITE_URL). */
 const getEnvTrustedOrigins = (): string[] => {
@@ -80,10 +43,18 @@ const getSiteTrustedOrigins = async (): Promise<string[]> => {
 };
 
 /**
- * Resolves Better Auth trusted origins from env and configured site URLs.
- * Without this, prod login fails when BETTER_AUTH_URL is unset (defaults to localhost).
+ * Resolves Better Auth trusted origins from the request, env, and configured
+ * site URLs.
+ *
+ * `request` is undefined during Better Auth initialization and `auth.api` calls
+ * (e.g. the setup wizard's server-side signup); in that case only env + DB
+ * origins apply. For real browser requests the request's own origin is trusted
+ * when it is same-origin, so login works without any env config and survives
+ * upgrades where the stored site URL no longer matches the live origin.
  */
-export const resolveAuthTrustedOrigins = async (): Promise<string[]> => {
+export const resolveAuthTrustedOrigins = async (
+	request?: Request,
+): Promise<string[]> => {
 	const origins = new Set<string>(getEnvTrustedOrigins());
 
 	try {
@@ -92,6 +63,13 @@ export const resolveAuthTrustedOrigins = async (): Promise<string[]> => {
 		}
 	} catch (error) {
 		console.error("Auth trusted origins: site lookup failed:", error);
+	}
+
+	if (request) {
+		const selfOrigin = getRequestSelfOrigin(request);
+		if (selfOrigin) {
+			origins.add(selfOrigin);
+		}
 	}
 
 	return [...origins];

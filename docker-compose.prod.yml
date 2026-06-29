@@ -25,6 +25,10 @@ services:
       SESSION_SECRET: ${SESSION_SECRET}
       PORT: 5000
       NODE_ENV: production
+      # Optional explicit auth origin override. Login trusts the live request
+      # origin automatically, so these are only needed for non-standard proxies.
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
+      SITE_URL: ${SITE_URL:-}
     volumes:
       - uploads:/app/uploads
       # Same mount as caddy so updateCaddyConfig() persists to the Caddyfile Caddy reads

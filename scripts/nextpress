@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly CLI_VERSION="nextpress 1.3.1"
+readonly CLI_VERSION="nextpress 1.4.0"
 readonly DEFAULT_INSTALL_DIR="/opt/nextpress"
 readonly DEFAULT_VERSION="latest"
 readonly COMPOSE_FILE="docker-compose.prod.yml"
@@ -356,6 +356,62 @@ load_install_env() {
 	if [ "${POSTGRES_PASSWORD:-}" = "" ]; then
 		fail "Missing POSTGRES_PASSWORD in $env_path"
 	fi
+}
+
+detect_caddy_site_hosts() {
+	local caddy_file="$INSTALL_DIR/caddy_config/Caddyfile"
+
+	if [ ! -f "$caddy_file" ]; then
+		return 0
+	fi
+
+	# The site-address line lists hostnames before the opening brace, e.g.
+	# "example.com, www.example.com {". The global options block opens with a
+	# bare "{" and IP/localhost installs use ":80 {", neither of which starts
+	# with an alphanumeric host character, so they are skipped.
+	awk '/^[A-Za-z0-9][^{]*\{[[:space:]]*$/ {
+		line = $0
+		sub(/[[:space:]]*\{[[:space:]]*$/, "", line)
+		print line
+		exit
+	}' "$caddy_file"
+}
+
+# Single-domain installs: pin BETTER_AUTH_URL so Better Auth emits Secure
+# cookies and trusts the public origin explicitly. Login already works via the
+# app's dynamic same-origin trust, so this is best-effort hardening only:
+# skipped when a value already exists, when multiple domains are served, or for
+# IP/localhost (no public HTTPS host).
+maybe_set_auth_url_from_caddy() {
+	local env_path="$INSTALL_DIR/.env"
+	local hosts_line apexes apex_count domain
+
+	if [ ! -f "$env_path" ]; then
+		return 0
+	fi
+
+	if grep -q '^BETTER_AUTH_URL=' "$env_path"; then
+		return 0
+	fi
+
+	hosts_line="$(detect_caddy_site_hosts)"
+	if [ "$hosts_line" = "" ]; then
+		return 0
+	fi
+
+	apexes="$(printf '%s' "$hosts_line" | tr ',' '\n' \
+		| awk '{gsub(/[[:space:]]/, ""); if ($0 == "") next; sub(/^www\./, ""); print}' \
+		| sort -u)"
+	apex_count="$(printf '%s\n' "$apexes" | grep -c .)"
+
+	if [ "$apex_count" -ne 1 ]; then
+		warn "Multiple site domains detected; leaving BETTER_AUTH_URL unset. Login still works via dynamic origin trust."
+		return 0
+	fi
+
+	domain="$(printf '%s\n' "$apexes" | head -n1)"
+	printf 'BETTER_AUTH_URL=https://%s\n' "$domain" >> "$env_path"
+	info "Set BETTER_AUTH_URL=https://$domain in .env (auto-detected from Caddyfile)."
 }
 
 write_initial_caddyfile() {
@@ -945,6 +1001,7 @@ run_upgrade() {
 	assert_docker_available
 	load_install_env
 	write_legacy_installed_config
+	maybe_set_auth_url_from_caddy
 
 	info "Upgrading stack in $INSTALL_DIR to $INSTALL_VERSION..."
 	(cd "$INSTALL_DIR" && prepare_upgrade_workspace)
