@@ -154,14 +154,14 @@ docker_logged_in() {
   [[ -f ~/.docker/config.json ]] && grep -q "auth" ~/.docker/config.json 2>/dev/null
 }
 
-# Postgres must accept connections before drizzle-kit migrate (race on fresh volumes).
+# Postgres must accept queries before drizzle-kit migrate (pg_isready alone races startup).
 wait_for_postgres() {
   local timeout="${1:-60}"
   local elapsed=0
 
-  print_info "Waiting for Postgres to be ready (max ${timeout}s)..."
+  print_info "Waiting for Postgres to accept queries (max ${timeout}s)..."
   while [[ $elapsed -lt $timeout ]]; do
-    if docker compose exec -T postgres pg_isready -U postgres -d nextpress >/dev/null 2>&1; then
+    if docker compose exec -T postgres psql -U postgres -d nextpress -c 'SELECT 1' >/dev/null 2>&1; then
       print_success "Postgres is ready"
       return 0
     fi
@@ -169,7 +169,7 @@ wait_for_postgres() {
     elapsed=$((elapsed + 2))
   done
 
-  print_error "Postgres did not become ready within ${timeout}s"
+  print_error "Postgres did not accept queries within ${timeout}s"
   docker compose logs postgres --tail 30 2>/dev/null || true
   return 1
 }
@@ -335,11 +335,11 @@ if ! docker compose build app; then
 fi
 print_success "App image built"
 
-if ! docker compose up -d postgres; then
+if ! docker compose up -d postgres --wait; then
   print_error "Postgres start failed"
   exit 1
 fi
-print_success "Postgres started"
+print_success "Postgres started (healthy)"
 
 if ! wait_for_postgres 60; then
   exit 1

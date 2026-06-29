@@ -18,8 +18,9 @@ scripts/verify-*.ts
 .env.development
 .env.test
 
-# Database dumps and exports
+# Database dumps and exports (keep drizzle migration SQL tracked)
 *.sql
+!migrations/*.sql
 *.dump
 database-exports/
 
