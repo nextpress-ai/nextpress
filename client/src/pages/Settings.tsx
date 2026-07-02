@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Save, Globe, Database, Code, Shield, Bell, Upload, X, ImageIcon, Home, Check } from 'lucide-react';
+import { Save, Globe, Database, Code, Shield, Bell, Upload, X, ImageIcon, Home, Check, KeyRound } from 'lucide-react';
 import { AdminLayout } from '@/components/AdminLayout';
 import { Spinner } from '@/components/ui/spinner';
 import { apiRequest } from '@/lib/queryClient';
@@ -27,6 +27,7 @@ import {
 import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { DomainInputWithVerify } from '@/components/domain';
+import { ApiKeysPanel } from '@/components/settings/ApiKeysPanel';
 
 /**
  * Settings structure matching server schema
@@ -1603,6 +1604,19 @@ export default function Settings() {
                         }
                       />
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* API Keys */}
+                <Card className="admin-surface">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <KeyRound className="w-5 h-5 mr-2 text-npb-accent" />
+                      API Keys
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ApiKeysPanel />
                   </CardContent>
                 </Card>
 

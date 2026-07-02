@@ -117,6 +117,52 @@ export const verifications = pgTable(
 	(table) => [index("verifications_identifier_idx").on(table.identifier)],
 );
 
+/** SDK / MCP API keys — Bearer `npk_live_…` tokens hashed at rest. */
+export const apiKeys = pgTable(
+	"api_keys",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		name: varchar("name").notNull(),
+		keyPrefix: varchar("key_prefix").notNull(),
+		keyHash: varchar("key_hash").notNull(),
+		userId: uuid("user_id")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull(),
+		siteId: uuid("site_id").references(() => sites.id, { onDelete: "cascade" }),
+		scopes: jsonb("scopes").notNull().default([]),
+		expiresAt: timestamp("expires_at"),
+		lastUsedAt: timestamp("last_used_at"),
+		revokedAt: timestamp("revoked_at"),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(table) => [
+		uniqueIndex("api_keys_key_hash_idx").on(table.keyHash),
+		index("api_keys_user_id_idx").on(table.userId),
+	],
+);
+
+/** Time-limited share tokens for preview URLs (`npt_…` query param). */
+export const previewTokens = pgTable(
+	"preview_tokens",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		tokenHash: varchar("token_hash").notNull(),
+		contentType: varchar("content_type").notNull(),
+		contentId: uuid("content_id").notNull(),
+		siteId: uuid("site_id").references(() => sites.id, { onDelete: "cascade" }),
+		createdBy: uuid("created_by")
+			.references(() => users.id, { onDelete: "cascade" })
+			.notNull(),
+		expiresAt: timestamp("expires_at").notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(table) => [
+		uniqueIndex("preview_tokens_token_hash_idx").on(table.tokenHash),
+		index("preview_tokens_content_idx").on(table.contentType, table.contentId),
+		index("preview_tokens_expires_at_idx").on(table.expiresAt),
+	],
+);
+
 export const userRoles = pgTable("user_roles", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	userId: uuid("user_id")

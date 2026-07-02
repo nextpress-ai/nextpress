@@ -46,6 +46,17 @@ export default defineConfig({
 					exclude: ["node_modules", "dist", "build", "**/*.e2e.{ts,tsx}"],
 				},
 			},
+			{
+				extends: true,
+				test: {
+					name: "sdk",
+					environment: "node",
+					include: [
+						"packages/sdk/src/**/*.test.{ts,tsx}",
+					],
+					exclude: ["node_modules", "dist", "build"],
+				},
+			},
 		],
 		coverage: {
 			provider: "v8",

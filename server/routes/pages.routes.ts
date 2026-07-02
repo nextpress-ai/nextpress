@@ -3,6 +3,12 @@ import type { Deps } from './shared/deps';
 import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync, normalizePageSlug, isPageSlugConflictError } from '../utils';
 import { coerceDates } from './shared/date-coerce';
+import {
+  assertAuthenticatedSiteAccess,
+  ensureNonPublicContentAccess,
+  listQueryRequiresAuth,
+} from '../lib/content-access';
+import { attachRequestAuth, resolveRequestAuth } from '../auth';
 
 /**
  * Validates that a slug is unique (application-level check before insert).
@@ -61,6 +67,15 @@ export function createPagesRoutes(deps: Deps): Router {
     '/',
     asyncHandler(async (req, res) => {
       const { err, result } = await safeTryAsync(async () => {
+        const rawStatus = typeof req.query.status === 'string' ? req.query.status : CONFIG.STATUS.PUBLISH;
+        if (listQueryRequiresAuth(rawStatus)) {
+          const authContext = await resolveRequestAuth(req);
+          if (!authContext) {
+            throw Object.assign(new Error('Unauthorized'), { statusCode: 401 });
+          }
+          attachRequestAuth(req, authContext);
+        }
+
         const { page, limit, offset } = parsePaginationParams(
           req.query,
           CONFIG.PAGINATION.DEFAULT_POSTS_PER_PAGE
@@ -105,6 +120,10 @@ export function createPagesRoutes(deps: Deps): Router {
 
       if (err) {
         console.error('Error fetching pages:', err);
+        const statusCode = (err as { statusCode?: number }).statusCode ?? 500;
+        if (statusCode === 401) {
+          return res.status(401).json({ message: 'Unauthorized' });
+        }
         return res.status(500).json({ message: 'Failed to fetch pages' });
       }
 
@@ -131,12 +150,113 @@ export function createPagesRoutes(deps: Deps): Router {
         if (!page) {
           return res.status(404).json({ message: 'Page not found' });
         }
+
+        const allowed = await ensureNonPublicContentAccess({
+          req,
+          res,
+          models,
+          siteId: String(page.siteId),
+          status: (page as { status?: string }).status,
+        });
+        if (!allowed) {
+          return;
+        }
+
         res.json(page);
       } catch (error) {
         console.error('Error fetching page:', error);
         res.status(500).json({ message: 'Failed to fetch page' });
       }
     })
+  );
+
+  /**
+   * GET /api/pages/:id/history - Version snapshots saved on each update.
+   */
+  router.get(
+    '/:id/history',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const page = await models.pages.findById(req.params.id);
+      if (!page) {
+        return res.status(404).json({ message: 'Page not found' });
+      }
+
+      try {
+        await assertAuthenticatedSiteAccess({
+          req,
+          models,
+          siteId: String(page.siteId),
+        });
+      } catch (error) {
+        const statusCode = (error as { statusCode?: number }).statusCode ?? 403;
+        return res.status(statusCode).json({ message: (error as Error).message });
+      }
+
+      const history = Array.isArray(page.history) ? page.history : [];
+      res.json({
+        pageId: page.id,
+        currentVersion: page.version ?? 0,
+        history,
+      });
+    }),
+  );
+
+  /**
+   * POST /api/pages/:id/restore - Restore blocks from a history version.
+   */
+  router.post(
+    '/:id/restore',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const version = req.body?.version;
+      if (typeof version !== 'number' || !Number.isInteger(version) || version < 0) {
+        return res.status(400).json({ message: 'version must be a non-negative integer' });
+      }
+
+      const existingPage = await models.pages.findById(req.params.id);
+      if (!existingPage) {
+        return res.status(404).json({ message: 'Page not found' });
+      }
+
+      try {
+        await assertAuthenticatedSiteAccess({
+          req,
+          models,
+          siteId: String(existingPage.siteId),
+        });
+      } catch (error) {
+        const statusCode = (error as { statusCode?: number }).statusCode ?? 403;
+        return res.status(statusCode).json({ message: (error as Error).message });
+      }
+
+      const history = Array.isArray(existingPage.history) ? existingPage.history : [];
+      const snapshot = history.find(
+        (entry: { version?: number }) => entry?.version === version,
+      );
+
+      if (!snapshot || !Array.isArray((snapshot as { blocks?: unknown }).blocks)) {
+        return res.status(404).json({ message: 'Version not found in history' });
+      }
+
+      const previousSnapshot = {
+        version: existingPage.version ?? 0,
+        updatedAt: existingPage.updatedAt
+          ? new Date(existingPage.updatedAt as string).toISOString()
+          : new Date().toISOString(),
+        blocks: existingPage.blocks ?? [],
+        authorId: (existingPage as { authorId?: string }).authorId,
+      };
+
+      const page = await models.pages.update(req.params.id, {
+        blocks: (snapshot as { blocks: unknown[] }).blocks,
+        version: (existingPage.version ?? 0) + 1,
+        history: [previousSnapshot, ...history],
+      });
+
+      hooks.doAction('save_post', page);
+      res.json(page);
+    }),
   );
 
   /**
@@ -237,6 +357,17 @@ export function createPagesRoutes(deps: Deps): Router {
           return res.status(404).json({ message: 'Page not found' });
         }
 
+        try {
+          await assertAuthenticatedSiteAccess({
+            req,
+            models,
+            siteId: String(existingPage.siteId),
+          });
+        } catch (error) {
+          const statusCode = (error as { statusCode?: number }).statusCode ?? 403;
+          return res.status(statusCode).json({ message: (error as Error).message });
+        }
+
         const previousSnapshot = {
           version: existingPage.version ?? 0,
           updatedAt: existingPage.updatedAt
@@ -295,6 +426,17 @@ export function createPagesRoutes(deps: Deps): Router {
 
         if (!page) {
           return res.status(404).json({ message: 'Page not found' });
+        }
+
+        try {
+          await assertAuthenticatedSiteAccess({
+            req,
+            models,
+            siteId: String(page.siteId),
+          });
+        } catch (error) {
+          const statusCode = (error as { statusCode?: number }).statusCode ?? 403;
+          return res.status(statusCode).json({ message: (error as Error).message });
         }
 
         await models.pages.delete(id);

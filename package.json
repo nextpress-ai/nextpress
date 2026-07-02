@@ -23,7 +23,14 @@
     "import:users": "tsx scripts/import-users.ts",
     "verify:users": "tsx scripts/verify-users.ts",
     "cli:build": "pnpm --filter @nextpress-org/cli build",
-    "cli:dev": "pnpm --filter @nextpress-org/cli dev"
+    "cli:dev": "pnpm --filter @nextpress-org/cli dev",
+    "sdk:install": "pnpm --filter @nextpress-org/sdk install",
+    "sdk:build": "pnpm --filter @nextpress-org/sdk build",
+    "sdk:test": "pnpm --filter @nextpress-org/sdk test",
+    "sdk:test:live": "pnpm --filter @nextpress-org/sdk test:live",
+    "sdk:lint": "pnpm --filter @nextpress-org/sdk lint",
+    "sdk:lint:fix": "pnpm --filter @nextpress-org/sdk lint:fix",
+    "sdk:dev": "pnpm --filter @nextpress-org/sdk dev"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.11",

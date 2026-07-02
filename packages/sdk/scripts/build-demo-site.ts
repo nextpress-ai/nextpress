@@ -1,0 +1,102 @@
+/**
+ * Builds a sample landing page via the SDK and prints preview URLs.
+ * Run: pnpm exec tsx scripts/build-demo-site.ts
+ */
+import { createLiveClient } from "../src/test/live/bootstrap-live-client.js";
+
+const runId = Date.now().toString(36);
+
+async function main(): Promise<void> {
+	const { client, config } = await createLiveClient();
+	const { blocks, pageBuilder } = client;
+
+	const landingBlocks = [
+		blocks.cover({
+			data: {
+				url: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600",
+				alt: "Modern workspace",
+				minHeight: 420,
+				dimRatio: 45,
+				innerContent: "<h1>Built with @nextpress-org/sdk</h1><p>Programmatic page builder demo</p>",
+			},
+		}),
+		blocks.spacer({ data: { height: "32px" } }),
+		blocks.container({
+			children: [
+				blocks.heading({ text: "Why NextPress SDK?", level: 2 }),
+				blocks.paragraph({
+					text: "Create pages, posts, and block layouts from scripts, CI, or MCP agents — the same blocks the dashboard uses.",
+				}),
+				blocks.columns({
+					data: { columns: 3, gap: "24px" },
+					children: [
+						blocks.group({
+							children: [
+								blocks.heading({ text: "Pages", level: 3 }),
+								blocks.paragraph({ text: "Full block trees with save, preview, and publish workflows." }),
+							],
+						}),
+						blocks.group({
+							children: [
+								blocks.heading({ text: "Posts", level: 3 }),
+								blocks.paragraph({ text: "Blog posts with the same page builder blocks as pages." }),
+							],
+						}),
+						blocks.group({
+							children: [
+								blocks.heading({ text: "Blocks", level: 3 }),
+								blocks.paragraph({ text: "35 typed block helpers matching the admin registry." }),
+							],
+						}),
+					],
+				}),
+			],
+		}),
+		blocks.spacer({ data: { height: "24px" } }),
+		blocks.buttons({
+			children: [
+				blocks.button({ data: { text: "Get started", url: "/admin", linkTarget: "_self" } }),
+				blocks.button({
+					data: { text: "View docs", url: "https://github.com/nextpress-org/nextpress", linkTarget: "_blank" },
+					styles: { backgroundColor: "#1e293b", color: "#ffffff", padding: "12px 24px", borderRadius: "4px" },
+				}),
+			],
+		}),
+		blocks.separator(),
+		blocks.quote({ content: { kind: "text", value: "If you can build it in the dashboard, you can build it with the SDK." } }),
+	];
+
+	const page = await client.pages.create({
+		title: `SDK Demo Landing ${runId}`,
+		slug: `sdk-demo-${runId}`,
+		status: "preview",
+		blocks: landingBlocks,
+	});
+
+	await pageBuilder.savePageBlocks({ id: page.id, blocks: landingBlocks });
+	const previewPayload = await pageBuilder.previewPage({ id: page.id });
+
+	const baseUrl = config.baseUrl.replace(/\/+$/, "");
+	const previewUrl = `${baseUrl}/preview/page/${page.id}`;
+
+	console.log(
+		JSON.stringify(
+			{
+				ok: true,
+				pageId: page.id,
+				slug: page.slug,
+				title: previewPayload.title,
+				blockCount: previewPayload.blocks?.length ?? 0,
+				previewUrl,
+				publicUrl: `${baseUrl}/page/${page.slug}`,
+			},
+			null,
+			2,
+		),
+	);
+}
+
+main().catch((error) => {
+	console.error(error instanceof Error ? error.message : error);
+	process.exit(1);
+});

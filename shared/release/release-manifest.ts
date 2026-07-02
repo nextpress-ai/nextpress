@@ -4,8 +4,26 @@ import type { ReleaseHighlight } from "./release-highlight-meta";
 /** In-app release notes. Consumer-facing copy only. Keep in sync with package.json on release. */
 export const RELEASE_MANIFEST = {
 	version: NEXTPRESS_CONFIG.version,
-	releaseDate: "2026-06-21",
+	releaseDate: "2026-07-02",
 	highlights: [
+		{
+			kind: "update",
+			title: "API keys with permissions you choose",
+			description:
+				"Create API keys in Settings and pick what each one can do: read content, edit pages, manage settings, and more. Use presets or choose permissions one by one.",
+		},
+		{
+			kind: "update",
+			title: "Official SDK for scripts and integrations",
+			description:
+				"Connect automation tools and custom apps to your site with the NextPress SDK. Create a key in Settings, then build pages, posts, and preview links from code.",
+		},
+		{
+			kind: "improvement",
+			title: "Preview share links",
+			description:
+				"Share a time-limited preview link so others can view a draft page or post without signing in.",
+		},
 		{
 			kind: "update",
 			title: "Multiple sites in one install",

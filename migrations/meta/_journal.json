@@ -22,6 +22,20 @@
       "when": 1782733319848,
       "tag": "0002_better_auth_and_multi_site",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782800000000,
+      "tag": "0003_sdk_api_keys_preview_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783000000000,
+      "tag": "0005_backfill_api_key_scopes",
+      "breakpoints": true
     }
   ]
 }

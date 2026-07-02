@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
+import { useMemo } from "react";
 import { AppLoadingShell } from "@/components/app-loading-shell";
 import { AlertCircle } from "lucide-react";
 import type { Post, Template } from "@shared/schema-types";
@@ -24,12 +25,23 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
   // Get ID from props or URL params
   const contentId = postId || templateId || params.id;
   const contentType = type || params.type || (templateId ? 'template' : 'post');
-  
-  // Fetch post or template data using preview endpoints
+
+  const shareToken = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    return new URLSearchParams(window.location.search).get('token');
+  }, []);
+
+  const previewPath =
+    shareToken && contentId
+      ? `/api/preview/shared/${contentType}/${contentId}?token=${encodeURIComponent(shareToken)}`
+      : contentType === 'template'
+        ? `/api/preview/template/${contentId}`
+        : `/api/preview/${contentType}/${contentId}`;
+
   const { data, isLoading, error } = useQuery({
-    queryKey: contentType === 'template' 
-      ? [`/api/preview/template/${contentId}`] 
-      : [`/api/preview/${contentType}/${contentId}`],
+    queryKey: [previewPath],
     enabled: !!contentId,
   });
 
@@ -47,11 +59,13 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
         <div className="text-center">
           <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-400" />
           <h1 className="mb-2 text-xl font-semibold text-npb-text-primary">
-            {isUnauthorized ? 'Sign in required' : 'Preview Not Available'}
+            {isUnauthorized ? 'Sign in required' : shareToken ? 'Preview link expired' : 'Preview Not Available'}
           </h1>
           <p className="text-npb-text-secondary">
             {isUnauthorized
-              ? 'Preview is only available to signed-in users.'
+              ? 'Preview is only available to signed-in users, or use a share link from the SDK.'
+              : shareToken
+                ? 'This preview link is invalid or has expired. Generate a new one from the SDK.'
               : error
                 ? 'Failed to load content for preview.'
                 : 'The requested content could not be found.'}

@@ -1,0 +1,47 @@
+{
+  "name": "@nextpress-org/sdk",
+  "version": "0.1.0",
+  "description": "Official NextPress SDK for managing content, pages, posts, and blocks programmatically",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:bun": "bun vitest run",
+    "test:live": "LIVE_TEST=1 vitest run --config vitest.live.config.ts",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "prepublishOnly": "tsup"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "5.6.3",
+    "vitest": "^3.2.4"
+  }
+}

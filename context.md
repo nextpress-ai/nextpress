@@ -4,7 +4,73 @@ Per **AGENTS.md → Workflow**: use `task.md` for work **>30min**; at **task end
 
 ---
 
-## 2026-06-21 — Consumer-facing copy & What's New
+## 2026-07-02 — @nextpress-org/sdk package (v0.1.0)
+
+### Summary
+
+- New publishable package at `packages/sdk/` — **`@nextpress-org/sdk`**
+- Factory API: `createNextpress({ baseUrl, apiKey, siteId? })` → typed resource namespaces
+- **tsup** ESM build + `.d.ts`; **vitest** (16 tests); **bun vitest run** also works
+- All public methods have JSDoc; all inputs validated with **Zod** before HTTP
+- **`NextpressError`** for API failures (`status`, `code`, `body`)
+
+### Resources wired
+
+`posts`, `pages`, `blogs`, `comments`, `media`, `users`, `sites`, `site`, `settings`, `options`, `templates`, `themes`, `dashboard`, `preview`, `public`, `import`, `system`, `health`, `auth`, plus **`blocks`** builder helpers
+
+### Blocks
+
+No standalone blocks REST API — blocks live on page/post/template payloads. SDK exposes `nextpress.blocks.heading()`, `.paragraph()`, `.container()`, etc. to build `BlockConfig[]` trees.
+
+### Auth
+
+SDK sends `Authorization: Bearer npk_live_…`. Server validates API keys on protected routes. **Keys are issued and revoked in the dashboard only** (`Settings → System → API Keys`, session required). SDK does not manage keys.
+
+### Monorepo scripts
+
+- `pnpm sdk:build`, `pnpm sdk:test`, `pnpm sdk:dev`
+- Root `vitest.config.ts` includes `sdk` project
+
+### Patterns
+
+- Self-contained types in `packages/sdk/src/types/` (not `@shared` import) so package is publishable standalone
+- Resource factories: `createPostsResource({ http })` — no classes, AGENTS.md compliant
+- Default `siteId` merged into query via `withSiteId()` in HTTP client
+
+### Testing & lint (2026-07-02)
+
+- **54 unit + 7 live tests** (`src/test/`, `vitest.live.config.ts`)
+- **Biome 2.5** — `pnpm sdk:lint`, `pnpm sdk:lint:fix`
+- Live tests: `pnpm sdk:test:live` (dev server + `LIVE_TEST=1`)
+
+### SDK v0.1 expansion (2026-07-02)
+
+- **~97% REST endpoint coverage** — added `plugins`, `hooks`, expanded `auth` (signIn/signUp/signOut)
+- **`nextpress.pageBuilder`** — save/publish/preview/apply-template workflows matching dashboard
+- **35 block helpers** — full dashboard registry via `blocks.fromName()` + named helpers
+- **Fully typed inputs/outputs** — no `Record<string, unknown>` on public resource methods; Settings/Import/System typed
+- **Themes response shapes fixed** — match server (array / raw theme object)
+- **`posts.list({ blogId })`** — dashboard alias normalized to `blog_id`
+
+### SDK auth + editor session (2026-07-02)
+
+- **Server API key validation** — `Bearer npk_live_…` on content routes; keys hashed at rest
+- **Dashboard-only key management** — `Settings → System → API Keys`; `requireSessionAuth` blocks Bearer on key routes
+- **Site-scoped API keys** — scoped keys reject cross-site `siteId` in `requireAuth`
+- **Content access checks** — draft/non-public GET requires auth; preview tokens require site access
+- **Preview share rate limit** — 60 req/min/IP on `/api/preview/shared`
+- **Expired preview token cleanup** — purged on token mint
+- **SDK auth** — `auth.me()` only; no sign-in/sign-up in SDK
+
+### API key scopes (2026-07-02)
+
+- **Scoped permissions** — keys store `scopes jsonb`; admin picks presets or individual permissions at create time (`Settings → System → API Keys`)
+- **Canonical scopes** — `shared/api-key-scopes.ts`: catalog, presets (`editor`, `readonly`, `full`), route→scope map, write implies read
+- **Enforcement** — `apiKeyScopeEnforcer` middleware (Bearer `npk_live_…` only); session cookies bypass scopes; unmapped `/api/*` routes require full access (fail closed)
+- **Migration 0004** — adds `scopes` column; **0005** backfills legacy empty scopes to full access
+- **403 shape** — `{ code: "API_KEY_SCOPE_DENIED", requiredScopes: [...] }` when key lacks permission
+- **SDK** — `NextpressError.code` surfaces API `code`; README documents scope presets and resource mapping
+- **SDK docs** — `docs/sdk/` (getting started, architecture, resources, blocks, preview, development)
 
 ### Rules (see **`docs/internal/COPYWRITING.md`** and **AGENTS.md → Consumer-facing copy**)
 

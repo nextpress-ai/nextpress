@@ -5,6 +5,13 @@ import { safeTryAsync } from '../utils';
 import { coerceDates } from './shared/date-coerce';
 import { enrichPostForApi } from '@shared/posts/post-other';
 import { getSiteBlogIds } from './shared/site-content';
+import {
+  assertAuthenticatedSiteAccess,
+  ensureNonPublicContentAccess,
+  listQueryRequiresAuth,
+  resolveContentSiteId,
+} from '../lib/content-access';
+import { attachRequestAuth, resolveRequestAuth } from '../auth';
 
 /**
  * Creates Posts CRUD routes for the NextPress API.
@@ -31,6 +38,15 @@ export function createPostsRoutes(deps: Deps): Router {
     '/',
     asyncHandler(async (req, res) => {
       const { err, result } = await safeTryAsync(async () => {
+        const rawStatus = typeof req.query.status === 'string' ? req.query.status : CONFIG.STATUS.PUBLISH;
+        if (listQueryRequiresAuth(rawStatus)) {
+          const authContext = await resolveRequestAuth(req);
+          if (!authContext) {
+            throw Object.assign(new Error('Unauthorized'), { statusCode: 401 });
+          }
+          attachRequestAuth(req, authContext);
+        }
+
         const { page, limit, offset } = parsePaginationParams(
           req.query,
           CONFIG.PAGINATION.DEFAULT_POSTS_PER_PAGE
@@ -83,6 +99,10 @@ export function createPostsRoutes(deps: Deps): Router {
 
       if (err) {
         console.error('Error fetching posts:', err);
+        const statusCode = (err as { statusCode?: number }).statusCode ?? 500;
+        if (statusCode === 401) {
+          return res.status(401).json({ message: 'Unauthorized' });
+        }
         return res.status(500).json({ message: 'Failed to fetch posts' });
       }
 
@@ -101,6 +121,28 @@ export function createPostsRoutes(deps: Deps): Router {
         if (!post) {
           return res.status(404).json({ message: 'Post not found' });
         }
+
+        const siteId = await resolveContentSiteId({
+          models,
+          contentType: 'post',
+          contentId: post.id,
+        });
+
+        if (siteId) {
+          const allowed = await ensureNonPublicContentAccess({
+            req,
+            res,
+            models,
+            siteId,
+            status: post.status,
+          });
+          if (!allowed) {
+            return;
+          }
+        } else if (post.status !== 'publish') {
+          return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         res.json(enrichPostForApi(post));
       } catch (error) {
         console.error('Error fetching post:', error);
@@ -186,6 +228,20 @@ export function createPostsRoutes(deps: Deps): Router {
           return res.status(404).json({ message: 'Post not found' });
         }
 
+        const siteId = await resolveContentSiteId({
+          models,
+          contentType: 'post',
+          contentId: id,
+        });
+        if (siteId) {
+          try {
+            await assertAuthenticatedSiteAccess({ req, models, siteId });
+          } catch (error) {
+            const statusCode = (error as { statusCode?: number }).statusCode ?? 403;
+            return res.status(statusCode).json({ message: (error as Error).message });
+          }
+        }
+
         const wasPublished = existingPost.status === 'publish';
         const post = await models.posts.update(id, postData);
 
@@ -216,6 +272,20 @@ export function createPostsRoutes(deps: Deps): Router {
 
         if (!post) {
           return res.status(404).json({ message: 'Post not found' });
+        }
+
+        const siteId = await resolveContentSiteId({
+          models,
+          contentType: 'post',
+          contentId: id,
+        });
+        if (siteId) {
+          try {
+            await assertAuthenticatedSiteAccess({ req, models, siteId });
+          } catch (error) {
+            const statusCode = (error as { statusCode?: number }).statusCode ?? 403;
+            return res.status(statusCode).json({ message: (error as Error).message });
+          }
         }
 
         await models.posts.delete(id);

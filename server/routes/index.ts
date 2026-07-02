@@ -21,12 +21,14 @@ import { createSiteRoutes } from './site.routes';
 import { createSitesRoutes } from './sites.routes';
 import { createDashboardRoutes } from './dashboard.routes';
 import { createPreviewRoutes } from './preview.routes';
+import { createApiKeysRoutes } from './api-keys.routes';
 import { createPublicRoutes } from './public.routes';
 import { createRenderRoutes } from './render.routes';
 import { createSetupRoutes } from './setup.routes';
 import { createWordPressImportRoutes } from './import.wordpress.routes';
 import { createSystemRoutes } from './system.routes';
 import { setupCheck } from '../middleware/setupCheck';
+import { apiKeyScopeEnforcer } from '../middleware/api-key-scope-enforcer';
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -59,6 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Compatibility CMS user endpoint (must register before Better Auth catch-all)
   app.use('/api/auth', createAuthRoutes(deps));
+  app.use('/api/auth/api-keys', createApiKeysRoutes(deps));
 
   // Better Auth handler (sign-in, sign-up, sign-out, get-session, etc.)
   app.all('/api/auth/*', toNodeHandler(auth));
@@ -79,6 +82,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Setup check middleware - redirects to wizard if not configured
   app.use(setupCheck);
+
+  // Enforce API key scopes before protected route handlers run
+  app.use(apiKeyScopeEnforcer);
 
   // Fire WordPress-style 'init' action hook
   hooks.doAction('init');
