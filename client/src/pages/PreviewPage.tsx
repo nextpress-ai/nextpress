@@ -5,13 +5,8 @@ import { AppLoadingShell } from "@/components/app-loading-shell";
 import { AlertCircle } from "lucide-react";
 import type { Post, Template } from "@shared/schema-types";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
-import BlockRenderer from "@/components/PageBuilder/BlockRenderer";
-import { BlockAnimationRuntime } from "@/components/PageBuilder/BlockAnimationRuntime";
+import { PublicBlockStack } from "@/components/PageBuilder/public-block-stack";
 import { getGoogleFontUrl } from "@shared/google-fonts";
-import {
-  getBlockSiblingFlexItemStyles,
-  PAGE_BLOCK_STACK_GAP,
-} from "@shared/block-container-placement";
 
 interface PreviewPageProps {
   postId?: string;
@@ -125,16 +120,10 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
         <link rel="stylesheet" href={googleFontUrl} />
       )}
       
-      {/* Page content */}
-      <div
-        className="w-full mx-auto"
-        style={{
-          maxWidth: design?.containerWidth || undefined,
-          padding: design?.padding || undefined,
-        }}
-      >
+      {/* Page content — same stack as published pages */}
+      <div className="w-full">
         {blocks.length === 0 ? (
-          <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex min-h-[400px] items-center justify-center">
             <div className="text-center">
               <div className="mb-4 text-npb-text-muted">
                 <svg className="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,31 +135,12 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
             </div>
           </div>
         ) : (
-          <div
-            className="flex flex-col items-stretch w-full min-w-0 overflow-x-clip"
-            style={{ gap: PAGE_BLOCK_STACK_GAP }}
-          >
-            <BlockAnimationRuntime contentKey={`${contentType}-${contentId}-${blocks.length}`} />
-            {blocks.map((block) => (
-              <div
-                key={block.id}
-                className="block-container"
-                style={{
-                  width: '100%',
-                  minWidth: 0,
-                  ...getBlockSiblingFlexItemStyles(block.styles, 'column'),
-                }}
-              >
-                <BlockRenderer
-                  block={block}
-                  isSelected={false}
-                  isPreview={true}
-                  onDuplicate={() => {}}
-                  onDelete={() => {}}
-                />
-              </div>
-            ))}
-          </div>
+          <PublicBlockStack
+            blocks={blocks}
+            design={design}
+            animationContentKey={`${contentType}-${contentId}-${blocks.length}`}
+            testId="preview-page-builder-content"
+          />
         )}
       </div>
     </div>

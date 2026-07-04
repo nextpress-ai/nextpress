@@ -20,8 +20,9 @@ const CounterBlock: React.FC<BlockConfig> = (block) => {
 };
 
 /**
- * Registry of all block components
- * Maps block names (e.g., "core/heading") to their React components
+ * Source of truth for block *output* on preview, publish, and SSR.
+ * Wired through `PublicBlockRenderer` / `renderBlocksToHtml`. Do not duplicate
+ * render logic in `client/.../PageBuilder/blocks/*` — that tree is editor-only.
  */
 export const BLOCK_COMPONENTS: Record<string, React.FC<BlockConfig>> = {
 	// Basic blocks
