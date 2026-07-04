@@ -46,3 +46,34 @@ export const DEFAULT_CONTENT: GalleryContent = {
   kind: 'structured',
   data: DEFAULT_DATA,
 };
+
+/**
+ * Reads gallery fields from either persisted `{ kind, data }` content or the
+ * unwrapped `GalleryData` returned by the block state accessor.
+ */
+export function readGalleryData(
+  raw: GalleryContent | GalleryData | BlockContent | undefined,
+): GalleryData {
+  if (!raw || typeof raw !== 'object') {
+    return DEFAULT_DATA;
+  }
+  if ('kind' in raw && raw.kind === 'structured' && 'data' in raw && raw.data) {
+    return raw.data as GalleryData;
+  }
+  return raw as GalleryData;
+}
+
+/**
+ * Keeps column count within the number of images so the grid never leaves
+ * empty columns after images are removed.
+ */
+export function resolveGalleryColumns(args: {
+  imageCount: number;
+  columns?: number;
+}): number {
+  const current = args.columns ?? DEFAULT_DATA.columns ?? 3;
+  if (args.imageCount <= 0) {
+    return current;
+  }
+  return Math.min(current, args.imageCount);
+}
