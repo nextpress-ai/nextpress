@@ -15,7 +15,7 @@ import {
   NPB_ICON_REFERENCE_ROW_MAX_CHARS,
   truncateWithEllipsis,
 } from "@/lib/truncate-with-ellipsis";
-import {
+import { splitButtonBlockStyles, mapButtonTextAlignToJustifyContent } from "@shared/button-block-styles";import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -56,19 +56,10 @@ interface ButtonRendererProps {
   content: ButtonContent;
   styles?: React.CSSProperties;
   isPreview?: boolean;
+  blockId?: string;
 }
 
-function mapTextAlignToJustifyContent(
-  textAlign: React.CSSProperties["textAlign"] | undefined,
-): React.CSSProperties["justifyContent"] | undefined {
-  if (!textAlign) return undefined;
-  if (textAlign === "left") return "flex-start";
-  if (textAlign === "center") return "center";
-  if (textAlign === "right") return "flex-end";
-  return undefined;
-}
-
-function ButtonRenderer({ content, styles, isPreview }: ButtonRendererProps) {
+function ButtonRenderer({ content, styles, isPreview, blockId }: ButtonRendererProps) {
   const textContent = content?.kind === 'text' ? content.value : '';
   const url = content?.url as string | undefined;
   const linkTarget = (content?.linkTarget as string | undefined) || (content?.target as string | undefined);
@@ -81,8 +72,16 @@ function ButtonRenderer({ content, styles, isPreview }: ButtonRendererProps) {
   const iconPosition = content?.iconPosition || 'left';
   const iconOnly = content?.iconOnly || false;
 
+  const { shellStyles, anchorStyles } = splitButtonBlockStyles(styles);
+
   const wrapperClass = extraClass || undefined;
-  const anchorClass = "wp-block-button__link wp-element-button";
+  const anchorClass = [
+    "wp-block-button__link",
+    "wp-element-button",
+    blockId ? `block-${blockId}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const iconElement = icon ? (
     <IconRenderer
@@ -96,7 +95,9 @@ function ButtonRenderer({ content, styles, isPreview }: ButtonRendererProps) {
 
   const label = iconOnly && icon ? (title || textContent || undefined) : undefined;
 
-  const justifyFromTextAlign = mapTextAlignToJustifyContent(styles?.textAlign);
+  const justifyFromTextAlign = mapButtonTextAlignToJustifyContent(
+    (shellStyles.textAlign ?? styles?.textAlign) as React.CSSProperties["textAlign"],
+  );
   const justifyContent =
     (styles?.justifyContent as React.CSSProperties["justifyContent"] | undefined) ??
     justifyFromTextAlign ??
@@ -109,6 +110,7 @@ function ButtonRenderer({ content, styles, isPreview }: ButtonRendererProps) {
     <BlockShell
       blockClass="wp-block-button"
       className={wrapperClass}
+      style={shellStyles}
       role="presentation"
       onClick={(e) => (isPreview ? undefined : e.preventDefault())}
     >
@@ -118,7 +120,7 @@ function ButtonRenderer({ content, styles, isPreview }: ButtonRendererProps) {
         rel={rel}
         title={label}
         style={{
-          ...styles,
+          ...anchorStyles,
           display: "inline-flex",
           alignItems,
           justifyContent,
@@ -330,8 +332,13 @@ const ButtonBlock = createBlockDefinition<ButtonContent>({
   },
   settings: ButtonSettings,
   hasSettings: true,
-  render: ({ content, styles, isPreview }) => (
-    <ButtonRenderer content={content} styles={styles} isPreview={isPreview} />
+  render: ({ content, styles, isPreview, value }) => (
+    <ButtonRenderer
+      content={content}
+      styles={styles}
+      isPreview={isPreview}
+      blockId={value.id}
+    />
   ),
 });
 

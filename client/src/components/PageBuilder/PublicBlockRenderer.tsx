@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { generateBlockAnimationCSS, getEntryAnimationAttributes } from "@shared/animation-utils";
 import { getBlockSiblingFlexItemStyles, getBlockStackLayerWrapperStyles, stripBlockContainerPlacementStyles, type BlockStackDirection } from "@shared/block-container-placement";
+import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
 import { generateBlockModifierCSS, resolveTokenMap } from "@/lib/tailwind-tokens";
 import { BLOCK_COMPONENTS } from "../../../../renderer/react/block-components";
 import { ClientIconBlock } from "./blocks/ClientIconBlock";
@@ -23,7 +24,10 @@ function getPublicBlockStyles(block: BlockConfig) {
 		: null;
 	const styles = stripBlockContainerPlacementStyles({ ...block.styles, ...(tokenResolution?.style || {}) });
 	const modifierCSS = tokenResolution?.modifierEntries?.length
-		? generateBlockModifierCSS(block.id, tokenResolution.modifierEntries) : "";
+		? generateBlockModifierCSS(block.id, tokenResolution.modifierEntries, {
+				selector: resolveButtonBlockModifierSelector(block),
+			})
+		: "";
 	const animationCSS = block.other?.animation ? generateBlockAnimationCSS(block.id, block.other.animation) : "";
 	return { css: [modifierCSS, animationCSS].filter(Boolean).join("\n"), styles };
 }

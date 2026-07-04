@@ -6,6 +6,7 @@ import path from "path";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { collectBlockModifierCSS } from "@shared/token-resolution";
+import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
 import { renderBlocksToHtml, getHydrationScript } from "../../renderer/to-html";
 import { PageTemplate } from "../../renderer/templates/page";
 import type { PageRenderOptions } from "../../renderer/templates/page";
@@ -328,7 +329,11 @@ export function createRenderRoutes(deps: Deps): Router {
 
 				// Collect modifier CSS rules (hover states, responsive) from token system
 				const modifierCssRules = blocks
-					.map((b) => collectBlockModifierCSS(b))
+					.map((b) =>
+						collectBlockModifierCSS(b, {
+							modifierSelector: resolveButtonBlockModifierSelector(b),
+						}),
+					)
 					.filter(Boolean)
 					.join("\n");
 

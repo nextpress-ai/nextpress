@@ -174,12 +174,13 @@ export { camelToKebab } from '@shared/token-resolution'
 export function resolveModifierEntry(
   blockId: string,
   entry: import('@shared/schema-types').TokenEntry,
-  resolvedValue: string
+  resolvedValue: string,
+  options?: { selector?: string },
 ): string {
   if (!entry.modifier) return ""
 
   const cssProp = camelToKebab(entry.property)
-  const selector = `.block-${blockId}`
+  const selector = options?.selector ?? `.block-${blockId}`
 
   // State modifier: hover, focus, active, etc.
   if (STATE_MODIFIER_MAP[entry.modifier]) {
@@ -201,10 +202,13 @@ export function resolveModifierEntry(
  */
 export function generateBlockModifierCSS(
   blockId: string,
-  modifierEntries: Array<{ entry: import('@shared/schema-types').TokenEntry; resolvedValue: string }>
+  modifierEntries: Array<{ entry: import('@shared/schema-types').TokenEntry; resolvedValue: string }>,
+  options?: { selector?: string },
 ): string {
   return modifierEntries
-    .map(({ entry, resolvedValue }) => resolveModifierEntry(blockId, entry, resolvedValue))
+    .map(({ entry, resolvedValue }) =>
+      resolveModifierEntry(blockId, entry, resolvedValue, options),
+    )
     .filter(Boolean)
     .join("\n")
 }
