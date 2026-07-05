@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { sanitizeHtml } from "@shared/sanitize-html";
+import { splitButtonBlockStyles, mapButtonTextAlignToJustifyContent } from "@shared/button-block-styles";
 import { getRenderProps, parseTextContent, parseStructuredContent } from "../render-helpers";
 
 // ─── SSR Icon Placeholder ──────────────────────────────────────────────────
@@ -176,6 +177,7 @@ export function ParagraphBlock(block: BlockConfig) {
  */
 export function ButtonBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
+	const { shellStyles, anchorStyles } = splitButtonBlockStyles(style);
 	const content = parseTextContent(block.content);
 	const text = (content.value as string) || "";
 	const link = (content.link as string) || (content.url as string) || "";
@@ -196,9 +198,19 @@ export function ButtonBlock(block: BlockConfig) {
 		.filter(Boolean)
 		.join(" ");
 
+	const justifyFromTextAlign = mapButtonTextAlignToJustifyContent(
+		(shellStyles.textAlign ?? style.textAlign) as React.CSSProperties["textAlign"],
+	);
+
 	const buttonStyle: React.CSSProperties = {
-		...(hasIcon ? { display: "inline-flex", alignItems: "center", gap: hasIcon && !iconOnly ? "6px" : undefined } : {}),
-		...style,
+		...anchorStyles,
+		display: hasIcon ? "inline-flex" : (anchorStyles.display as React.CSSProperties["display"]) ?? "inline-block",
+		alignItems: (anchorStyles.alignItems as React.CSSProperties["alignItems"]) ?? "center",
+		justifyContent:
+			(anchorStyles.justifyContent as React.CSSProperties["justifyContent"]) ??
+			justifyFromTextAlign ??
+			"center",
+		...(hasIcon ? { gap: hasIcon && !iconOnly ? "6px" : undefined } : {}),
 	};
 
 	const buttonChildren = (
@@ -209,30 +221,36 @@ export function ButtonBlock(block: BlockConfig) {
 		</>
 	);
 
+	const shellClassName = "wp-block-button";
+
 	if (link && link !== "#" && link.trim() !== "") {
 		return (
-			<a
-				href={link}
-				target={target}
-				rel={target === "_blank" ? "noopener noreferrer" : undefined}
+			<div className={shellClassName} style={shellStyles}>
+				<a
+					href={link}
+					target={target}
+					rel={target === "_blank" ? "noopener noreferrer" : undefined}
+					className={buttonClassName || undefined}
+					style={buttonStyle}
+					{...attributes}
+				>
+					{buttonChildren}
+				</a>
+			</div>
+		);
+	}
+
+	return (
+		<div className={shellClassName} style={shellStyles}>
+			<button
+				type="button"
 				className={buttonClassName || undefined}
 				style={buttonStyle}
 				{...attributes}
 			>
 				{buttonChildren}
-			</a>
-		);
-	}
-
-	return (
-		<button
-			type="button"
-			className={buttonClassName || undefined}
-			style={buttonStyle}
-			{...attributes}
-		>
-			{buttonChildren}
-		</button>
+			</button>
+		</div>
 	);
 }
 

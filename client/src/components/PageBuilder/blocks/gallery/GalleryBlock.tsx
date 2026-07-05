@@ -3,11 +3,9 @@ import { Image as ImageIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
 import {
-  type GalleryContent,
   type GalleryData,
   type GalleryImage,
   DEFAULT_DATA,
-  DEFAULT_CONTENT,
 } from "./gallery-model";
 import { GallerySettings } from "./gallery-settings";
 
@@ -16,13 +14,11 @@ import { GallerySettings } from "./gallery-settings";
 // ============================================================================
 
 interface GalleryRendererProps {
-  content: GalleryContent;
+  galleryData: GalleryData;
   styles?: React.CSSProperties;
 }
 
-function GalleryRenderer({ content, styles }: GalleryRendererProps) {
-  const galleryData = content?.kind === 'structured' ? (content.data as GalleryData) : DEFAULT_DATA;
-
+function GalleryRenderer({ galleryData, styles }: GalleryRendererProps) {
   const images: GalleryImage[] = Array.isArray(galleryData?.images)
     ? galleryData.images
     : [];
@@ -113,17 +109,19 @@ function GalleryRenderer({ content, styles }: GalleryRendererProps) {
 // BLOCK DEFINITION
 // ============================================================================
 
-const GalleryBlock = createBlockDefinition<GalleryContent>({
+const GalleryBlock = createBlockDefinition<GalleryData>({
   id: 'core/gallery',
   label: 'Gallery',
   icon: ImageIcon,
   description: 'Display multiple images in a rich gallery',
   category: 'media',
-  defaultContent: DEFAULT_CONTENT,
+  defaultContent: DEFAULT_DATA,
   defaultStyles: { width: '100%', margin: '1em 0' },
   settings: GallerySettings,
   hasSettings: true,
-  render: ({ content, styles }) => <GalleryRenderer content={content} styles={styles} />,
+  render: ({ content, styles }) => (
+    <GalleryRenderer galleryData={content ?? DEFAULT_DATA} styles={styles} />
+  ),
 });
 
 export default GalleryBlock;

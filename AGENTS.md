@@ -23,6 +23,12 @@
 
 ## React
 
+### Page builder: two render trees (do not mix them up)
+
+- **Editor canvas** (`client/src/components/PageBuilder/blocks/*`, `BlockRenderer`): DnD, settings, inline edit. Changes here affect the admin UI only.
+- **Preview, publish, SSR** (`renderer/react/*`, `BLOCK_COMPONENTS` in `renderer/react/block-components.tsx`): what visitors see. Wired via `PublicBlockStack` / `PublicBlockRenderer` and `renderBlocksToHtml`.
+- **Rule for agents:** visual or markup fixes for how a block appears on the site → edit `renderer/react/*` (and shared helpers both paths use). Editor blocks are not the publish path.
+
 - State logic → hooks. Components pure presentational. Containers handle state, pure components render props
 - Prop drilling max 2 levels. Use context/state management beyond
 - Check `data?.length > 0` before `.map()`. `useMemo`, `useCallback`, `React.memo`

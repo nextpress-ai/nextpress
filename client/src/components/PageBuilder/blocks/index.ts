@@ -82,6 +82,12 @@ if (import.meta.env.DEBUG_BUILDER) {
   });
 }
 
+/**
+ * Editor-only block registry (DnD, settings panels, inline edit).
+ * Preview and published pages do NOT use these components — they render via
+ * `renderer/react/*` (`BLOCK_COMPONENTS`). Change how a block *looks* on the
+ * site in the renderer; change editor UX here.
+ */
 export const blockRegistry: Record<string, BlockDefinition> = {
   // Gutenberg-compatible ids (deprecated aliases removed per new architecture)
   'core/heading': HeadingBlock,

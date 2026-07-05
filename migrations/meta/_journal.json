@@ -31,6 +31,13 @@
       "breakpoints": true
     },
     {
+      "idx": 4,
+      "version": "7",
+      "when": 1782900000000,
+      "tag": "0004_api_key_scopes",
+      "breakpoints": true
+    },
+    {
       "idx": 5,
       "version": "7",
       "when": 1783000000000,

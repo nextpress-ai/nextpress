@@ -22,6 +22,7 @@ import {
   hasContainerShellSizing,
   stackNeedsVerticalPlacementRoom,
 } from "@shared/block-container-placement";
+import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
 import {
   Tooltip,
   TooltipContent,
@@ -421,7 +422,9 @@ export default function BlockRenderer({
 
   // Generate modifier CSS (hover states, responsive) from token system
   const modifierCSS = tokenResolution?.modifierEntries?.length
-    ? generateBlockModifierCSS(block.id, tokenResolution.modifierEntries)
+    ? generateBlockModifierCSS(block.id, tokenResolution.modifierEntries, {
+        selector: resolveButtonBlockModifierSelector(block),
+      })
     : "";
 
   // Generate animation CSS (hover/loop animations)

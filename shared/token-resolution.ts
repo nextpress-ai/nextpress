@@ -41,6 +41,7 @@ export function resolveTokenMapForSSR(
 	blockId: string,
 	tokenMap: Record<string, TokenEntry>,
 	units: Record<string, string>,
+	options?: { modifierSelector?: string },
 ): { style: Record<string, string>; modifierCSS: string } {
 	const style: Record<string, string> = {};
 	const modifierEntries: Array<{ entry: TokenEntry; resolvedValue: string }> = [];
@@ -66,11 +67,12 @@ export function resolveTokenMapForSSR(
 		}
 	}
 
+	const modifierSelector = options?.modifierSelector ?? `.block-${blockId}`;
 	const modifierCSS = modifierEntries
 		.map(({ entry, resolvedValue }) => {
 			if (!entry.modifier) return "";
 			const cssProp = camelToKebab(entry.property);
-			const selector = `.block-${blockId}`;
+			const selector = modifierSelector;
 
 			if (STATE_MODIFIER_MAP[entry.modifier]) {
 				return `${selector}${STATE_MODIFIER_MAP[entry.modifier]} { ${cssProp}: ${resolvedValue}; }`;
@@ -91,12 +93,16 @@ export function resolveTokenMapForSSR(
 /**
  * Collects modifier CSS rules for a block's tokenMap entries for SSR injection.
  */
-export function collectBlockModifierCSS(block: BlockConfig): string {
+export function collectBlockModifierCSS(
+	block: BlockConfig,
+	options?: { modifierSelector?: string },
+): string {
 	if (!block.other?.tokenMap) return "";
 	const { modifierCSS } = resolveTokenMapForSSR(
 		block.id,
 		block.other.tokenMap,
 		block.other?.units || {},
+		options,
 	);
 	return modifierCSS;
 }

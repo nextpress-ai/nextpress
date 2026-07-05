@@ -11,11 +11,11 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Settings } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import {
-  type GalleryContent,
   type GalleryData,
   type GalleryImage,
   DEFAULT_DATA,
-  DEFAULT_CONTENT,
+  readGalleryData,
+  resolveGalleryColumns,
 } from "./gallery-model";
 
 // ============================================================================
@@ -28,37 +28,28 @@ interface GallerySettingsProps {
 }
 
 export function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
-  const { accessor, rerender } = useSettingsState({ block, onUpdate });
+  const { accessor, rerender } = useSettingsState<GalleryData>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_DATA,
+  });
   const [isPickerOpen, setPickerOpen] = useState(false);
 
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as GalleryContent)
-    : (block.content as GalleryContent) || DEFAULT_CONTENT;
-  const galleryData = content?.kind === 'structured' ? (content.data as GalleryData) : DEFAULT_DATA;
+  const galleryData = accessor
+    ? (accessor.getContent() as GalleryData)
+    : readGalleryData(block.content);
 
   const images: GalleryImage[] = Array.isArray(galleryData?.images)
     ? galleryData.images
     : [];
 
-  // Update handlers
   const updateContent = (updates: Partial<GalleryData>) => {
     if (accessor) {
-      const current = accessor.getContent() as GalleryContent;
-      const currentData = current?.kind === 'structured' ? (current.data as GalleryData) : DEFAULT_DATA;
-      accessor.setContent({
-        ...current,
-        kind: 'structured',
-        data: {
-          ...currentData,
-          ...updates,
-        },
-      } as GalleryContent);
+      const current = accessor.getContent() as GalleryData;
+      accessor.setContent({ ...current, ...updates });
       rerender();
     } else if (onUpdate) {
-      const currentData = block.content?.kind === 'structured'
-        ? (block.content.data as GalleryData)
-        : DEFAULT_DATA;
+      const currentData = readGalleryData(block.content);
       onUpdate({
         content: {
           kind: 'structured',
@@ -72,18 +63,27 @@ export function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
   };
 
   const updateImages = (newImages: GalleryImage[]) => {
-    updateContent({ images: newImages });
+    updateContent({
+      images: newImages,
+      columns: resolveGalleryColumns({
+        imageCount: newImages.length,
+        columns: galleryData?.columns,
+      }),
+    });
   };
 
   const addImage = (selectedImage: Media) => {
-    const newImage = {
-      id: selectedImage.id,
+    const currentImages = accessor
+      ? (accessor.getContent() as GalleryData).images ?? []
+      : images;
+    const newImage: GalleryImage = {
+      id: `${selectedImage.id}-${Date.now()}`,
       url: selectedImage.url,
       alt: selectedImage.alt || selectedImage.originalName || selectedImage.filename,
       caption: '',
       sizeSlug: 'large',
     };
-    updateImages([...images, newImage]);
+    updateImages([...currentImages, newImage]);
   };
 
   const removeImage = (index: number) => {
@@ -201,7 +201,7 @@ export function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
             <Label htmlFor="gallery-link-to">Link to</Label>
             <Select
               value={galleryData?.linkTo || "none"}
-              onValueChange={(value) => updateContent({ linkTo: value as any })}
+              onValueChange={(value) => updateContent({ linkTo: value as GalleryData['linkTo'] })}
             >
               <SelectTrigger className="h-9">
                 <SelectValue />
