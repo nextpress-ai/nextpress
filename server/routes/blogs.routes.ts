@@ -242,19 +242,20 @@ export function createBlogsRoutes(deps: Deps): Router {
           return res.status(404).json({ message: 'Blog not found' });
         }
 
-        // Delete associated blog page if it exists
-        const pageId = (blog as any).pageId;
-        if (pageId) {
-          const { err } = await safeTryAsync(async () => {
-            await models.pages.delete(pageId);
-          });
-          if (err) {
-            console.warn(`Failed to delete blog page ${pageId}:`, err);
-          }
-        }
+        const pageId = (blog as { pageId?: string | null }).pageId;
 
+        // Delete blog first — blogs.page_id references pages, so the page cannot be removed while the blog exists.
         await models.blogs.delete(id);
         hooks.doAction('delete_blog', id);
+
+        if (pageId) {
+          const { err: pageErr } = await safeTryAsync(async () => {
+            await models.pages.delete(pageId);
+          });
+          if (pageErr) {
+            console.warn(`Failed to delete blog page ${pageId}:`, pageErr);
+          }
+        }
 
         res.json({ message: 'Blog deleted successfully' });
       } catch (error) {

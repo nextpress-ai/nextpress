@@ -37,4 +37,36 @@ describe("createBlocksBuilder", () => {
 		expect(isBlockName("core/heading")).toBe(true);
 		expect(isBlockName("unknown/block")).toBe(false);
 	});
+
+	it("builds icon blocks with lucide metadata", () => {
+		const block = blocks.icon({ iconName: "search", size: 20, color: "#4285f4", label: "Search" });
+		expect(block.name).toBe("core/icon");
+		expect(block.content).toMatchObject({
+			kind: "structured",
+			data: {
+				icon: {
+					iconSet: "lucide",
+					iconName: "search",
+					size: 20,
+					color: "#4285f4",
+				},
+				label: "Search",
+			},
+		});
+	});
+
+	it("builds button blocks with text content shape", () => {
+		const block = blocks.button({
+			text: "Google Search",
+			url: "https://www.google.com",
+			linkTarget: "_blank",
+		});
+		expect(block.name).toBe("core/button");
+		expect(block.content).toEqual({
+			kind: "text",
+			value: "Google Search",
+			url: "https://www.google.com",
+			linkTarget: "_blank",
+		});
+	});
 });

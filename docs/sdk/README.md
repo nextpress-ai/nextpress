@@ -14,7 +14,7 @@ Official TypeScript SDK for the NextPress CMS REST API. Use it for scripts, auto
 | [Architecture](./architecture.md) | Concept | Package layout, factory pattern, design constraints |
 | [Authentication](./authentication.md) | Guide / Reference | API keys, scopes, multi-site, session dev mode |
 | [Resources](./resources.md) | Reference | Every namespace, method, and HTTP endpoint |
-| [Page builder](./page-builder.md) | Guide | `pageBuilder`, editor session, undo/redo, publish |
+| [Page builder](./page-builder.md) | Guide | Editor session, resource workflows, undo/redo, publish |
 | [Blocks](./blocks.md) | Reference | Block helpers, `BlockConfig`, all 35 block types |
 | [Preview](./preview.md) | Guide | Authenticated preview and share links |
 | [Errors and validation](./errors-and-validation.md) | Reference | `NextpressError`, Zod input validation |
@@ -28,7 +28,7 @@ import { createNextpress } from "@nextpress-org/sdk";
 const nextpress = createNextpress({
   baseUrl: "https://cms.example.com",
   apiKey: process.env.NEXPRESS_API_KEY!,
-  siteId: "optional-site-uuid",
+  siteId: "your-site-uuid",
 });
 ```
 
@@ -42,7 +42,7 @@ const nextpress = createNextpress({
 - Validates all inputs with Zod before network calls
 - Exposes resource namespaces (`pages`, `posts`, `settings`, etc.)
 - Builds page builder block trees locally (no separate blocks API)
-- Provides high-level `pageBuilder` and `createEditorSession` workflows
+- Provides `createEditorSession` and resource methods for page builder workflows
 
 ## What the SDK does not do
 

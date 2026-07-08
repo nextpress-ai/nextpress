@@ -76,11 +76,12 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 		type: "block",
 		category: "basic",
 		defaultContent: () =>
-			structured({
-				text: "Click me",
+			({
+				kind: "text",
+				value: "Click me",
 				url: "#",
 				linkTarget: "_self",
-			}),
+			}) as import("../types/domain.js").BlockContent,
 		defaultStyles: {
 			backgroundColor: "#007cba",
 			color: "#ffffff",

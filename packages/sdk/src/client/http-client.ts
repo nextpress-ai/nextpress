@@ -1,5 +1,6 @@
 import type { HttpClientConfig, RequestOptions } from "../types/client.js";
 import { buildUrl, withSiteId } from "./build-url.js";
+import type { HttpClient } from "./http-client.types.js";
 import { NextpressError } from "./nextpress-error.js";
 
 const API_KEY_HEADER = "Authorization";
@@ -8,7 +9,7 @@ const API_KEY_HEADER = "Authorization";
  * Creates the low-level HTTP client used by all SDK resources.
  * Sends the API key as a Bearer token on every request.
  */
-export function createHttpClient(config: HttpClientConfig) {
+export function createHttpClient(config: HttpClientConfig): HttpClient {
 	const request = async <TResponse>(
 		path: string,
 		options: RequestOptions = {},
@@ -111,9 +112,10 @@ export function createHttpClient(config: HttpClientConfig) {
 	};
 
 	return {
+		/** Single entry point so resources share auth, timeout, and error normalization. */
 		request,
 		config,
 	};
 }
 
-export type HttpClient = ReturnType<typeof createHttpClient>;
+export type { HttpClient } from "./http-client.types.js";

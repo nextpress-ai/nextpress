@@ -8,7 +8,7 @@ import {
 } from "@shared/api-key-scopes";
 import type { Deps } from "./shared/deps";
 import { asyncHandler } from "./shared/async-handler";
-import { getRequestAuthSiteId, getRequestAuthUserId, requireSessionAuth } from "../auth";
+import { getRequestAuthUserId, requireSessionAuth } from "../auth";
 import { db } from "../db";
 import { apiKeys } from "@shared/schema";
 import { generateApiKeyMaterial, hashSecret } from "../lib/sdk-auth";
@@ -92,15 +92,15 @@ export function createApiKeysRoutes(deps: Deps): Router {
 			}
 
 			const siteId =
-				typeof req.body?.siteId === "string"
-					? req.body.siteId
-					: getRequestAuthSiteId(req) ?? null;
+				typeof req.body?.siteId === "string" ? req.body.siteId.trim() : "";
 
-			if (siteId) {
-				const accessible = await resolveAccessibleSites({ models: deps.models, userId });
-				if (!accessible.some((site) => site.id === siteId)) {
-					return res.status(403).json({ message: "You do not have access to that site" });
-				}
+			if (!siteId) {
+				return res.status(400).json({ message: "Select a site for this API key" });
+			}
+
+			const accessible = await resolveAccessibleSites({ models: deps.models, userId });
+			if (!accessible.some((site) => site.id === siteId)) {
+				return res.status(403).json({ message: "You do not have access to that site" });
 			}
 
 			const expiresInDays =
@@ -150,6 +150,52 @@ export function createApiKeysRoutes(deps: Deps): Router {
 				scopes: normalizeApiKeyScopes(record.scopes),
 				expiresAt: record.expiresAt,
 				createdAt: record.createdAt,
+			});
+		}),
+	);
+
+	/** PATCH /:id — update scopes on an active API key. */
+	router.patch(
+		"/:id",
+		asyncHandler(async (req, res) => {
+			const userId = getRequestAuthUserId(req);
+			if (!userId) {
+				return res.status(401).json({ message: "Unauthorized" });
+			}
+
+			const scopes = normalizeApiKeyScopes(req.body?.scopes);
+			if (scopes.length === 0) {
+				return res.status(400).json({ message: "Select at least one permission" });
+			}
+
+			const [updated] = await db
+				.update(apiKeys)
+				.set({ scopes })
+				.where(
+					and(
+						eq(apiKeys.id, req.params.id),
+						eq(apiKeys.userId, userId),
+						isNull(apiKeys.revokedAt),
+					),
+				)
+				.returning({
+					id: apiKeys.id,
+					name: apiKeys.name,
+					keyPrefix: apiKeys.keyPrefix,
+					siteId: apiKeys.siteId,
+					scopes: apiKeys.scopes,
+					expiresAt: apiKeys.expiresAt,
+					lastUsedAt: apiKeys.lastUsedAt,
+					createdAt: apiKeys.createdAt,
+				});
+
+			if (!updated) {
+				return res.status(404).json({ message: "API key not found" });
+			}
+
+			res.json({
+				...updated,
+				scopes: normalizeApiKeyScopes(updated.scopes),
 			});
 		}),
 	);

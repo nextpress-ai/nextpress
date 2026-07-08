@@ -1,18 +1,39 @@
+export { buildGoogleSearchPageBlocks } from "./blocks/google-search-layout.js";
 export { BLOCK_DEFINITIONS, BLOCK_NAMES, isBlockName } from "./blocks/block-definitions.js";
-export type { BlockDefinitionMeta, BlockName, BlocksBuilder } from "./blocks/build-block.js";
-export {
-	createBlockId,
-	createBlocksBuilder,
+export type {
+	BaseBlockParams,
+	BlockDefinitionMeta,
+	BlockName,
+	BlocksBuilder,
+	ButtonBlockParams,
+	CustomBlockParams,
+	HeadingBlockParams,
+	HtmlBlockParams,
+	IconBlockParams,
+	IconReference,
+	ImageBlockParams,
+	MarkdownBlockParams,
+	StructuredBlockParams,
+	TextBlockParams,
 } from "./blocks/build-block.js";
+export { createBlockId } from "./blocks/build-block.js";
+export type { HttpClient } from "./client/http-client.js";
 export { isNextpressError, NextpressError } from "./client/nextpress-error.js";
 export type { NextpressClient } from "./create-nextpress.js";
 export { createNextpress } from "./create-nextpress.js";
-export type { PageBuilder } from "./page-builder/create-page-builder.js";
-export { createPageBuilder } from "./page-builder/create-page-builder.js";
-export type { EditorSession } from "./editor/create-editor-session.js";
-export { createEditorSession } from "./editor/create-editor-session.js";
+export type { EventBus, EventEntity, EventSetFn, NextpressEventContext } from "./events/event-bus.types.js";
+export type {
+	NextpressEventHandler,
+	NextpressEventMap,
+	NextpressEventName,
+	SavedAction,
+} from "./events/nextpress-events.js";
+export type {
+	EditorContentType,
+	EditorLoadedContent,
+	EditorSession,
+} from "./editor/create-editor-session.js";
 export type { UndoStack } from "./editor/create-undo-stack.js";
-export { createUndoStack } from "./editor/create-undo-stack.js";
 export type {
 	AuthResource,
 	BlogsResource,

@@ -54,7 +54,12 @@ export default defineConfig({
 					include: [
 						"packages/sdk/src/**/*.test.{ts,tsx}",
 					],
-					exclude: ["node_modules", "dist", "build"],
+					exclude: [
+						"node_modules",
+						"dist",
+						"build",
+						"packages/sdk/src/test/integration/**/*.test.ts",
+					],
 				},
 			},
 		],

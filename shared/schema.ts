@@ -128,7 +128,9 @@ export const apiKeys = pgTable(
 		userId: uuid("user_id")
 			.references(() => users.id, { onDelete: "cascade" })
 			.notNull(),
-		siteId: uuid("site_id").references(() => sites.id, { onDelete: "cascade" }),
+		siteId: uuid("site_id")
+			.references(() => sites.id, { onDelete: "cascade" })
+			.notNull(),
 		scopes: jsonb("scopes").notNull().default([]),
 		expiresAt: timestamp("expires_at"),
 		lastUsedAt: timestamp("last_used_at"),

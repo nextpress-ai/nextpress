@@ -28,7 +28,7 @@
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:bun": "bun vitest run",
-    "test:live": "LIVE_TEST=1 vitest run --config vitest.live.config.ts",
+    "test:integration": "pnpm build && vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",

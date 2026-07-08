@@ -27,7 +27,7 @@ import { createNextpress } from "@nextpress-org/sdk";
 const nextpress = createNextpress({
   baseUrl: "https://cms.example.com",
   apiKey: process.env.NEXPRESS_API_KEY!,
-  siteId: "your-site-uuid", // optional but recommended for multi-site
+  siteId: "your-site-uuid", // same site you chose when creating the API key
 });
 ```
 
@@ -37,7 +37,7 @@ const nextpress = createNextpress({
 |--------|----------|---------|-------------|
 | `baseUrl` | yes | — | NextPress instance URL, no trailing slash required |
 | `apiKey` | yes | — | `npk_live_…` key from the dashboard |
-| `siteId` | no | — | Default site UUID merged into scoped requests |
+| `siteId` | yes | — | Site UUID the API key belongs to |
 | `fetch` | no | `globalThis.fetch` | Custom fetch (cookies, proxies, mocks) |
 | `timeout` | no | `30000` | Request timeout in milliseconds |
 
@@ -76,9 +76,9 @@ const about = await nextpress.public.page({ slug: "about" });
 
 ## Multi-site installs
 
-Pass `siteId` in factory options. The HTTP client merges it into query parameters on list/read endpoints unless overridden per call.
+Every API key belongs to one site. Choose the site when you create the key, then pass the same `siteId` to `createNextpress`. The HTTP client merges it into query parameters on list/read endpoints unless overridden per call.
 
-Site-bound API keys reject requests when the requested `siteId` does not match the key's site. Use the same site ID in the SDK and when creating the key.
+Keys reject requests when the requested site does not match the key's site.
 
 ## Next steps
 

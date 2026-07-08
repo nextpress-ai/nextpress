@@ -1,8 +1,10 @@
 import { createBlocksBuilder } from "./blocks/build-block.js";
 import { createHttpClient } from "./client/http-client.js";
 import { parseInput } from "./client/validate-input.js";
+import type { NextpressClient } from "./create-nextpress.types.js";
 import { createEditorSession } from "./editor/create-editor-session.js";
-import { createPageBuilder } from "./page-builder/create-page-builder.js";
+import { createEventBus } from "./events/create-event-bus.js";
+import { createInstrumentedHttpClient } from "./events/create-instrumented-http-client.js";
 import { createAuthResource } from "./resources/auth.js";
 import { createBlogsResource } from "./resources/blogs.js";
 import { createCommentsResource } from "./resources/comments.js";
@@ -29,21 +31,27 @@ import type { NextpressOptions } from "./types/client.js";
 
 /**
  * Creates a typed NextPress SDK client covering dashboard and page builder workflows.
+ *
+ * **One way to work with content:**
+ * - Scripts and automation: `client.pages`, `client.posts`, `client.templates`, `client.preview`
+ * - Interactive editing (undo/redo): `client.createEditorSession()`
  */
-export function createNextpress(options: NextpressOptions) {
+export function createNextpress(options: NextpressOptions): NextpressClient {
 	const parsed = parseInput({
 		schema: nextpressOptionsSchema,
 		input: options,
 		label: "createNextpress options",
 	});
 
-	const http = createHttpClient({
+	const events = createEventBus();
+	const baseHttp = createHttpClient({
 		baseUrl: parsed.baseUrl,
 		apiKey: parsed.apiKey,
 		siteId: parsed.siteId,
 		fetch: options.fetch ?? globalThis.fetch.bind(globalThis),
 		timeout: parsed.timeout ?? 30_000,
 	});
+	const http = createInstrumentedHttpClient({ client: baseHttp, emit: events.emit });
 
 	const blocks = createBlocksBuilder();
 	const pages = createPagesResource({ http });
@@ -51,9 +59,12 @@ export function createNextpress(options: NextpressOptions) {
 	const templates = createTemplatesResource({ http });
 	const preview = createPreviewResource({ http, baseUrl: parsed.baseUrl });
 
-	const editorDeps = { pages, posts, templates, preview, blocks };
+	const editorDeps = { pages, posts, templates, preview, blocks, emit: events.emit };
 
 	return {
+		on: events.on,
+		off: events.off,
+		once: events.once,
 		http,
 		blocks,
 		config: {
@@ -81,11 +92,10 @@ export function createNextpress(options: NextpressOptions) {
 		import: createImportResource({ http }),
 		system: createSystemResource({ http }),
 		health: createHealthResource({ http }),
-		pageBuilder: createPageBuilder({ pages, posts, templates, preview, blocks }),
 		/** Stateful editor with undo/redo, save, publish, and expiring preview links. */
 		createEditorSession: (opts?: { coalesceMs?: number }) =>
 			createEditorSession({ ...editorDeps, coalesceMs: opts?.coalesceMs }),
 	};
 }
 
-export type NextpressClient = ReturnType<typeof createNextpress>;
+export type { NextpressClient } from "./create-nextpress.types.js";

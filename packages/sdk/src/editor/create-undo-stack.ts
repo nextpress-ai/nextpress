@@ -1,8 +1,10 @@
+import type { UndoStack } from "./undo-stack.types.js";
+
 /**
  * In-memory undo/redo stack mirroring the dashboard `useUndoRedo` hook.
  * Keeps up to 50 snapshots; supports coalesced replace for rapid edits.
  */
-export function createUndoStack<T>(initialState: T, maxHistory = 50) {
+export function createUndoStack<T>(initialState: T, maxHistory = 50): UndoStack<T> {
 	let history: T[] = [initialState];
 	let currentIndex = 0;
 
@@ -56,15 +58,23 @@ export function createUndoStack<T>(initialState: T, maxHistory = 50) {
 	};
 
 	return {
+		/** Read the current snapshot without mutating history. */
 		getState,
+		/** Record a new undo step after discrete editor actions. */
 		pushState,
+		/** Merge rapid edits into the current step instead of flooding history. */
 		replaceCurrentState,
+		/** Step back one snapshot when the user triggers undo. */
 		undo,
+		/** Step forward after undo without reloading content. */
 		redo,
+		/** Enable undo controls only when prior snapshots exist. */
 		canUndo,
+		/** Enable redo controls only after an undo. */
 		canRedo,
+		/** Discard history after load or version restore. */
 		resetState,
 	};
 }
 
-export type UndoStack<T> = ReturnType<typeof createUndoStack<T>>;
+export type { UndoStack } from "./undo-stack.types.js";

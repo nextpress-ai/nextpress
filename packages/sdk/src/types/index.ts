@@ -8,10 +8,33 @@ export type {
 	RequestOptions,
 } from "./client.js";
 export type {
+	CreatePreviewShareTokenInput,
+	EditorLoadParams,
+	EditorPreviewLinkParams,
+	EditorSaveParams,
+	EditorSessionOptions,
+	PreviewContentType,
+	PreviewShareUrlParams,
+	PreviewSharedContentParams,
+	PublicSlugParams,
+	ResourceIdParams,
+	RestorePageVersionParams,
+	VerifyDomainParams,
+} from "./common-params.js";
+export type {
+	NextpressEventHandler,
+	NextpressEventMap,
+	NextpressEventName,
+	SavedAction,
+} from "../events/nextpress-events.js";
+export type { EventEntity, EventSetFn, NextpressEventContext } from "../events/event-context.js";
+export type {
 	ApiEnvelope,
 	AuthUser,
 	BlockConfig,
 	BlockContent,
+	IconReference,
+	TextBlockContent,
 	Blog,
 	Comment,
 	ContentStatus,

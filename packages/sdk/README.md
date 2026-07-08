@@ -22,7 +22,7 @@ import { createNextpress } from "@nextpress-org/sdk";
 const nextpress = createNextpress({
   baseUrl: "https://cms.example.com",
   apiKey: process.env.NEXPRESS_API_KEY!,
-  siteId: "optional-site-uuid",
+  siteId: "your-site-uuid",
 });
 
 // Create a page with blocks
@@ -58,11 +58,12 @@ When you create a key in the dashboard, you choose what it can do. Common preset
 
 | Preset | What it can do |
 |--------|----------------|
-| Content editor | Read and edit pages, posts, media, templates, and create preview links |
+| Content editor | Read and edit all content types, plus preview links |
+| Posts editor | Create and edit blog posts, plus preview links |
 | Read only | View content and settings without making changes |
 | Full access | All API permissions (key management stays dashboard-only) |
 
-Write permissions include read (a key with `content:write` can also read content). Preview share links need **Preview links**; viewing authenticated previews also needs **Read content**.
+Write permissions include read for the same resource (`posts:write` includes `posts:read`). Preview share links need **Preview links**; viewing authenticated previews needs read access for that content type (for example `pages:read` for page previews).
 
 If the API rejects a call because the key lacks permission, the response is `403` with `code: "API_KEY_SCOPE_DENIED"` and a `requiredScopes` list. The SDK surfaces this on `NextpressError.code`:
 
@@ -79,8 +80,6 @@ try {
 ```
 
 Site-bound keys only work for the site you selected when creating the key. Pass the same `siteId` in the SDK factory options.
-
-For local development before you have a key, use a custom `fetch` with session cookies in live tests (`packages/sdk/src/test/live/`). Sign-in and sign-up stay in the dashboard, not the SDK.
 
 ## Editor session (undo/redo, publish, preview links)
 
@@ -112,11 +111,63 @@ const { history } = await editor.getHistory();
 await editor.restoreVersion({ version: history[0].version });
 ```
 
+## One way to work with content
+
+| Goal | Use |
+|------|-----|
+| Scripts, CI, batch jobs | `nextpress.pages`, `nextpress.posts`, `nextpress.templates`, `nextpress.preview` |
+| Interactive editing with undo/redo | `nextpress.createEditorSession()` |
+| Read published site content | `nextpress.public.*` (by slug) |
+| Read draft content (authenticated) | `nextpress.preview.*` (by id) |
+
+Publish and unpublish go through `update({ status })` on resources, or `editor.publish()` / `editor.unpublish()` in a session.
+
+## Events
+
+Subscribe to typed lifecycle hooks on the client:
+
+```ts
+nextpress.on("page-created", ({ page }) => {
+  page.set({ title: `${page.title} (copy)` });
+});
+
+// Side effect only — never call page.set
+nextpress.on("page-created", ({ page }) => {
+  console.log(`New page: ${page.slug}`);
+});
+
+nextpress.on("post-saved", ({ post, action }) => {
+  post.set((current) => ({ title: `${current.title} [${action}]` }));
+});
+
+const editor = nextpress.createEditorSession();
+await editor.load({ type: "page", id: pageId });
+
+nextpress.on("editor-saved", ({ data }) => {
+  data.set({ title: "Auto-named page" });
+});
+```
+
+Common events: `post-saved`, `page-saved`, `post-published`, `page-published`, `preview-link-created`, `editor-loaded`, `editor-saved`.
+
+Unsubscribe with the function returned from `on`, or call `nextpress.off("post-saved", handler)`.
+
+Every subject entity (`page`, `post`, `data`, …) has its own `.set()`. Call `page.set(...)` to mutate that entity for later handlers and for the resource return value. Skip `.set` when you only need a side effect.
+
+Need to change something else? Call the SDK directly in the handler — events only reshape the subject of that event, not unrelated resources:
+
+```ts
+nextpress.on("page-created", async ({ page }) => {
+  page.set({ title: "Landing" });
+  await nextpress.posts.create({ title: "Launch post", blogId: "…" });
+});
+```
+
 ## Resources
 
 | Namespace | Methods | Scope (read / write) |
 |-----------|---------|----------------------|
-| `nextpress.pageBuilder` | `loadPage`, `savePage`, `savePageBlocks`, `publishPage`, `previewPage`, … | content |
+| `nextpress.createEditorSession()` | `load`, `save`, `publish`, undo/redo, preview links | content |
 | `nextpress.posts` | `list`, `get`, `create`, `update`, `delete` | content |
 | `nextpress.pages` | `list`, `get`, `create`, `update`, `delete`, history/restore | content |
 | `nextpress.blogs` | `list`, `get`, `create`, `update`, `delete` | content |
@@ -142,15 +193,15 @@ await editor.restoreVersion({ version: history[0].version });
 
 ## Page builder workflows
 
-Use `nextpress.pageBuilder` for dashboard-parity save/publish flows:
+Use resources for one-shot automation, or an editor session when you need undo/redo:
 
 ```ts
-const page = await nextpress.pageBuilder.createPageFromTemplate({
-  templateId: "…",
+const page = await nextpress.pages.create({
   title: "Landing",
+  blocks: nextpress.blocks.starterLayout(),
 });
 
-await nextpress.pageBuilder.savePageBlocks({
+await nextpress.pages.update({
   id: page.id,
   blocks: [
     nextpress.blocks.heading({ text: "Welcome", level: 1 }),
@@ -158,8 +209,13 @@ await nextpress.pageBuilder.savePageBlocks({
   ],
 });
 
-await nextpress.pageBuilder.publishPage({ id: page.id });
-const preview = await nextpress.pageBuilder.previewPage({ id: page.id });
+await nextpress.pages.update({
+  id: page.id,
+  status: "publish",
+  publishedAt: new Date().toISOString(),
+});
+
+const preview = await nextpress.preview.page({ id: page.id });
 ```
 
 ## Blocks
@@ -221,8 +277,8 @@ From `packages/sdk`:
 ```bash
 pnpm install
 pnpm build
-pnpm sdk:test          # or: bun vitest run
-pnpm test:live         # requires dev server + LIVE_TEST=1
+pnpm test              # unit tests only (no network)
+pnpm test:integration  # real server; set src/test/integration/integration.config.ts first
 pnpm lint              # biome check
 ```
 

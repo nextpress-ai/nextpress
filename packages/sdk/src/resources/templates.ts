@@ -15,8 +15,17 @@ import type {
 	UpdateTemplateInput,
 } from "../types/inputs.js";
 
+export type TemplatesResource = {
+	list: (params?: ListTemplatesQuery) => Promise<PaginatedResponse<Template, "templates">>;
+	get: (params: { id: string }) => Promise<Template>;
+	create: (input: CreateTemplateInput) => Promise<Template>;
+	duplicate: (params: { id: string } & DuplicateTemplateInput) => Promise<Template>;
+	update: (params: { id: string } & UpdateTemplateInput) => Promise<Template>;
+	delete: (params: { id: string }) => Promise<DeleteMessage>;
+};
+
 /** Templates for headers, footers, pages, posts, and popups. */
-export function createTemplatesResource({ http }: { http: HttpClient }) {
+export function createTemplatesResource({ http }: { http: HttpClient }): TemplatesResource {
 	return {
 		list: async (
 			params: ListTemplatesQuery = {},
@@ -76,5 +85,3 @@ export function createTemplatesResource({ http }: { http: HttpClient }) {
 		},
 	};
 }
-
-export type TemplatesResource = ReturnType<typeof createTemplatesResource>;

@@ -109,6 +109,7 @@ describe("performance", () => {
 				createNextpress({
 					baseUrl: "https://cms.example.com",
 					apiKey: "np_perf_key",
+					siteId: "00000000-0000-4000-8000-000000000001",
 					fetch: fetchMock,
 				});
 			},
@@ -134,6 +135,7 @@ describe("performance", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: "np_perf_key",
+			siteId: "00000000-0000-4000-8000-000000000001",
 			fetch: fetchMock,
 		});
 

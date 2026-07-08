@@ -1,14 +1,37 @@
 /**
  * Builds a sample landing page via the SDK and prints preview URLs.
+ * Requires integration.config.ts (copy from integration.config.example.ts).
+ *
  * Run: pnpm exec tsx scripts/build-demo-site.ts
  */
-import { createLiveClient } from "../src/test/live/bootstrap-live-client.js";
+import { loadIntegrationTestConfig } from "../src/test/integration/config.js";
+import { loadShippedSdk } from "../src/test/integration/load-shipped-sdk.js";
+import { waitForServerReady } from "../src/test/integration/wait-for-server.js";
 
 const runId = Date.now().toString(36);
 
 async function main(): Promise<void> {
-	const { client, config } = await createLiveClient();
-	const { blocks, pageBuilder } = client;
+	const config = await loadIntegrationTestConfig();
+	if (!config) {
+		throw new Error(
+			"Copy src/test/integration/integration.config.example.ts to integration.config.ts, set enabled: true, and add your API key.",
+		);
+	}
+
+	await waitForServerReady({
+		baseUrl: config.baseUrl,
+		timeoutMs: config.serverReadyTimeoutMs,
+	});
+
+	const { sdk } = await loadShippedSdk();
+	const client = sdk.createNextpress({
+		baseUrl: config.baseUrl,
+		apiKey: config.apiKey,
+		siteId: config.siteId,
+		timeout: config.requestTimeoutMs,
+	});
+
+	const { blocks } = client;
 
 	const landingBlocks = [
 		blocks.cover({
@@ -73,8 +96,8 @@ async function main(): Promise<void> {
 		blocks: landingBlocks,
 	});
 
-	await pageBuilder.savePageBlocks({ id: page.id, blocks: landingBlocks });
-	const previewPayload = await pageBuilder.previewPage({ id: page.id });
+	await client.pages.update({ id: page.id, blocks: landingBlocks });
+	const previewPayload = await client.preview.page({ id: page.id });
 
 	const baseUrl = config.baseUrl.replace(/\/+$/, "");
 	const previewUrl = `${baseUrl}/preview/page/${page.id}`;

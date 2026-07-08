@@ -128,7 +128,12 @@ export async function requireAuth(
 
 		attachRequestAuth(req, authContext);
 
-		if (authContext.method === "apiKey" && authContext.siteId) {
+		if (authContext.method === "apiKey") {
+			if (!authContext.siteId) {
+				res.status(403).json({ message: "This API key is not bound to a site" });
+				return;
+			}
+
 			const requestedSiteId = readRequestSiteId(req);
 			if (requestedSiteId && requestedSiteId !== authContext.siteId) {
 				res.status(403).json({ message: "This API key cannot access the requested site" });

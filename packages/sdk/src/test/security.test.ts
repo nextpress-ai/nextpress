@@ -10,12 +10,13 @@ describe("security", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: SECRET_KEY,
+			siteId: mockIds.siteId,
 			fetch: vi.fn() as typeof fetch,
 		});
 
 		expect(nextpress.config).toEqual({
 			baseUrl: "https://cms.example.com",
-			siteId: undefined,
+			siteId: mockIds.siteId,
 		});
 		expect(JSON.stringify(nextpress.config)).not.toContain(SECRET_KEY);
 	});
@@ -38,6 +39,7 @@ describe("security", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: SECRET_KEY,
+			siteId: mockIds.siteId,
 			fetch: fetchMock,
 		});
 
@@ -92,6 +94,7 @@ describe("security", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: SECRET_KEY,
+			siteId: mockIds.siteId,
 			fetch: fetchMock,
 		});
 
@@ -106,6 +109,7 @@ describe("security", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: SECRET_KEY,
+			siteId: mockIds.siteId,
 			fetch: fetchMock as typeof fetch,
 		});
 
@@ -128,6 +132,7 @@ describe("security", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: SECRET_KEY,
+			siteId: mockIds.siteId,
 			fetch: fetchMock as typeof fetch,
 		});
 
@@ -149,6 +154,7 @@ describe("security", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: SECRET_KEY,
+			siteId: mockIds.siteId,
 			fetch: fetchMock,
 		});
 
@@ -165,6 +171,7 @@ describe("security", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: SECRET_KEY,
+			siteId: mockIds.siteId,
 			fetch: fetchMock as typeof fetch,
 		});
 
@@ -189,7 +196,7 @@ describe("security", () => {
 						{
 							message: "This API key does not have permission for this action",
 							code: "API_KEY_SCOPE_DENIED",
-							requiredScopes: ["content:write"],
+							requiredScopes: ["pages:write"],
 						},
 						{ status: 403 },
 					),
@@ -199,6 +206,7 @@ describe("security", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: SECRET_KEY,
+			siteId: mockIds.siteId,
 			fetch: fetchMock,
 		});
 

@@ -1,4 +1,4 @@
-/** Generates a unique block instance ID. Uses crypto.randomUUID when available. */
+/** Generates unique block IDs so sibling blocks never collide in the tree. */
 export function createBlockId(): string {
 	if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
 		return crypto.randomUUID();

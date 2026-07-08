@@ -1,9 +1,33 @@
 import type { HttpClient } from "../client/http-client.js";
 import { parseInput } from "../client/validate-input.js";
 import { createPreviewTokenSchema, idParamSchema } from "../schemas/index.js";
+import type {
+	CreatePreviewShareTokenInput,
+	PreviewContentType,
+	PreviewShareUrlParams,
+} from "../types/common-params.js";
 import type { Page, Post, PreviewShareToken, Template } from "../types/domain.js";
 
-type PreviewContentType = "page" | "post" | "template";
+export type { CreatePreviewShareTokenInput, PreviewContentType };
+
+export type PreviewResource = {
+	/** Render draft post content for authenticated preview panes. */
+	post: (params: { id: string }) => Promise<Post>;
+	/** Render draft page content for authenticated preview panes. */
+	page: (params: { id: string }) => Promise<Page>;
+	/** Render draft template content for authenticated preview panes. */
+	template: (params: { id: string }) => Promise<Template>;
+	/** Mint a time-limited link so stakeholders can review without logging in. */
+	createShareToken: (input: CreatePreviewShareTokenInput) => Promise<PreviewShareToken>;
+	/** Resolve shared preview content using only the token (no API key). */
+	getShared: (params: {
+		contentType: PreviewContentType;
+		id: string;
+		token: string;
+	}) => Promise<Page | Post | Template>;
+	/** Build the browser URL for a share token when constructing links client-side. */
+	buildSharePreviewUrl: (params: PreviewShareUrlParams) => string;
+};
 
 /** Creates the preview resource for draft/preview rendering and share links. */
 export function createPreviewResource({
@@ -12,7 +36,8 @@ export function createPreviewResource({
 }: {
 	http: HttpClient;
 	baseUrl: string;
-}) {
+}): PreviewResource {
+	/** Assemble a shareable preview URL when the API omits previewUrl in the token response. */
 	const buildSharePreviewUrl = ({
 		contentType,
 		contentId,
@@ -25,19 +50,19 @@ export function createPreviewResource({
 		`${baseUrl.replace(/\/+$/, "")}/preview/${contentType}/${contentId}?token=${encodeURIComponent(token)}`;
 
 	return {
-		/** Preview a post by UUID (requires API key or session). */
+		/** Render draft post content for authenticated preview panes. */
 		post: async ({ id }: { id: string }): Promise<Post> => {
 			parseInput({ schema: idParamSchema, input: { id }, label: "preview.post id" });
 			return http.request(`/api/preview/post/${id}`);
 		},
 
-		/** Preview a page by UUID (requires API key or session). */
+		/** Render draft page content for authenticated preview panes. */
 		page: async ({ id }: { id: string }): Promise<Page> => {
 			parseInput({ schema: idParamSchema, input: { id }, label: "preview.page id" });
 			return http.request(`/api/preview/page/${id}`);
 		},
 
-		/** Preview a template by UUID (requires API key or session). */
+		/** Render draft template content for authenticated preview panes. */
 		template: async ({ id }: { id: string }): Promise<Template> => {
 			parseInput({
 				schema: idParamSchema,
@@ -48,8 +73,7 @@ export function createPreviewResource({
 		},
 
 		/**
-		 * Create an expiring preview share token (default 5 minutes).
-		 * Opens in browser without login via `?token=` on the preview URL.
+		 * Mint a time-limited link so stakeholders can review without logging in.
 		 */
 		createShareToken: async (input: {
 			contentType: PreviewContentType;
@@ -78,7 +102,7 @@ export function createPreviewResource({
 			};
 		},
 
-		/** Fetch preview content via share token (no auth header required). */
+		/** Resolve shared preview content using only the token (no API key). */
 		getShared: async ({
 			contentType,
 			id,
@@ -100,8 +124,7 @@ export function createPreviewResource({
 			});
 		},
 
+		/** Build the browser URL for a share token when constructing links client-side. */
 		buildSharePreviewUrl,
 	};
 }
-
-export type PreviewResource = ReturnType<typeof createPreviewResource>;

@@ -4,16 +4,37 @@
  */
 export type ContentStatus = "publish" | "draft" | "preview" | "private" | "any";
 
+/** Lucide (or other set) icon reference on icon and button blocks. */
+export type IconReference = {
+	iconSet?: string;
+	iconName: string;
+	size?: number;
+	color?: string;
+	strokeWidth?: number;
+};
+
+/** Text block content; button blocks reuse this kind with link fields. */
+export type TextBlockContent = {
+	kind: "text";
+	value: string;
+	textAlign?: string;
+	dropCap?: boolean;
+	format?: "html";
+	level?: number;
+	url?: string;
+	linkTarget?: "_self" | "_blank";
+	target?: string;
+	rel?: string;
+	title?: string;
+	className?: string;
+	icon?: IconReference;
+	iconPosition?: "left" | "right";
+	iconOnly?: boolean;
+};
+
 /** Discriminated union for block content payloads. */
 export type BlockContent =
-	| {
-			kind: "text";
-			value: string;
-			textAlign?: string;
-			dropCap?: boolean;
-			format?: "html";
-			level?: number;
-	  }
+	| TextBlockContent
 	| { kind: "markdown"; value: string; textAlign?: string }
 	| {
 			kind: "media";

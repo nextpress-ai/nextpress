@@ -21,13 +21,13 @@ Scope column refers to required API key permissions. See [Authentication](./auth
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `list(params?)` | `GET /api/pages` | content:read |
-| `get({ id })` | `GET /api/pages/:id` | content:read |
-| `create(input)` | `POST /api/pages` | content:write |
-| `update({ id, ...input })` | `PUT /api/pages/:id` | content:write |
-| `delete({ id })` | `DELETE /api/pages/:id` | content:write |
-| `getHistory({ id })` | `GET /api/pages/:id/history` | content:read |
-| `restoreVersion({ id, version })` | `POST /api/pages/:id/restore` | content:write |
+| `list(params?)` | `GET /api/pages` | pages:read |
+| `get({ id })` | `GET /api/pages/:id` | pages:read |
+| `create(input)` | `POST /api/pages` | pages:write |
+| `update({ id, ...input })` | `PUT /api/pages/:id` | pages:write |
+| `delete({ id })` | `DELETE /api/pages/:id` | pages:write |
+| `getHistory({ id })` | `GET /api/pages/:id/history` | pages:read |
+| `restoreVersion({ id, version })` | `POST /api/pages/:id/restore` | pages:write |
 
 List query params: `page`, `per_page`, `status`, `search`, `siteId` (via factory default).
 
@@ -39,11 +39,11 @@ Create/update accept `title`, `slug`, `status`, `blocks`, `publishedAt`, and oth
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `list(params?)` | `GET /api/posts` | content:read |
-| `get({ id })` | `GET /api/posts/:id` | content:read |
-| `create(input)` | `POST /api/posts` | content:write |
-| `update({ id, ...input })` | `PUT /api/posts/:id` | content:write |
-| `delete({ id })` | `DELETE /api/posts/:id` | content:write |
+| `list(params?)` | `GET /api/posts` | posts:read |
+| `get({ id })` | `GET /api/posts/:id` | posts:read |
+| `create(input)` | `POST /api/posts` | posts:write |
+| `update({ id, ...input })` | `PUT /api/posts/:id` | posts:write |
+| `delete({ id })` | `DELETE /api/posts/:id` | posts:write |
 
 `list` accepts `blogId` as an alias for `blog_id`.
 
@@ -53,11 +53,11 @@ Create/update accept `title`, `slug`, `status`, `blocks`, `publishedAt`, and oth
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `list(params?)` | `GET /api/blogs` | content:read |
-| `get({ id })` | `GET /api/blogs/:id` | content:read |
-| `create(input)` | `POST /api/blogs` | content:write |
-| `update({ id, ...input })` | `PUT /api/blogs/:id` | content:write |
-| `delete({ id })` | `DELETE /api/blogs/:id` | content:write |
+| `list(params?)` | `GET /api/blogs` | blogs:read |
+| `get({ id })` | `GET /api/blogs/:id` | blogs:read |
+| `create(input)` | `POST /api/blogs` | blogs:write |
+| `update({ id, ...input })` | `PUT /api/blogs/:id` | blogs:write |
+| `delete({ id })` | `DELETE /api/blogs/:id` | blogs:write |
 
 ---
 
@@ -65,13 +65,13 @@ Create/update accept `title`, `slug`, `status`, `blocks`, `publishedAt`, and oth
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `list(params?)` | `GET /api/comments` | content:read |
-| `get({ id })` | `GET /api/comments/:id` | content:read |
-| `create(input)` | `POST /api/comments` | content:write |
-| `update({ id, ...input })` | `PUT /api/comments/:id` | content:write |
-| `approve({ id })` | `PATCH /api/comments/:id/approve` | content:write |
-| `spam({ id })` | `PATCH /api/comments/:id/spam` | content:write |
-| `delete({ id })` | `DELETE /api/comments/:id` | content:write |
+| `list(params?)` | `GET /api/comments` | comments:read |
+| `get({ id })` | `GET /api/comments/:id` | comments:read |
+| `create(input)` | `POST /api/comments` | comments:write |
+| `update({ id, ...input })` | `PUT /api/comments/:id` | comments:write |
+| `approve({ id })` | `PATCH /api/comments/:id/approve` | comments:write |
+| `spam({ id })` | `PATCH /api/comments/:id/spam` | comments:write |
+| `delete({ id })` | `DELETE /api/comments/:id` | comments:write |
 
 ---
 
@@ -79,11 +79,11 @@ Create/update accept `title`, `slug`, `status`, `blocks`, `publishedAt`, and oth
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `list(params?)` | `GET /api/media` | content:read |
-| `get({ id })` | `GET /api/media/:id` | content:read |
-| `upload(input)` | `POST /api/media` (multipart) | content:write |
-| `update({ id, ...input })` | `PUT /api/media/:id` | content:write |
-| `delete({ id })` | `DELETE /api/media/:id` | content:write |
+| `list(params?)` | `GET /api/media` | media:read |
+| `get({ id })` | `GET /api/media/:id` | media:read |
+| `upload(input)` | `POST /api/media` (multipart) | media:write |
+| `update({ id, ...input })` | `PUT /api/media/:id` | media:write |
+| `delete({ id })` | `DELETE /api/media/:id` | media:write |
 
 `upload` accepts `{ file: Blob | File, alt?, caption?, description?, siteId? }`.
 
@@ -93,12 +93,12 @@ Create/update accept `title`, `slug`, `status`, `blocks`, `publishedAt`, and oth
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `list(params?)` | `GET /api/templates` | content:read |
-| `get({ id })` | `GET /api/templates/:id` | content:read |
-| `create(input)` | `POST /api/templates` | content:write |
-| `duplicate({ id, ...input })` | `POST /api/templates/:id/duplicate` | content:write |
-| `update({ id, ...input })` | `PUT /api/templates/:id` | content:write |
-| `delete({ id })` | `DELETE /api/templates/:id` | content:write |
+| `list(params?)` | `GET /api/templates` | templates:read |
+| `get({ id })` | `GET /api/templates/:id` | templates:read |
+| `create(input)` | `POST /api/templates` | templates:write |
+| `duplicate({ id, ...input })` | `POST /api/templates/:id/duplicate` | templates:write |
+| `update({ id, ...input })` | `PUT /api/templates/:id` | templates:write |
+| `delete({ id })` | `DELETE /api/templates/:id` | templates:write |
 
 ---
 
@@ -106,9 +106,9 @@ Create/update accept `title`, `slug`, `status`, `blocks`, `publishedAt`, and oth
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `list()` | `GET /api/themes` | content:read |
+| `list()` | `GET /api/themes` | themes:read |
 | `getActive()` | `GET /api/themes/active` | none (public) |
-| `activate({ id })` | `POST /api/themes/:id/activate` | content:write |
+| `activate({ id })` | `POST /api/themes/:id/activate` | themes:write |
 
 `list()` returns `Theme[]` (raw array from server).
 
@@ -118,7 +118,7 @@ Create/update accept `title`, `slug`, `status`, `blocks`, `publishedAt`, and oth
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `list()` | `GET /api/plugins` | content:read |
+| `list()` | `GET /api/plugins` | plugins:read |
 
 Returns `Plugin[]`.
 
@@ -128,7 +128,7 @@ Returns `Plugin[]`.
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `list()` | `GET /api/hooks` | content:read |
+| `list()` | `GET /api/hooks` | hooks:read |
 
 Debug endpoint listing registered WordPress-style hooks.
 
@@ -138,7 +138,7 @@ Debug endpoint listing registered WordPress-style hooks.
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `stats()` | `GET /api/dashboard/stats` | content:read |
+| `stats()` | `GET /api/dashboard/stats` | dashboard:read |
 
 Returns post, page, comment, and user counts for the scoped site.
 
@@ -211,9 +211,9 @@ See [Preview](./preview.md) for share-link workflows.
 
 | Method | HTTP | Scope |
 |--------|------|-------|
-| `post({ id })` | `GET /api/preview/post/:id` | content:read |
-| `page({ id })` | `GET /api/preview/page/:id` | content:read |
-| `template({ id })` | `GET /api/preview/template/:id` | content:read |
+| `post({ id })` | `GET /api/preview/post/:id` | posts:read |
+| `page({ id })` | `GET /api/preview/page/:id` | pages:read |
+| `template({ id })` | `GET /api/preview/template/:id` | templates:read |
 | `createShareToken(input)` | `POST /api/preview/tokens` | preview:write |
 | `getShared({ contentType, id, token })` | `GET /api/preview/shared/:type/:id?token=` | none (`auth: false`) |
 | `buildSharePreviewUrl(...)` | — | local URL helper |
@@ -271,14 +271,6 @@ Setup and health checks. No API key scopes on most routes.
 | `setup(input)` | `POST /api/setup` |
 
 Used for first-time install automation, not day-to-day CMS operations.
-
----
-
-## `nextpress.pageBuilder`
-
-High-level page builder workflows. See [Page builder](./page-builder.md).
-
-All methods delegate to `pages`, `posts`, `templates`, or `preview` resources.
 
 ---
 

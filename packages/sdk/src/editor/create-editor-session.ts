@@ -1,12 +1,19 @@
-import type { BlocksBuilder } from "../blocks/build-block.js";
+import type { BlocksBuilder } from "../blocks/blocks-builder.types.js";
+import type { NextpressEventMap } from "../events/nextpress-events.js";
 import type { PagesResource } from "../resources/pages.js";
 import type { PostsResource } from "../resources/posts.js";
 import type { PreviewResource } from "../resources/preview.js";
 import type { TemplatesResource } from "../resources/templates.js";
 import type { BlockConfig, Page, Post, Template } from "../types/domain.js";
+import type { EditorLoadedContent, EditorSession } from "./editor-session.types.js";
 import { createUndoStack } from "./create-undo-stack.js";
 
-export type EditorContentType = "page" | "post" | "template";
+export type { EditorContentType, EditorLoadedContent, EditorSession } from "./editor-session.types.js";
+
+type EmitFn = <K extends keyof NextpressEventMap & string>(
+	event: K,
+	payload: NextpressEventMap[K],
+) => NextpressEventMap[K];
 
 type EditorSessionDeps = {
 	pages: PagesResource;
@@ -15,16 +22,7 @@ type EditorSessionDeps = {
 	preview: PreviewResource;
 	blocks: BlocksBuilder;
 	coalesceMs?: number;
-};
-
-type LoadedContent = {
-	type: EditorContentType;
-	id: string;
-	title: string;
-	status?: string;
-	slug?: string;
-	blocks: BlockConfig[];
-	raw: Page | Post | Template;
+	emit?: EmitFn;
 };
 
 const DEFAULT_COALESCE_MS = 300;
@@ -40,10 +38,13 @@ export function createEditorSession({
 	preview,
 	blocks,
 	coalesceMs = DEFAULT_COALESCE_MS,
-}: EditorSessionDeps) {
-	let loaded: LoadedContent | null = null;
+	emit,
+}: EditorSessionDeps): EditorSession {
+	let loaded: EditorLoadedContent | null = null;
 	let undoStack = createUndoStack<BlockConfig[]>([]);
 	let coalesceTimer: ReturnType<typeof setTimeout> | null = null;
+
+	const notify = emit ?? (<K extends keyof NextpressEventMap & string>(_event: K, payload: NextpressEventMap[K]) => payload);
 
 	const clearCoalesce = () => {
 		if (coalesceTimer) {
@@ -65,24 +66,27 @@ export function createEditorSession({
 			coalesceTimer = setTimeout(() => {
 				coalesceTimer = null;
 			}, coalesceMs);
+			notify("editor-blocks-changed", { blocks: nextBlocks, coalesced: true });
 			return;
 		}
 
 		clearCoalesce();
 		undoStack.pushState(nextBlocks);
+		notify("editor-blocks-changed", { blocks: nextBlocks, coalesced: coalesce });
 	};
 
 	return {
+		/** Block factory for constructing trees while editing in the session. */
 		blocks,
 
-		/** Load page, post, or template into the session (resets undo stack). */
+		/** Hydrate the session from server content and reset undo to a clean baseline. */
 		load: async ({
 			type,
 			id,
 		}: {
-			type: EditorContentType;
+			type: EditorLoadedContent["type"];
 			id: string;
-		}): Promise<LoadedContent> => {
+		}): Promise<EditorLoadedContent> => {
 			if (type === "page") {
 				const page = await pages.get({ id });
 				loaded = {
@@ -117,21 +121,24 @@ export function createEditorSession({
 			}
 
 			undoStack = createUndoStack(loaded.blocks);
+			notify("editor-loaded", { content: loaded });
 			return loaded;
 		},
 
+		/** Read the in-memory block tree without a server round-trip. */
 		getBlocks: (): BlockConfig[] => loaded?.blocks ?? [],
 
-		/** Replace blocks and push a new undo step. */
+		/** Commit a full block replacement as one undo step for discrete actions. */
 		setBlocks: (nextBlocks: BlockConfig[]) => {
 			commitBlocks(nextBlocks);
 		},
 
-		/** Replace blocks with coalescing (for rapid sequential edits). */
+		/** Batch rapid keystrokes into one undo step like dashboard coalescing. */
 		updateBlocks: (nextBlocks: BlockConfig[]) => {
 			commitBlocks(nextBlocks, { coalesce: true });
 		},
 
+		/** Step back through coalesced edits like the dashboard undo shortcut. */
 		undo: (): BlockConfig[] | undefined => {
 			clearCoalesce();
 			const state = undoStack.undo();
@@ -141,6 +148,7 @@ export function createEditorSession({
 			return state;
 		},
 
+		/** Reapply a undone edit without reloading from the server. */
 		redo: (): BlockConfig[] | undefined => {
 			clearCoalesce();
 			const state = undoStack.redo();
@@ -150,10 +158,12 @@ export function createEditorSession({
 			return state;
 		},
 
+		/** Gate undo UI so empty stacks do not offer a no-op action. */
 		canUndo: (): boolean => undoStack.canUndo(),
+		/** Gate redo UI after the user steps back in history. */
 		canRedo: (): boolean => undoStack.canRedo(),
 
-		/** Persist current blocks and metadata to the server. */
+		/** Flush in-memory edits to the server for the loaded content type. */
 		save: async (input: { title?: string; slug?: string; status?: string } = {}) => {
 			if (!loaded) {
 				throw new Error("Editor session not loaded");
@@ -174,7 +184,8 @@ export function createEditorSession({
 					status: page.status,
 					raw: page,
 				};
-				return page;
+				const saved = notify("editor-saved", { content: loaded, data: page });
+				return saved.data as Page;
 			}
 
 			if (loaded.type === "post") {
@@ -192,7 +203,8 @@ export function createEditorSession({
 					status: post.status,
 					raw: post,
 				};
-				return post;
+				const saved = notify("editor-saved", { content: loaded, data: post });
+				return saved.data as Post;
 			}
 
 			const template = await templates.update({
@@ -201,9 +213,11 @@ export function createEditorSession({
 				name: input.title ?? loaded.title,
 			});
 			loaded = { ...loaded, title: template.name, raw: template };
-			return template;
+			const saved = notify("editor-saved", { content: loaded, data: template });
+			return saved.data as Template;
 		},
 
+		/** Go live with the current in-memory blocks without a separate save call. */
 		publish: async () => {
 			if (!loaded) {
 				throw new Error("Editor session not loaded");
@@ -211,26 +225,31 @@ export function createEditorSession({
 			if (loaded.type === "template") {
 				throw new Error("Templates cannot be published");
 			}
-			return await (loaded.type === "page" ? pages : posts).update({
+			const data = await (loaded.type === "page" ? pages : posts).update({
 				id: loaded.id,
 				blocks: loaded.blocks,
 				status: "publish",
 				publishedAt: new Date().toISOString(),
 			});
+			const published = notify("editor-published", { content: loaded, data: data as Page | Post });
+			return published.data;
 		},
 
+		/** Pull content offline while keeping the block tree in the session. */
 		unpublish: async () => {
 			if (!loaded || loaded.type === "template") {
 				throw new Error("Cannot unpublish this content type");
 			}
-			return await (loaded.type === "page" ? pages : posts).update({
+			const data = await (loaded.type === "page" ? pages : posts).update({
 				id: loaded.id,
 				blocks: loaded.blocks,
 				status: "draft",
 			});
+			const unpublished = notify("editor-unpublished", { content: loaded, data: data as Page | Post });
+			return unpublished.data;
 		},
 
-		/** Authenticated preview payload (API key or session). */
+		/** Render the loaded draft through the authenticated preview API. */
 		preview: async () => {
 			if (!loaded) {
 				throw new Error("Editor session not loaded");
@@ -244,7 +263,7 @@ export function createEditorSession({
 			return preview.template({ id: loaded.id });
 		},
 
-		/** Mint an expiring share link (default 5 minutes). No login required to open. */
+		/** Share the loaded draft with reviewers who cannot sign into the dashboard. */
 		createPreviewLink: async ({
 			expiresInSeconds = 300,
 		}: { expiresInSeconds?: number } = {}) => {
@@ -258,7 +277,7 @@ export function createEditorSession({
 			});
 		},
 
-		/** Restore blocks from a saved page version (pages only). */
+		/** Roll back to a server snapshot and realign the undo stack with that tree. */
 		restoreVersion: async ({ version }: { version: number }) => {
 			if (!loaded || loaded.type !== "page") {
 				throw new Error("Version restore is only available for pages");
@@ -273,6 +292,7 @@ export function createEditorSession({
 			return page;
 		},
 
+		/** List page version snapshots for rollback UI on loaded pages. */
 		getHistory: async () => {
 			if (!loaded || loaded.type !== "page") {
 				throw new Error("History is only available for pages");
@@ -280,8 +300,7 @@ export function createEditorSession({
 			return pages.getHistory({ id: loaded.id });
 		},
 
-		getLoaded: (): LoadedContent | null => loaded,
+		/** Inspect session metadata without triggering another load. */
+		getLoaded: (): EditorLoadedContent | null => loaded,
 	};
 }
-
-export type EditorSession = ReturnType<typeof createEditorSession>;

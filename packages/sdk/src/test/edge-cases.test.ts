@@ -98,6 +98,7 @@ describe("edge cases", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: "np_test",
+			siteId: mockIds.siteId,
 			fetch: fetchMock as typeof fetch,
 		});
 
@@ -112,6 +113,7 @@ describe("edge cases", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: "np_test",
+			siteId: mockIds.siteId,
 			fetch: fetchMock as typeof fetch,
 		});
 
@@ -130,11 +132,13 @@ describe("edge cases", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com///",
 			apiKey: "np_test",
+			siteId: mockIds.siteId,
 			fetch: fetchMock,
 		});
 
 		await nextpress.health.check();
-		expect(calls[0]?.url).toBe("https://cms.example.com/api/health");
+		const calledUrl = new URL(calls[0]?.url ?? "");
+		expect(calledUrl.origin + calledUrl.pathname).toBe("https://cms.example.com/api/health");
 	});
 
 	it("allows explicit siteId to override client default", async () => {
@@ -174,6 +178,7 @@ describe("edge cases", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: "np_test",
+			siteId: mockIds.siteId,
 			fetch: fetchMock,
 		});
 
@@ -207,6 +212,7 @@ describe("edge cases", () => {
 		const nextpress = createNextpress({
 			baseUrl: "https://cms.example.com",
 			apiKey: "np_test",
+			siteId: mockIds.siteId,
 			fetch: fetchMock,
 		});
 

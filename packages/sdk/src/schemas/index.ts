@@ -325,7 +325,7 @@ export const setupSchema = z.object({
 export const nextpressOptionsSchema = z.object({
 	baseUrl: z.string().url(),
 	apiKey: z.string().min(1),
-	siteId: z.string().uuid().optional(),
+	siteId: z.string().uuid(),
 	timeout: z.number().int().positive().optional(),
 });
 

@@ -15,9 +15,23 @@ const normalizePostsListQuery = (params: ListPostsQuery & { blogId?: string }) =
 	return blog_id ? { ...rest, blog_id } : rest;
 };
 
+export type PostsResource = {
+	/** Paginate posts for blog indexes and admin lists. */
+	list: (params?: ListPostsQuery) => Promise<PaginatedResponse<Post, "posts">>;
+	/** Load one post before editing its block-based content. */
+	get: (params: { id: string }) => Promise<Post>;
+	/** Publish a new post with optional blocks from the page builder. */
+	create: (input: CreatePostInput) => Promise<Post>;
+	/** Save post metadata and block tree after editor changes. */
+	update: (params: { id: string } & UpdatePostInput) => Promise<Post>;
+	/** Remove a post from the blog and its public route. */
+	delete: (params: { id: string }) => Promise<DeleteMessage>;
+};
+
 /** Posts CRUD — blocks live on the post payload (page builder post editor). */
-export function createPostsResource({ http }: { http: HttpClient }) {
+export function createPostsResource({ http }: { http: HttpClient }): PostsResource {
 	return {
+		/** Paginate posts for blog indexes and admin lists. */
 		list: async (params: ListPostsQuery = {}): Promise<PaginatedResponse<Post, "posts">> => {
 			const query = parseInput({
 				schema: listPostsQuerySchema,
@@ -27,11 +41,13 @@ export function createPostsResource({ http }: { http: HttpClient }) {
 			return http.request("/api/posts", { query });
 		},
 
+		/** Load one post before editing its block-based content. */
 		get: async ({ id }: { id: string }): Promise<Post> => {
 			parseInput({ schema: idParamSchema, input: { id }, label: "posts.get id" });
 			return http.request(`/api/posts/${id}`);
 		},
 
+		/** Publish a new post with optional blocks from the page builder. */
 		create: async (input: CreatePostInput): Promise<Post> => {
 			const body = parseInput({
 				schema: createPostSchema,
@@ -41,6 +57,7 @@ export function createPostsResource({ http }: { http: HttpClient }) {
 			return http.request("/api/posts", { method: "POST", body });
 		},
 
+		/** Save post metadata and block tree after editor changes. */
 		update: async ({ id, ...input }: { id: string } & UpdatePostInput): Promise<Post> => {
 			parseInput({ schema: idParamSchema, input: { id }, label: "posts.update id" });
 			const body = parseInput({
@@ -51,11 +68,10 @@ export function createPostsResource({ http }: { http: HttpClient }) {
 			return http.request(`/api/posts/${id}`, { method: "PUT", body });
 		},
 
+		/** Remove a post from the blog and its public route. */
 		delete: async ({ id }: { id: string }): Promise<DeleteMessage> => {
 			parseInput({ schema: idParamSchema, input: { id }, label: "posts.delete id" });
 			return http.request(`/api/posts/${id}`, { method: "DELETE" });
 		},
 	};
 }
-
-export type PostsResource = ReturnType<typeof createPostsResource>;

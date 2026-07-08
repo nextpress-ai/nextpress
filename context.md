@@ -41,12 +41,14 @@ SDK sends `Authorization: Bearer npk_live_…`. Server validates API keys on pro
 
 - **54 unit + 7 live tests** (`src/test/`, `vitest.live.config.ts`)
 - **Biome 2.5** — `pnpm sdk:lint`, `pnpm sdk:lint:fix`
-- Live tests: `pnpm sdk:test:live` (dev server + `LIVE_TEST=1`)
+- Integration tests: `pnpm sdk:test:integration` (dev server + `integration.config.ts` + API key)
+- Integration tests: `pnpm sdk:test:integration` — configure `packages/sdk/src/test/integration/integration.config.ts` (copy from `.example.ts`)
 
 ### SDK v0.1 expansion (2026-07-02)
 
 - **~97% REST endpoint coverage** — added `plugins`, `hooks`, expanded `auth` (signIn/signUp/signOut)
-- **`nextpress.pageBuilder`** — save/publish/preview/apply-template workflows matching dashboard
+- **`nextpress.createEditorSession()`** — undo/redo, save, publish, preview links
+- **Resource methods** (`pages`, `posts`, `templates`, `preview`) — scripts and automation
 - **35 block helpers** — full dashboard registry via `blocks.fromName()` + named helpers
 - **Fully typed inputs/outputs** — no `Record<string, unknown>` on public resource methods; Settings/Import/System typed
 - **Themes response shapes fixed** — match server (array / raw theme object)
@@ -65,7 +67,7 @@ SDK sends `Authorization: Bearer npk_live_…`. Server validates API keys on pro
 ### API key scopes (2026-07-02)
 
 - **Scoped permissions** — keys store `scopes jsonb`; admin picks presets or individual permissions at create time (`Settings → System → API Keys`)
-- **Canonical scopes** — `shared/api-key-scopes.ts`: catalog, presets (`editor`, `readonly`, `full`), route→scope map, write implies read
+- **Granular scopes** — `shared/api-key-scopes.ts`: per-resource read/write (pages, posts, blogs, …), presets, route→scope map, write implies read
 - **Enforcement** — `apiKeyScopeEnforcer` middleware (Bearer `npk_live_…` only); session cookies bypass scopes; unmapped `/api/*` routes require full access (fail closed)
 - **Migration 0004** — adds `scopes` column; **0005** backfills legacy empty scopes to full access
 - **403 shape** — `{ code: "API_KEY_SCOPE_DENIED", requiredScopes: [...] }` when key lacks permission

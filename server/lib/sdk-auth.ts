@@ -29,7 +29,7 @@ export function generatePreviewTokenMaterial(): string {
 type VerifiedApiKey = {
 	id: string;
 	userId: string;
-	siteId: string | null;
+	siteId: string;
 	scopes: string[];
 };
 
@@ -60,6 +60,10 @@ export async function verifyApiKey(key: string): Promise<VerifiedApiKey | null> 
 	}
 
 	if (record.expiresAt && record.expiresAt <= now) {
+		return null;
+	}
+
+	if (!record.siteId) {
 		return null;
 	}
 

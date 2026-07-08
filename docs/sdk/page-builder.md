@@ -1,31 +1,31 @@
 # Page Builder
 
 **Type:** Guide  
-**Source:** `packages/sdk/src/page-builder/`, `packages/sdk/src/editor/`
+**Source:** `packages/sdk/src/editor/`, `packages/sdk/src/resources/`
 
-Two APIs cover dashboard-style editing: **`pageBuilder`** (stateless helpers) and **`createEditorSession`** (local state + undo/redo).
+## One way to edit content
 
-## When to use which
+| Goal | Use |
+|------|-----|
+| Scripts, CI, one-shot automation | `nextpress.pages`, `nextpress.posts`, `nextpress.templates`, `nextpress.preview` |
+| Interactive editing with undo/redo | `nextpress.createEditorSession()` |
 
-| API | Best for |
-|-----|----------|
-| `pageBuilder` | One-shot scripts: create from template, save blocks, publish |
-| `createEditorSession` | Interactive tools, MCP agents, multi-step edits with undo |
-
-Both require `content:read` / `content:write` scopes as appropriate. Preview links need `preview:write`.
+There is no separate page-builder namespace on the client. Use resource methods directly, or an editor session when you need local state.
 
 ---
 
-## `pageBuilder`
+## Resource workflows
 
-Factory: `nextpress.pageBuilder` (created inside `createNextpress`).
-
-### Pages
+### Create and publish a page
 
 ```ts
-const page = await nextpress.pageBuilder.loadPage({ id: pageId });
+const page = await nextpress.pages.create({
+  title: "Landing",
+  status: "draft",
+  blocks: nextpress.blocks.starterLayout(),
+});
 
-await nextpress.pageBuilder.savePageBlocks({
+await nextpress.pages.update({
   id: page.id,
   blocks: [
     nextpress.blocks.heading({ text: "Welcome", level: 1 }),
@@ -33,46 +33,50 @@ await nextpress.pageBuilder.savePageBlocks({
   ],
 });
 
-await nextpress.pageBuilder.publishPage({ id: page.id });
+await nextpress.pages.update({
+  id: page.id,
+  status: "publish",
+  publishedAt: new Date().toISOString(),
+});
 
-const draftPreview = await nextpress.pageBuilder.previewPage({ id: page.id });
+const draft = await nextpress.preview.page({ id: page.id });
 ```
 
-| Method | Description |
-|--------|-------------|
-| `loadPage({ id })` | `pages.get` |
-| `savePage({ id, ...input })` | Full page update |
-| `savePageBlocks({ id, blocks })` | Update blocks only |
-| `publishPage({ id, blocks? })` | Set status `publish` + `publishedAt` |
-| `unpublishPage({ id })` | Set status `draft` |
-| `previewPage({ id })` | Authenticated preview payload |
-| `createPageFromTemplate({ templateId, title, slug?, status? })` | New page from template blocks |
-| `applyTemplateToPage({ pageId, templateId, mode? })` | `replace` or `append` template blocks |
-| `createPagePreviewLink({ id, expiresInSeconds? })` | Share URL, default 300s |
+### Create a page from a template
 
-### Posts
+```ts
+const template = await nextpress.templates.get({ id: templateId });
 
-| Method | Description |
-|--------|-------------|
-| `loadPost({ id })` | `posts.get` |
-| `savePost({ id, ...input })` | Full post update |
-| `savePostBlocks({ id, blocks })` | Update blocks only |
-| `publishPost({ id, blocks? })` | Publish post |
-| `previewPost({ id })` | Authenticated preview |
-| `createPostPreviewLink({ id, expiresInSeconds? })` | Share URL |
+const page = await nextpress.pages.create({
+  title: "Landing",
+  status: "draft",
+  blocks: template.blocks ?? [],
+});
+```
 
-### Templates
+### Apply a template to an existing page
 
-| Method | Description |
-|--------|-------------|
-| `loadTemplate({ id })` | `templates.get` |
-| `saveTemplateBlocks({ id, blocks })` | Update template blocks |
+```ts
+const [page, template] = await Promise.all([
+  nextpress.pages.get({ id: pageId }),
+  nextpress.templates.get({ id: templateId }),
+]);
 
-### Utility
+await nextpress.pages.update({
+  id: pageId,
+  blocks: [...(page.blocks ?? []), ...(template.blocks ?? [])],
+});
+```
 
-| Method | Description |
-|--------|-------------|
-| `starterLayout()` | Returns heading + paragraph starter blocks |
+### Preview share link
+
+```ts
+const { previewUrl } = await nextpress.preview.createShareToken({
+  contentType: "page",
+  contentId: pageId,
+  expiresInSeconds: 300,
+});
+```
 
 ---
 
@@ -139,28 +143,6 @@ Mirrors dashboard `useUndoRedo`:
 
 ---
 
-## Example: template to published page
-
-```ts
-const page = await nextpress.pageBuilder.createPageFromTemplate({
-  templateId: "template-uuid",
-  title: "Landing",
-  status: "draft",
-});
-
-await nextpress.pageBuilder.savePageBlocks({
-  id: page.id,
-  blocks: [
-    ...page.blocks,
-    nextpress.blocks.button({ data: { text: "Get started", url: "/signup" } }),
-  ],
-});
-
-await nextpress.pageBuilder.publishPage({ id: page.id });
-```
-
----
-
 ## Example: agent with undo
 
 ```ts
@@ -176,4 +158,13 @@ if (!editor.canUndo()) {
 }
 
 await editor.save();
+```
+
+---
+
+## Starter layout
+
+```ts
+const blocks = nextpress.blocks.starterLayout();
+// [ heading level 1, paragraph placeholder ]
 ```

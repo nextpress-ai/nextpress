@@ -6,8 +6,8 @@ export type NextpressOptions = {
 	baseUrl: string;
 	/** API key generated from the NextPress dashboard */
 	apiKey: string;
-	/** Default site ID for multi-site installs. Applied to scoped requests when not overridden. */
-	siteId?: string;
+	/** Site UUID the API key is bound to. Must match the site chosen when the key was created. */
+	siteId: string;
 	/** Custom fetch implementation (defaults to global `fetch`) */
 	fetch?: typeof fetch;
 	/** Request timeout in milliseconds (default: 30000) */

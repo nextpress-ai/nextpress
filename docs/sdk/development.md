@@ -12,7 +12,7 @@ From repository root:
 | `sdk:install` | `pnpm --filter @nextpress-org/sdk install` | Install SDK deps |
 | `sdk:build` | `pnpm --filter @nextpress-org/sdk build` | tsup build to `dist/` |
 | `sdk:test` | `pnpm --filter @nextpress-org/sdk test` | All unit tests |
-| `sdk:test:live` | `pnpm --filter @nextpress-org/sdk test:live` | Live integration (needs server) |
+| `sdk:test:integration` | `pnpm --filter @nextpress-org/sdk test:integration` | Integration tests (needs server + API key) |
 | `sdk:lint` | `pnpm --filter @nextpress-org/sdk lint` | Biome check |
 | `sdk:lint:fix` | `pnpm --filter @nextpress-org/sdk lint:fix` | Biome auto-fix |
 | `sdk:dev` | `pnpm --filter @nextpress-org/sdk dev` | tsup watch mode |
@@ -23,7 +23,7 @@ From `packages/sdk/`:
 pnpm install
 pnpm build
 pnpm test
-pnpm test:live   # LIVE_TEST=1, dev server required
+pnpm test:integration   # dev server + integration.config.ts required
 pnpm lint
 pnpm typecheck
 ```
@@ -45,19 +45,14 @@ packages/sdk/src/
   *.test.ts                    # Factory tests
   client/*.test.ts             # HTTP client, URL building
   blocks/*.test.ts             # Block builder
-  page-builder/*.test.ts       # Page builder workflows
   editor/*.test.ts             # Editor session + undo stack
+  events/*.test.ts             # Event bus + HTTP instrumentation
   test/
-    integration.test.ts        # End-to-end mock fetch
-    security.test.ts           # Key leakage, scope errors, XSS guards
+    integration/               # Real API key + dist bundle
+    security.test.ts
     edge-cases.test.ts
     performance.test.ts
     schema-security.test.ts
-    live/
-      integration.live.test.ts # Against real dev server
-      bootstrap-live-client.ts
-      session-fetch.ts
-      live-config.ts
 ```
 
 ### Run subsets
@@ -68,21 +63,38 @@ npx vitest run src/test/security.test.ts
 npx vitest run src/create-nextpress.test.ts
 ```
 
-### Live tests
+### Running integration tests
 
-Requirements:
+Integration tests hit a **running NextPress server** with a **real dashboard API key** and import the **built `dist/` bundle**.
 
-1. NextPress dev server running (default `http://localhost:5000`)
-2. `LIVE_TEST=1` environment variable
-3. Credentials in `live-config.ts` or env (see `context.md`)
-
-Live tests use **session cookie fetch**, not real `npk_live_` keys, because the enforcer only applies to Bearer keys with that prefix.
+1. Copy the example config and fill in your values:
 
 ```bash
-pnpm sdk:test:live
+cp src/test/integration/integration.config.example.ts src/test/integration/integration.config.ts
 ```
 
-Config: `packages/sdk/vitest.live.config.ts`
+2. Edit `integration.config.ts` (gitignored):
+
+```ts
+export const integrationConfig = {
+  enabled: true,
+  baseUrl: "http://localhost:5000",
+  apiKey: "npk_live_…",           // Settings → System → API Keys
+  siteId: "your-site-uuid",        // same site you chose when creating the key
+  requestTimeoutMs: 30_000,
+  serverReadyTimeoutMs: 60_000,
+};
+```
+
+3. Start the dev server, then run:
+
+```bash
+pnpm test:integration
+```
+
+Use the **Content editor** preset (or full access) when creating the key. Set `enabled: false` to skip the suite without deleting the file.
+
+Unit tests (`pnpm test`) never call the network.
 
 ## Linting
 

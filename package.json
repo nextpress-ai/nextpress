@@ -27,7 +27,7 @@
     "sdk:install": "pnpm --filter @nextpress-org/sdk install",
     "sdk:build": "pnpm --filter @nextpress-org/sdk build",
     "sdk:test": "pnpm --filter @nextpress-org/sdk test",
-    "sdk:test:live": "pnpm --filter @nextpress-org/sdk test:live",
+    "sdk:test:integration": "pnpm --filter @nextpress-org/sdk test:integration",
     "sdk:lint": "pnpm --filter @nextpress-org/sdk lint",
     "sdk:lint:fix": "pnpm --filter @nextpress-org/sdk lint:fix",
     "sdk:dev": "pnpm --filter @nextpress-org/sdk dev"

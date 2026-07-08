@@ -12,20 +12,35 @@ import {
 describe("normalizeApiKeyScopes", () => {
 	it("filters unknown values and deduplicates", () => {
 		expect(
-			normalizeApiKeyScopes(["content:read", "content:read", "bogus", 1, null]),
-		).toEqual(["content:read"]);
+			normalizeApiKeyScopes(["posts:read", "posts:read", "bogus", 1, null]),
+		).toEqual(["posts:read"]);
+	});
+
+	it("accepts legacy content scopes", () => {
+		expect(normalizeApiKeyScopes(["content:read", "content:write"])).toEqual([
+			"content:read",
+			"content:write",
+		]);
 	});
 
 	it("returns empty array for non-array input", () => {
-		expect(normalizeApiKeyScopes("content:read")).toEqual([]);
+		expect(normalizeApiKeyScopes("posts:read")).toEqual([]);
 	});
 });
 
 describe("expandApiKeyScopes", () => {
-	it("adds read scope when write is granted", () => {
+	it("adds read scope when write is granted for a resource", () => {
+		const expanded = expandApiKeyScopes(["posts:write"]);
+		expect(expanded.has("posts:write")).toBe(true);
+		expect(expanded.has("posts:read")).toBe(true);
+	});
+
+	it("expands legacy content write to all content resource scopes", () => {
 		const expanded = expandApiKeyScopes(["content:write"]);
-		expect(expanded.has("content:write")).toBe(true);
-		expect(expanded.has("content:read")).toBe(true);
+		expect(expanded.has("pages:write")).toBe(true);
+		expect(expanded.has("posts:read")).toBe(true);
+		expect(expanded.has("hooks:read")).toBe(true);
+		expect(expanded.has("dashboard:read")).toBe(true);
 	});
 
 	it("expands write scopes across domains", () => {
@@ -36,11 +51,29 @@ describe("expandApiKeyScopes", () => {
 });
 
 describe("apiKeyScopesAllow", () => {
-	it("allows content write to satisfy content read", () => {
+	it("allows posts write to satisfy posts read", () => {
+		expect(
+			apiKeyScopesAllow({
+				granted: ["posts:write"],
+				required: ["posts:read"],
+			}),
+		).toBe(true);
+	});
+
+	it("denies posts-only key for pages routes", () => {
+		expect(
+			apiKeyScopesAllow({
+				granted: ["posts:read", "posts:write"],
+				required: ["pages:read"],
+			}),
+		).toBe(false);
+	});
+
+	it("allows legacy content write to satisfy granular read", () => {
 		expect(
 			apiKeyScopesAllow({
 				granted: ["content:write"],
-				required: ["content:read"],
+				required: ["pages:read"],
 			}),
 		).toBe(true);
 	});
@@ -48,22 +81,22 @@ describe("apiKeyScopesAllow", () => {
 	it("denies missing scopes", () => {
 		expect(
 			apiKeyScopesAllow({
-				granted: ["content:read"],
-				required: ["content:write"],
+				granted: ["posts:read"],
+				required: ["posts:write"],
 			}),
 		).toBe(false);
 	});
 
 	it("requires at least one scope for identity-only routes", () => {
 		expect(apiKeyScopesAllow({ granted: [], required: [] })).toBe(false);
-		expect(apiKeyScopesAllow({ granted: ["content:read"], required: [] })).toBe(true);
+		expect(apiKeyScopesAllow({ granted: ["posts:read"], required: [] })).toBe(true);
 	});
 
 	it("denies partial keys on full-access routes", () => {
 		expect(
 			apiKeyScopesAllow({
-				granted: ["content:read"],
-				required: [...API_KEY_SCOPE_IDS],
+				granted: ["posts:read"],
+				required: [...API_KEY_SCOPE_CATALOG.map((entry) => entry.id)],
 			}),
 		).toBe(false);
 	});
@@ -71,7 +104,11 @@ describe("apiKeyScopesAllow", () => {
 
 describe("formatApiKeyScopeLabel", () => {
 	it("returns catalog label for known scopes", () => {
-		expect(formatApiKeyScopeLabel("content:read")).toBe("Read content");
+		expect(formatApiKeyScopeLabel("posts:read")).toBe("View posts");
+	});
+
+	it("labels legacy scopes", () => {
+		expect(formatApiKeyScopeLabel("content:read")).toBe("Read all content (legacy)");
 	});
 
 	it("falls back to raw id for unknown scopes", () => {
@@ -80,9 +117,12 @@ describe("formatApiKeyScopeLabel", () => {
 });
 
 describe("catalog coverage", () => {
-	it("catalog includes every canonical scope id", () => {
+	it("catalog includes every non-legacy canonical scope id", () => {
 		const catalogIds = new Set(API_KEY_SCOPE_CATALOG.map((entry) => entry.id));
 		for (const scopeId of API_KEY_SCOPE_IDS) {
+			if (scopeId.startsWith("content:")) {
+				continue;
+			}
 			expect(catalogIds.has(scopeId)).toBe(true);
 		}
 	});
@@ -104,7 +144,7 @@ describe("resolveRequiredApiKeyScopes", () => {
 	it("strips query strings before matching", () => {
 		expect(
 			resolveRequiredApiKeyScopes({ method: "GET", path: "/api/pages?status=draft" }),
-		).toEqual(["content:read"]);
+		).toEqual(["pages:read"]);
 	});
 
 	it("allows any scoped key for auth identity", () => {
@@ -113,22 +153,34 @@ describe("resolveRequiredApiKeyScopes", () => {
 		).toEqual([]);
 	});
 
-	it("requires content read for page list GET", () => {
+	it("requires pages read for page list GET", () => {
 		expect(
 			resolveRequiredApiKeyScopes({ method: "GET", path: "/api/pages" }),
-		).toEqual(["content:read"]);
+		).toEqual(["pages:read"]);
 	});
 
-	it("requires content write for page create POST", () => {
+	it("requires posts write for post create POST", () => {
 		expect(
-			resolveRequiredApiKeyScopes({ method: "POST", path: "/api/pages" }),
-		).toEqual(["content:write"]);
+			resolveRequiredApiKeyScopes({ method: "POST", path: "/api/posts" }),
+		).toEqual(["posts:write"]);
+	});
+
+	it("requires blogs write for blog delete", () => {
+		expect(
+			resolveRequiredApiKeyScopes({ method: "DELETE", path: "/api/blogs/abc" }),
+		).toEqual(["blogs:write"]);
 	});
 
 	it("requires preview write for share token mint", () => {
 		expect(
 			resolveRequiredApiKeyScopes({ method: "POST", path: "/api/preview/tokens" }),
 		).toEqual(["preview:write"]);
+	});
+
+	it("requires matching resource read for authenticated preview GET", () => {
+		expect(
+			resolveRequiredApiKeyScopes({ method: "GET", path: "/api/preview/post/abc" }),
+		).toEqual(["posts:read"]);
 	});
 
 	it("requires settings read for options GET", () => {
@@ -149,16 +201,16 @@ describe("resolveRequiredApiKeyScopes", () => {
 		).toEqual(["system:write"]);
 	});
 
-	it("requires content read for dashboard stats", () => {
+	it("requires dashboard read for dashboard stats", () => {
 		expect(
 			resolveRequiredApiKeyScopes({ method: "GET", path: "/api/dashboard/stats" }),
-		).toEqual(["content:read"]);
+		).toEqual(["dashboard:read"]);
 	});
 
 	it("requires full access for unmapped api routes", () => {
 		expect(
 			resolveRequiredApiKeyScopes({ method: "GET", path: "/api/future-endpoint" }),
-		).toEqual([...API_KEY_SCOPE_IDS]);
+		).toEqual([...API_KEY_SCOPE_CATALOG.map((entry) => entry.id)]);
 	});
 
 	it("returns null for non-api paths", () => {

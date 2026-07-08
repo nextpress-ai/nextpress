@@ -1,4 +1,4 @@
-/** Thrown when the NextPress API returns a non-2xx response or the request fails. */
+/** Typed error surface so callers can branch on status and API codes instead of parsing strings. */
 export class NextpressError extends Error {
 	readonly status: number;
 	readonly code?: string;
@@ -23,7 +23,7 @@ export class NextpressError extends Error {
 	}
 }
 
-/** Returns true when an error is a {@link NextpressError}. */
+/** Narrow unknown catch values before reading status or code on API failures. */
 export function isNextpressError(error: unknown): error is NextpressError {
 	return error instanceof NextpressError;
 }

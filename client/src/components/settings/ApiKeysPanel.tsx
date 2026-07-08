@@ -1,12 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Copy, KeyRound, Plus, Trash2 } from 'lucide-react';
+import { Copy, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -26,18 +25,19 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useActiveSite } from '@/hooks/useActiveSite';
 import {
-  API_KEY_SCOPE_GROUP_LABELS,
   formatApiKeyScopeLabel,
+  pairedReadScopeId,
   type ApiKeyScopeId,
   type ApiKeyScopeMeta,
   type ApiKeyScopePreset,
 } from '@shared/api-key-scopes';
+import { ApiKeyScopesPicker } from './ApiKeyScopesPicker';
 
 type ApiKeyRow = {
   id: string;
   name: string;
   keyPrefix: string;
-  siteId?: string | null;
+  siteId: string;
   scopes?: ApiKeyScopeId[];
   expiresAt?: string | null;
   lastUsedAt?: string | null;
@@ -67,9 +67,29 @@ const EXPIRY_OPTIONS = [
 
 const DEFAULT_PRESET_ID = 'editor';
 
+const toggleScopeSelection = ({
+  scopeId,
+  checked,
+  current,
+}: {
+  scopeId: ApiKeyScopeId;
+  checked: boolean;
+  current: ApiKeyScopeId[];
+}): ApiKeyScopeId[] => {
+  if (checked) {
+    const next = current.includes(scopeId) ? current : [...current, scopeId];
+    const readPair = pairedReadScopeId(scopeId);
+    if (readPair && !next.includes(readPair)) {
+      return [...next, readPair];
+    }
+    return next;
+  }
+  return current.filter((id) => id !== scopeId);
+};
+
 /** Dashboard-only API key management for SDK and automation tools. */
 export function ApiKeysPanel() {
-  const { activeSiteId, activeSite, sites, formatSiteLabel } = useActiveSite();
+  const { activeSiteId, sites, formatSiteLabel } = useActiveSite();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
@@ -77,7 +97,14 @@ export function ApiKeysPanel() {
   const [expiresInDays, setExpiresInDays] = useState('365');
   const [selectedScopes, setSelectedScopes] = useState<ApiKeyScopeId[]>([]);
   const [activePresetId, setActivePresetId] = useState<string | null>(DEFAULT_PRESET_ID);
-  const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const [createSiteId, setCreateSiteId] = useState('');
+  const [editingKey, setEditingKey] = useState<ApiKeyRow | null>(null);
+  const [editScopes, setEditScopes] = useState<ApiKeyScopeId[]>([]);
+  const [editActivePresetId, setEditActivePresetId] = useState<string | null>(null);
+  const [revealedCredentials, setRevealedCredentials] = useState<{
+    key: string;
+    siteId: string;
+  } | null>(null);
 
   const { data, isLoading } = useQuery<ApiKeysListResponse>({
     queryKey: ['/api/auth/api-keys'],
@@ -98,48 +125,40 @@ export function ApiKeysPanel() {
   const catalog = scopeData?.catalog ?? [];
   const presets = scopeData?.presets ?? [];
 
-  const scopesByGroup = useMemo(() => {
-    const groups = new Map<ApiKeyScopeMeta['group'], ApiKeyScopeMeta[]>();
-    for (const entry of catalog) {
-      const list = groups.get(entry.group) ?? [];
-      list.push(entry);
-      groups.set(entry.group, list);
-    }
-    return groups;
-  }, [catalog]);
-
-  const applyPreset = (preset: ApiKeyScopePreset) => {
+  const applyCreatePreset = (preset: ApiKeyScopePreset) => {
     setSelectedScopes([...preset.scopes]);
     setActivePresetId(preset.id);
+  };
+
+  const applyEditPreset = (preset: ApiKeyScopePreset) => {
+    setEditScopes([...preset.scopes]);
+    setEditActivePresetId(preset.id);
   };
 
   const openCreateDialog = () => {
     const defaultPreset =
       presets.find((preset) => preset.id === DEFAULT_PRESET_ID) ?? presets[0];
     if (defaultPreset) {
-      applyPreset(defaultPreset);
+      applyCreatePreset(defaultPreset);
     } else {
       setSelectedScopes([]);
       setActivePresetId(null);
     }
+    setCreateSiteId(activeSiteId ?? sites[0]?.id ?? '');
     setCreateOpen(true);
   };
 
-  const toggleScope = (scopeId: ApiKeyScopeId, checked: boolean) => {
-    setActivePresetId(null);
-    setSelectedScopes((current) => {
-      if (checked) {
-        return current.includes(scopeId) ? current : [...current, scopeId];
-      }
-      return current.filter((id) => id !== scopeId);
-    });
+  const openEditDialog = (key: ApiKeyRow) => {
+    setEditingKey(key);
+    setEditScopes([...(key.scopes ?? [])]);
+    setEditActivePresetId(null);
   };
 
   const createMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/auth/api-keys', {
         name: newKeyName.trim(),
-        siteId: activeSiteId,
+        siteId: createSiteId,
         expiresInDays: Number(expiresInDays),
         scopes: selectedScopes,
       });
@@ -148,16 +167,35 @@ export function ApiKeysPanel() {
     onSuccess: (result) => {
       setCreateOpen(false);
       setNewKeyName('');
-      setRevealedKey(result.key);
+      setRevealedCredentials({ key: result.key, siteId: result.siteId });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/api-keys'] });
       toast({
         title: 'API key created',
-        description: 'Copy it now. You will not be able to see it again.',
+        description: 'Copy the key and site ID now. You will not be able to see them again.',
       });
     },
     onError: (error: Error) => {
       toast({
         title: 'Could not create key',
+        description: error.message || 'Try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateScopesMutation = useMutation({
+    mutationFn: async ({ id, scopes }: { id: string; scopes: ApiKeyScopeId[] }) => {
+      const response = await apiRequest('PATCH', `/api/auth/api-keys/${id}`, { scopes });
+      return response.json() as Promise<ApiKeyRow>;
+    },
+    onSuccess: () => {
+      setEditingKey(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/api-keys'] });
+      toast({ title: 'Permissions updated' });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Could not update permissions',
         description: error.message || 'Try again.',
         variant: 'destructive',
       });
@@ -181,18 +219,26 @@ export function ApiKeysPanel() {
     },
   });
 
-  const copyKey = async (value: string) => {
+  const copyValue = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      toast({ title: 'Copied to clipboard' });
+      toast({ title: `${label} copied` });
     } catch {
       toast({
         title: 'Copy failed',
-        description: 'Select the key and copy it manually.',
+        description: `Select the ${label.toLowerCase()} and copy it manually.`,
         variant: 'destructive',
       });
     }
   };
+
+  const revealedSite = revealedCredentials
+    ? sites.find((site) => site.id === revealedCredentials.siteId)
+    : null;
+
+  const editingSite = editingKey
+    ? sites.find((site) => site.id === editingKey.siteId)
+    : null;
 
   const keys = data?.keys ?? [];
 
@@ -201,7 +247,7 @@ export function ApiKeysPanel() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-npb-text-secondary">
-            Create keys here for scripts, agents, or integrations. Choose what each key can access when you create it.
+            Create keys here for scripts, agents, or integrations. You can change permissions anytime.
           </p>
         </div>
         <Button
@@ -251,14 +297,11 @@ export function ApiKeysPanel() {
                     </div>
                   ) : (
                     <p className="text-xs text-amber-700 dark:text-amber-400">
-                      No permissions assigned. Revoke and create a new key with the access you need.
+                      No permissions assigned. Edit permissions or revoke this key.
                     </p>
                   )}
                   <p className="text-xs text-npb-text-muted">
-                    {key.siteId
-                      ? `Site: ${keySite ? formatSiteLabel(keySite) : 'Unknown site'} · `
-                      : 'All sites · '}
-                    Created{' '}
+                    Site: {keySite ? formatSiteLabel(keySite) : 'Unknown site'} · Created{' '}
                     {key.createdAt ? format(new Date(key.createdAt), 'MMM d, yyyy') : '—'}
                     {key.expiresAt
                       ? ` · Expires ${format(new Date(key.expiresAt), 'MMM d, yyyy')}`
@@ -268,17 +311,29 @@ export function ApiKeysPanel() {
                       : ''}
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 text-red-600 hover:text-red-700"
-                  disabled={revokeMutation.isPending}
-                  onClick={() => revokeMutation.mutate(key.id)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Revoke
-                </Button>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={expired ?? false}
+                    onClick={() => openEditDialog(key)}
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit permissions
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700"
+                    disabled={revokeMutation.isPending}
+                    onClick={() => revokeMutation.mutate(key.id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Revoke
+                  </Button>
+                </div>
               </div>
             );
           })}
@@ -290,7 +345,7 @@ export function ApiKeysPanel() {
           <DialogHeader>
             <DialogTitle>Create API key</DialogTitle>
             <DialogDescription>
-              Name the key and choose what it can do. You can revoke it anytime.
+              Name the key and choose what it can do. You can change permissions later.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -302,6 +357,24 @@ export function ApiKeysPanel() {
                 onChange={(e) => setNewKeyName(e.target.value)}
                 placeholder="Production deploy"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="api-key-site">Site</Label>
+              <Select value={createSiteId} onValueChange={setCreateSiteId}>
+                <SelectTrigger id="api-key-site">
+                  <SelectValue placeholder="Choose a site" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sites.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {formatSiteLabel(site)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-npb-text-muted">
+                This key only works for the site you choose here.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="api-key-expiry">Expires after</Label>
@@ -318,73 +391,20 @@ export function ApiKeysPanel() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-3">
-              <Label>Permissions</Label>
-              {activeSite ? (
-                <p className="text-xs text-npb-text-muted">
-                  This key is limited to {formatSiteLabel(activeSite)}.
-                </p>
-              ) : null}
-              {presets.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {presets.map((preset) => (
-                    <Button
-                      key={preset.id}
-                      type="button"
-                      size="sm"
-                      variant={activePresetId === preset.id ? 'default' : 'outline'}
-                      className={
-                        activePresetId === preset.id
-                          ? 'bg-npb-accent hover:bg-npb-accent-hover text-white'
-                          : undefined
-                      }
-                      onClick={() => applyPreset(preset)}
-                    >
-                      {preset.label}
-                    </Button>
-                  ))}
-                </div>
-              ) : null}
-              {[...scopesByGroup.entries()].map(([group, entries]) => (
-                <div key={group} className="space-y-2 rounded-md border border-npb-border-default p-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-npb-text-muted">
-                    {API_KEY_SCOPE_GROUP_LABELS[group]}
-                  </p>
-                  <div className="space-y-3">
-                    {entries.map((entry) => {
-                      const checked = selectedScopes.includes(entry.id);
-                      return (
-                        <label
-                          key={entry.id}
-                          htmlFor={`scope-${entry.id}`}
-                          className="flex cursor-pointer items-start gap-3"
-                        >
-                          <Checkbox
-                            id={`scope-${entry.id}`}
-                            checked={checked}
-                            onCheckedChange={(value) => toggleScope(entry.id, Boolean(value))}
-                            className="mt-0.5"
-                          />
-                          <span className="min-w-0 space-y-0.5">
-                            <span className="block text-sm font-medium text-npb-text-primary">
-                              {entry.label}
-                            </span>
-                            <span className="block text-xs text-npb-text-muted">
-                              {entry.description}
-                            </span>
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-              {selectedScopes.length === 0 ? (
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  Select at least one permission.
-                </p>
-              ) : null}
-            </div>
+            <ApiKeyScopesPicker
+              idPrefix="create"
+              catalog={catalog}
+              presets={presets}
+              selectedScopes={selectedScopes}
+              activePresetId={activePresetId}
+              onApplyPreset={applyCreatePreset}
+              onToggleScope={(scopeId, checked) => {
+                setActivePresetId(null);
+                setSelectedScopes((current) =>
+                  toggleScopeSelection({ scopeId, checked, current }),
+                );
+              }}
+            />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
@@ -394,7 +414,10 @@ export function ApiKeysPanel() {
               type="button"
               className="bg-npb-accent hover:bg-npb-accent-hover text-white"
               disabled={
-                !newKeyName.trim() || selectedScopes.length === 0 || createMutation.isPending
+                !newKeyName.trim() ||
+                !createSiteId ||
+                selectedScopes.length === 0 ||
+                createMutation.isPending
               }
               onClick={() => createMutation.mutate()}
             >
@@ -404,25 +427,127 @@ export function ApiKeysPanel() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(revealedKey)} onOpenChange={(open) => !open && setRevealedKey(null)}>
+      <Dialog open={Boolean(editingKey)} onOpenChange={(open) => !open && setEditingKey(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit permissions</DialogTitle>
+            <DialogDescription>
+              {editingKey
+                ? `Update what ${editingKey.name} can do${
+                    editingSite ? ` on ${formatSiteLabel(editingSite)}` : ''
+                  }. Changes apply immediately.`
+                : 'Update key permissions.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <ApiKeyScopesPicker
+              idPrefix="edit"
+              catalog={catalog}
+              presets={presets}
+              selectedScopes={editScopes}
+              activePresetId={editActivePresetId}
+              onApplyPreset={applyEditPreset}
+              onToggleScope={(scopeId, checked) => {
+                setEditActivePresetId(null);
+                setEditScopes((current) =>
+                  toggleScopeSelection({ scopeId, checked, current }),
+                );
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setEditingKey(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+              disabled={editScopes.length === 0 || updateScopesMutation.isPending}
+              onClick={() =>
+                editingKey &&
+                updateScopesMutation.mutate({ id: editingKey.id, scopes: editScopes })
+              }
+            >
+              {updateScopesMutation.isPending ? 'Saving…' : 'Save permissions'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(revealedCredentials)}
+        onOpenChange={(open) => !open && setRevealedCredentials(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Copy your new API key</DialogTitle>
             <DialogDescription>
-              This is the only time the full key is shown. Store it somewhere safe.
+              This is the only time the full key is shown. Store the key and site ID somewhere safe.
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-md border border-npb-border-default bg-npb-surface-inset p-3 font-mono text-sm break-all">
-            {revealedKey}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="revealed-api-key">API key</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={() =>
+                    revealedCredentials && copyValue(revealedCredentials.key, 'API key')
+                  }
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy
+                </Button>
+              </div>
+              <div
+                id="revealed-api-key"
+                className="rounded-md border border-npb-border-default bg-npb-surface-inset p-3 font-mono text-sm break-all"
+              >
+                {revealedCredentials?.key}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="revealed-site-id">Site ID</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={() =>
+                    revealedCredentials && copyValue(revealedCredentials.siteId, 'Site ID')
+                  }
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy
+                </Button>
+              </div>
+              <div
+                id="revealed-site-id"
+                className="rounded-md border border-npb-border-default bg-npb-surface-inset p-3 font-mono text-sm break-all"
+              >
+                {revealedCredentials?.siteId}
+              </div>
+              {revealedSite ? (
+                <p className="text-xs text-npb-text-muted">
+                  Site: {formatSiteLabel(revealedSite)}
+                </p>
+              ) : null}
+            </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setRevealedKey(null)}>
+            <Button type="button" variant="outline" onClick={() => setRevealedCredentials(null)}>
               Done
             </Button>
             <Button
               type="button"
               className="bg-npb-accent hover:bg-npb-accent-hover text-white"
-              onClick={() => revealedKey && copyKey(revealedKey)}
+              onClick={() =>
+                revealedCredentials && copyValue(revealedCredentials.key, 'API key')
+              }
             >
               <Copy className="mr-2 h-4 w-4" />
               Copy key

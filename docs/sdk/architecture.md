@@ -11,11 +11,11 @@ Provide a typed, publishable npm package that wraps the NextPress REST API witho
 
 ```ts
 createNextpress(options) → {
-  http,           // low-level client (advanced use)
-  blocks,         // local block tree builder
-  config,         // { baseUrl, siteId } only
+  on, off, once,     // typed event hooks
+  http,              // low-level client (advanced use)
+  blocks,            // local block tree builder
+  config,            // { baseUrl, siteId } only
   auth, posts, pages, … // resource namespaces
-  pageBuilder,    // high-level save/publish workflows
   createEditorSession, // stateful editor with undo/redo
 }
 ```
@@ -33,13 +33,13 @@ packages/sdk/src/
     build-url.ts         # URL + siteId query merge
     validate-input.ts    # Zod parse wrapper
     nextpress-error.ts   # API error type
+  events/                # Typed lifecycle hooks + contextual entity.set
   resources/             # One file per REST domain
-  page-builder/          # Dashboard-parity workflows
   editor/                # Stateful session + undo stack
   blocks/                # Block definitions + builder helpers
   schemas/               # Zod schemas (mirrors validation rules)
   types/                 # Domain types, inputs, responses
-  test/                  # Unit, integration, security, live tests
+  test/                  # Unit, integration, security tests
 ```
 
 ## HTTP client
@@ -49,6 +49,7 @@ packages/sdk/src/
 - Default timeout 30s with `AbortController`
 - `204` responses return `undefined`
 - Non-2xx responses throw `NextpressError`
+- Successful mutations emit typed events; handlers can reshape entities via `page.set()`, `post.set()`, etc.
 
 ## Type strategy
 
@@ -60,17 +61,16 @@ Input types live in `types/inputs.ts`. Response shapes in `types/domain.ts` and 
 
 There is **no** `/api/blocks` endpoint. Blocks are JSON arrays on `Page.blocks`, `Post.blocks`, and `Template.blocks`. The SDK builds `BlockConfig[]` locally via `nextpress.blocks.*` and sends them on create/update.
 
-## High-level workflows
+## Editing workflows
 
 | Layer | Use when |
 |-------|----------|
-| Resource methods (`pages.update`) | Full control, one-shot API calls |
-| `pageBuilder` | Dashboard-style load → edit → save → publish without local state |
+| Resource methods (`pages.update`, `posts.create`, …) | Scripts, CI, one-shot API calls |
 | `createEditorSession` | Local undo/redo, coalesced edits, preview links, version restore |
 
 ## Non-goals
 
-- Key management (server session only)
+- Key management (dashboard only)
 - Better Auth flows (sign-in/up/out)
 - Client-side rendering or block registry UI
 - Automatic retries or rate-limit handling (not implemented in v0.1)
@@ -78,16 +78,3 @@ There is **no** `/api/blocks` endpoint. Blocks are JSON arrays on `Page.blocks`,
 ## Constraints
 
 - Node 20+ (`package.json` engines)
-- ESM only (`"type": "module"`)
-- Single dependency: `zod`
-- Build: `tsup` → `dist/index.js` + `dist/index.d.ts`
-
-## Failure modes
-
-- Invalid factory options: local `Error` from Zod before any HTTP call
-- Invalid resource inputs: local `Error` with label (e.g. `"Invalid pages.create input"`)
-- API errors: `NextpressError` with `status`, optional `code`, optional `body`
-- Network timeout: abort error from fetch
-- Missing scope: HTTP 403, `code: "API_KEY_SCOPE_DENIED"`
-
-See [Errors and validation](./errors-and-validation.md).

@@ -30,10 +30,10 @@ await editor.load({ type: "page", id: pageId });
 const payload = await editor.preview();
 ```
 
-Via page builder:
+Or call preview directly:
 
 ```ts
-await nextpress.pageBuilder.previewPage({ id: pageId });
+await nextpress.preview.page({ id: pageId });
 ```
 
 ---
@@ -98,15 +98,18 @@ Token must start with `npt_`. Server validates hash, expiry, and content match.
 
 ---
 
-## Editor and page builder shortcuts
+## Editor and preview shortcuts
 
 ```ts
 // Editor session
 const { previewUrl, expiresAt } = await editor.createPreviewLink({ expiresInSeconds: 600 });
 
-// Page builder
-await nextpress.pageBuilder.createPagePreviewLink({ id: pageId });
-await nextpress.pageBuilder.createPostPreviewLink({ id: postId });
+// Direct resource call
+await nextpress.preview.createShareToken({
+  contentType: "page",
+  contentId: pageId,
+  expiresInSeconds: 600,
+});
 ```
 
 ---
@@ -121,9 +124,9 @@ Public share fetches (`/api/preview/shared`) are rate limited on the server (60 
 
 | Action | Scope |
 |--------|-------|
-| Authenticated preview GET | `content:read` |
+| Authenticated preview GET | Matching resource read (`pages:read`, `posts:read`, `templates:read`) |
 | Create share token | `preview:write` |
 | Open share URL in browser | none |
 | `getShared` in SDK | none |
 
-Minting tokens with only `preview:write` works, but authenticated preview GETs still need `content:read`. The **Content editor** preset includes both.
+Minting tokens with only `preview:write` works, but authenticated preview GETs need read access for the content type. The **Posts editor** preset includes both for posts.

@@ -63,12 +63,15 @@ export async function apiKeyScopeEnforcer(
 		return;
 	}
 
-	if (authContext.siteId) {
-		const requestedSiteId = readRequestSiteId(req);
-		if (requestedSiteId && requestedSiteId !== authContext.siteId) {
-			res.status(403).json({ message: "This API key cannot access the requested site" });
-			return;
-		}
+	if (!authContext.siteId) {
+		res.status(403).json({ message: "This API key is not bound to a site" });
+		return;
+	}
+
+	const requestedSiteId = readRequestSiteId(req);
+	if (requestedSiteId && requestedSiteId !== authContext.siteId) {
+		res.status(403).json({ message: "This API key cannot access the requested site" });
+		return;
 	}
 
 	attachRequestAuth(req, authContext);
