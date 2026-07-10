@@ -15,6 +15,7 @@ import type {
 	sessions,
 } from "./schema";
 import type { CSSProperties } from "react";
+import type { PageIconDefaultSet, ReactIconsPrefix } from "./icon-types";
 
 // User types
 export type User = typeof users.$inferSelect;
@@ -77,8 +78,12 @@ export type Blog = typeof blogs.$inferSelect;
 export type NewBlog = typeof blogs.$inferInsert;
 
 // Post types
-export type Post = typeof posts.$inferSelect;
-export type NewPost = typeof posts.$inferInsert;
+export type Post = typeof posts.$inferSelect & {
+	version?: number;
+};
+export type NewPost = typeof posts.$inferInsert & {
+	version?: number;
+};
 
 // Media types
 export type Media = typeof media.$inferSelect;
@@ -145,16 +150,16 @@ export interface PageDesignSettings {
 /** Per-page icon settings stored in page.other.icons */
 export interface PageIconSettings {
   /** Default icon set for new icon/button blocks on this page */
-  defaultSet: 'lucide' | 'react-icons' | 'svgl' | 'all';
+  defaultSet: PageIconDefaultSet;
 
   /**
    * When defaultSet is 'react-icons', optionally restrict to specific prefixes.
    * Empty array or undefined = all react-icons sets.
    */
-  allowedSets?: string[]; // e.g., ['lu', 'tb', 'fa6']
+  allowedSets?: ReactIconsPrefix[];
 
   /** Default icon size for new icons on this page */
-  defaultSize?: number; // px, default 24
+  defaultSize?: number;
 }
 
 /** Structure for page.other jsonb field */
@@ -230,7 +235,7 @@ export interface BlockConfig {
 
 	// Display metadata
 	label?: string; // User-facing display name (e.g., 'Heading', 'Two Columns')
-	category?: "basic" | "layout" | "media" | "advanced" | "post";
+	category?: "basic" | "form" | "layout" | "media" | "advanced" | "post";
 
 	// Content - Discriminated union for type-safe handling
 	// - For text blocks: { kind: 'text', value: '...' }

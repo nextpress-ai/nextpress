@@ -9,7 +9,7 @@ import {
   type ColumnLayout,
   type ColumnsContent,
   readColumnLayoutFromBlock,
-  readColumnsData,
+  readColumnsDataFromBlock,
   buildColumnsContainerStyle,
   buildColumnStyle,
 } from "@shared/columns-layout";
@@ -39,6 +39,8 @@ interface ColumnsRendererProps {
   columnLayout?: ColumnLayout[];
   isPreview?: boolean;
   onBlockChange?: (updated: BlockConfig) => void;
+  /** Merged layout data (content + styles). */
+  layoutData?: ReturnType<typeof readColumnsDataFromBlock>;
 }
 
 function ColumnsRenderer({
@@ -48,8 +50,9 @@ function ColumnsRenderer({
   columnLayout,
   isPreview,
   onBlockChange,
+  layoutData,
 }: ColumnsRendererProps) {
-  const data = readColumnsData(content);
+  const data = layoutData ?? readColumnsDataFromBlock({ content, styles });
   const layoutMode = data.layoutMode || "flex";
   const direction = data.direction || "row";
   const minColumnWidth = data.minColumnWidth || "220px";
@@ -253,11 +256,13 @@ function ColumnsBlockView({
     content,
     children: value.children,
   });
+  const layoutData = readColumnsDataFromBlock({ content, styles });
 
   return (
     <ColumnsRenderer
       content={content}
       styles={styles}
+      layoutData={layoutData}
       children={value.children}
       columnLayout={layout}
       isPreview={isPreview}

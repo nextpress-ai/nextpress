@@ -18,6 +18,7 @@ Official TypeScript SDK for the NextPress CMS REST API. Use it for scripts, auto
 | [Blocks](./blocks.md) | Reference | Block helpers, `BlockConfig`, all 35 block types |
 | [Preview](./preview.md) | Guide | Authenticated preview and share links |
 | [Errors and validation](./errors-and-validation.md) | Reference | `NextpressError`, Zod input validation |
+| [Versioning](./versioning.md) | Reference | `expectedVersion`, `SdkResult`, tamper-proof updates |
 | [Development](./development.md) | Guide | Build, test, lint, live integration tests |
 
 ## Quick reference

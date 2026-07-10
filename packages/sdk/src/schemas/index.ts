@@ -1,4 +1,12 @@
 import { z } from "zod";
+import {
+	CONTAINER_HTML_TAG_NAMES,
+	GROUP_HTML_TAG_NAMES,
+	ICON_SET_IDS,
+	PAGE_ICON_DEFAULT_SETS,
+	REACT_ICONS_PREFIXES,
+	STANDARD_META_TAG_NAMES,
+} from "../types/page-other.js";
 
 export const uuidSchema = z.string().uuid();
 
@@ -16,6 +24,64 @@ export const siteIdSchema = z.object({
 export const idParamSchema = z.object({
 	id: uuidSchema,
 });
+
+export const iconSetIdSchema = z.enum(ICON_SET_IDS);
+
+export const iconReferenceSchema = z.object({
+	iconSet: iconSetIdSchema.optional(),
+	iconName: z.string().min(1),
+	size: z.number().optional(),
+	color: z.string().optional(),
+	strokeWidth: z.number().optional(),
+});
+
+const metaTagNameSchema = z.union([
+	z.enum(STANDARD_META_TAG_NAMES),
+	z.string().regex(/^(og|twitter|article):[a-z0-9][a-z0-9:_-]*$/i),
+	z.string().regex(/^[a-z0-9][a-z0-9:_-]*$/i),
+]);
+
+export const pageIconSettingsSchema = z.object({
+	defaultSet: z.enum(PAGE_ICON_DEFAULT_SETS),
+	allowedSets: z.array(z.enum(REACT_ICONS_PREFIXES)).optional(),
+	defaultSize: z.number().int().min(8).max(256).optional(),
+});
+
+export const pageOtherSchema = z
+	.object({
+		seo: z
+			.object({
+				metaTitle: z.string().optional(),
+				metaDescription: z.string().optional(),
+				canonicalUrl: z.string().optional(),
+				noIndex: z.boolean().optional(),
+				customMeta: z
+					.array(
+						z.object({
+							name: metaTagNameSchema,
+							content: z.string(),
+						}),
+					)
+					.optional(),
+			})
+			.optional(),
+		design: z
+			.object({
+				fontFamily: z.string().optional(),
+				containerWidth: z.string().optional(),
+				padding: z.string().optional(),
+			})
+			.optional(),
+		icons: pageIconSettingsSchema.optional(),
+		isBlogPage: z.boolean().optional(),
+		blogId: z.string().uuid().optional(),
+		categories: z.array(z.string()).optional(),
+		tags: z.array(z.string()).optional(),
+	})
+	.passthrough();
+
+export const groupHtmlTagSchema = z.enum(GROUP_HTML_TAG_NAMES);
+export const containerHtmlTagSchema = z.enum(CONTAINER_HTML_TAG_NAMES);
 
 export const blockContentSchema: z.ZodType<unknown> = z.union([
 	z.object({
@@ -104,7 +170,11 @@ export const createPostSchema = z.object({
 	other: z.record(z.unknown()).optional(),
 });
 
-export const updatePostSchema = createPostSchema.partial().omit({ blogId: true });
+export const updatePostSchema = z
+	.object({
+		expectedVersion: z.number().int().min(0),
+	})
+	.merge(createPostSchema.partial().omit({ blogId: true }));
 
 export const listPagesQuerySchema = paginationSchema.extend({
 	status: contentStatusSchema.optional(),
@@ -119,10 +189,14 @@ export const createPageSchema = z.object({
 	siteId: z.string().uuid().optional(),
 	blocks: z.array(blockConfigSchema).optional(),
 	publishedAt: z.string().datetime().optional(),
-	other: z.record(z.unknown()).optional(),
+	other: pageOtherSchema.optional(),
 });
 
-export const updatePageSchema = createPageSchema.partial();
+export const updatePageSchema = z
+	.object({
+		expectedVersion: z.number().int().min(0),
+	})
+	.merge(createPageSchema.partial());
 
 export const listBlogsQuerySchema = paginationSchema.extend({
 	status: contentStatusSchema.optional(),

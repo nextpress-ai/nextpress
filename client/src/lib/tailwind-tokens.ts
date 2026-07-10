@@ -1,8 +1,11 @@
 import resolveConfig from 'tailwindcss/resolveConfig'
-import tailwindConfig from '../../../tailwind.config'
+import { tailwindThemeExtend } from '@shared/tailwind-theme'
 import { camelToKebab, STATE_MODIFIER_MAP } from '@shared/token-resolution'
 
-const fullConfig = resolveConfig(tailwindConfig)
+const fullConfig = resolveConfig({
+	content: [],
+	theme: { extend: tailwindThemeExtend },
+})
 
 /** All color families with hex values, for swatch UI rendering */
 export const tokenColors = fullConfig.theme.colors

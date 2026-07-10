@@ -13,6 +13,7 @@ import type {
 	PreviewShareToken,
 	Template,
 } from "../types/domain.js";
+import type { SdkResult } from "../client/sdk-result.js";
 
 export type EditorContentType = "page" | "post" | "template";
 
@@ -25,6 +26,8 @@ export type EditorLoadedContent = {
 	slug?: string;
 	blocks: BlockConfig[];
 	raw: Page | Post | Template;
+	/** Optimistic concurrency token — refresh after each successful save. */
+	expectedVersion?: number;
 };
 
 /** Stateful editor with undo/redo, save, publish, and expiring preview links. */
@@ -48,17 +51,17 @@ export type EditorSession = {
 	/** Gate redo UI after the user steps back in history. */
 	canRedo: () => boolean;
 	/** Flush in-memory edits to the server for the loaded content type. */
-	save: (input?: EditorSaveParams) => Promise<Page | Post | Template>;
+	save: (input?: EditorSaveParams) => Promise<SdkResult<Page | Post | Template>>;
 	/** Go live with the current in-memory blocks without a separate save call. */
-	publish: () => Promise<Page | Post>;
+	publish: () => Promise<SdkResult<Page | Post>>;
 	/** Pull content offline while keeping the block tree in the session. */
-	unpublish: () => Promise<Page | Post>;
+	unpublish: () => Promise<SdkResult<Page | Post>>;
 	/** Render the loaded draft through the authenticated preview API. */
 	preview: () => Promise<Page | Post | Template>;
 	/** Share the loaded draft with reviewers who cannot sign into the dashboard. */
 	createPreviewLink: (params?: EditorPreviewLinkParams) => Promise<PreviewShareToken>;
 	/** Roll back to a server snapshot and realign the undo stack with that tree. */
-	restoreVersion: (params: Pick<RestorePageVersionParams, "version">) => Promise<Page>;
+	restoreVersion: (params: Pick<RestorePageVersionParams, "version">) => Promise<SdkResult<Page>>;
 	/** List page version snapshots for rollback UI on loaded pages. */
 	getHistory: () => Promise<PageHistoryResponse>;
 	/** Inspect session metadata without triggering another load. */

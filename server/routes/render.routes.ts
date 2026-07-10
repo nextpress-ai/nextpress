@@ -17,6 +17,7 @@ import { resolveSiteRenderContext } from "./shared/resolve-site-render-context";
 import { getSiteBlogIds } from "./shared/site-content";
 
 import { generateBlockAnimationCSS, getEntryAnimationBaseCSS } from "@shared/animation-utils";
+import { collectBlockCustomCss, collectBlockJsScripts } from "@shared/collect-block-scripts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -312,13 +313,8 @@ export function createRenderRoutes(deps: Deps): Router {
 				// Render blocks to HTML directly (no adapter needed)
 				const blockContentHtml = renderBlocksToHtml(blocks);
 
-				// Collect all custom CSS from blocks
-				const allCustomCss = blocks
-					.map((block) =>
-						[block.customCss, block.other?.css].filter(Boolean).join("\n"),
-					)
-					.filter(Boolean)
-					.join("\n");
+				// Collect all custom CSS from blocks (sanitized)
+				const allCustomCss = collectBlockCustomCss(blocks);
 
 				// Collect animation CSS rules (hover/loop) from blocks using shared utility
 				const animationCssRules = blocks
@@ -356,6 +352,10 @@ export function createRenderRoutes(deps: Deps): Router {
 				if (hasEntryAnimations) {
 					bodyParts.push(`<script src="/vendor/entry-animations.js"></script>`);
 					bodyParts.push(`<script>initEntryAnimations();</script>`);
+				}
+				const blockJsScripts = collectBlockJsScripts(blocks);
+				if (blockJsScripts) {
+					bodyParts.push(blockJsScripts);
 				}
 				const bodyScripts = bodyParts.join("\n");
 

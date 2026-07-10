@@ -26,6 +26,9 @@ import PreformattedBlock from './preformatted/PreformattedBlock';
 import TableBlock from './table/TableBlock';
 import MarkdownBlock from './markdown/MarkdownBlock';
 import IconBlock from './icon/IconBlock';
+import InputBlock from './input/InputBlock';
+import TextareaBlock from './textarea/TextareaBlock';
+import SelectBlock from './select/SelectBlock';
 
 // Post blocks
 import PostTitleBlock from './post-title/PostTitleBlock';
@@ -116,6 +119,9 @@ export const blockRegistry: Record<string, BlockDefinition> = {
   'core/markdown': MarkdownBlock,
   'core/icon': IconBlock,
   'core/divider': DividerBlock,
+  'core/input': InputBlock,
+  'core/textarea': TextareaBlock,
+  'core/select': SelectBlock,
 
   // Post blocks
   'post/title': PostTitleBlock,

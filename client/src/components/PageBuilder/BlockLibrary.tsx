@@ -42,6 +42,11 @@ export function buildBlockLibraryCategories(): BlockLibraryCategory[] {
       blocks: allBlocks.filter((b) => b.category === 'basic'),
     },
     {
+      id: 'form',
+      name: 'Form fields',
+      blocks: allBlocks.filter((b) => b.category === 'form'),
+    },
+    {
       id: 'media',
       name: 'Media',
       blocks: allBlocks.filter((b) => b.category === 'media'),

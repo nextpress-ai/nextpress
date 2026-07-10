@@ -25,8 +25,8 @@ const nextpress = createNextpress({
   siteId: "your-site-uuid",
 });
 
-// Create a page with blocks
-const page = await nextpress.pages.create({
+// Create a page with blocks (mutations return SdkResult — check isErr)
+const createResult = await nextpress.pages.create({
   title: "About Us",
   status: "draft",
   blocks: [
@@ -34,6 +34,8 @@ const page = await nextpress.pages.create({
     nextpress.blocks.paragraph({ text: "We build great things." }),
   ],
 });
+if (createResult.isErr) throw createResult.error;
+const page = createResult.value;
 
 // List published posts
 const { posts, total } = await nextpress.posts.list({
@@ -65,19 +67,16 @@ When you create a key in the dashboard, you choose what it can do. Common preset
 
 Write permissions include read for the same resource (`posts:write` includes `posts:read`). Preview share links need **Preview links**; viewing authenticated previews needs read access for that content type (for example `pages:read` for page previews).
 
-If the API rejects a call because the key lacks permission, the response is `403` with `code: "API_KEY_SCOPE_DENIED"` and a `requiredScopes` list. The SDK surfaces this on `NextpressError.code`:
+If the API rejects a call because the key lacks permission, the response is `403` with `code: "API_KEY_SCOPE_DENIED"`. Mutations return `SdkResult` — check `isErr`:
 
 ```ts
-import { createNextpress, isNextpressError } from "@nextpress-org/sdk";
-
-try {
-  await nextpress.pages.create({ title: "Draft", blocks: [] });
-} catch (error) {
-  if (isNextpressError(error) && error.code === "API_KEY_SCOPE_DENIED") {
-    console.error("Key needs more permissions in Settings → System → API Keys");
-  }
+const result = await nextpress.pages.create({ title: "Draft", blocks: [] });
+if (result.isErr && result.error.code === "API_KEY_SCOPE_DENIED") {
+  console.error("Key needs more permissions in Settings → System → API Keys");
 }
 ```
+
+See [Versioning](../../docs/sdk/versioning.md) for `expectedVersion` and conflict handling.
 
 Site-bound keys only work for the site you selected when creating the key. Pass the same `siteId` in the SDK factory options.
 
@@ -97,7 +96,7 @@ editor.setBlocks([
 editor.undo(); // same semantics as dashboard Cmd+Z
 editor.redo();
 
-await editor.save();
+await editor.save(); // returns SdkResult — check isErr on conflict
 await editor.publish();
 
 // Shareable preview — no login required, expires in 5 minutes by default
@@ -196,24 +195,31 @@ nextpress.on("page-created", async ({ page }) => {
 Use resources for one-shot automation, or an editor session when you need undo/redo:
 
 ```ts
-const page = await nextpress.pages.create({
+const createResult = await nextpress.pages.create({
   title: "Landing",
   blocks: nextpress.blocks.starterLayout(),
 });
+if (createResult.isErr) throw createResult.error;
+const page = createResult.value;
 
-await nextpress.pages.update({
+const current = await nextpress.pages.get({ id: page.id });
+const updateResult = await nextpress.pages.update({
   id: page.id,
+  expectedVersion: current.version ?? 0,
   blocks: [
     nextpress.blocks.heading({ text: "Welcome", level: 1 }),
     nextpress.blocks.postList({ data: { blogId: "…", postsPerPage: 6 } }),
   ],
 });
+if (updateResult.isErr) throw updateResult.error;
 
-await nextpress.pages.update({
+const publishResult = await nextpress.pages.update({
   id: page.id,
+  expectedVersion: updateResult.value.version ?? 0,
   status: "publish",
   publishedAt: new Date().toISOString(),
 });
+if (publishResult.isErr) throw publishResult.error;
 
 const preview = await nextpress.preview.page({ id: page.id });
 ```
@@ -236,22 +242,28 @@ const blocks = [
 
 await nextpress.pages.update({
   id: page.id,
+  expectedVersion: page.version ?? 0,
   blocks,
 });
 ```
 
 ## Input validation
 
-All SDK methods validate inputs with Zod before sending requests. Invalid input throws a descriptive `Error` locally. API errors throw `NextpressError` with `status`, `code`, and `body`.
+SDK methods validate inputs with Zod before sending requests. Invalid input throws locally. **Mutations** (`create`, `update`, `delete`) return `SdkResult` — check `isErr` before using `value`. **Reads** throw `NextpressError` on API failure.
+
+Updates require `expectedVersion` from a prior `get()`. See [Versioning](../../docs/sdk/versioning.md).
 
 ```ts
-import { isNextpressError } from "@nextpress-org/sdk";
+import { isNextpressError, VERSION_STALE } from "@nextpress-org/sdk";
 
-try {
-  await nextpress.posts.create({ title: "Missing blogId" });
-} catch (error) {
-  if (isNextpressError(error)) {
-    console.error(error.status, error.message);
+const result = await nextpress.posts.update({
+  id: postId,
+  expectedVersion: 0,
+  title: "Updated",
+});
+if (result.isErr) {
+  if (result.error.code === VERSION_STALE) {
+    console.warn("Someone else edited this — reload and retry");
   }
 }
 ```

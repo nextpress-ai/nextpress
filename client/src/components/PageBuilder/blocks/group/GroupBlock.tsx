@@ -5,7 +5,7 @@ import { buildGroupShellStyles, readGroupShellContent } from "@shared/group-shel
 import { ContainerChildren } from "../../BlockRenderer";
 import { Package as GroupIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
-import { type GroupContent, DEFAULT_CONTENT } from "./group-model";
+import { type GroupContent, DEFAULT_SEMANTIC_CONTENT } from "./group-model";
 import { GroupSettings } from "./group-settings";
 
 // ============================================================================
@@ -72,7 +72,7 @@ const GroupBlock = createBlockDefinition<GroupContent>({
   category: "layout",
   isContainer: true,
   handlesOwnChildren: true,
-  defaultContent: DEFAULT_CONTENT,
+  defaultContent: DEFAULT_SEMANTIC_CONTENT,
   defaultStyles: {
     padding: "1.25em 2.375em",
   },

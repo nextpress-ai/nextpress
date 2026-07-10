@@ -1,5 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import type { PageOther, PageIconSettings } from '@shared/schema-types';
+import { DEFAULT_PAGE_ICONS } from '@shared/page-other';
 
 export interface PageContextValue {
   /** Full page.other object */
@@ -9,10 +10,7 @@ export interface PageContextValue {
   iconSettings: PageIconSettings;
 }
 
-const DEFAULT_ICON_SETTINGS: PageIconSettings = {
-  defaultSet: 'lucide',
-  defaultSize: 24,
-};
+const DEFAULT_ICON_SETTINGS: PageIconSettings = DEFAULT_PAGE_ICONS;
 
 const PageContext = createContext<PageContextValue>({
   iconSettings: DEFAULT_ICON_SETTINGS,

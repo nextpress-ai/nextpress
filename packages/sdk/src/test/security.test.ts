@@ -43,10 +43,11 @@ describe("security", () => {
 			fetch: fetchMock,
 		});
 
-		await nextpress.posts.create({
+		const createResult = await nextpress.posts.create({
 			title: "Secure",
 			blogId: mockIds.blogId,
 		});
+		expect(createResult.isErr).toBe(false);
 
 		expect(calls).toHaveLength(1);
 		expect(calls[0]?.url).not.toContain(SECRET_KEY);
@@ -210,15 +211,14 @@ describe("security", () => {
 			fetch: fetchMock,
 		});
 
-		try {
-			await nextpress.pages.create({ title: "Blocked", blocks: [] });
-			expect.unreachable("should throw");
-		} catch (error) {
-			expect(error).toMatchObject({
+		const createResult = await nextpress.pages.create({ title: "Blocked", blocks: [] });
+		expect(createResult.isErr).toBe(true);
+		if (createResult.isErr) {
+			expect(createResult.error).toMatchObject({
 				status: 403,
 				code: "API_KEY_SCOPE_DENIED",
 			});
-			expect(String(error)).not.toContain(SECRET_KEY);
+			expect(String(createResult.error)).not.toContain(SECRET_KEY);
 		}
 	});
 });

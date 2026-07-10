@@ -270,6 +270,74 @@ server/routes/import.wordpress.routes.ts  # SSRF via validate-external-url.ts
 - Adapters: pages, media, comments, users
 - Re-import / update by `wpId`
 
+---
+
+## 2026-07-10 — Page `other` defaults, save validation, preview icons, group settings UX
+
+### Page `other` defaults (editor ↔ SDK parity)
+
+- **Problem**: Editor-created pages stored `other: {}`; SDK/import pages got design + icon shell defaults. Runtime-only defaults in `PageContext` did not persist or match publish path.
+- **Source of truth**: `shared/page-other.ts` — `DEFAULT_PAGE_DESIGN`, `DEFAULT_PAGE_ICONS`, `mergePageOtherWithDefaults()`, `parsePageOther()`, `validatePageOtherForSave()`, `enrichPageForApi()`.
+- **Editor create**: `CreatePageModal` sends `other: mergePageOtherWithDefaults()` on POST.
+- **SDK create**: `pages.create()` in `packages/sdk/src/resources/pages.ts` auto-applies `buildDefaultPageOther()` before POST. Export from SDK index: `buildDefaultPageOther`, `DEFAULT_PAGE_OTHER`, icon/tag type constants.
+- **Server**: Page POST/PUT runs `validateContentForSave()` from `shared/validate-content-save.ts`; merges validated `other` on create. GET/POST/PUT responses use `enrichPageForApi()` so legacy `{}` pages show defaults in editor without DB rewrite until save.
+- **Import**: `shared/import/wordpress/import-defaults.ts` re-exports design/icon defaults from `page-other.ts` (deprecated aliases kept).
+
+### Optimistic concurrency (`expectedVersion`) — editor gaps fixed
+
+- **Problem**: Top-bar Save/Preview in `PageBuilderEditor.tsx` sent `version` (pages only) or omitted it (posts/inline posts). Server requires `expectedVersion` on all page/post PUTs → 400.
+- **Fix**: `handlePageBuilderSave` sends `expectedVersion`, strips visual content via `stripVisualContentFromBlocks`, updates React Query cache after save, handles `VERSION_STALE`. `PublishDialog` publish/unpublish include `expectedVersion`. `adaptPostToEditorData` preserves `post.version`.
+- **Already correct**: In-canvas save via `usePageSave` in `PageBuilder.tsx`.
+
+### Content save validation (backend)
+
+- **Module**: `shared/validate-content-save.ts` + `shared/validate-icon-reference.ts`.
+- **Icon indexes moved to** `shared/icons/` (lucide, svgl, react-icons); client `icon-indexes/*.ts` re-exports from `@shared/icons/*`.
+- **On page/post create/update** (400 with codes):
+  - `INVALID_ICON` — `iconSet` must be `lucide | react-icons | svgl`; name must exist in index (lucide kebab-case, PascalCase normalized; react-icons `prefix:Name`; SVGL slug).
+  - `INVALID_BLOCK_TAG` — group/container `tagName` from `shared/block-tag-names.ts` unions.
+  - `INVALID_PAGE_OTHER` — page icon settings + custom meta tag names (`shared/meta-tag-names.ts`).
+- **Posts**: block validation only (taxonomy stays in `post.other` via `parsePostOther`).
+- **SDK Zod**: `pageOtherSchema`, `iconSetIdSchema`, `groupHtmlTagSchema`, etc. in `packages/sdk/src/schemas/index.ts`. Types in `packages/sdk/src/types/page-other.ts` (standalone, not `@shared` — publishable package rule).
+
+### DB migration (user-run)
+
+- Posts/pages **`version`** column: `0006_posts_version.sql` (and pages equivalent if not applied). Server returns 400/409 without migration.
+
+### Group block — Layout settings UI (design system)
+
+- **Problem**: 2-column grid of bordered mini-cards with title + description violated `docs/design-system.md` (card-in-card, too dense).
+- **Fix** (`client/.../blocks/group/group-settings.tsx`):
+  - **Select** for active preset + hint line with description.
+  - **`SettingsChipGroup`** for Flex vs Grid preset families (matches BlockSettings / container chips).
+  - HTML tag row uses `npb-settings-chip` like container settings.
+- Layout CSS still applies to **Style tab** via `updateStyles(presetToStyles(...))`; content keeps `layoutPreset` key only.
+
+### Preview / publish icons (Google search page)
+
+- **Problem**: Icons inside horizontal **group** rows invisible in preview — two causes:
+  1. Nested children rendered via `BLOCK_COMPONENTS` → SSR `IconBlock` drew placeholder squares, not Lucide glyphs.
+  2. Horizontal flex gave all children `flex: 1 1 auto` + `minWidth: 0` → icon blocks collapsed to zero width.
+- **Fixes**:
+  - `renderer/react/shared/lucide-glyph.tsx` — real Lucide icons by kebab-case name for publish/preview/SSR.
+  - `renderer/react/advanced/index.tsx` `IconBlock` uses `LucideGlyph` + reads **color/size from `block.styles`** (SDK Google layout sets `#9aa0a6` / `22px` on styles, not `content.icon`).
+  - `shared/icon-block-visuals.ts` — `effectiveIconGlyphColor`, `readIconBoxSizeFromStyles`, `getInlineFlexChildStyles` (`core/icon`, `core/button`, etc. get `flex: 0 0 auto` in horizontal group/container rows).
+  - `ClientIconBlock` aligned with editor `IconBlock.tsx` visual rules; lucide sync via `LucideGlyph`, other sets lazy `IconRenderer`.
+  - `renderer/react/layout/index.tsx` — GroupBlock + ContainerBlock `renderChild` use inline-flex child styles.
+- **Rule**: Visual fixes for published/preview appearance → **`renderer/react/*`** (+ shared helpers). Editor canvas blocks are not the publish path (AGENTS.md).
+
+### Vite / React duplicate (2026-07-10, partial)
+
+- Multiple `pnpm dev` on port 5000 + mid-session Vite re-optimize can load two React copies → `Cannot read properties of null (reading 'useState')`.
+- Mitigations in tree: `optimizeDeps.noDiscovery`, full `include` list, pre-warm in `server/vite.ts`, client no longer imports `tailwind.config.ts`. **Always one dev server**; hard refresh after dependency changes.
+
+### Tests
+
+- `shared/validate-content-save.test.ts` — icon validation, page other merge, invalid group tag.
+
+---
+
+## 2026-06-03 — Phase 8 Renderer Unification
 
 Full spec: [`docs/phase8-renderer-unification.md`](docs/phase8-renderer-unification.md). Tracker: `task.md`.
 

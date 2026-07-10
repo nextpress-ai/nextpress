@@ -63,6 +63,12 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
+  // Finish included dep pre-bundling before browser traffic — parallel requests
+  // mid-optimize mix React chunk hashes and hooks throw (null dispatcher).
+  log("Pre-bundling Vite dependencies…");
+  await vite.transformRequest("/src/main.tsx");
+  log("Vite dependency pre-bundle complete");
+
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;

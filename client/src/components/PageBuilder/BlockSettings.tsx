@@ -372,7 +372,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
       "button",
       "core/button",
     ].includes(block.name);
-    const showFlowTextAlign = ["heading", "core/heading", "text", "core/paragraph"].includes(
+    const showFlowTextAlign = ["heading", "core/heading", "text", "core/paragraph", "core/pullquote"].includes(
       block.name,
     );
     const showButtonLabelAlign = ["button", "core/button"].includes(block.name);
@@ -724,9 +724,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 customPlaceholder="e.g. 400px, 50dvh"
               />
             </div>
-            {/* Display Type for Layout-capable Blocks
-                NOTE: `core/columns` layout is controlled via its own Content settings to avoid conflicts.
-             */}
+            {/* Display Type for layout blocks — flex/grid controls live here (Style tab). */}
             {['container', 'core/group', 'core/container'].includes(block.name) && (
               <>
                   <div>
@@ -786,6 +784,47 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                       onChange={(value) => updateStyles({ flexWrap: value })}
                     />
                   </div>
+                )}
+
+                {(block.styles?.display === 'grid' || block.styles?.display === 'inline-grid') && (
+                  <>
+                    <div>
+                      <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
+                        <Grid3X3 className="w-3 h-3" />
+                        Grid columns
+                      </Label>
+                      <Input
+                        value={
+                          block.styles?.gridTemplateColumns != null
+                            ? String(block.styles.gridTemplateColumns)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          updateStyles({ gridTemplateColumns: e.target.value || undefined })
+                        }
+                        placeholder="e.g. repeat(2, 1fr)"
+                        className="mt-2 h-8 rounded-none text-sm focus-visible:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
+                        <Grid3X3 className="w-3 h-3" />
+                        Grid rows
+                      </Label>
+                      <Input
+                        value={
+                          block.styles?.gridTemplateRows != null
+                            ? String(block.styles.gridTemplateRows)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          updateStyles({ gridTemplateRows: e.target.value || undefined })
+                        }
+                        placeholder="e.g. auto 1fr"
+                        className="mt-2 h-8 rounded-none text-sm focus-visible:outline-none"
+                      />
+                    </div>
+                  </>
                 )}
 
                 {/* Justify Content */}
@@ -901,7 +940,43 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               </div>
             )}
 
-            {/* For Columns, keep true dimensions here, but avoid duplicating layout controls. */}
+            {/* For Columns, layout direction/gap live here (not in Content tab). */}
+            {isColumnsBlock && (
+              <>
+                <div>
+                  <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
+                    <RotateCw className="w-3 h-3" />
+                    Direction
+                  </Label>
+                  <SettingsChipGroup
+                    label=""
+                    options={[
+                      { value: "row", label: "Row" },
+                      { value: "column", label: "Column" },
+                    ]}
+                    value={block.styles?.flexDirection === "column" ? "column" : "row"}
+                    onChange={(value) => updateStyles({ flexDirection: value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
+                    <Move className="w-3 h-3" />
+                    Gap
+                  </Label>
+                  <Input
+                    value={
+                      block.styles?.gap !== undefined && block.styles.gap !== null
+                        ? String(block.styles.gap)
+                        : ""
+                    }
+                    onChange={(e) => updateStyles({ gap: e.target.value || undefined })}
+                    placeholder="e.g. 20px, 2rem"
+                    className="mt-2 h-8 rounded-none text-sm focus-visible:outline-none"
+                  />
+                </div>
+              </>
+            )}
+
             {isColumnsBlock && (
               <div>
                 <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
@@ -960,6 +1035,21 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               placeholder="e.g. 0px, 4px"
               className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
             />
+          </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard title="Custom CSS" icon={Code} defaultOpen={false}>
+          <div className="space-y-3">
+            <Textarea
+              value={customCss}
+              onChange={(e) => handleCustomCssChange(e.target.value)}
+              placeholder="/* Add your custom CSS here */&#10;.my-block {&#10;  /* styles */&#10;}"
+              rows={8}
+              className="font-mono text-sm resize-none"
+            />
+            <p className="npb-settings-hint-muted text-xs">
+              CSS will be applied to this block only. Use standard CSS syntax.
+            </p>
           </div>
         </CollapsibleCard>
       </div>
@@ -1031,23 +1121,6 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 onChange={updateAnimation}
               />
             </CollapsibleCard>
-
-            <div className="mt-4">
-              <CollapsibleCard title="Custom CSS" icon={Code} defaultOpen={false}>
-                  <div className="space-y-3">
-                    <Textarea
-                      value={customCss}
-                      onChange={(e) => handleCustomCssChange(e.target.value)}
-                      placeholder="/* Add your custom CSS here */&#10;.my-block {&#10;  /* styles */&#10;}"
-                      rows={8}
-                      className="font-mono text-sm resize-none"
-                    />
-                    <p className="npb-settings-hint-muted text-xs">
-                      CSS will be applied to this block only. Use standard CSS syntax.
-                    </p>
-                  </div>
-              </CollapsibleCard>
-            </div>
 
             {/* Anchor ID & CSS Classes — available for all blocks */}
             <div className="mt-4">

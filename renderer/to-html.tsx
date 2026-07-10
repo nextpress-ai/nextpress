@@ -4,6 +4,7 @@ import * as ReactDOMServer from "react-dom/server";
 import { BLOCK_COMPONENTS } from "./react/block-components";
 import type { BlockConfig } from "@shared/schema-types";
 import { collectBlockModifierCSS } from "@shared/token-resolution";
+import { sanitizeHtml } from "@shared/sanitize-html";
 
 const HYDRATION_CONTAINER_ID = "react-island-";
 
@@ -58,7 +59,7 @@ export function renderBlocksToHtml(blocks: BlockConfig[]): string {
 
     // Handle HTML override (if other.html is set)
     if (block.other?.html) {
-      fullHtml += block.other.html;
+      fullHtml += sanitizeHtml(String(block.other.html));
       continue;
     }
 

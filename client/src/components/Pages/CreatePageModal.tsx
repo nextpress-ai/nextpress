@@ -28,6 +28,7 @@ import {
 } from "@/lib/sonner-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useActiveSite } from "@/hooks/useActiveSite";
+import { mergePageOtherWithDefaults } from "@shared/page-other";
 import { reIdTemplateBlocks } from "@/lib/re-id-template-blocks";
 import { useContentLists } from "@/hooks/useContentLists";
 import { FilePlus } from "lucide-react";
@@ -179,6 +180,7 @@ export function CreatePageModal({
         status: "draft", // Always draft on creation
         siteId: activeSiteId,
         blocks: starterBlocks,
+        other: mergePageOtherWithDefaults(),
         allowComments: data.allowComments,
         password: data.password || undefined,
         parentId: data.parentId || undefined,

@@ -26,6 +26,9 @@ export const BLOCK_NAMES = [
 	"core/markdown",
 	"core/icon",
 	"core/divider",
+	"core/input",
+	"core/textarea",
+	"core/select",
 	"post/title",
 	"post/excerpt",
 	"post/featured-image",
@@ -44,7 +47,7 @@ export type BlockDefinitionMeta = {
 	name: BlockName;
 	label: string;
 	type: "block" | "container";
-	category: "basic" | "layout" | "media" | "advanced" | "post";
+	category: "basic" | "form" | "layout" | "media" | "advanced" | "post";
 	defaultContent: () => import("../types/domain.js").BlockContent;
 	defaultStyles?: Record<string, string>;
 };
@@ -159,21 +162,21 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 		label: "Columns",
 		type: "container",
 		category: "layout",
-		defaultContent: () => structured({ columns: 2, gap: "16px" }),
+		defaultContent: () => structured({ layoutMode: "flex", columns: 2 }),
 	},
 	"core/container": {
 		name: "core/container",
 		label: "Container",
 		type: "container",
 		category: "layout",
-		defaultContent: () => structured({ maxWidth: "1200px", gap: "16px" }),
+		defaultContent: () => structured({ tagName: "div" }),
 	},
 	"core/group": {
 		name: "core/group",
 		label: "Group",
 		type: "container",
 		category: "layout",
-		defaultContent: () => structured({ gap: "16px", alignment: "stretch" }),
+		defaultContent: () => structured({ tagName: "div" }),
 	},
 	"core/quote": {
 		name: "core/quote",
@@ -282,6 +285,67 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 		type: "block",
 		category: "layout",
 		defaultContent: () => structured({ style: "solid" }),
+	},
+	"core/input": {
+		name: "core/input",
+		label: "Text field",
+		type: "block",
+		category: "form",
+		defaultContent: () =>
+			structured({
+				type: "text",
+				name: "field",
+				placeholder: "Enter text",
+				defaultValue: "",
+			}),
+		defaultStyles: {
+			width: "100%",
+			padding: "8px 12px",
+			fontSize: "16px",
+			border: "1px solid hsl(var(--border))",
+			borderRadius: "0.375rem",
+		},
+	},
+	"core/textarea": {
+		name: "core/textarea",
+		label: "Text area",
+		type: "block",
+		category: "form",
+		defaultContent: () =>
+			structured({
+				name: "message",
+				placeholder: "Enter your message",
+				rows: 4,
+			}),
+		defaultStyles: {
+			width: "100%",
+			padding: "8px 12px",
+			fontSize: "16px",
+			border: "1px solid hsl(var(--border))",
+			borderRadius: "0.375rem",
+		},
+	},
+	"core/select": {
+		name: "core/select",
+		label: "Dropdown",
+		type: "block",
+		category: "form",
+		defaultContent: () =>
+			structured({
+				name: "choice",
+				placeholder: "Choose an option",
+				options: [
+					{ label: "Option one", value: "option-1" },
+					{ label: "Option two", value: "option-2" },
+				],
+			}),
+		defaultStyles: {
+			width: "100%",
+			padding: "8px 12px",
+			fontSize: "16px",
+			border: "1px solid hsl(var(--border))",
+			borderRadius: "0.375rem",
+		},
 	},
 	"post/title": {
 		name: "post/title",

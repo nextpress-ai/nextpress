@@ -14,6 +14,7 @@ import { SiteMenu } from '@/components/PageBuilder/EditorBar';
 import { useToast } from '@/hooks/use-toast';
 import type { BlockConfig, Page, Post, Template } from '@shared/schema-types';
 import { storeSlugToIdMapping, getPageIdFromSlug } from '@/lib/editorStorage';
+import { setParentIds } from '@/lib/handlers/treeUtils';
 import {
   clearPageDraft,
   loadPageDraft,
@@ -25,6 +26,8 @@ import {
   loadPostDraft,
   savePostDraft,
 } from '@/lib/postDraftStorage';
+import { VERSION_STALE } from '@shared/content-version';
+import { stripVisualContentFromBlocks } from '@shared/strip-visual-content-from-blocks';
 
 type PageState = {
   blocks: BlockConfig[];
@@ -88,11 +91,14 @@ interface PageBuilderEditorProps {
  * Adapts a Post object to the Page shape expected by PageBuilder.
  * Adds safe defaults for page-only fields (siteId, version, history, menuOrder).
  */
+const readExpectedVersion = (entity: Page | Post | EditorData): number =>
+  entity.version ?? 0;
+
 const adaptPostToEditorData = (post: Post): EditorData =>
   ({
     ...post,
     siteId: '',
-    version: 0,
+    version: readExpectedVersion(post),
     history: [],
     menuOrder: 0,
     // Post doesn't have these page-only fields but the type requires them
@@ -225,7 +231,10 @@ export default function PageBuilderEditor({
     const useLocal = localDraft && localTs > remoteTs;
     const source = useLocal ? localDraft : data;
 
-    const initialBlocks = Array.isArray(source?.blocks) ? source.blocks : [];
+    const initialBlocks = setParentIds(
+      Array.isArray(source?.blocks) ? source.blocks : [],
+      null,
+    );
     const initialTitle = String(source?.title || 'Untitled');
     const initialSlug = String(source?.slug || '');
     const initialStatus = String(source?.status || 'draft');
@@ -365,7 +374,7 @@ export default function PageBuilderEditor({
         const response = await apiRequest('GET', `/api/posts/${detail.postId}`);
         const post: Post = await response.json();
 
-        const postBlocks = Array.isArray(post.blocks) ? post.blocks : [];
+        const postBlocks = setParentIds(Array.isArray(post.blocks) ? post.blocks : [], null);
         setInlinePostId(post.id);
         setInlinePostData(post);
         dispatchPageState({
@@ -534,14 +543,17 @@ export default function PageBuilderEditor({
     setIsSaving(true);
     try {
       const { apiRequest } = await import('@/lib/queryClient');
+      const blocks = stripVisualContentFromBlocks(pageState.blocks);
 
       // When inline-editing a post, save to the post API
       if (inlinePostId) {
+        const expectedVersion = readExpectedVersion(inlinePostData ?? data);
         const postPayload = {
           title: pageState.title,
           slug: pageState.slug,
           status: pageState.status,
-          blocks: pageState.blocks,
+          blocks,
+          expectedVersion,
         };
         const response = await apiRequest(
           'PUT',
@@ -552,21 +564,20 @@ export default function PageBuilderEditor({
         savePostDraft(updated.id, updated);
         clearPostDraft(updated.id);
         setInlinePostData(updated);
+        queryClient.setQueryData([`/api/posts/${inlinePostId}`], updated);
         handleSave();
         return true;
       }
 
       const payload = isTemplate
-        ? { name: pageState.title, blocks: pageState.blocks }
-        : isPost
-          ? { title: pageState.title, slug: pageState.slug, status: pageState.status, blocks: pageState.blocks }
-          : {
-              title: pageState.title,
-              slug: pageState.slug,
-              status: pageState.status,
-              blocks: pageState.blocks,
-              version: data.version ?? 0,
-            };
+        ? { name: pageState.title, blocks }
+        : {
+            title: pageState.title,
+            slug: pageState.slug,
+            status: pageState.status,
+            blocks,
+            expectedVersion: readExpectedVersion(data),
+          };
 
       const response = await apiRequest(
         'PUT',
@@ -585,10 +596,20 @@ export default function PageBuilderEditor({
         savePageDraft(updated.id, updated);
         clearPageDraft(updated.id);
       }
+      queryClient.setQueryData([`${apiBase}/${data.id}`], updated);
       handleSave();
       return true;
     } catch (err) {
       console.error(`Error saving ${type}:`, err);
+      const error = err as Error & { code?: string };
+      if (error.code === VERSION_STALE) {
+        toast({
+          title: `${isPost || inlinePostId ? 'Post' : 'Page'} changed elsewhere`,
+          description: 'Reload and try again before saving.',
+          variant: 'destructive',
+        });
+        return false;
+      }
       toast({
         title: 'Error',
         description: `Failed to save ${type}`,

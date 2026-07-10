@@ -18,7 +18,10 @@ import { Separator } from "@/components/ui/separator";
 import { Share2, Globe, ExternalLink, AlertCircle, FileX } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { VERSION_STALE } from "@shared/content-version";
 import type { Post, Page, BlockConfig } from "@shared/schema-types";
+
+const readExpectedVersion = (entity: Post | Page): number => entity.version ?? 0;
 
 interface PublishDialogProps {
   post?: Post | Page;
@@ -77,11 +80,12 @@ export default function PublishDialog({
       const isPage = contentType === 'page';
       const endpoint = isPage ? `/api/pages/${post.id}` : `/api/posts/${post.id}`;
       
-      const publishData: any = {
+      const publishData: Record<string, unknown> = {
         blocks: blocks,
         status: 'publish',
         publishedAt: new Date().toISOString(),
-        slug: slug || generateSlug(post.title)
+        slug: slug || generateSlug(post.title),
+        expectedVersion: readExpectedVersion(post),
       };
 
       // Include siteId for pages (required field)
@@ -114,7 +118,15 @@ export default function PublishDialog({
         window.setTimeout(() => window.location.reload(), 250);
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error & { code?: string }) => {
+      if (error.code === VERSION_STALE) {
+        toast({
+          title: `${contentType === 'page' ? 'Page' : 'Post'} changed elsewhere`,
+          description: 'Reload and try again before publishing.',
+          variant: 'destructive',
+        });
+        return;
+      }
       toast({
         title: "Publishing failed",
         description: error.message || "Failed to publish page",
@@ -130,11 +142,12 @@ export default function PublishDialog({
       const isPage = contentType === 'page';
       const endpoint = isPage ? `/api/pages/${post.id}` : `/api/posts/${post.id}`;
       
-      const unpublishData: any = {
+      const unpublishData: Record<string, unknown> = {
         blocks: blocks,
         status: 'draft',
         publishedAt: null,
-        slug: post.slug // Keep the same slug
+        slug: post.slug,
+        expectedVersion: readExpectedVersion(post),
       };
 
       // Include siteId for pages (required field)
@@ -163,7 +176,15 @@ export default function PublishDialog({
         queryClient.invalidateQueries({ queryKey: [`/api/posts/${post?.id}`] });
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error & { code?: string }) => {
+      if (error.code === VERSION_STALE) {
+        toast({
+          title: `${contentType === 'page' ? 'Page' : 'Post'} changed elsewhere`,
+          description: 'Reload and try again before unpublishing.',
+          variant: 'destructive',
+        });
+        return;
+      }
       toast({
         title: "Failed to unpublish",
         description: error.message || "Failed to move page to draft",

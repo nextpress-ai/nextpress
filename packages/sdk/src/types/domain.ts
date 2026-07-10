@@ -1,3 +1,5 @@
+import type { IconSetId, PageOther as PageOtherSettings } from "./page-other.js";
+
 /**
  * Content status values accepted by the NextPress API.
  * Use `"any"` on list endpoints to disable status filtering.
@@ -6,7 +8,7 @@ export type ContentStatus = "publish" | "draft" | "preview" | "private" | "any";
 
 /** Lucide (or other set) icon reference on icon and button blocks. */
 export type IconReference = {
-	iconSet?: string;
+	iconSet?: IconSetId;
 	iconName: string;
 	size?: number;
 	color?: string;
@@ -89,6 +91,7 @@ export type Post = {
 	createdAt?: string | Date;
 	updatedAt?: string | Date;
 	other?: Record<string, unknown> | null;
+	version?: number;
 	categories?: string[];
 	tags?: string[];
 	isImported?: boolean;
@@ -109,7 +112,7 @@ export type Page = {
 	publishedAt?: string | Date | null;
 	createdAt?: string | Date;
 	updatedAt?: string | Date;
-	other?: Record<string, unknown> | null;
+	other?: PageOtherSettings | null;
 };
 
 export type Blog = {

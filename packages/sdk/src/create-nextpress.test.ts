@@ -29,12 +29,14 @@ describe("createNextpress", () => {
 
 		await nextpress.health.check();
 
-		const page = await nextpress.pages.create({
+		const pageResult = await nextpress.pages.create({
 			title: "Hello",
 			blocks: [nextpress.blocks.heading({ text: "Welcome", level: 1 })],
 		});
-
-		expect(page.title).toBe("Hello");
+		expect(pageResult.isErr).toBe(false);
+		if (!pageResult.isErr) {
+			expect(pageResult.value.title).toBe("Hello");
+		}
 
 		const createCall = fetchMock.mock.calls.find(
 			([, init]) => (init as RequestInit)?.method === "POST",
@@ -121,15 +123,18 @@ describe("createNextpress", () => {
 		const handler = vi.fn();
 		nextpress.on("post-saved", handler);
 
-		await nextpress.posts.create({
+		const createResult = await nextpress.posts.create({
 			title: "Hello",
 			blogId: BLOG_ID,
 		});
 
-		expect(handler).toHaveBeenCalledOnce();
-		expect(handler.mock.calls[0][0].action).toBe("created");
-		expect(handler.mock.calls[0][0].post.id).toBe("post-1");
-		expect(handler.mock.calls[0][0].post.set).toBeTypeOf("function");
+		expect(createResult.isErr).toBe(false);
+		if (!createResult.isErr) {
+			expect(handler).toHaveBeenCalledOnce();
+			expect(handler.mock.calls[0][0].action).toBe("created");
+			expect(handler.mock.calls[0][0].post.id).toBe("post-1");
+			expect(handler.mock.calls[0][0].post.set).toBeTypeOf("function");
+		}
 	});
 
 	it("propagates handler mutations back to the resource return value", async () => {
@@ -161,11 +166,14 @@ describe("createNextpress", () => {
 			post.set((current) => ({ title: `${current.title} [reviewed]` }));
 		});
 
-		const post = await nextpress.posts.create({
+		const createResult = await nextpress.posts.create({
 			title: "Hello",
 			blogId: BLOG_ID,
 		});
 
-		expect(post.title).toBe("Hello [reviewed]");
+		expect(createResult.isErr).toBe(false);
+		if (!createResult.isErr) {
+			expect(createResult.value.title).toBe("Hello [reviewed]");
+		}
 	});
 });

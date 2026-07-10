@@ -1,3 +1,5 @@
+import type { IconSetId } from '@shared/icon-types';
+
 /** Layout length units exposed in block settings (numeric field + unit select). */
 export const NPB_NUMERIC_LENGTH_UNITS = [
   'px',
@@ -25,7 +27,7 @@ export function isNumericLengthUnit(value: unknown): value is NpbNumericLengthUn
  */
 export interface IconReference {
   /** Icon set identifier */
-  iconSet: 'lucide' | 'react-icons' | 'svgl';
+  iconSet: IconSetId;
 
   /**
    * Icon name within the set:

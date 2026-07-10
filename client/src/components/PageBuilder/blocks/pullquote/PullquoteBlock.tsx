@@ -2,7 +2,6 @@ import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { Quote as QuoteIcon, Settings } from "lucide-react";
@@ -25,7 +24,6 @@ type PullquoteContent = {
 const DEFAULT_CONTENT: PullquoteContent = {
   value: '<p>Add a quote that stands out from the rest of your content.</p>',
   citation: '',
-  textAlign: 'center',
   className: '',
 };
 
@@ -41,7 +39,10 @@ interface PullquoteRendererProps {
 function PullquoteRenderer({ content, styles }: PullquoteRendererProps) {
   const value = content?.value || '';
   const citation = content?.citation || '';
-  const textAlign = content?.textAlign || 'center';
+  const textAlign =
+    (typeof styles?.textAlign === "string" ? styles.textAlign : undefined) ??
+    content?.textAlign ??
+    "center";
   
   return (
     <BlockShell
@@ -137,22 +138,9 @@ function PullquoteSettings({ block, onUpdate }: PullquoteSettingsProps) {
       {/* Settings Card */}
       <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
         <div className="space-y-4">
-          <div>
-            <SettingsLabel htmlFor="pullquote-align">Text Align</SettingsLabel>
-            <Select
-              value={content?.textAlign || 'center'}
-              onValueChange={(value) => updateContent({ textAlign: value as 'left' | 'center' | 'right' })}
-            >
-              <SelectTrigger id="pullquote-align" className="h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="left">Left</SelectItem>
-                <SelectItem value="center">Center</SelectItem>
-                <SelectItem value="right">Right</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <p className="text-xs text-npb-text-muted">
+            Text alignment is in the Style tab.
+          </p>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -213,6 +201,7 @@ const PullquoteBlock = createBlockDefinition<PullquoteContent>({
   defaultStyles: {
     backgroundColor: '#f8f9fa',
     color: '#000000',
+    textAlign: 'center',
   },
   settings: PullquoteSettings,
   hasSettings: true,

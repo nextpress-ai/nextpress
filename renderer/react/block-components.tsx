@@ -7,6 +7,7 @@ import * as MediaBlocks from "./media";
 import * as LayoutBlocks from "./layout";
 import * as AdvancedBlocks from "./advanced";
 import * as PostBlocks from "./post";
+import * as FormBlocks from "./form";
 
 /**
  * Counter Block Component (legacy/test component)
@@ -58,6 +59,9 @@ export const BLOCK_COMPONENTS: Record<string, React.FC<BlockConfig>> = {
 	"core/table": AdvancedBlocks.TableBlock,
 	"core/markdown": AdvancedBlocks.MarkdownBlock,
 	"core/icon": AdvancedBlocks.IconBlock,
+	"core/input": FormBlocks.InputBlock,
+	"core/textarea": FormBlocks.TextareaBlock,
+	"core/select": FormBlocks.SelectBlock,
 
 	// Post blocks (core component aliases)
 	"post/excerpt": BasicBlocks.ParagraphBlock,

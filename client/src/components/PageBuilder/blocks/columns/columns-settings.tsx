@@ -25,6 +25,7 @@ import {
   type ColumnsContent,
   type ColumnsData,
   readColumnsData,
+  readColumnsDataFromBlock,
   writeColumnsData,
 } from "@shared/columns-layout";
 import { DEFAULT_CONTENT, buildColumnsLayout, removeColumnAndCleanup } from "./columns-model";
@@ -48,7 +49,7 @@ export function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
   ];
   const childBlocks = Array.isArray(block.children) ? block.children : [];
 
-  const data = readColumnsData(content);
+  const data = readColumnsDataFromBlock({ content, styles: block.styles });
   const layoutMode = data.layoutMode || "flex";
 
   // Update handlers
@@ -227,32 +228,6 @@ export function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <SettingsLabel htmlFor="columns-direction">Direction</SettingsLabel>
-            </div>
-            <div className="col-span-8">
-              <Select value={data.direction || "row"} onValueChange={(value) => updateContent({ direction: value as "row" | "column" })}>
-                <SelectTrigger className="h-9" id="columns-direction" aria-label="Columns direction">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="row">Horizontal (Row)</SelectItem>
-                  <SelectItem value="column">Vertical (Column)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-12 gap-2 items-center">
-            <div className="col-span-4">
-              <SettingsLabel htmlFor="columns-gap">Gap</SettingsLabel>
-            </div>
-            <div className="col-span-8">
-              <Input id="columns-gap" className="h-9" value={data.gap !== undefined && data.gap !== null && String(data.gap).trim() !== "" ? String(data.gap) : ""} onChange={(e) => updateContent({ gap: e.target.value })} placeholder="e.g. 20px, 2rem" aria-label="Gap between columns" />
-            </div>
-          </div>
-
           {layoutMode === "flex" && data.direction !== "column" && (
             <div className="grid grid-cols-12 gap-2 items-center">
               <div className="col-span-4">
@@ -285,7 +260,7 @@ export function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
 
           {layoutMode === "flex" && data.direction !== "column" && (
             <p className="text-xs text-npb-text-muted">
-              Flex row keeps columns on one line until they reach the minimum width, then wraps.
+              Direction and gap are in the Style tab.
             </p>
           )}
         </div>

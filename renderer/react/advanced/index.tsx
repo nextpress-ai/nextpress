@@ -2,6 +2,12 @@ import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { sanitizeHtml } from "@shared/sanitize-html";
 import { getRenderProps, parseTextContent, parseStructuredContent, parseHtmlContent, parseMarkdownContent } from "../render-helpers";
+import {
+	effectiveIconGlyphColor,
+	iconContentBoxCss,
+	readIconBoxSizeFromStyles,
+} from "@shared/icon-block-visuals";
+import { LucideGlyph } from "../shared/lucide-glyph";
 
 export * from "./MarkdownBlock";
 
@@ -327,9 +333,7 @@ export function TableBlock(block: BlockConfig) {
 
 /**
  * Icon Block Component
- * Renders an icon from various icon sets as an SVG placeholder for SSR.
- * At SSR time, lucide icons render as inline SVGs; other sets render placeholders
- * that hydrate client-side.
+ * Renders lucide icons inline for publish/preview; other sets use a visible placeholder.
  */
 export function IconBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
@@ -338,62 +342,75 @@ export function IconBlock(block: BlockConfig) {
 
 	const iconSet = (icon.iconSet as string) || "lucide";
 	const iconName = (icon.iconName as string) || "star";
-	const iconSize = (icon.size as number) || 24;
-	const iconSizeUnit = typeof icon.sizeUnit === "string" ? icon.sizeUnit as string : undefined;
-	const iconColor = (icon.color as string) || "currentColor";
-	const iconStrokeWidth = (icon.strokeWidth as number) || 2;
-	const iconStrokeWidthUnit = typeof icon.strokeWidthUnit === "string" ? icon.strokeWidthUnit as string : undefined;
+	const iconSize = typeof icon.size === "number" ? icon.size : readIconBoxSizeFromStyles(style, 24);
+	const iconSizeUnit = typeof icon.sizeUnit === "string" ? icon.sizeUnit : undefined;
+	const iconStrokeWidth = typeof icon.strokeWidth === "number" ? icon.strokeWidth : 2;
+	const iconStrokeWidthUnit = typeof icon.strokeWidthUnit === "string" ? icon.strokeWidthUnit : undefined;
 	const link = data.link as string | undefined;
 	const linkTarget = data.linkTarget as string | undefined;
 	const label = data.label as string | undefined;
 
+	const glyphColor = effectiveIconGlyphColor(style, {
+		color: typeof icon.color === "string" ? icon.color : undefined,
+	});
 	const sizeUnit = iconSizeUnit || "px";
-	const boxW = sizeUnit === "px" ? iconSize : `${iconSize}${sizeUnit}`;
-	const boxH = boxW;
-	const strokeU = iconStrokeWidthUnit || "px";
-	const strokeWidthVal =
-		strokeU === "px"
-			? String(iconStrokeWidth)
-			: `${iconStrokeWidth}${strokeU}`;
-	const svgW = sizeUnit === "px" ? iconSize : "100%";
-	const svgH = sizeUnit === "px" ? iconSize : "100%";
+	const strokeUnit = iconStrokeWidthUnit || "px";
+	const strokeWidthProp =
+		strokeUnit === "px" ? iconStrokeWidth : `${iconStrokeWidth}${strokeUnit}`;
 
-	const mergedClassName = ["wp-block-icon", className]
-		.filter(Boolean)
-		.join(" ");
+	const mergedClassName = ["wp-block-icon", className].filter(Boolean).join(" ");
 
 	const iconStyle: React.CSSProperties = {
 		display: "inline-flex",
 		alignItems: "center",
 		justifyContent: "center",
-		width: boxW,
-		height: boxH,
+		...iconContentBoxCss({
+			size: iconSize,
+			sizeUnit: iconSizeUnit,
+		}),
 		...style,
 	};
 
-	// Render inline SVG placeholder for SSR
-	const svgContent = (
-		<svg
-			width={svgW}
-			height={svgH}
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke={iconColor}
-			strokeWidth={strokeWidthVal}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-label={label || undefined}
-			role={label ? "img" : "presentation"}
-			className={mergedClassName || undefined}
-			style={iconStyle}
-			data-icon-set={iconSet}
-			data-icon-name={iconName}
-			{...attributes}
-		>
-			<rect x="3" y="3" width="18" height="18" rx="2" opacity="0.15" />
-			<circle cx="12" cy="12" r="3" opacity="0.3" />
-		</svg>
-	);
+	const svgContent =
+		iconSet === "lucide" ? (
+			<span
+				className={mergedClassName || undefined}
+				style={iconStyle}
+				data-icon-set={iconSet}
+				data-icon-name={iconName}
+				{...attributes}
+			>
+				<LucideGlyph
+					iconName={iconName}
+					size={sizeUnit === "px" ? iconSize : "100%"}
+					color={glyphColor}
+					strokeWidth={strokeWidthProp}
+					className="wp-block-icon__glyph shrink-0"
+					aria-label={label || undefined}
+				/>
+			</span>
+		) : (
+			<svg
+				width={sizeUnit === "px" ? iconSize : "100%"}
+				height={sizeUnit === "px" ? iconSize : "100%"}
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke={glyphColor}
+				strokeWidth={strokeWidthProp}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				aria-label={label || undefined}
+				role={label ? "img" : "presentation"}
+				className={mergedClassName || undefined}
+				style={iconStyle}
+				data-icon-set={iconSet}
+				data-icon-name={iconName}
+				{...attributes}
+			>
+				<rect x="3" y="3" width="18" height="18" rx="2" opacity="0.15" />
+				<circle cx="12" cy="12" r="3" opacity="0.3" />
+			</svg>
+		);
 
 	if (link && link !== "#") {
 		return (

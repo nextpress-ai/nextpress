@@ -83,6 +83,30 @@ export function writeColumnsData(prev: BlockContent, updates: Partial<ColumnsDat
 	return { kind: "structured", data: next as Record<string, unknown> };
 }
 
+type ColumnsBlockLike = {
+	content?: BlockContent;
+	styles?: CSSProperties;
+};
+
+/**
+ * Merges columns layout config from content with gap/direction from styles.
+ * Styles win over legacy content fields.
+ */
+export function readColumnsDataFromBlock(block: ColumnsBlockLike): ColumnsData {
+	const data = readColumnsData(block.content ?? ({ kind: "structured", data: {} } as BlockContent));
+	const styles = block.styles ?? {};
+	const gap =
+		typeof styles.gap === "string" && styles.gap.trim() !== ""
+			? styles.gap
+			: data.gap;
+	const flexDirection = styles.flexDirection;
+	const direction =
+		flexDirection === "column" || flexDirection === "row"
+			? flexDirection
+			: data.direction;
+	return { ...data, gap, direction };
+}
+
 /**
  * Computes the outer container style for the Columns block (matches editor).
  */

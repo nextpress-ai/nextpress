@@ -35,7 +35,7 @@ async function main(): Promise<void> {
 
 	const landingBlocks = [
 		blocks.cover({
-			data: {
+			content: {
 				url: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600",
 				alt: "Modern workspace",
 				minHeight: 420,
@@ -43,7 +43,7 @@ async function main(): Promise<void> {
 				innerContent: "<h1>Built with @nextpress-org/sdk</h1><p>Programmatic page builder demo</p>",
 			},
 		}),
-		blocks.spacer({ data: { height: "32px" } }),
+		blocks.spacer({ content: { height: "32px" } }),
 		blocks.container({
 			children: [
 				blocks.heading({ text: "Why NextPress SDK?", level: 2 }),
@@ -51,7 +51,7 @@ async function main(): Promise<void> {
 					text: "Create pages, posts, and block layouts from scripts, CI, or MCP agents — the same blocks the dashboard uses.",
 				}),
 				blocks.columns({
-					data: { columns: 3, gap: "24px" },
+					content: { columns: 3, gap: "24px" },
 					children: [
 						blocks.group({
 							children: [
@@ -75,28 +75,43 @@ async function main(): Promise<void> {
 				}),
 			],
 		}),
-		blocks.spacer({ data: { height: "24px" } }),
+		blocks.spacer({ content: { height: "24px" } }),
 		blocks.buttons({
 			children: [
-				blocks.button({ data: { text: "Get started", url: "/admin", linkTarget: "_self" } }),
+				blocks.button({ text: "Get started", url: "/admin", linkTarget: "_self" }),
 				blocks.button({
-					data: { text: "View docs", url: "https://github.com/nextpress-org/nextpress", linkTarget: "_blank" },
+					text: "View docs",
+					url: "https://github.com/nextpress-org/nextpress",
+					linkTarget: "_blank",
 					styles: { backgroundColor: "#1e293b", color: "#ffffff", padding: "12px 24px", borderRadius: "4px" },
 				}),
 			],
 		}),
 		blocks.separator(),
-		blocks.quote({ content: { kind: "text", value: "If you can build it in the dashboard, you can build it with the SDK." } }),
+		blocks.quote({
+			text: "If you can build it in the dashboard, you can build it with the SDK.",
+		}),
 	];
 
-	const page = await client.pages.create({
+	const createResult = await client.pages.create({
 		title: `SDK Demo Landing ${runId}`,
 		slug: `sdk-demo-${runId}`,
 		status: "preview",
 		blocks: landingBlocks,
 	});
+	if (createResult.isErr) {
+		throw createResult.error;
+	}
+	const page = createResult.value;
 
-	await client.pages.update({ id: page.id, blocks: landingBlocks });
+	const updateResult = await client.pages.update({
+		id: page.id,
+		expectedVersion: page.version ?? 0,
+		blocks: landingBlocks,
+	});
+	if (updateResult.isErr) {
+		throw updateResult.error;
+	}
 	const previewPayload = await client.preview.page({ id: page.id });
 
 	const baseUrl = config.baseUrl.replace(/\/+$/, "");

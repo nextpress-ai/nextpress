@@ -1,5 +1,12 @@
 import type { BlockConfig, PageDesignSettings, PageIconSettings } from "../../schema-types";
 import type { WordPressPostImportOther } from "./types";
+import { DEFAULT_PAGE_DESIGN, DEFAULT_PAGE_ICONS } from "../../page-other";
+
+/** @deprecated Use DEFAULT_PAGE_DESIGN from shared/page-other.ts */
+export const DEFAULT_IMPORTED_PAGE_DESIGN: PageDesignSettings = DEFAULT_PAGE_DESIGN;
+
+/** @deprecated Use DEFAULT_PAGE_ICONS from shared/page-other.ts */
+export const DEFAULT_IMPORTED_PAGE_ICONS: PageIconSettings = DEFAULT_PAGE_ICONS;
 
 /** Matches `getDefaultBlock` baseline spacing in the page builder. */
 export const IMPORT_BLOCK_BASE_PADDING = "20px";
@@ -20,19 +27,6 @@ const IMPORT_LAYOUT_BLOCK_STYLES: Partial<Record<string, Record<string, string>>
 	"core/quote": { margin: "1em 0" },
 	"core/separator": { margin: "1em 0" },
 	"core/image": { width: "100%" },
-};
-
-/** Page design defaults — same as Page Settings UI initial state. */
-export const DEFAULT_IMPORTED_PAGE_DESIGN: PageDesignSettings = {
-	fontFamily: "system-ui",
-	containerWidth: "1200px",
-	padding: "2rem 1rem",
-};
-
-/** Icon defaults — same as Page Settings / PageContext. */
-export const DEFAULT_IMPORTED_PAGE_ICONS: PageIconSettings = {
-	defaultSet: "lucide",
-	defaultSize: 24,
 };
 
 /**

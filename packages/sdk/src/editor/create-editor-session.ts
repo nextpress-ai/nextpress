@@ -6,6 +6,7 @@ import type { PreviewResource } from "../resources/preview.js";
 import type { TemplatesResource } from "../resources/templates.js";
 import type { BlockConfig, Page, Post, Template } from "../types/domain.js";
 import type { EditorLoadedContent, EditorSession } from "./editor-session.types.js";
+import { sdkOk, type SdkResult } from "../client/sdk-result.js";
 import { createUndoStack } from "./create-undo-stack.js";
 
 export type { EditorContentType, EditorLoadedContent, EditorSession } from "./editor-session.types.js";
@@ -26,6 +27,22 @@ type EditorSessionDeps = {
 };
 
 const DEFAULT_COALESCE_MS = 300;
+
+const readContentVersion = (raw: Page | Post | Template): number => {
+	if ("version" in raw && typeof raw.version === "number") {
+		return raw.version;
+	}
+	return 0;
+};
+
+const bumpLoadedVersion = (
+	loaded: EditorLoadedContent,
+	nextRaw: Page | Post | Template,
+): EditorLoadedContent => ({
+	...loaded,
+	expectedVersion: readContentVersion(nextRaw),
+	raw: nextRaw,
+});
 
 /**
  * SDK editor session with undo/redo, save, publish, and expiring preview links.
@@ -97,6 +114,7 @@ export function createEditorSession({
 					slug: page.slug,
 					blocks: (page.blocks as BlockConfig[]) ?? [],
 					raw: page,
+					expectedVersion: readContentVersion(page),
 				};
 			} else if (type === "post") {
 				const post = await posts.get({ id });
@@ -108,6 +126,7 @@ export function createEditorSession({
 					slug: post.slug,
 					blocks: (post.blocks as BlockConfig[]) ?? [],
 					raw: post,
+					expectedVersion: readContentVersion(post),
 				};
 			} else {
 				const template = await templates.get({ id });
@@ -164,47 +183,51 @@ export function createEditorSession({
 		canRedo: (): boolean => undoStack.canRedo(),
 
 		/** Flush in-memory edits to the server for the loaded content type. */
-		save: async (input: { title?: string; slug?: string; status?: string } = {}) => {
+		save: async (input: { title?: string; slug?: string; status?: string } = {}): Promise<SdkResult<Page | Post | Template>> => {
 			if (!loaded) {
 				throw new Error("Editor session not loaded");
 			}
 
 			if (loaded.type === "page") {
-				const page = await pages.update({
+				const result = await pages.update({
 					id: loaded.id,
+					expectedVersion: loaded.expectedVersion ?? readContentVersion(loaded.raw as Page),
 					blocks: loaded.blocks,
 					title: input.title ?? loaded.title,
 					slug: input.slug ?? loaded.slug,
 					status: input.status ?? loaded.status,
 				});
+				if (result.isErr) return result;
+				const page = result.value;
 				loaded = {
-					...loaded,
+					...bumpLoadedVersion(loaded, page),
 					title: page.title,
 					slug: page.slug,
 					status: page.status,
-					raw: page,
 				};
-				const saved = notify("editor-saved", { content: loaded, data: page });
-				return saved.data as Page;
+				notify("editor-saved", { content: loaded, data: page });
+				return sdkOk(page);
 			}
 
 			if (loaded.type === "post") {
-				const post = await posts.update({
+				const result = await posts.update({
 					id: loaded.id,
+					expectedVersion: loaded.expectedVersion ?? readContentVersion(loaded.raw as Post),
 					blocks: loaded.blocks,
 					title: input.title ?? loaded.title,
 					slug: input.slug ?? loaded.slug,
 					status: input.status ?? loaded.status,
 				});
+				if (result.isErr) return result;
+				const post = result.value;
 				loaded = {
-					...loaded,
+					...bumpLoadedVersion(loaded, post),
 					title: post.title,
 					slug: post.slug,
 					status: post.status,
-					raw: post,
 				};
-				const saved = notify("editor-saved", { content: loaded, data: post });
-				return saved.data as Post;
+				notify("editor-saved", { content: loaded, data: post });
+				return sdkOk(post);
 			}
 
 			const template = await templates.update({
@@ -213,40 +236,50 @@ export function createEditorSession({
 				name: input.title ?? loaded.title,
 			});
 			loaded = { ...loaded, title: template.name, raw: template };
-			const saved = notify("editor-saved", { content: loaded, data: template });
-			return saved.data as Template;
+			notify("editor-saved", { content: loaded, data: template });
+			return sdkOk(template);
 		},
 
 		/** Go live with the current in-memory blocks without a separate save call. */
-		publish: async () => {
+		publish: async (): Promise<SdkResult<Page | Post>> => {
 			if (!loaded) {
 				throw new Error("Editor session not loaded");
 			}
 			if (loaded.type === "template") {
 				throw new Error("Templates cannot be published");
 			}
-			const data = await (loaded.type === "page" ? pages : posts).update({
+			const resource = loaded.type === "page" ? pages : posts;
+			const result = await resource.update({
 				id: loaded.id,
+				expectedVersion: loaded.expectedVersion ?? readContentVersion(loaded.raw as Page | Post),
 				blocks: loaded.blocks,
 				status: "publish",
 				publishedAt: new Date().toISOString(),
 			});
-			const published = notify("editor-published", { content: loaded, data: data as Page | Post });
-			return published.data;
+			if (result.isErr) return result;
+			const data = result.value;
+			loaded = bumpLoadedVersion(loaded, data);
+			notify("editor-published", { content: loaded, data: data as Page | Post });
+			return sdkOk(data);
 		},
 
 		/** Pull content offline while keeping the block tree in the session. */
-		unpublish: async () => {
+		unpublish: async (): Promise<SdkResult<Page | Post>> => {
 			if (!loaded || loaded.type === "template") {
 				throw new Error("Cannot unpublish this content type");
 			}
-			const data = await (loaded.type === "page" ? pages : posts).update({
+			const resource = loaded.type === "page" ? pages : posts;
+			const result = await resource.update({
 				id: loaded.id,
+				expectedVersion: loaded.expectedVersion ?? readContentVersion(loaded.raw as Page | Post),
 				blocks: loaded.blocks,
 				status: "draft",
 			});
-			const unpublished = notify("editor-unpublished", { content: loaded, data: data as Page | Post });
-			return unpublished.data;
+			if (result.isErr) return result;
+			const data = result.value;
+			loaded = bumpLoadedVersion(loaded, data);
+			notify("editor-unpublished", { content: loaded, data: data as Page | Post });
+			return sdkOk(data);
 		},
 
 		/** Render the loaded draft through the authenticated preview API. */
@@ -278,18 +311,19 @@ export function createEditorSession({
 		},
 
 		/** Roll back to a server snapshot and realign the undo stack with that tree. */
-		restoreVersion: async ({ version }: { version: number }) => {
+		restoreVersion: async ({ version }: { version: number }): Promise<SdkResult<Page>> => {
 			if (!loaded || loaded.type !== "page") {
 				throw new Error("Version restore is only available for pages");
 			}
-			const page = await pages.restoreVersion({ id: loaded.id, version });
+			const result = await pages.restoreVersion({ id: loaded.id, version });
+			if (result.isErr) return result;
+			const page = result.value;
 			loaded = {
-				...loaded,
+				...bumpLoadedVersion(loaded, page),
 				blocks: (page.blocks as BlockConfig[]) ?? [],
-				raw: page,
 			};
 			undoStack.resetState(loaded.blocks);
-			return page;
+			return sdkOk(page);
 		},
 
 		/** List page version snapshots for rollback UI on loaded pages. */

@@ -7,7 +7,7 @@ import {
 	buildColumnStyle,
 	buildColumnsContainerStyle,
 	readColumnLayoutFromBlock,
-	readColumnsData,
+	readColumnsDataFromBlock,
 } from "@shared/columns-layout";
 import {
 	getBlockSiblingFlexItemStyles,
@@ -19,6 +19,7 @@ import {
 	readContainerLayoutFromBlock,
 } from "@shared/block-container-placement";
 import { buildGroupShellStyles, readGroupShellContent } from "@shared/group-shell-styles";
+import { getInlineFlexChildStyles } from "@shared/icon-block-visuals";
 
 /**
  * Columns Block Component
@@ -26,7 +27,7 @@ import { buildGroupShellStyles, readGroupShellContent } from "@shared/group-shel
  */
 export function ColumnsBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
-	const data = readColumnsData(block.content);
+	const data = readColumnsDataFromBlock(block);
 	const layoutMode = data.layoutMode || "flex";
 	const direction = data.direction || "row";
 	const columnVerticalAlignment = data.columnVerticalAlignment || "top";
@@ -146,12 +147,14 @@ export function GroupBlock(block: BlockConfig) {
 		if (!ChildComponent) {
 			return null;
 		}
+		const inlineFlex = getInlineFlexChildStyles(child.name, isHorizontal);
 		return (
 			<div
 				key={child.id}
 				style={{
-					minWidth: 0,
-					flex: isHorizontal ? "1 1 auto" : undefined,
+					minWidth: inlineFlex.flexShrink === 0 ? undefined : 0,
+					flex: isHorizontal && !inlineFlex.flex ? "1 1 auto" : inlineFlex.flex,
+					flexShrink: inlineFlex.flexShrink,
 					...getBlockSiblingFlexItemStyles(child.styles, stackDirection),
 					...getBlockStackLayerWrapperStyles(child),
 				}}
@@ -211,12 +214,14 @@ export function ContainerBlock(block: BlockConfig) {
 		if (!ChildComponent) {
 			return null;
 		}
+		const inlineFlex = getInlineFlexChildStyles(child.name, isHorizontal);
 		return (
 			<div
 				key={child.id}
 				style={{
-					minWidth: 0,
-					flex: isHorizontal ? "1 1 auto" : undefined,
+					minWidth: inlineFlex.flexShrink === 0 ? undefined : 0,
+					flex: isHorizontal && !inlineFlex.flex ? "1 1 auto" : inlineFlex.flex,
+					flexShrink: inlineFlex.flexShrink,
 					...getBlockSiblingFlexItemStyles(child.styles, stackDirection),
 					...getBlockStackLayerWrapperStyles(child),
 				}}

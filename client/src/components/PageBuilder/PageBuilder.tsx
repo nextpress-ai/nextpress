@@ -20,6 +20,7 @@ import {
   deleteBlockDeep,
   duplicateBlockDeep,
   insertBlockAfterDeep,
+  setParentIds,
 } from '@/lib/handlers/treeUtils';
 import { DeviceViewProvider } from './device-view-context';
 import {
@@ -99,8 +100,10 @@ export default function PageBuilder({
   const resolvedContentType =
     contentType === 'template' ? 'page' : (contentType ?? 'page');
 
-  const initialBlocks =
-    propBlocks || (data ? (data.blocks as BlockConfig[]) || [] : []);
+  const initialBlocks = setParentIds(
+    propBlocks || (data ? (data.blocks as BlockConfig[]) || [] : []),
+    null,
+  );
 
   // Use undo/redo for blocks state - derive blocks directly from currentState
   const { currentState, pushState, replaceCurrentState, undo, redo, canUndo, canRedo, resetState } =
@@ -125,7 +128,7 @@ export default function PageBuilder({
     setPrevPropBlocks(propBlocks);
     if (propBlocks && propBlocks !== lastEmittedRef.current) {
       // External reset — new blocks from outside, reset undo/redo history
-      resetState(propBlocks);
+      resetState(setParentIds(propBlocks, null));
       // Only deselect if the currently selected block no longer exists in the new blocks
       const currentSelectedId = selectedBlockIdRef.current;
       if (currentSelectedId && !findBlock(propBlocks, currentSelectedId)) {

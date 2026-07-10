@@ -320,6 +320,7 @@ export const posts = pgTable("posts", {
 	parentId: uuid("parent_id"),
 	templateId: uuid("template_id").references(() => templates.id),
 	blocks: jsonb("blocks").default([]),
+	version: integer("version").notNull().default(0),
 	settings: jsonb("settings").default({}),
 	createdAt: timestamp("created_at").defaultNow(),
 	updatedAt: timestamp("updated_at").defaultNow(),

@@ -12,6 +12,14 @@ import {
   resolveContentSiteId,
 } from '../lib/content-access';
 import { attachRequestAuth, resolveRequestAuth } from '../auth';
+import { validateContentForSave } from '@shared/validate-content-save';
+import {
+  VERSION_REQUIRED,
+  VERSION_STALE,
+  checkExpectedVersion,
+  parseExpectedVersion,
+  stripVersionControlFields,
+} from '@shared/content-version';
 
 /**
  * Creates Posts CRUD routes for the NextPress API.
@@ -185,12 +193,24 @@ export function createPostsRoutes(deps: Deps): Router {
           slug: slugValue,
           authorId: userId,
         });
+
+        const contentValidation = validateContentForSave({
+          blocks: parsedData.blocks,
+          contentType: 'post',
+        });
+        if (!contentValidation.ok) {
+          return res.status(400).json({
+            code: contentValidation.error.code,
+            message: contentValidation.error.message,
+          });
+        }
         
         const postData = {
           ...parsedData,
           title: String(parsedData.title),
           slug: String(parsedData.slug),
           authorId: String(parsedData.authorId),
+          blocks: contentValidation.blocks,
         };
 
         const post = await models.posts.create(postData);
@@ -221,11 +241,47 @@ export function createPostsRoutes(deps: Deps): Router {
     asyncHandler(async (req, res) => {
       try {
         const id = req.params.id;
-        const postData = postSchemas.update.parse(coerceDates(req.body, ['publishedAt']));
+        const versionParsed = parseExpectedVersion(req.body);
+        if (!versionParsed.ok) {
+          return res.status(400).json({
+            code: VERSION_REQUIRED,
+            message: 'expectedVersion is required and must be a non-negative integer',
+          });
+        }
+        const { expectedVersion } = versionParsed;
 
         const existingPost = await models.posts.findById(id);
         if (!existingPost) {
           return res.status(404).json({ message: 'Post not found' });
+        }
+
+        const remoteVersion = (existingPost as { version?: number }).version ?? 0;
+        const versionConflict = checkExpectedVersion({ remoteVersion, expectedVersion });
+        if (!versionConflict.ok) {
+          return res.status(409).json({
+            code: VERSION_STALE,
+            message: `Remote version ${versionConflict.remoteVersion} does not match expected ${versionConflict.expectedVersion}. Fetch latest and retry.`,
+            remoteVersion: versionConflict.remoteVersion,
+            expectedVersion: versionConflict.expectedVersion,
+          });
+        }
+
+        const postData = postSchemas.update.parse(
+          coerceDates(stripVersionControlFields(req.body as Record<string, unknown>), ['publishedAt']),
+        );
+
+        if (postData.blocks !== undefined) {
+          const contentValidation = validateContentForSave({
+            blocks: postData.blocks,
+            contentType: 'post',
+          });
+          if (!contentValidation.ok) {
+            return res.status(400).json({
+              code: contentValidation.error.code,
+              message: contentValidation.error.message,
+            });
+          }
+          postData.blocks = contentValidation.blocks;
         }
 
         const siteId = await resolveContentSiteId({
@@ -243,7 +299,10 @@ export function createPostsRoutes(deps: Deps): Router {
         }
 
         const wasPublished = existingPost.status === 'publish';
-        const post = await models.posts.update(id, postData);
+        const post = await models.posts.update(id, {
+          ...postData,
+          version: expectedVersion + 1,
+        });
 
         hooks.doAction('save_post', post);
 

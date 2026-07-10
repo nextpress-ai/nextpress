@@ -36,6 +36,7 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
+    "slang-ts": "0.0.7",
     "zod": "^3.24.2"
   },
   "devDependencies": {

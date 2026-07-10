@@ -53,7 +53,39 @@ Access via `nextpress.blocks` or `editor.blocks` inside a session.
 
 - `id?` — block UUID (auto-generated if omitted)
 - `parentId?` — parent container ID
-- `label?`, `styles?`, `settings?`, `children?`
+- `label?`, `children?` — tree placement
+- `settings.content?` — Content tab (semantics only: text, urls, tagName, structural options)
+- `settings.styles?` — Style tab (all inline CSS: flex, padding, colors)
+- `settings.advanced?` — Advanced tab (display conditions, `columnLayout`, etc.)
+- `css?`, `html?`, `js?` — sanitized escape hatches (custom CSS, HTML override, page scripts)
+
+Shorthand fields like `text` on `heading()` merge into `settings.content`.
+
+---
+
+## Content vs styles
+
+**Content = semantics.** Text, media URLs, icon identity, links, tagName, column layout assignment.
+
+**Styles = all CSS.** Inline properties (`flexDirection`, `padding`, `color`) and top-level `css` (→ `customCss`).
+
+```ts
+blocks.group({
+  settings: {
+    content: { tagName: "div" },
+    styles: {
+      display: "flex",
+      flexDirection: "row",
+      gap: "4px",
+      padding: "6px 8px",
+    },
+  },
+  css: ".search-bar input { outline: none; }",
+  children: [...],
+});
+```
+
+Nested `children` receive `parentId` automatically on build.
 
 ---
 
@@ -61,10 +93,10 @@ Access via `nextpress.blocks` or `editor.blocks` inside a session.
 
 | Helper | Block name | Notes |
 |--------|------------|-------|
-| `heading({ text, level? })` | `core/heading` | Default level 2 |
-| `paragraph({ text })` | `core/paragraph` | |
-| `markdown({ value })` | `core/markdown` | |
-| `button(params)` | `core/button` | Use `data: { text, url }` |
+| `heading({ settings: { content: { text, level? } } })` | `core/heading` | Default level 2 |
+| `paragraph({ settings: { content: { text } } })` | `core/paragraph` | |
+| `markdown({ settings: { content: { value } } })` | `core/markdown` | |
+| `button(params)` | `core/button` | `settings.content`: text, url, linkTarget |
 | `buttons(params)` | `core/buttons` | Container for buttons |
 | `quote(params)` | `core/quote` | |
 | `list(params)` | `core/list` | |
@@ -141,9 +173,13 @@ post/author-box, post/comments, post/navigation, post/info, post/progress
 ```ts
 const blocks = [
   nextpress.blocks.container({
+    settings: {
+      content: { tagName: "div" },
+      styles: { maxWidth: "1200px", padding: "24px" },
+    },
     children: [
-      nextpress.blocks.heading({ text: "Two columns", level: 2, parentId: null }),
-      nextpress.blocks.paragraph({ text: "Body copy." }),
+      nextpress.blocks.heading({ settings: { content: { text: "Two columns", level: 2 } } }),
+      nextpress.blocks.paragraph({ settings: { content: { text: "Body copy." } } }),
     ],
   }),
 ];
@@ -153,18 +189,25 @@ const blocks = [
 
 ```ts
 nextpress.blocks.fromName("core/cover", {
-  data: { url: "/uploads/hero.jpg", dimRatio: 50 },
+  settings: {
+    content: { url: "/uploads/hero.jpg", dimRatio: 50 },
+  },
 });
 ```
 
 ### Persist blocks
 
 ```ts
-await nextpress.pages.update({
+const page = await nextpress.pages.get({ id: pageId });
+const result = await nextpress.pages.update({
   id: pageId,
+  expectedVersion: page.version ?? 0,
   blocks,
 });
+if (result.isErr) throw result.error;
 ```
+
+See [Versioning](./versioning.md) for optimistic concurrency and `SdkResult`.
 
 ---
 
@@ -172,4 +215,4 @@ await nextpress.pages.update({
 
 Block inputs are validated when passed to resource methods (`pages.create`, `pages.update`, etc.) via Zod schemas in `packages/sdk/src/schemas/`. Invalid media URLs (e.g. `javascript:`) throw locally before HTTP.
 
-See [Errors and validation](./errors-and-validation.md).
+See [Errors and validation](./errors-and-validation.md) and [Versioning](./versioning.md).

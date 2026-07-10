@@ -9,6 +9,15 @@ import {
   listQueryRequiresAuth,
 } from '../lib/content-access';
 import { attachRequestAuth, resolveRequestAuth } from '../auth';
+import { validateContentForSave } from '@shared/validate-content-save';
+import { enrichPageForApi } from '@shared/page-other';
+import {
+  VERSION_REQUIRED,
+  VERSION_STALE,
+  checkExpectedVersion,
+  parseExpectedVersion,
+  stripVersionControlFields,
+} from '@shared/content-version';
 
 /**
  * Validates that a slug is unique (application-level check before insert).
@@ -162,7 +171,7 @@ export function createPagesRoutes(deps: Deps): Router {
           return;
         }
 
-        res.json(page);
+        res.json(enrichPageForApi(page));
       } catch (error) {
         console.error('Error fetching page:', error);
         res.status(500).json({ message: 'Failed to fetch page' });
@@ -255,7 +264,7 @@ export function createPagesRoutes(deps: Deps): Router {
       });
 
       hooks.doAction('save_post', page);
-      res.json(page);
+      res.json(enrichPageForApi(page));
     }),
   );
 
@@ -294,6 +303,20 @@ export function createPagesRoutes(deps: Deps): Router {
         // Include authorId and siteId in the data before validation
         const parsedData = pageSchemas.insert.parse(dataToValidate) as any;
 
+        const contentValidation = validateContentForSave({
+          blocks: parsedData.blocks,
+          other: parsedData.other,
+          contentType: 'page',
+        });
+        if (!contentValidation.ok) {
+          const validationError = new Error(contentValidation.error.message);
+          Object.assign(validationError, {
+            statusCode: 400,
+            code: contentValidation.error.code,
+          });
+          throw validationError;
+        }
+
         // Generate slug if not provided
         const title = parsedData.title;
         if (!title || typeof title !== 'string') {
@@ -310,6 +333,8 @@ export function createPagesRoutes(deps: Deps): Router {
           ...parsedData,
           title: String(title),
           slug: normalizedSlug,
+          blocks: contentValidation.blocks,
+          other: contentValidation.other,
         };
 
         const page = await models.pages.create(pageData);
@@ -331,13 +356,20 @@ export function createPagesRoutes(deps: Deps): Router {
             code: 'PAGE_SLUG_EXISTS',
           });
         }
+        const statusCode = (err as { statusCode?: number }).statusCode;
+        if (statusCode === 400) {
+          return res.status(400).json({
+            message: err instanceof Error ? err.message : 'Invalid page content',
+            code: (err as { code?: string }).code,
+          });
+        }
         if (message.includes('not authenticated')) {
           return res.status(401).json({ message: 'You must be signed in to create pages.' });
         }
         return res.status(500).json({ message: 'Failed to create page. Please try again.' });
       }
 
-      res.status(201).json(result);
+      res.status(201).json(enrichPageForApi(result));
     })
   );
 
@@ -350,11 +382,49 @@ export function createPagesRoutes(deps: Deps): Router {
     asyncHandler(async (req, res) => {
       try {
         const id = req.params.id;
-        const parsed = pageSchemas.update.parse(coerceDates(req.body, ['publishedAt'])) as any;
+        const versionParsed = parseExpectedVersion(req.body);
+        if (!versionParsed.ok) {
+          return res.status(400).json({
+            code: VERSION_REQUIRED,
+            message: 'expectedVersion is required and must be a non-negative integer',
+          });
+        }
+        const { expectedVersion } = versionParsed;
 
         const existingPage = await models.pages.findById(id);
         if (!existingPage) {
           return res.status(404).json({ message: 'Page not found' });
+        }
+
+        const remoteVersion = existingPage.version ?? 0;
+        const versionConflict = checkExpectedVersion({ remoteVersion, expectedVersion });
+        if (!versionConflict.ok) {
+          return res.status(409).json({
+            code: VERSION_STALE,
+            message: `Remote version ${versionConflict.remoteVersion} does not match expected ${versionConflict.expectedVersion}. Fetch latest and retry.`,
+            remoteVersion: versionConflict.remoteVersion,
+            expectedVersion: versionConflict.expectedVersion,
+          });
+        }
+
+        const parsed = pageSchemas.update.parse(
+          coerceDates(stripVersionControlFields(req.body as Record<string, unknown>), ['publishedAt']),
+        ) as any;
+
+        if (parsed.blocks !== undefined || parsed.other !== undefined) {
+          const contentValidation = validateContentForSave({
+            blocks: parsed.blocks ?? existingPage.blocks,
+            other: parsed.other ?? existingPage.other,
+            contentType: 'page',
+          });
+          if (!contentValidation.ok) {
+            return res.status(400).json({
+              code: contentValidation.error.code,
+              message: contentValidation.error.message,
+            });
+          }
+          if (parsed.blocks !== undefined) parsed.blocks = contentValidation.blocks;
+          if (parsed.other !== undefined) parsed.other = contentValidation.other;
         }
 
         try {
@@ -392,7 +462,7 @@ export function createPagesRoutes(deps: Deps): Router {
         const pageData = {
           ...parsed,
           slug: nextSlug,
-          version: (existingPage.version ?? 0) + 1,
+          version: expectedVersion + 1,
           history: [previousSnapshot, ...existingHistory], // append previous snapshot to existing history
         };
 
@@ -405,7 +475,7 @@ export function createPagesRoutes(deps: Deps): Router {
           hooks.doAction('publish_post', page);
         }
 
-        res.json(page);
+        res.json(enrichPageForApi(page));
       } catch (error) {
         console.error('Error updating page:', error);
         res.status(500).json({ message: 'Failed to update page' });

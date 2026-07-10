@@ -1,24 +1,55 @@
 export { buildGoogleSearchPageBlocks } from "./blocks/google-search-layout.js";
+export {
+	sanitizeBlockOverrides,
+	sanitizeHtml,
+	sanitizeJs,
+	sanitizeCustomCss,
+} from "./sanitize/sanitize-block-overrides.js";
+export { applySanitizedBlockOverrides } from "./sanitize/apply-block-overrides.js";
+export { applyEditorSettings } from "./blocks/apply-editor-settings.js";
+export { normalizeBlockTree, normalizeBlockSubtree } from "./blocks/normalize-block-tree.js";
 export { BLOCK_DEFINITIONS, BLOCK_NAMES, isBlockName } from "./blocks/block-definitions.js";
 export type {
-	BaseBlockParams,
 	BlockDefinitionMeta,
 	BlockName,
 	BlocksBuilder,
+	BlockShellParams,
+	BlockStyles,
 	ButtonBlockParams,
 	CustomBlockParams,
+	GroupBlockParams,
+	ContainerBlockParams,
 	HeadingBlockParams,
 	HtmlBlockParams,
 	IconBlockParams,
 	IconReference,
 	ImageBlockParams,
 	MarkdownBlockParams,
-	StructuredBlockParams,
 	TextBlockParams,
 } from "./blocks/build-block.js";
+export type { BlockEditorSettings, BlockAdvancedSettings } from "./blocks/block-editor-settings.js";
+export type { BlockSettings } from "./blocks/block-params.js";
+export type {
+	ButtonsContent,
+	ContainerContent,
+	GalleryContent,
+	GroupContent,
+	IconContent,
+	PostListContent,
+} from "./blocks/block-content-types.js";
 export { createBlockId } from "./blocks/build-block.js";
 export type { HttpClient } from "./client/http-client.js";
 export { isNextpressError, NextpressError } from "./client/nextpress-error.js";
+export {
+	VERSION_STALE,
+	VERSION_REQUIRED,
+	PAGE_SLUG_EXISTS,
+	sdkOk,
+	sdkErr,
+	type SdkResult,
+	type SdkOk,
+	type SdkErr,
+} from "./client/sdk-result.js";
 export type { NextpressClient } from "./create-nextpress.js";
 export { createNextpress } from "./create-nextpress.js";
 export type { EventBus, EventEntity, EventSetFn, NextpressEventContext } from "./events/event-bus.types.js";
@@ -62,3 +93,26 @@ export type * from "./types/index.js";
 export type * from "./types/inputs.js";
 export type * from "./types/responses.js";
 export type * from "./types/wordpress-import.js";
+export {
+	buildDefaultPageOther,
+	DEFAULT_PAGE_OTHER,
+	ICON_SET_IDS,
+	PAGE_ICON_DEFAULT_SETS,
+	REACT_ICONS_PREFIXES,
+	GROUP_HTML_TAG_NAMES,
+	CONTAINER_HTML_TAG_NAMES,
+	STANDARD_META_TAG_NAMES,
+} from "./types/page-other.js";
+export type {
+	IconSetId,
+	PageIconDefaultSet,
+	ReactIconsPrefix,
+	GroupHtmlTagName,
+	ContainerHtmlTagName,
+	MetaTagName,
+	MetaTagEntry,
+	PageOther,
+	PageIconSettings,
+	PageDesignSettings,
+	PageSeoSettings,
+} from "./types/page-other.js";

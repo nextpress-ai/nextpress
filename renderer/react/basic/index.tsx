@@ -3,6 +3,10 @@ import type { BlockConfig } from "@shared/schema-types";
 import { sanitizeHtml } from "@shared/sanitize-html";
 import { splitButtonBlockStyles, mapButtonTextAlignToJustifyContent } from "@shared/button-block-styles";
 import { getRenderProps, parseTextContent, parseStructuredContent } from "../render-helpers";
+import {
+	effectiveIconGlyphColor,
+} from "@shared/icon-block-visuals";
+import { LucideGlyph } from "../shared/lucide-glyph";
 
 // ─── SSR Icon Placeholder ──────────────────────────────────────────────────
 // Renders a lightweight inline SVG placeholder with data attributes for
@@ -16,14 +20,28 @@ function renderSsrIcon(icon: IconData, overrides?: { size?: number; color?: stri
 	const iconName = (icon.iconName as string) || "";
 	if (!iconName) return null;
 
-	const baseSize = (icon.size as number) || 24;
-	const sizeUnit = typeof icon.sizeUnit === "string" ? (icon.sizeUnit as string) : undefined;
-	const baseColor = (icon.color as string) || "currentColor";
-	const baseStroke = (icon.strokeWidth as number) || 2;
-	const strokeUnit = typeof icon.strokeWidthUnit === "string" ? (icon.strokeWidthUnit as string) : undefined;
-
+	const baseSize = typeof icon.size === "number" ? icon.size : 24;
+	const baseStroke = typeof icon.strokeWidth === "number" ? icon.strokeWidth : 2;
 	const resolvedSize = overrides?.size ?? baseSize;
-	const resolvedColor = overrides?.color ?? baseColor;
+	const resolvedColor = overrides?.color ?? effectiveIconGlyphColor(undefined, {
+		color: typeof icon.color === "string" ? icon.color : undefined,
+	});
+
+	if (iconSet === "lucide") {
+		return (
+			<LucideGlyph
+				iconName={iconName}
+				size={resolvedSize}
+				color={resolvedColor}
+				strokeWidth={baseStroke}
+				style={{ flexShrink: 0 }}
+				aria-hidden
+			/>
+		);
+	}
+
+	const sizeUnit = typeof icon.sizeUnit === "string" ? icon.sizeUnit : undefined;
+	const strokeUnit = typeof icon.strokeWidthUnit === "string" ? icon.strokeWidthUnit : undefined;
 	const unit = sizeUnit || "px";
 	const svgW = unit === "px" ? resolvedSize : "100%";
 	const svgH = svgW;

@@ -406,6 +406,9 @@ importers:
 
   packages/sdk:
     dependencies:
+      slang-ts:
+        specifier: 0.0.7
+        version: 0.0.7(typescript@5.6.3)
       zod:
         specifier: ^3.24.2
         version: 3.25.76
@@ -5040,6 +5043,11 @@ packages:
   sirv@3.0.2:
     resolution: {integrity: sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g==}
     engines: {node: '>=18'}
+
+  slang-ts@0.0.7:
+    resolution: {integrity: sha512-9UgpSnLbZKlFFwgX2EG8Xc0NyzcvRVySutXYKSLvHHUKOQnCYFxQshBuz/IyzoCxlDst1JCFDoCTUMFBXT0cuQ==}
+    peerDependencies:
+      typescript: ^5
 
   slash@3.0.0:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
@@ -10211,6 +10219,10 @@ snapshots:
       '@polka/url': 1.0.0-next.29
       mrmime: 2.0.1
       totalist: 3.0.1
+
+  slang-ts@0.0.7(typescript@5.6.3):
+    dependencies:
+      typescript: 5.6.3
 
   slash@3.0.0: {}
 

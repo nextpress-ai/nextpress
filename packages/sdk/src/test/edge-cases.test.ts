@@ -195,8 +195,11 @@ describe("edge cases", () => {
 			}),
 		];
 
-		const page = await nextpress.pages.create({ title: "Deep Tree", blocks });
-		expect(Array.isArray(page.blocks)).toBe(true);
+		const createResult = await nextpress.pages.create({ title: "Deep Tree", blocks });
+		expect(createResult.isErr).toBe(false);
+		if (!createResult.isErr) {
+			expect(Array.isArray(createResult.value.blocks)).toBe(true);
+		}
 	});
 
 	it("preserves JSON error codes from structured API responses", async () => {
@@ -216,15 +219,12 @@ describe("edge cases", () => {
 			fetch: fetchMock,
 		});
 
-		try {
-			await nextpress.pages.create({ title: "Conflict" });
-			expect.unreachable("should have thrown");
-		} catch (error) {
-			expect(error).toBeInstanceOf(NextpressError);
-			if (error instanceof NextpressError) {
-				expect(error.status).toBe(409);
-				expect(error.code).toBe("PAGE_SLUG_EXISTS");
-			}
+		const createResult = await nextpress.pages.create({ title: "Conflict" });
+		expect(createResult.isErr).toBe(true);
+		if (createResult.isErr) {
+			expect(createResult.error).toBeInstanceOf(NextpressError);
+			expect(createResult.error.status).toBe(409);
+			expect(createResult.error.code).toBe("PAGE_SLUG_EXISTS");
 		}
 	});
 });
