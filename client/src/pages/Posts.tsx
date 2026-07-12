@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -6,14 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Search, Edit, Trash2, Eye, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AdminLayout } from "@/components/AdminLayout";
+import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
 import { CreatePostDialog } from "@/components/posts/CreatePostDialog";
 import { WordPressImportDialog } from "@/components/import/WordPressImportDialog";
 import { apiRequest } from "@/lib/queryClient";
-import { appendSiteIdToUrl } from "@/lib/site-api";
 import { useActiveSite } from "@/hooks/useActiveSite";
+import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { useToast } from "@/hooks/use-toast";
 import type { EnrichedPost } from "@shared/posts/post-other";
 
@@ -31,6 +33,8 @@ export default function Posts() {
   const [page, setPage] = useState(1);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [idsToDelete, setIdsToDelete] = useState<string[]>([]);
   const [, setLocation] = useLocation();
 
   const { toast } = useToast();
@@ -41,29 +45,61 @@ export default function Posts() {
     enabled: !!activeSiteId,
   });
 
+  const filteredPosts = postsData?.posts?.filter((post: EnrichedPost) =>
+    post.title.toLowerCase().includes(search.toLowerCase())
+  ) || [];
+
+  const selection = useBulkSelection(filteredPosts);
+
+  useEffect(() => {
+    selection.clear();
+  }, [page, activeSiteId, selection.clear]);
+
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await apiRequest('DELETE', `/api/posts/${id}`);
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map((id) => apiRequest("DELETE", `/api/posts/${id}`)));
+      return ids;
     },
-    onSuccess: () => {
+    onSuccess: (ids) => {
       toast({
         title: "Success",
-        description: "Post deleted successfully",
+        description:
+          ids.length === 1
+            ? "Post deleted successfully"
+            : `${ids.length} posts deleted successfully`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      selection.clear();
+      setDeleteDialogOpen(false);
+      setIdsToDelete([]);
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to delete post",
+        description: "Failed to delete one or more posts",
         variant: "destructive",
       });
     },
   });
 
+  const openDeleteDialog = (ids: string[]) => {
+    setIdsToDelete(ids);
+    setDeleteDialogOpen(true);
+  };
+
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this post?")) {
-      deleteMutation.mutate(id);
+    openDeleteDialog([id]);
+  };
+
+  const confirmDelete = () => {
+    if (idsToDelete.length === 0) return;
+    deleteMutation.mutate(idsToDelete);
+  };
+
+  const handleDeleteDialogOpenChange = (open: boolean) => {
+    setDeleteDialogOpen(open);
+    if (!open) {
+      setIdsToDelete([]);
     }
   };
 
@@ -84,10 +120,6 @@ export default function Posts() {
     };
     return <Badge variant={variants[status] || "secondary"}>{status}</Badge>;
   };
-
-  const filteredPosts = postsData?.posts?.filter((post: EnrichedPost) =>
-    post.title.toLowerCase().includes(search.toLowerCase())
-  ) || [];
 
   return (
     <AdminLayout
@@ -126,6 +158,25 @@ export default function Posts() {
           </div>
         </CardHeader>
         <CardContent>
+          {selection.selectedCount > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-npb-border-default bg-npb-surface-raised px-4 py-3">
+              <span className="text-sm text-npb-text-primary">
+                {selection.selectedCount}{" "}
+                {selection.selectedCount === 1 ? "post" : "posts"} selected
+              </span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => openDeleteDialog(selection.selectedIdList)}
+                disabled={deleteMutation.isPending}
+              >
+                Delete selected
+              </Button>
+              <Button variant="ghost" size="sm" onClick={selection.clear}>
+                Clear selection
+              </Button>
+            </div>
+          )}
           {isLoading ? (
             <div className="text-center py-8 text-npb-text-muted">Loading posts...</div>
           ) : filteredPosts.length === 0 ? (
@@ -136,6 +187,19 @@ export default function Posts() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={
+                        selection.allSelected
+                          ? true
+                          : selection.someSelected
+                            ? "indeterminate"
+                            : false
+                      }
+                      onCheckedChange={(checked) => selection.toggleAllVisible(!!checked)}
+                      aria-label="Select all posts on this page"
+                    />
+                  </TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
@@ -144,7 +208,14 @@ export default function Posts() {
               </TableHeader>
               <TableBody>
                 {filteredPosts.map((post: EnrichedPost) => (
-                  <TableRow key={post.id}>
+                  <TableRow key={post.id} data-state={selection.selectedIds.has(post.id) ? "selected" : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selection.selectedIds.has(post.id)}
+                        onCheckedChange={(checked) => selection.toggleOne(post.id, !!checked)}
+                        aria-label={`Select ${post.title}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div>
                         <div className="flex items-center gap-2">
@@ -222,7 +293,7 @@ export default function Posts() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Delete post permanently</p>
+                              <p>Delete post</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -269,6 +340,14 @@ export default function Posts() {
       <WordPressImportDialog
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
+      />
+      <ConfirmBulkDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={handleDeleteDialogOpenChange}
+        count={idsToDelete.length}
+        contentKind="post"
+        onConfirm={confirmDelete}
+        isPending={deleteMutation.isPending}
       />
     </AdminLayout>
   );

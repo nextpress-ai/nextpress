@@ -6,22 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Search, Trash2, Eye, Pencil, Home } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
+import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
 import { CreatePageModal } from "@/components/Pages/CreatePageModal";
 import { apiRequest } from "@/lib/queryClient";
 import { appendSiteIdToUrl, buildSiteOptionUrl } from "@/lib/site-api";
 import { useActiveSite } from "@/hooks/useActiveSite";
+import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { useToast } from "@/hooks/use-toast";
 import type { Page } from "@shared/schema-types";
 
@@ -45,7 +38,7 @@ export default function Pages() {
   const [page, setPage] = useState(1);
   const [location, setLocation] = useLocation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [pageToDelete, setPageToDelete] = useState<string | null>(null);
+  const [idsToDelete, setIdsToDelete] = useState<string[]>([]);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -82,21 +75,42 @@ export default function Pages() {
     },
   });
 
+  const filteredPages = pagesData?.pages?.filter((page: Page) =>
+    page.title.toLowerCase().includes(search.toLowerCase())
+  ) || [];
+  const homepageSlug = homepageOption?.value;
+  const isHomepage = (target: Page) => !!homepageSlug && target.slug === homepageSlug;
+  const deletablePages = filteredPages.filter((page) => !isHomepage(page));
+
+  const selection = useBulkSelection(deletablePages);
+
+  useEffect(() => {
+    selection.clear();
+  }, [page, activeSiteId, selection.clear]);
+
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await apiRequest('DELETE', `/api/pages/${id}`);
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map((id) => apiRequest("DELETE", `/api/pages/${id}`)));
+      return ids;
     },
-    onSuccess: () => {
+    onSuccess: (ids) => {
       toast({
         title: "Success",
-        description: "Page deleted successfully",
+        description:
+          ids.length === 1
+            ? "Page deleted successfully"
+            : `${ids.length} pages deleted successfully`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
+      selection.clear();
+      setDeleteDialogOpen(false);
+      setIdsToDelete([]);
+      queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to delete page",
+        description:
+          error instanceof Error ? error.message : "Failed to delete one or more pages",
         variant: "destructive",
       });
     },
@@ -141,16 +155,24 @@ export default function Pages() {
     },
   });
 
-  const handleDelete = (id: string) => {
-    setPageToDelete(id);
+  const openDeleteDialog = (ids: string[]) => {
+    setIdsToDelete(ids);
     setDeleteDialogOpen(true);
   };
 
+  const handleDelete = (id: string) => {
+    openDeleteDialog([id]);
+  };
+
   const confirmDelete = () => {
-    if (pageToDelete) {
-      deleteMutation.mutate(pageToDelete);
-      setDeleteDialogOpen(false);
-      setPageToDelete(null);
+    if (idsToDelete.length === 0) return;
+    deleteMutation.mutate(idsToDelete);
+  };
+
+  const handleDeleteDialogOpenChange = (open: boolean) => {
+    setDeleteDialogOpen(open);
+    if (!open) {
+      setIdsToDelete([]);
     }
   };
 
@@ -185,11 +207,6 @@ export default function Pages() {
     return <Badge variant={variants[status] || "secondary"}>{status}</Badge>;
   };
 
-  const filteredPages = pagesData?.pages?.filter((page: Page) =>
-    page.title.toLowerCase().includes(search.toLowerCase())
-  ) || [];
-  const homepageSlug = homepageOption?.value;
-
   return (
     <AdminLayout
       title="Pages"
@@ -221,6 +238,25 @@ export default function Pages() {
               </div>
             </CardHeader>
             <CardContent>
+              {selection.selectedCount > 0 && (
+                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-npb-border-default bg-npb-surface-raised px-4 py-3">
+                  <span className="text-sm text-npb-text-primary">
+                    {selection.selectedCount}{" "}
+                    {selection.selectedCount === 1 ? "page" : "pages"} selected
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => openDeleteDialog(selection.selectedIdList)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    Delete selected
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={selection.clear}>
+                    Clear selection
+                  </Button>
+                </div>
+              )}
               {isLoading ? (
                 <div className="text-center py-8 text-npb-text-muted">Loading pages...</div>
               ) : filteredPages.length === 0 ? (
@@ -231,6 +267,19 @@ export default function Pages() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={
+                            selection.allSelected
+                              ? true
+                              : selection.someSelected
+                                ? "indeterminate"
+                                : false
+                          }
+                          onCheckedChange={(checked) => selection.toggleAllVisible(!!checked)}
+                          aria-label="Select all pages on this page"
+                        />
+                      </TableHead>
                       <TableHead>Title</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Date</TableHead>
@@ -239,7 +288,19 @@ export default function Pages() {
                   </TableHeader>
                   <TableBody>
                     {filteredPages.map((page: Page) => (
-                      <TableRow key={page.id}>
+                      <TableRow key={page.id} data-state={selection.selectedIds.has(page.id) ? "selected" : undefined}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selection.selectedIds.has(page.id)}
+                            onCheckedChange={(checked) => selection.toggleOne(page.id, !!checked)}
+                            disabled={isHomepage(page)}
+                            aria-label={
+                              isHomepage(page)
+                                ? `${page.title} is the homepage and cannot be deleted`
+                                : `Select ${page.title}`
+                            }
+                          />
+                        </TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium text-npb-text-primary flex items-center gap-2">
@@ -299,7 +360,12 @@ export default function Pages() {
                               variant="ghost" 
                               size="sm"
                               onClick={() => handleDelete(page.id)}
-                              disabled={deleteMutation.isPending}
+                              disabled={deleteMutation.isPending || isHomepage(page)}
+                              title={
+                                isHomepage(page)
+                                  ? "Choose a different homepage before deleting this page"
+                                  : "Delete page"
+                              }
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -347,31 +413,14 @@ export default function Pages() {
         initialTitle={new URLSearchParams(window.location.search).get('title') || ''}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Page</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this page? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setDeleteDialogOpen(false);
-              setPageToDelete(null);
-            }}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmBulkDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={handleDeleteDialogOpenChange}
+        count={idsToDelete.length}
+        contentKind="page"
+        onConfirm={confirmDelete}
+        isPending={deleteMutation.isPending}
+      />
     </AdminLayout>
   );
 }

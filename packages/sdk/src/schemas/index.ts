@@ -137,7 +137,7 @@ export const blockConfigSchema: z.ZodType<unknown> = z.lazy(() =>
 		type: z.enum(["block", "container"]),
 		parentId: z.string().nullable(),
 		label: z.string().optional(),
-		category: z.enum(["basic", "layout", "media", "advanced", "post"]).optional(),
+		category: z.enum(["basic", "form", "layout", "media", "advanced", "post"]).optional(),
 		content: blockContentSchema,
 		styles: z.record(z.union([z.string(), z.number(), z.null()])).optional(),
 		customCss: z.string().optional(),

@@ -18,6 +18,7 @@ import {
   parseExpectedVersion,
   stripVersionControlFields,
 } from '@shared/content-version';
+import { deletePageWithDependencies, PageDeleteError } from '../lib/delete-page';
 
 /**
  * Validates that a slug is unique (application-level check before insert).
@@ -509,11 +510,17 @@ export function createPagesRoutes(deps: Deps): Router {
           return res.status(statusCode).json({ message: (error as Error).message });
         }
 
-        await models.pages.delete(id);
-        hooks.doAction('delete_post', id);
+        await deletePageWithDependencies({ models, hooks }, {
+          id: String(page.id),
+          slug: page.slug ?? null,
+          siteId: String(page.siteId),
+        });
 
         res.json({ message: 'Page deleted successfully' });
       } catch (error) {
+        if (error instanceof PageDeleteError) {
+          return res.status(error.statusCode).json({ message: error.message });
+        }
         console.error('Error deleting page:', error);
         res.status(500).json({ message: 'Failed to delete page' });
       }
