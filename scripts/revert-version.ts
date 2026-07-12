@@ -1,9 +1,9 @@
 import path from "node:path";
 import {
-	bumpVersion,
 	formatSemver,
 	parseSemver,
-	type BumpKind,
+	revertVersion,
+	type RevertKind,
 } from "../shared/release/bump-version";
 import { applyWorkspaceVersion, readWorkspaceVersion } from "./version-files";
 
@@ -18,15 +18,15 @@ const log = (message: string): void => {
 
 const printUsage = (): void => {
 	log(`Usage:
-  pnpm version:bump                 Deploy rule (patch+1, or minor+1 when patch is 10)
-  pnpm version:bump --patch         Force patch bump
-  pnpm version:bump --minor         Force minor bump (reset patch to 0)
-  pnpm version:bump --major         Force major bump (reset minor/patch to 0)
-  pnpm version:bump --set 1.2.0     Set an explicit semver
-  pnpm version:set 1.2.0            Alias for --set`);
+  pnpm version:revert                 Undo deploy bump (patch-1, or minor-1 patch 10 when patch is 0)
+  pnpm version:revert --patch         Force patch revert
+  pnpm version:revert --minor         Force minor revert (reset patch to 0)
+  pnpm version:revert --major         Force major revert (reset minor/patch to 0)
+  pnpm version:revert --set 1.2.0     Set an explicit semver
+  pnpm version:set 1.2.0              Alias for --set (shared with version:bump)`);
 };
 
-const resolveNextVersion = (params: {
+const resolvePreviousVersion = (params: {
 	current: string;
 	args: string[];
 }): string => {
@@ -40,7 +40,7 @@ const resolveNextVersion = (params: {
 		return formatSemver(parseSemver(target)!);
 	}
 
-	const kindByFlag: Record<string, BumpKind> = {
+	const kindByFlag: Record<string, RevertKind> = {
 		"--patch": "patch",
 		"--minor": "minor",
 		"--major": "major",
@@ -52,33 +52,35 @@ const resolveNextVersion = (params: {
 		process.exit(0);
 	}
 
-	const kind = args[0] ? kindByFlag[args[0]] ?? "deploy" : "deploy";
+	const kind = args[0] ? (kindByFlag[args[0]] ?? "deploy") : "deploy";
 	if (args[0] && !kindByFlag[args[0]] && args[0] !== "--set") {
 		const direct = parseSemver(args[0]);
 		if (direct) return formatSemver(direct);
 		fail(`Unknown option: ${args[0]}`);
 	}
 
-	const next = bumpVersion({ current, kind });
-	if (!next) fail(`Invalid current version in package.json: "${current}"`);
-	return next;
+	const previous = revertVersion({ current, kind });
+	if (!previous) {
+		fail(`Cannot revert version "${current}" with ${kind} rule`);
+	}
+	return previous;
 };
 
-/** CLI entry — bumps or sets semver across package.json, config.ts, and scripts/nextpress. */
+/** CLI entry — reverts or sets semver across package.json, config.ts, and scripts/nextpress. */
 const main = (): void => {
 	const repoRoot = path.resolve(import.meta.dirname, "..");
 	const currentResult = readWorkspaceVersion(repoRoot);
 	if (!currentResult.status) fail(currentResult.message);
 
-	const nextVersion = resolveNextVersion({
+	const previousVersion = resolvePreviousVersion({
 		current: currentResult.data,
 		args: process.argv.slice(2),
 	});
 
-	const applyResult = applyWorkspaceVersion({ repoRoot, nextVersion });
+	const applyResult = applyWorkspaceVersion({ repoRoot, nextVersion: previousVersion });
 	if (!applyResult.status) fail(applyResult.message);
 
-	log(`Version bumped: ${currentResult.data} -> ${nextVersion}`);
+	log(`Version reverted: ${currentResult.data} -> ${previousVersion}`);
 	log("- updated: package.json");
 	log("- updated: config.ts");
 	log("- updated: scripts/nextpress");

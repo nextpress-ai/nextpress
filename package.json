@@ -12,6 +12,7 @@
     "update-versions": "tsx scripts/bump-version.ts",
     "deploy": "bash ./deploy.sh",
     "version:bump": "tsx scripts/bump-version.ts",
+    "version:revert": "tsx scripts/revert-version.ts",
     "version:set": "tsx scripts/bump-version.ts --set",
     "check": "tsc --project tsconfig.server.json --noEmit",
     "test": "vitest",

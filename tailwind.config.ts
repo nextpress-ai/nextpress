@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 import tailwindcssAnimate from "tailwindcss-animate";
 import typography from "@tailwindcss/typography";
-import { tailwindThemeExtend } from "@shared/tailwind-theme";
+import { tailwindThemeExtend } from "./shared/tailwind-theme";
 
 export default {
 	darkMode: ["class"],
