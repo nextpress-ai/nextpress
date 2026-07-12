@@ -23,6 +23,7 @@ import {
   stackNeedsVerticalPlacementRoom,
 } from "@shared/block-container-placement";
 import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
+import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
 import {
   Tooltip,
   TooltipContent,
@@ -275,20 +276,16 @@ function BlockEditorToolbarPanel({
           </span>
         )}
         {dragHandleProps && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                {...dragHandleProps}
-                variant="ghost"
-                size="sm"
-                title="Drag to reorder block"
-                aria-label="Drag to reorder block"
-                className="h-6 w-6 p-0 cursor-grab active:cursor-grabbing">
-                <GripVertical className="w-3 h-3" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Drag to reorder block</TooltipContent>
-          </Tooltip>
+          <Button
+            {...dragHandleProps}
+            type="button"
+            variant="ghost"
+            size="sm"
+            title="Drag to reorder block"
+            aria-label="Drag to reorder block"
+            className="h-6 w-6 p-0 cursor-grab active:cursor-grabbing">
+            <GripVertical className="w-3 h-3" />
+          </Button>
         )}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -423,7 +420,9 @@ export default function BlockRenderer({
   // Generate modifier CSS (hover states, responsive) from token system
   const modifierCSS = tokenResolution?.modifierEntries?.length
     ? generateBlockModifierCSS(block.id, tokenResolution.modifierEntries, {
-        selector: resolveButtonBlockModifierSelector(block),
+        selector:
+          resolveButtonBlockModifierSelector(block) ??
+          resolveFormFieldModifierSelector(block),
       })
     : "";
 
@@ -549,12 +548,12 @@ export default function BlockRenderer({
           dragHandleProps={dragHandleProps}
           onDuplicate={onDuplicate}
           onDelete={onDelete}
-          className={`absolute top-0 left-0 right-0 z-20 ${toolbarPanelClass}`}
+          className={`absolute top-0 left-0 right-0 z-30 ${toolbarPanelClass}`}
         />
       )}
       {!isPreview && useTopToolbarHoverStrip && (
         <div
-          className="absolute top-0 left-0 right-0 z-20 flex flex-col"
+          className="absolute top-0 left-0 right-0 z-30 flex flex-col"
           onMouseEnter={handleCanvasHoverEnter}
           onMouseLeave={handleCanvasHoverLeave}
           onPointerMove={handleCanvasHoverPointerMove}>

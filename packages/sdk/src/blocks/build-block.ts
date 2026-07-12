@@ -11,21 +11,19 @@ import type {
 	AudioBlockParams,
 	ButtonBlockParams,
 	CodeBlockParams,
+	ColumnsBlockParams,
 	CustomBlockParams,
 	HeadingBlockParams,
 	HtmlBlockParams,
 	IconBlockParams,
 	ImageBlockParams,
-	InputBlockParams,
 	MarkdownBlockParams,
 	PostCommentsBlockParams,
 	PostExcerptBlockParams,
 	PullquoteBlockParams,
 	QuoteBlockParams,
 	PreformattedBlockParams,
-	SelectBlockParams,
 	TextBlockParams,
-	TextareaBlockParams,
 	VideoBlockParams,
 	BlockShellParams,
 	BlockEditorSettings,
@@ -33,6 +31,8 @@ import type {
 import { applyEditorSettings } from "./apply-editor-settings.js";
 import { normalizeBlockSubtree } from "./normalize-block-tree.js";
 import { applySanitizedBlockOverrides } from "../sanitize/apply-block-overrides.js";
+import { applySdkBlockDefaults } from "../defaults/block-defaults.js";
+import { buildColumnsBlock } from "../layout/build-columns-block.js";
 import { createBlockId } from "./create-block-id.js";
 
 export { createBlockId } from "./create-block-id.js";
@@ -179,7 +179,8 @@ export function createBlocksBuilder(): BlocksBuilder {
 			params: { ...shellRest, label: params.label ?? def.label, styles: undefined },
 		});
 		const withOverrides = applySanitizedBlockOverrides(built, { html, js, css });
-		return params.children?.length ? normalizeBlockSubtree(withOverrides) : withOverrides;
+		const withDefaults = applySdkBlockDefaults(withOverrides);
+		return params.children?.length ? normalizeBlockSubtree(withDefaults) : withDefaults;
 	};
 
 	return {
@@ -285,7 +286,7 @@ export function createBlocksBuilder(): BlocksBuilder {
 
 		spacer: structured<import("./block-content-types.js").SpacerContent>("core/spacer"),
 		separator: structured<import("./block-content-types.js").SeparatorContent>("core/separator"),
-		columns: structured<import("./block-content-types.js").ColumnsContent>("core/columns"),
+		columns: (params: ColumnsBlockParams = {}): BlockConfig => buildColumnsBlock(params),
 		container: structured<import("./block-content-types.js").ContainerContent>("core/container"),
 
 		/**

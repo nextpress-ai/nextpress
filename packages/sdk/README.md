@@ -2,7 +2,7 @@
 
 Official TypeScript SDK for the [NextPress](https://github.com/nextpress-org/nextpress) CMS API.
 
-**Full documentation:** [docs/sdk/README.md](../../docs/sdk/README.md) (guides, architecture, resource reference, blocks, preview, development).
+**Full documentation:** [docs/sdk/README.md](https://github.com/nextpress-org/nextpress/blob/main/docs/sdk/README.md) (guides, architecture, resource reference, blocks, preview, development).
 
 ## Install
 
@@ -76,7 +76,7 @@ if (result.isErr && result.error.code === "API_KEY_SCOPE_DENIED") {
 }
 ```
 
-See [Versioning](../../docs/sdk/versioning.md) for `expectedVersion` and conflict handling.
+See [Versioning](https://github.com/nextpress-org/nextpress/blob/main/docs/sdk/versioning.md) for `expectedVersion` and conflict handling.
 
 Site-bound keys only work for the site you selected when creating the key. Pass the same `siteId` in the SDK factory options.
 
@@ -188,7 +188,29 @@ nextpress.on("page-created", async ({ page }) => {
 | `nextpress.system` | `release`, `checkUpgrade`, `runUpgrade` | system |
 | `nextpress.health` | `check`, `setupStatus`, `verifyDomain`, `setup` | none |
 | `nextpress.auth` | `me` | any valid key |
-| `nextpress.blocks` | all 35 dashboard block helpers + `fromName()` | n/a |
+| `nextpress.blocks` | all 39 dashboard block helpers + `fromName()` | n/a |
+
+## Page settings and defaults
+
+SDK-created pages get the same baseline shell as dashboard **Page Settings**:
+
+- **Design:** `system-ui` font, `1200px` max width, `2rem 1rem` padding
+- **Icons:** Lucide set, 24px default size
+
+Applied automatically on `pages.create()` and `posts.create()` — no need to pass `other` unless you want overrides:
+
+```ts
+const createResult = await nextpress.pages.create({
+  title: "Landing",
+  slug: "landing",
+  status: "draft",
+  blocks: nextpress.blocks.starterLayout(),
+  // optional overrides — merged with defaults:
+  other: { design: { fontFamily: "Inter, sans-serif" } },
+});
+```
+
+Every block built through `nextpress.blocks.*` also gets editor-native scaffolding: `20px` padding, token `units`, and registry `defaultStyles` (headings, form fields, gallery, etc.).
 
 ## Page builder workflows
 
@@ -226,32 +248,85 @@ const preview = await nextpress.preview.page({ id: page.id });
 
 ## Blocks
 
-There is no standalone blocks API. All **35 dashboard blocks** are available via `nextpress.blocks.*` or `nextpress.blocks.fromName("core/cover")`.
+There is no standalone blocks API. All **39 dashboard blocks** are available via `nextpress.blocks.*` or `nextpress.blocks.fromName("core/cover")`.
+
+### Nested settings (Content / Style / Advanced)
+
+Prefer nested `settings` — same tabs as the dashboard:
+
+```ts
+nextpress.blocks.group({
+  settings: {
+    content: { tagName: "section" },
+    styles: { display: "flex", gap: "16px", padding: "24px" },
+    advanced: { columnLayout: undefined },
+  },
+  children: [nextpress.blocks.paragraph({ text: "Inside group" })],
+});
+```
+
+Layout CSS on `core/group` and `core/columns` belongs in `settings.styles`, not `content`.
+
+### Multi-column layouts
+
+Use `columnCount` or `columnGroups` so preview/publish match the editor (sets `settings.columnLayout`):
+
+```ts
+nextpress.blocks.columns({
+  columnCount: 3,
+  settings: { styles: { gap: "24px" } },
+  children: [
+    nextpress.blocks.heading({ text: "Col 1", level: 3 }),
+    nextpress.blocks.heading({ text: "Col 2", level: 3 }),
+    nextpress.blocks.heading({ text: "Col 3", level: 3 }),
+  ],
+});
+
+// Or explicit groups (one array per column):
+nextpress.blocks.columns({
+  columnGroups: [
+    [nextpress.blocks.paragraph({ text: "Left" })],
+    [nextpress.blocks.paragraph({ text: "Right" })],
+  ],
+});
+```
+
+### Form blocks
+
+`input()`, `textarea()`, and `select()` map to `core/input`, `core/textarea`, and `core/select` with publish-safe default styles.
+
+### Layout utilities (exported)
+
+| Export | Use |
+|--------|-----|
+| `buildColumnsBlock` | Low-level columns builder |
+| `buildColumnsLayout` | Distribute child ids across N columns |
+| `buildGoogleSearchPageBlocks` | Demo landing layout |
+| `applySdkBlockDefaults` | Apply editor shell to an existing tree |
+| `normalizeBlockTree` | Fix `parentId` after manual edits |
 
 ```ts
 const blocks = [
   nextpress.blocks.heading({ text: "Hello", level: 1 }),
   nextpress.blocks.container({
     children: [
-      nextpress.blocks.paragraph({ text: "Left column content" }),
+      nextpress.blocks.paragraph({ text: "Content" }),
       nextpress.blocks.image({ url: "/uploads/photo.jpg", alt: "Photo" }),
     ],
   }),
-  nextpress.blocks.button({ data: { text: "Click me", url: "/contact" } }),
+  nextpress.blocks.button({
+    settings: {
+      content: { text: "Contact", url: "/contact", linkTarget: "_self" },
+    },
+  }),
 ];
-
-await nextpress.pages.update({
-  id: page.id,
-  expectedVersion: page.version ?? 0,
-  blocks,
-});
 ```
 
 ## Input validation
 
 SDK methods validate inputs with Zod before sending requests. Invalid input throws locally. **Mutations** (`create`, `update`, `delete`) return `SdkResult` — check `isErr` before using `value`. **Reads** throw `NextpressError` on API failure.
 
-Updates require `expectedVersion` from a prior `get()`. See [Versioning](../../docs/sdk/versioning.md).
+Updates require `expectedVersion` from a prior `get()`. See [Versioning](https://github.com/nextpress-org/nextpress/blob/main/docs/sdk/versioning.md).
 
 ```ts
 import { isNextpressError, VERSION_STALE } from "@nextpress-org/sdk";

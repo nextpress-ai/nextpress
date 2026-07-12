@@ -26,7 +26,9 @@ Technical specs for *block token resolution* (published page CSS) live separatel
 15. [Theme architecture](#15-theme-architecture)
 16. [Builder sidebar](#16-builder-sidebar)
 17. [Decision checklist](#17-decision-checklist)
-18. [File locations](#18-file-locations)
+18. [Page builder & publish parity](#18-page-builder--publish-parity)
+19. [Control philosophy: presets first](#19-control-philosophy-presets-first)
+20. [File locations](#20-file-locations)
 
 ---
 
@@ -616,7 +618,56 @@ Fix the pattern — don't add another one-off token.
 
 ---
 
-## 18. File locations
+## 18. Page builder & publish parity
+
+NextPress has **two render trees**. Do not mix them up.
+
+| Path | Code | Used for |
+|---|---|---|
+| **Editor canvas** | `client/src/components/PageBuilder/blocks/*` via `BlockRenderer` | Drag, drop, inline edit, settings |
+| **Preview & publish** | `renderer/react/*` via `PublicBlockRenderer` / `PublicBlockStack` | Preview tab, published pages, SSR |
+
+**Rule:** If it looks wrong on preview or the live site, fix `renderer/react/*` (and shared helpers both paths use). Editor-only components do not affect visitors.
+
+### Preview must match the canvas
+
+- **Preview from the editor** passes live blocks through `sessionStorage` (`shared/preview-session.ts`, `?live=1` on preview URL). Do not rely on the API alone immediately after edit.
+- **Shared layout helpers** (`shared/gallery-render.ts`, `shared/group-shell-styles.ts`, `shared/form-field-model.ts`) prevent editor/publish drift.
+- **Fontsource (self-hosted):** catalog fonts are bundled via `@fontsource/*` packages. SPA loads `client/src/styles/bundled-fonts.css` from `main.tsx`. SSR/publish links `/assets/css/bundled-fonts.css` (run `pnpm build:fonts`). Catalog lives in `shared/font-catalog.ts`; pickers use `BLOCK_FONT_CATALOG` / `PAGE_FONT_CATALOG`.
+
+### Content vs styles (blocks)
+
+- **Content tab** = semantics only (text, URLs, tags, image alt, gallery images).
+- **Style tab** = all visual CSS (layout, colors, spacing, borders, hover states, custom CSS).
+- Never write layout CSS into `content.data` from the editor or SDK.
+
+### Known parity checkpoints
+
+- Gallery grid: `display: grid` + `blocks-gallery-grid` in both trees; SSR fallback CSS in `GALLERY_PUBLISH_CSS`.
+- Form fields: publish-safe default colors (hex, not admin CSS variables); `wp-block-input__control` for hover selectors.
+- Hover colors: `TokenEntry.modifier: "hover"` via Style tab pickers; button/form modifier selectors in `shared/*-block-styles.ts`.
+
+---
+
+## 19. Control philosophy: presets first
+
+Settings panels should feel like **Tailwind-style presets**, not raw CSS worksheets.
+
+| Prefer | Over |
+|---|---|
+| Chips: SM / MD / LG / XL | Freeform `padding: 0 2px 0 4px` as the only control |
+| Font weight: Light / Normal / Bold | Raw `500`, `700` unless user opens custom |
+| Corner shape: Square / Rounded / Pill / Circle | Only a `border-radius` text field |
+| Width: Fill / Fit / Max | Arbitrary `%` without presets |
+| Spacing presets in `shared/dimension-presets.ts` | One-off values in every block settings file |
+
+**Pattern:** show preset chips first; keep a **single custom field** below as escape hatch (labeled “Custom …”). Page-level and block-level font lists stay in sync via `shared/font-catalog.ts` (`BLOCK_FONT_CATALOG` / `PAGE_FONT_CATALOG`).
+
+When adding a new style control, add presets to `shared/dimension-presets.ts` (or block model) before exposing raw inputs.
+
+---
+
+## 20. File locations
 
 | What | Where |
 |---|---|
@@ -628,3 +679,6 @@ Fix the pattern — don't add another one-off token.
 | Shared UI | `client/src/components/PageBuilder/shared/` |
 | Contrast API | `client/src/lib/design-contrast/` |
 | Block content tokens (spec) | `docs/tailwind-token-system-spec.md` |
+| Font catalog (picker + Fontsource ids) | `shared/font-catalog.ts` |
+| Bundled font CSS (SPA import) | `client/src/styles/bundled-fonts.css` |
+| Bundled font CSS (SSR static) | `client/public/assets/css/bundled-fonts.css` (`pnpm build:fonts`) |

@@ -8,6 +8,7 @@ import { tokenColors, propertyAliasMap } from "@/lib/tailwind-tokens"
 
 interface TokenColorPickerProps {
   property: string               // CSS property: "backgroundColor" or "color"
+  modifier?: string              // Optional state/responsive modifier: "hover", "focus", etc.
   currentEntry: TokenEntry | undefined
   currentStyleValue: string | undefined  // Fallback from block.styles for legacy blocks
   onChange: (entry: TokenEntry) => void
@@ -26,7 +27,7 @@ const SHADE_KEYS = ["50", "100", "200", "300", "400", "500", "600", "700", "800"
 
 const SPECIAL_COLORS = ["white", "black", "transparent"]
 
-export default function TokenColorPicker({ property, currentEntry, currentStyleValue, onChange }: TokenColorPickerProps) {
+export default function TokenColorPicker({ property, modifier, currentEntry, currentStyleValue, onChange }: TokenColorPickerProps) {
   // Show custom input only when user explicitly chose custom (entry exists with empty value)
   // Default to token swatch view — tokens are the primary UX, custom is the escape hatch
   const isCustom = currentEntry ? !currentEntry.value && !!currentEntry.style : false
@@ -42,6 +43,7 @@ export default function TokenColorPicker({ property, currentEntry, currentStyleV
       value: family,
       variant: shade,
       alias,
+      modifier,
       style: hexValue,
     })
   }
@@ -52,6 +54,7 @@ export default function TokenColorPicker({ property, currentEntry, currentStyleV
       value: "",
       variant: null,
       alias,
+      modifier,
       style: hex,
     })
   }

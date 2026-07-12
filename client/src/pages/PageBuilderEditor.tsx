@@ -624,21 +624,45 @@ export default function PageBuilderEditor({
   const handlePreview = async () => {
     if (isTemplate) {
       if (!data?.id) return;
-      window.open(`/preview/template/${data.id}`, '_blank');
+      const { writePreviewSession } = await import('@shared/preview-session');
+      writePreviewSession({
+        contentType: 'template',
+        contentId: data.id,
+        payload: {
+          blocks: pageState.blocks,
+          title: pageState.title,
+          savedAt: Date.now(),
+        },
+      });
+      window.open(`/preview/template/${data.id}?live=1`, '_blank');
       return;
     }
 
     const saved = await handlePageBuilderSave();
     if (!saved) return;
 
-    if (inlinePostId) {
-      window.open(`/preview/post/${inlinePostId}`, '_blank');
-      return;
-    }
-    if (!data) return;
-    const previewPath = isPost
-      ? `/preview/post/${data.id}`
-      : `/preview/page/${data.id}`;
+    const previewContentType = inlinePostId ? 'post' : isPost ? 'post' : 'page';
+    const previewContentId = inlinePostId ?? data?.id;
+    if (!previewContentId) return;
+
+    const { writePreviewSession } = await import('@shared/preview-session');
+    writePreviewSession({
+      contentType: previewContentType,
+      contentId: previewContentId,
+      payload: {
+        blocks: pageState.blocks,
+        title: pageState.title,
+        design: (data as { other?: { design?: unknown } })?.other?.design as
+          | import('@shared/schema-types').PageOther['design']
+          | undefined,
+        savedAt: Date.now(),
+      },
+    });
+
+    const previewPath =
+      previewContentType === 'post'
+        ? `/preview/post/${previewContentId}?live=1`
+        : `/preview/page/${previewContentId}?live=1`;
     window.open(previewPath, '_blank');
   };
 

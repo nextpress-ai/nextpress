@@ -109,17 +109,46 @@ export const DEFAULT_PAGE_OTHER: PageOther = {
 	seo: {},
 };
 
-/** Merges SDK input with baseline page.other defaults. */
+/** Merges SDK input with baseline page.other defaults (matches dashboard Page Settings). */
 export function buildDefaultPageOther(overrides?: Partial<PageOther>): PageOther {
+	const seo = { ...DEFAULT_PAGE_OTHER.seo, ...overrides?.seo };
+	const design = { ...DEFAULT_PAGE_OTHER.design, ...overrides?.design };
+	const icons = {
+		defaultSet: overrides?.icons?.defaultSet ?? DEFAULT_PAGE_OTHER.icons!.defaultSet,
+		defaultSize: overrides?.icons?.defaultSize ?? DEFAULT_PAGE_OTHER.icons!.defaultSize,
+		...(overrides?.icons?.allowedSets ? { allowedSets: overrides.icons.allowedSets } : {}),
+	};
+
 	return {
 		...DEFAULT_PAGE_OTHER,
 		...overrides,
-		design: { ...DEFAULT_PAGE_OTHER.design, ...overrides?.design },
-		icons: {
-			defaultSet: overrides?.icons?.defaultSet ?? DEFAULT_PAGE_OTHER.icons!.defaultSet,
-			defaultSize: overrides?.icons?.defaultSize ?? DEFAULT_PAGE_OTHER.icons!.defaultSize,
-			allowedSets: overrides?.icons?.allowedSets,
-		},
-		seo: { ...DEFAULT_PAGE_OTHER.seo, ...overrides?.seo },
+		design,
+		icons,
+		seo,
 	};
 }
+
+/** Alias for shared naming — same merge semantics as dashboard create flow. */
+export const mergePageOtherWithDefaults = buildDefaultPageOther;
+
+type InputWithOptionalOther = {
+	other?: Partial<PageOther> | null;
+};
+
+/**
+ * Applies default page.other on API writes without callers passing `buildDefaultPageOther`.
+ * Create always sends merged defaults; update merges only when `other` is in the payload.
+ */
+export const mergePageOtherOnWrite = <T extends InputWithOptionalOther>(
+	input: T,
+	mode: "create" | "update",
+): T => {
+	if (mode === "update" && !("other" in input)) {
+		return input;
+	}
+
+	return {
+		...input,
+		other: buildDefaultPageOther(input.other ?? undefined),
+	};
+};

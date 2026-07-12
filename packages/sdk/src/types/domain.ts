@@ -57,7 +57,7 @@ export type BlockConfig = {
 	type: "block" | "container";
 	parentId: string | null;
 	label?: string;
-	category?: "basic" | "layout" | "media" | "advanced" | "post";
+	category?: "basic" | "form" | "layout" | "media" | "advanced" | "post";
 	content: BlockContent;
 	styles?: Record<string, string | number | null | undefined>;
 	customCss?: string;

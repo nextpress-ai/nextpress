@@ -3,7 +3,8 @@
  * Placeholders are used for dynamic content injection.
  */
 
-import { getGoogleFontUrl } from '@shared/google-fonts';
+import { GALLERY_PUBLISH_CSS } from '@shared/gallery-render';
+import { BUNDLED_FONTS_STYLESHEET } from '@shared/font-catalog';
 
 export interface PageRenderOptions {
   fontFamily?: string;
@@ -25,12 +26,7 @@ export const PageTemplate = (
 	hydrateScript: string = "",
 	options: PageRenderOptions = {},
 ): string => {
-	const googleFontUrl = getGoogleFontUrl(options.fontFamily);
-	const googleFontLink = googleFontUrl
-		? `<link rel="preconnect" href="https://fonts.googleapis.com">
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-      <link rel="stylesheet" href="${googleFontUrl}">`
-		: '';
+	const bundledFontsLink = `<link rel="stylesheet" href="${BUNDLED_FONTS_STYLESHEET}">`;
 
 	// We use backticks (`) to define the template literal
 	return `<!DOCTYPE html>
@@ -45,7 +41,7 @@ export const PageTemplate = (
       ${options.noIndex ? '<meta name="robots" content="noindex, nofollow">' : ''}
       ${(options.customMeta || []).filter(m => m.name && m.content).map(m => `<meta name="${m.name}" content="${m.content}">`).join('\n      ')}
       
-      ${googleFontLink}
+      ${bundledFontsLink}
       <link rel="stylesheet" href="/assets/css/main.css">
   
       <style>
@@ -119,11 +115,6 @@ export const PageTemplate = (
           transition: all 0.2s ease;
         }
         
-        .wp-block-button__link:hover {
-          background-color: #005a87;
-          opacity: 1;
-        }
-        
         .wp-block-button__link:active {
           background-color: #004a6f;
         }
@@ -133,19 +124,10 @@ export const PageTemplate = (
           background-color: #6c757d;
         }
         
-        .wp-block-button__link.is-style-secondary:hover {
-          background-color: #5a6268;
-        }
-        
         .wp-block-button__link.is-style-outline {
           background-color: transparent;
           border: 2px solid #007cba;
           color: #007cba;
-        }
-        
-        .wp-block-button__link.is-style-outline:hover {
-          background-color: #007cba;
-          color: #ffffff;
         }
         
         .wp-block-image {
@@ -164,6 +146,8 @@ export const PageTemplate = (
           color: #666;
           text-align: center;
         }
+
+        ${GALLERY_PUBLISH_CSS}
         
         .wp-block-columns {
           display: flex;

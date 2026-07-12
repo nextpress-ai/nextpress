@@ -51,7 +51,8 @@ async function main(): Promise<void> {
 					text: "Create pages, posts, and block layouts from scripts, CI, or MCP agents — the same blocks the dashboard uses.",
 				}),
 				blocks.columns({
-					content: { columns: 3, gap: "24px" },
+					columnCount: 3,
+					settings: { styles: { gap: "24px" } },
 					children: [
 						blocks.group({
 							children: [
@@ -68,7 +69,7 @@ async function main(): Promise<void> {
 						blocks.group({
 							children: [
 								blocks.heading({ text: "Blocks", level: 3 }),
-								blocks.paragraph({ text: "35 typed block helpers matching the admin registry." }),
+								blocks.paragraph({ text: "39 typed block helpers matching the admin registry." }),
 							],
 						}),
 					],

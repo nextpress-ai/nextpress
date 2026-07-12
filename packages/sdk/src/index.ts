@@ -1,3 +1,13 @@
+export { applySdkBlockDefaults, applySdkBlockTreeDefaults } from "./defaults/block-defaults.js";
+export {
+	buildColumnsBlock,
+} from "./layout/build-columns-block.js";
+export {
+	buildColumnsLayout,
+	buildColumnsLayoutFromGroups,
+	DEFAULT_COLUMNS_CONTENT,
+	type ColumnLayout,
+} from "./layout/columns-layout.js";
 export { buildGoogleSearchPageBlocks } from "./blocks/google-search-layout.js";
 export {
 	sanitizeBlockOverrides,
@@ -95,6 +105,7 @@ export type * from "./types/responses.js";
 export type * from "./types/wordpress-import.js";
 export {
 	buildDefaultPageOther,
+	mergePageOtherWithDefaults,
 	DEFAULT_PAGE_OTHER,
 	ICON_SET_IDS,
 	PAGE_ICON_DEFAULT_SETS,

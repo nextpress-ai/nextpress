@@ -1,9 +1,28 @@
 {
   "name": "@nextpress-org/sdk",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Official NextPress SDK for managing content, pages, posts, and blocks programmatically",
   "type": "module",
   "license": "MIT",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nextpress-org/nextpress.git",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://github.com/nextpress-org/nextpress/tree/main/packages/sdk#readme",
+  "bugs": {
+    "url": "https://github.com/nextpress-org/nextpress/issues"
+  },
+  "keywords": [
+    "nextpress",
+    "cms",
+    "headless",
+    "page-builder",
+    "blocks",
+    "sdk",
+    "typescript"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

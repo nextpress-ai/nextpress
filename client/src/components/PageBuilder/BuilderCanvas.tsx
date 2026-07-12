@@ -53,6 +53,12 @@ export function BuilderCanvas({
           className={`min-h-full p-4 flex flex-col items-stretch w-full ${snapshot.isDraggingOver ? 'bg-npb-accent/10' : ''}`}
           style={{ gap: PAGE_BLOCK_STACK_GAP }}
         >
+          {blocks.length === 0 && (
+            <div className="text-center py-12 text-npb-text-muted pointer-events-none">
+              <Layers className="w-12 h-12 mx-auto mb-4" />
+              <p>Drag blocks from the sidebar to start building your page</p>
+            </div>
+          )}
           {blocks.map((block, index) => (
             <React.Fragment key={block.id}>
               {snapshot.placeholderIndex === index && <DropPlaceholder />}
@@ -97,13 +103,15 @@ export function BuilderCanvas({
     <div className="flex-1 overflow-auto bg-npb-canvas-bg p-8 min-h-0">
       <DevicePreview device={deviceView}>
         <div className="bg-npb-canvas-page min-h-full shadow-lg">
-          {blocks.length === 0 ? (
-            <div className="text-center py-12 text-npb-text-muted">
-              <Layers className="w-12 h-12 mx-auto mb-4" />
-              <p>Drag blocks from the sidebar to start building your page</p>
-            </div>
-          ) : isPreviewMode ? (
-            renderPreviewStack()
+          {isPreviewMode ? (
+            blocks.length === 0 ? (
+              <div className="text-center py-12 text-npb-text-muted">
+                <Layers className="w-12 h-12 mx-auto mb-4" />
+                <p>No blocks to preview yet</p>
+              </div>
+            ) : (
+              renderPreviewStack()
+            )
           ) : (
             renderEditorStack()
           )}

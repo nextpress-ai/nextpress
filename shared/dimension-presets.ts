@@ -48,6 +48,24 @@ export const SPACING_PRESETS: readonly DimensionPreset[] = [
 	{ value: "2rem", label: "XL" },
 ] as const;
 
+export const FONT_SIZE_PRESETS: readonly DimensionPreset[] = [
+	{ value: "0.875rem", label: "SM" },
+	{ value: "1rem", label: "Base" },
+	{ value: "1.125rem", label: "LG" },
+	{ value: "1.25rem", label: "XL" },
+	{ value: "1.5rem", label: "2XL" },
+	{ value: "2rem", label: "3XL" },
+] as const;
+
+export const BORDER_RADIUS_PRESETS: readonly DimensionPreset[] = [
+	{ value: "0", label: "Square" },
+	{ value: "0.25rem", label: "Subtle" },
+	{ value: "0.375rem", label: "Rounded" },
+	{ value: "0.75rem", label: "Soft" },
+	{ value: "9999px", label: "Pill" },
+	{ value: "50%", label: "Circle" },
+] as const;
+
 /** CSS length units supported in numeric fields and validation hints. */
 export const NPB_DIMENSION_UNITS = [
 	"px",

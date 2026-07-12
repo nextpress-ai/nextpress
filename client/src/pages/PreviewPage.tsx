@@ -6,7 +6,7 @@ import { AlertCircle } from "lucide-react";
 import type { Post, Template } from "@shared/schema-types";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
 import { PublicBlockStack } from "@/components/PageBuilder/public-block-stack";
-import { getGoogleFontUrl } from "@shared/google-fonts";
+import { readPreviewSession } from "@shared/preview-session";
 
 interface PreviewPageProps {
   postId?: string;
@@ -26,6 +26,11 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
       return null;
     }
     return new URLSearchParams(window.location.search).get('token');
+  }, []);
+
+  const useLiveEditorBlocks = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('live') === '1';
   }, []);
 
   const previewPath =
@@ -70,19 +75,27 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
     );
   }
 
-  // Extract blocks from data
-  let blocks: BlockConfig[] = [];
-  let title = '';
+  const liveSession =
+    useLiveEditorBlocks && contentId
+      ? readPreviewSession({ contentType, contentId })
+      : null;
+
+  // Extract blocks from data (prefer live editor handoff when opening from builder)
+  let blocks: BlockConfig[] = liveSession?.blocks ?? [];
+  let title = liveSession?.title ?? '';
   
   if (contentType === 'template') {
     const template = data as Template;
-    blocks = (template.blocks as BlockConfig[]) || [];
-    title = template.name;
+    if (blocks.length === 0) {
+      blocks = (template.blocks as BlockConfig[]) || [];
+    }
+    if (!title) title = template.name;
   } else {
     const item = data as Post & { blocks?: BlockConfig[] };
-    // Pages return `blocks`; posts may use `builderData` or `blocks`
-    blocks = (item.blocks ?? (item as any).builderData) as BlockConfig[] ?? [];
-    title = item.title ?? '';
+    if (blocks.length === 0) {
+      blocks = (item.blocks ?? (item as any).builderData) as BlockConfig[] ?? [];
+    }
+    if (!title) title = item.title ?? '';
     
     // If post doesn't use page builder, show traditional content
     if (!(item as any).usePageBuilder && (item as any).content) {
@@ -101,8 +114,7 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
 
   // Extract page design settings (fontFamily, padding, containerWidth, colors)
   const pageOther = (data as { other?: PageOther })?.other;
-  const design = pageOther?.design;
-  const googleFontUrl = getGoogleFontUrl(design?.fontFamily);
+  const design = liveSession?.design ?? pageOther?.design;
 
   // Render page builder content
   return (
@@ -115,10 +127,6 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
       }}
     >
       <title>{title}</title>
-      {/* Load Google Font if needed */}
-      {googleFontUrl && (
-        <link rel="stylesheet" href={googleFontUrl} />
-      )}
       
       {/* Page content — same stack as published pages */}
       <div className="w-full">

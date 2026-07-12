@@ -11,7 +11,7 @@ import {
 } from "../schemas/index.js";
 import type { DeleteMessage, Page, PageHistoryResponse, PaginatedResponse } from "../types/domain.js";
 import type { CreatePageInput, ListPagesQuery, UpdatePageInput } from "../types/inputs.js";
-import { buildDefaultPageOther } from "../types/page-other.js";
+import { mergePageOtherOnWrite } from "../types/page-other.js";
 
 export type PagesResource = {
 	/** Paginate pages for admin lists and headless routing indexes. */
@@ -50,10 +50,7 @@ export function createPagesResource({ http }: { http: HttpClient }): PagesResour
 		create: async (input: CreatePageInput): Promise<SdkResult<Page>> => {
 			const body = parseInput({
 				schema: createPageSchema,
-				input: {
-					...input,
-					other: buildDefaultPageOther(input.other),
-				},
+				input: mergePageOtherOnWrite(input, "create"),
 				label: "pages.create input",
 			});
 			return safeHttpRequest(http, "/api/pages", { method: "POST", body });
@@ -63,7 +60,7 @@ export function createPagesResource({ http }: { http: HttpClient }): PagesResour
 			parseInput({ schema: idParamSchema, input: { id }, label: "pages.update id" });
 			const body = parseInput({
 				schema: updatePageSchema,
-				input,
+				input: mergePageOtherOnWrite(input, "update"),
 				label: "pages.update input",
 			});
 			return safeHttpRequest(http, `/api/pages/${id}`, { method: "PUT", body });

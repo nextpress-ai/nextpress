@@ -10,6 +10,7 @@ import {
 } from "../schemas/index.js";
 import type { DeleteMessage, PaginatedResponse, Post } from "../types/domain.js";
 import type { CreatePostInput, ListPostsQuery, UpdatePostInput } from "../types/inputs.js";
+import { mergePageOtherOnWrite } from "../types/page-other.js";
 
 const normalizePostsListQuery = (params: ListPostsQuery & { blogId?: string }) => {
 	const blog_id = params.blog_id ?? params.blogId;
@@ -50,7 +51,7 @@ export function createPostsResource({ http }: { http: HttpClient }): PostsResour
 		create: async (input: CreatePostInput): Promise<SdkResult<Post>> => {
 			const body = parseInput({
 				schema: createPostSchema,
-				input,
+				input: mergePageOtherOnWrite(input, "create"),
 				label: "posts.create input",
 			});
 			return safeHttpRequest(http, "/api/posts", { method: "POST", body });
@@ -60,7 +61,7 @@ export function createPostsResource({ http }: { http: HttpClient }): PostsResour
 			parseInput({ schema: idParamSchema, input: { id }, label: "posts.update id" });
 			const body = parseInput({
 				schema: updatePostSchema,
-				input,
+				input: mergePageOtherOnWrite(input, "update"),
 				label: "posts.update input",
 			});
 			return safeHttpRequest(http, `/api/posts/${id}`, { method: "PUT", body });

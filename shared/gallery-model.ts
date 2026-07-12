@@ -1,7 +1,6 @@
 /**
- * Gallery block data model: image/data/content shapes and defaults. No React
- * here — see `gallery-settings.tsx` for the UI and `GalleryBlock.tsx` for the
- * renderer.
+ * Gallery block data model: image/data/content shapes and defaults. Shared by
+ * editor, preview, and publish render paths.
  */
 
 import type { BlockContent } from '@shared/schema-types';
@@ -10,13 +9,13 @@ import type { BlockContent } from '@shared/schema-types';
 // TYPES
 // ============================================================================
 
-export interface GalleryImage {
+export type GalleryImage = {
   id: string | number;
   url: string;
   alt: string;
   caption?: string;
   sizeSlug?: string;
-}
+};
 
 export type GalleryData = {
   images?: GalleryImage[];
@@ -40,11 +39,6 @@ export const DEFAULT_DATA: GalleryData = {
   sizeSlug: 'large',
   caption: '',
   className: '',
-};
-
-export const DEFAULT_CONTENT: GalleryContent = {
-  kind: 'structured',
-  data: DEFAULT_DATA,
 };
 
 /**

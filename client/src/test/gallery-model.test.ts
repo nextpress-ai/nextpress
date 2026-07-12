@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readGalleryData, DEFAULT_DATA, resolveGalleryColumns } from "@/components/PageBuilder/blocks/gallery/gallery-model";
+import { readGalleryData, DEFAULT_DATA, resolveGalleryColumns } from "@shared/gallery-model";
 
 describe("readGalleryData", () => {
 	it("reads images from unwrapped accessor content", () => {

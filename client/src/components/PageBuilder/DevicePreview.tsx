@@ -31,7 +31,8 @@ export default function DevicePreview({ device, children }: DevicePreviewProps) 
         style={{
           ...getDeviceStyles(),
           width: device === 'desktop' ? '100%' : undefined,
-          overflow: 'hidden',
+          overflowX: 'hidden',
+          overflowY: 'visible',
           transition: 'all 300ms ease-in-out',
         }}
         className="transition-all duration-300 ease-in-out"
@@ -40,7 +41,7 @@ export default function DevicePreview({ device, children }: DevicePreviewProps) 
           style={{
             width: '100%',
             minWidth: 0,
-            overflow: 'hidden',
+            overflow: 'visible',
           }}
         >
           {children}

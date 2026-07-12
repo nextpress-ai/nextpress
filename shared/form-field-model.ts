@@ -1,3 +1,5 @@
+import type { BlockContent } from '@shared/schema-types';
+
 /** Shared content shape for form field blocks (input, textarea, select). */
 export type FormFieldBase = {
 	name?: string;
@@ -70,9 +72,25 @@ export const DEFAULT_FORM_FIELD_STYLES: Record<string, string> = {
 	padding: "8px 12px",
 	fontSize: "16px",
 	lineHeight: "1.5",
-	border: "1px solid hsl(var(--border))",
+	border: "1px solid #d1d5db",
 	borderRadius: "0.375rem",
-	backgroundColor: "hsl(var(--background))",
-	color: "hsl(var(--foreground))",
+	backgroundColor: "#ffffff",
+	color: "#111827",
 	boxSizing: "border-box",
 };
+
+/**
+ * Unwraps form field content from structured `{ kind, data }` or direct field
+ * objects so publish and editor paths read the same shape.
+ */
+export function readFormFieldContent<T extends FormFieldBase>(
+	raw: T | BlockContent | undefined,
+): T {
+	if (!raw || typeof raw !== 'object') {
+		return {} as T;
+	}
+	if ('kind' in raw && raw.kind === 'structured' && 'data' in raw && raw.data) {
+		return raw.data as T;
+	}
+	return raw as T;
+}

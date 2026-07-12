@@ -63,22 +63,10 @@ import {
 	MIN_HEIGHT_PRESETS,
 	WIDTH_PRESETS,
 	HEIGHT_PRESETS,
+	FONT_SIZE_PRESETS,
+	BORDER_RADIUS_PRESETS,
 } from "@shared/dimension-presets";
-
-/** Font options matching PageSettings — same fonts available at block level */
-const FONT_OPTIONS = [
-  { value: '', label: 'Default (Inherit)' },
-  { value: 'system-ui', label: 'System Default' },
-  { value: 'Inter, sans-serif', label: 'Inter' },
-  { value: 'Georgia, serif', label: 'Georgia' },
-  { value: 'Roboto, sans-serif', label: 'Roboto' },
-  { value: 'Merriweather, serif', label: 'Merriweather' },
-  { value: 'Lato, sans-serif', label: 'Lato' },
-  { value: '"Open Sans", sans-serif', label: 'Open Sans' },
-  { value: '"Playfair Display", serif', label: 'Playfair Display' },
-  { value: '"Source Sans Pro", sans-serif', label: 'Source Sans Pro' },
-  { value: 'Montserrat, sans-serif', label: 'Montserrat' },
-] as const;
+import { BLOCK_FONT_CATALOG } from "@shared/font-catalog";
 
 type SpacingSideQuad = {
   top: string;
@@ -213,19 +201,23 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
   };
 
   // Token system helpers
-  const getTokenEntry = (property: string): TokenEntry | undefined => {
-    return block.other?.tokenMap?.[property]
+  const getTokenMapKey = (property: string, modifier?: string): string =>
+    modifier ? `${property}:${modifier}` : property
+
+  const getTokenEntry = (property: string, modifier?: string): TokenEntry | undefined => {
+    return block.other?.tokenMap?.[getTokenMapKey(property, modifier)]
   }
 
   const updateTokenEntry = (entry: TokenEntry) => {
     const currentOther = block.other || {}
     const currentTokenMap = currentOther.tokenMap || {}
+    const key = getTokenMapKey(entry.property, entry.modifier)
     onUpdate({
       other: {
         ...currentOther,
         tokenMap: {
           ...currentTokenMap,
-          [entry.property]: entry,
+          [key]: entry,
         },
       },
     })
@@ -376,6 +368,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
       block.name,
     );
     const showButtonLabelAlign = ["button", "core/button"].includes(block.name);
+    const isFormFieldBlock = ["core/input", "core/textarea", "core/select"].includes(block.name);
     const sideLabel: Record<string, string> = {
       paddingTop: "Top",
       paddingRight: "Right",
@@ -416,7 +409,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                   <SelectValue placeholder="Default (Inherit)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {FONT_OPTIONS.map((opt) => (
+                  {BLOCK_FONT_CATALOG.map((opt) => (
                     <SelectItem
                       key={opt.value === "" ? "__inherit" : opt.value}
                       value={opt.value === "" ? "__inherit" : opt.value}
@@ -429,22 +422,28 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
             </div>
 
             {/* Font Size */}
-            <div>
-              <Label className="npb-settings-label flex items-center gap-2 text-sm font-semibold">
-                <Ruler className="w-3 h-3" />
-                Font Size
-              </Label>
-              <Input
-                value={
-                  block.styles?.fontSize !== undefined && block.styles.fontSize !== null
-                    ? String(block.styles.fontSize)
-                    : ""
-                }
-                onChange={(e) => updateStyles({ fontSize: e.target.value })}
-                placeholder="16px"
-                className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
-              />
-            </div>
+            <SettingsChipGroup
+              label="Font Size"
+              icon={Ruler}
+              options={FONT_SIZE_PRESETS.map((preset) => ({
+                value: preset.value,
+                label: preset.label,
+              }))}
+              value={
+                block.styles?.fontSize != null ? String(block.styles.fontSize) : ""
+              }
+              onChange={(value) => updateStyles({ fontSize: value || undefined })}
+            />
+            <Input
+              value={
+                block.styles?.fontSize !== undefined && block.styles.fontSize !== null
+                  ? String(block.styles.fontSize)
+                  : ""
+              }
+              onChange={(e) => updateStyles({ fontSize: e.target.value })}
+              placeholder="Custom size, e.g. 18px"
+              className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
+            />
             
             {/* Line Height - Full Width */}
             <div>
@@ -546,6 +545,38 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 property="backgroundColor"
                 currentEntry={getTokenEntry("backgroundColor")}
                 currentStyleValue={block.styles?.backgroundColor as string | undefined}
+                onChange={updateTokenEntry}
+              />
+            </div>
+          </div>
+
+          {/* Hover text color */}
+          <div>
+            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
+              <Type className="w-3 h-3" />
+              Hover text color
+            </Label>
+            <div className="mt-2">
+              <TokenColorPicker
+                property="color"
+                modifier="hover"
+                currentEntry={getTokenEntry("color", "hover")}
+                onChange={updateTokenEntry}
+              />
+            </div>
+          </div>
+
+          {/* Hover background */}
+          <div>
+            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
+              <Square className="w-3 h-3" />
+              Hover background
+            </Label>
+            <div className="mt-2">
+              <TokenColorPicker
+                property="backgroundColor"
+                modifier="hover"
+                currentEntry={getTokenEntry("backgroundColor", "hover")}
                 onChange={updateTokenEntry}
               />
             </div>
@@ -999,7 +1030,13 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
         </CollapsibleCard>
 
         {/* Border */}
-        <CollapsibleCard title="Border & Radius" icon={Square} defaultOpen={false}>
+        <CollapsibleCard title="Border & Radius" icon={Square} defaultOpen={isFormFieldBlock}>
+          {isFormFieldBlock ? (
+            <p className="npb-settings-hint mb-3 text-xs">
+              Border and radius apply to the field control. Use{' '}
+              <span className="font-semibold">Colors</span> above for hover text and background.
+            </p>
+          ) : null}
           {/* Border - Full Width */}
           <div>
             <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
@@ -1018,24 +1055,34 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
             />
           </div>
           
-          {/* Border Radius - Full Width */}
-          <div>
-            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-              <Circle className="w-3 h-3" />
-              Border Radius
-            </Label>
-            <Input
-              value={
-                block.styles?.borderRadius !== undefined &&
-                block.styles.borderRadius !== null
-                  ? String(block.styles.borderRadius)
-                  : ""
-              }
-              onChange={(e) => updateStyles({ borderRadius: e.target.value })}
-              placeholder="e.g. 0px, 4px"
-              className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
-            />
-          </div>
+          {/* Border Radius */}
+          <SettingsChipGroup
+            label="Corner shape"
+            icon={Circle}
+            options={BORDER_RADIUS_PRESETS.map((preset) => ({
+              value: preset.value,
+              label: preset.label,
+            }))}
+            value={
+              block.styles?.borderRadius != null
+                ? String(block.styles.borderRadius)
+                : ""
+            }
+            onChange={(value) =>
+              updateStyles({ borderRadius: value || undefined })
+            }
+          />
+          <Input
+            value={
+              block.styles?.borderRadius !== undefined &&
+              block.styles.borderRadius !== null
+                ? String(block.styles.borderRadius)
+                : ""
+            }
+            onChange={(e) => updateStyles({ borderRadius: e.target.value })}
+            placeholder="Custom radius, e.g. 6px"
+            className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
+          />
         </CollapsibleCard>
 
         <CollapsibleCard title="Custom CSS" icon={Code} defaultOpen={false}>

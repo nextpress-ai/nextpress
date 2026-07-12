@@ -7,6 +7,7 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { collectBlockModifierCSS } from "@shared/token-resolution";
 import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
+import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
 import { renderBlocksToHtml, getHydrationScript } from "../../renderer/to-html";
 import { PageTemplate } from "../../renderer/templates/page";
 import type { PageRenderOptions } from "../../renderer/templates/page";
@@ -18,6 +19,7 @@ import { getSiteBlogIds } from "./shared/site-content";
 
 import { generateBlockAnimationCSS, getEntryAnimationBaseCSS } from "@shared/animation-utils";
 import { collectBlockCustomCss, collectBlockJsScripts } from "@shared/collect-block-scripts";
+import { BUNDLED_FONTS_STYLESHEET } from "@shared/font-catalog";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -327,7 +329,9 @@ export function createRenderRoutes(deps: Deps): Router {
 				const modifierCssRules = blocks
 					.map((b) =>
 						collectBlockModifierCSS(b, {
-							modifierSelector: resolveButtonBlockModifierSelector(b),
+							modifierSelector:
+								resolveButtonBlockModifierSelector(b) ??
+								resolveFormFieldModifierSelector(b),
 						}),
 					)
 					.filter(Boolean)
@@ -337,8 +341,17 @@ export function createRenderRoutes(deps: Deps): Router {
 				const hasAnimations = blocks.some((b) => b.other?.animation);
 				const hasEntryAnimations = blocks.some((b) => b.other?.animation?.entry);
 
+				const pageOther =
+					page.other && typeof page.other === "object"
+						? (page.other as Record<string, unknown>)
+						: {};
+				const design =
+					(pageOther.design as Record<string, unknown> | undefined) ?? {};
+
 				// Build headScripts with conditional animation assets
-				const headParts: string[] = [];
+				const headParts: string[] = [
+					`<link rel="stylesheet" href="${BUNDLED_FONTS_STYLESHEET}">`,
+				];
 				if (allCustomCss) headParts.push(`<style>${allCustomCss}</style>`);
 				if (animationCssRules) headParts.push(`<style>${animationCssRules}</style>`);
 				if (modifierCssRules) headParts.push(`<style>${modifierCssRules}</style>`);
@@ -362,10 +375,8 @@ export function createRenderRoutes(deps: Deps): Router {
 				// Get hydration script
 				const hydrateScript = getHydrationScript();
 
-				// Build full HTML page — extract SEO + design from page.other
-				const pageOther = (page.other && typeof page.other === 'object') ? page.other as Record<string, any> : {};
-				const seo = pageOther.seo || {};
-				const design = pageOther.design || {};
+				// Build full HTML page — SEO from page.other (design already extracted)
+				const seo = (pageOther.seo as Record<string, unknown> | undefined) ?? {};
 
 				const pageDescription = seo.metaDescription || "";
 				const renderOptions: PageRenderOptions = {

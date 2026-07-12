@@ -1,5 +1,6 @@
 import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
+import { buildGalleryRenderModel } from "@shared/gallery-render";
 import { getRenderProps, parseMediaContent, parseStructuredContent, renderChildBlocks } from "../render-helpers";
 
 /**
@@ -195,44 +196,55 @@ export function AudioBlock(block: BlockConfig) {
  */
 export function GalleryBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
-	const content = parseMediaContent(block.content);
-	const data = parseStructuredContent(block.content);
+	const model = buildGalleryRenderModel({
+		content: block.content,
+		styles: style as Record<string, string | undefined>,
+	});
 
-	const images = ((content.images || data.images) as Array<{ url: string; alt?: string; caption?: string }>) || [];
-	const columns = (content.columns || data.columns) as number | undefined;
-
-	if (!images || images.length === 0) {
+	if (model.images.length === 0) {
 		return null;
 	}
 
-	const mergedClassName = [
-		"wp-block-gallery",
-		columns ? `columns-${columns}` : "",
-		className,
-	]
-		.filter(Boolean)
-		.join(" ");
-
-	const galleryStyle: React.CSSProperties = {
-		...style,
-		...(columns ? { gridTemplateColumns: `repeat(${columns}, 1fr)` } : {}),
-	};
+	const mergedClassName = [model.className, className].filter(Boolean).join(" ");
 
 	return (
 		<figure
 			className={mergedClassName || undefined}
-			style={galleryStyle}
+			style={{ ...model.shellStyle, ...style }}
 			{...attributes}
 		>
-			{images.map((image, index) => {
-				const imageKey = `${image.url || ""}-${index}`;
-				return (
-					<figure key={imageKey} className="wp-block-gallery-item">
-						<img src={image.url} alt={image.alt || ""} />
-						{image.caption && <figcaption>{image.caption}</figcaption>}
-					</figure>
-				);
-			})}
+			<div className="blocks-gallery-grid" style={model.gridStyle}>
+				{model.images.map((image, index) => {
+					const imgElement = (
+						<img
+							src={image.url}
+							alt={image.alt}
+							style={model.imageStyle}
+						/>
+					);
+
+					const linkContent =
+						model.linkTo === "media" ? (
+							<a href={image.url} target="_blank" rel="noopener noreferrer">
+								{imgElement}
+							</a>
+						) : (
+							imgElement
+						);
+
+					return (
+						<div key={image.id ?? index} className="wp-block-image">
+							{linkContent}
+							{image.caption ? (
+								<div className="blocks-gallery-item__caption">{image.caption}</div>
+							) : null}
+						</div>
+					);
+				})}
+			</div>
+			{model.caption ? (
+				<figcaption className="blocks-gallery-caption">{model.caption}</figcaption>
+			) : null}
 		</figure>
 	);
 }

@@ -9,6 +9,9 @@ import { Plus, Trash2, Image as ImageIcon } from "lucide-react";
 import MediaPickerDialog from "@/components/media/MediaPickerDialog";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Settings } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { SettingsLabel } from "../../shared";
+import { MediaUrlField } from "../shared/media-url-field";
 import { useSettingsState } from "../useSettingsState";
 import {
   type GalleryData,
@@ -16,7 +19,7 @@ import {
   DEFAULT_DATA,
   readGalleryData,
   resolveGalleryColumns,
-} from "./gallery-model";
+} from "@shared/gallery-model";
 
 // ============================================================================
 // SETTINGS COMPONENT
@@ -34,6 +37,7 @@ export function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
     defaultContent: DEFAULT_DATA,
   });
   const [isPickerOpen, setPickerOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   const galleryData = accessor
     ? (accessor.getContent() as GalleryData)
@@ -83,12 +87,26 @@ export function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
       caption: '',
       sizeSlug: 'large',
     };
-    updateImages([...currentImages, newImage]);
+    const newImages = [...currentImages, newImage];
+    updateImages(newImages);
+    setSelectedImageIndex(newImages.length - 1);
   };
 
   const removeImage = (index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     updateImages(newImages);
+    setSelectedImageIndex((prev) => {
+      if (prev === null || newImages.length === 0) {
+        return null;
+      }
+      if (index < prev) {
+        return prev - 1;
+      }
+      if (index === prev) {
+        return Math.min(prev, newImages.length - 1);
+      }
+      return prev;
+    });
   };
 
   const updateImage = (index: number, updates: Partial<GalleryImage>) => {
@@ -96,12 +114,18 @@ export function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
     updateImages(newImages);
   };
 
+  const activeImageIndex =
+    selectedImageIndex !== null && selectedImageIndex < images.length
+      ? selectedImageIndex
+      : null;
+  const activeImage = activeImageIndex !== null ? images[activeImageIndex] : null;
+
   return (
     <div className="space-y-4">
       <CollapsibleCard title="Content" icon={ImageIcon} defaultOpen={true}>
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <Label>Gallery Images ({images.length})</Label>
+            <SettingsLabel>Images ({images.length})</SettingsLabel>
             <Button
               type="button"
               variant="outline"
@@ -120,37 +144,98 @@ export function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
             onSelect={addImage}
           />
 
-          <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto" aria-label="Gallery image grid">
-            {images.map((image, index) => (
-              <div key={image.id || index} className="relative border rounded p-2">
-                <img
-                  src={image.url}
-                  alt={image.alt}
-                  className="w-full h-20 object-cover rounded mb-2"
-                />
-                <Input
-                  value={image.caption || ''}
-                  onChange={(e) => updateImage(index, { caption: e.target.value })}
-                  placeholder="Caption (optional)"
-                  className="text-xs mb-1 h-9"
-                  aria-label={`Caption for image ${index + 1}`}
-                />
+          {images.length > 0 && (
+            <div
+              className="flex flex-wrap gap-2 max-h-32 overflow-y-auto"
+              aria-label="Gallery thumbnails"
+            >
+              {images.map((image, index) => (
+                <button
+                  key={image.id || index}
+                  type="button"
+                  onClick={() => setSelectedImageIndex(index)}
+                  className={cn(
+                    "relative rounded border p-1 transition-colors focus:outline-none focus:ring-2 focus:ring-npb-focus",
+                    activeImageIndex === index
+                      ? "border-npb-interactive-bg-active ring-2 ring-npb-focus"
+                      : "border-npb-border-default hover:border-npb-border-strong",
+                  )}
+                  aria-label={`Select image ${index + 1}`}
+                  aria-pressed={activeImageIndex === index}
+                >
+                  <img
+                    src={image.url}
+                    alt=""
+                    className="w-14 h-14 object-cover rounded"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {activeImage && activeImageIndex !== null && (
+            <div className="border border-npb-border-default rounded p-4 space-y-3 bg-npb-surface-raised">
+              <div className="flex justify-between items-center">
+                <SettingsLabel>Image {activeImageIndex + 1}</SettingsLabel>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => removeImage(index)}
-                  className="absolute top-1 right-1 text-red-600 p-1 h-auto"
-                  aria-label={`Remove image ${index + 1}`}
+                  onClick={() => removeImage(activeImageIndex)}
+                  className="text-red-600"
+                  aria-label={`Remove image ${activeImageIndex + 1}`}
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-            ))}
-          </div>
+
+              <MediaUrlField
+                id={`gallery-image-url-${activeImageIndex}`}
+                label="Image URL"
+                value={activeImage.url}
+                kind="image"
+                placeholder="https://example.com/image.jpg"
+                onChange={({ url }) => updateImage(activeImageIndex, { url })}
+                onLibrarySelect={({ item }) =>
+                  updateImage(activeImageIndex, {
+                    url: item.url,
+                    alt: activeImage.alt || item.alt || item.originalName || item.filename,
+                  })
+                }
+              />
+
+              <div>
+                <SettingsLabel htmlFor={`gallery-image-alt-${activeImageIndex}`}>
+                  Alt Text
+                </SettingsLabel>
+                <Input
+                  id={`gallery-image-alt-${activeImageIndex}`}
+                  value={activeImage.alt || ''}
+                  onChange={(e) => updateImage(activeImageIndex, { alt: e.target.value })}
+                  placeholder="Image description"
+                  className="mt-1 h-9"
+                  aria-label={`Alt text for image ${activeImageIndex + 1}`}
+                />
+              </div>
+
+              <div>
+                <SettingsLabel htmlFor={`gallery-image-caption-${activeImageIndex}`}>
+                  Caption
+                </SettingsLabel>
+                <Input
+                  id={`gallery-image-caption-${activeImageIndex}`}
+                  value={activeImage.caption || ''}
+                  onChange={(e) => updateImage(activeImageIndex, { caption: e.target.value })}
+                  placeholder="Image caption (optional)"
+                  className="mt-1 h-9"
+                  aria-label={`Caption for image ${activeImageIndex + 1}`}
+                />
+              </div>
+            </div>
+          )}
 
           <div>
-            <Label htmlFor="gallery-caption">Gallery caption</Label>
+            <SettingsLabel htmlFor="gallery-caption">Gallery caption</SettingsLabel>
             <Input
               id="gallery-caption"
               value={galleryData?.caption || ""}

@@ -3,7 +3,6 @@ import { useParams } from "wouter";
 import { Helmet } from "react-helmet";
 import { PublicBlockStack } from "@/components/PageBuilder/public-block-stack";
 import Landing from "@/pages/Landing";
-import { getGoogleFontUrl } from "@shared/google-fonts";
 import type { Post } from "@shared/schema-types";
 import type { BlockConfig } from "@shared/schema-types";
 import type { PageOther } from "@shared/schema-types";
@@ -112,7 +111,6 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
     (type === 'homepage'
       ? `${window.location.origin}/`
       : `${window.location.origin}/${type}/${data.slug}`);
-  const googleFontUrl = getGoogleFontUrl(design?.fontFamily);
 
   return (
     <div 
@@ -142,9 +140,6 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
           <meta name="twitter:image" content={data.featuredImage} />
         )}
         <link rel="canonical" href={canonicalUrl} />
-        {googleFontUrl && <link rel="preconnect" href="https://fonts.googleapis.com" />}
-        {googleFontUrl && <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />}
-        {googleFontUrl && <link rel="stylesheet" href={googleFontUrl} />}
         {seo?.noIndex && (
           <meta name="robots" content="noindex, nofollow" />
         )}

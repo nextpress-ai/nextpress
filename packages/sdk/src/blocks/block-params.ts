@@ -117,7 +117,12 @@ export type VideoBlockParams = BlockWithEditorSettings<{ url?: string }> & { url
 export type AudioBlockParams = VideoBlockParams;
 export type SpacerBlockParams = BlockWithEditorSettings<Partial<SpacerContent>>;
 export type SeparatorBlockParams = BlockWithEditorSettings<Partial<SeparatorContent>>;
-export type ColumnsBlockParams = BlockWithEditorSettings<Partial<ColumnsContent>>;
+export type ColumnsBlockParams = BlockWithEditorSettings<Partial<ColumnsContent>> & {
+	/** Column count when distributing flat `children` (default: 2). */
+	columnCount?: number;
+	/** One array of blocks per column — overrides `columnCount` + even distribution. */
+	columnGroups?: BlockConfig[][];
+};
 export type QuoteBlockParams = BlockWithEditorSettings<{ text?: string }> & { text?: string };
 export type ListBlockParams = BlockWithEditorSettings<Partial<ListContent>>;
 export type MediaTextBlockParams = BlockWithEditorSettings<Partial<MediaTextContent>>;

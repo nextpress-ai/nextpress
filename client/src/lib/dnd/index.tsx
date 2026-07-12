@@ -158,7 +158,7 @@ export function DragDropContext({ children, onDragEnd, onDragStart, renderOverla
     showOverlay,
     updateOverlay,
     clearOverlay,
-  }), [registerDroppable, ctxOnDragStart, ctxOnDragEnd, finalizeDrag, isDraggingOver, dragState, setOver, getOverIndex]);
+  }), [registerDroppable, ctxOnDragStart, ctxOnDragEnd, finalizeDrag, isDraggingOver, dragState, overState, setOver, getOverIndex, showOverlay, updateOverlay, clearOverlay]);
 
   return (
     <DndContext.Provider value={value}>
@@ -315,6 +315,26 @@ export function DropPlaceholder() {
   );
 }
 
+/**
+ * Draggable elements that belong directly to `droppableEl`, excluding nested
+ * droppable descendants (e.g. blocks inside a group on the root canvas).
+ */
+export function getDirectDraggablesInDroppable(droppableEl: HTMLElement): HTMLElement[] {
+  const all = Array.from(
+    droppableEl.querySelectorAll('[data-rfd-draggable-id]'),
+  ) as HTMLElement[];
+  return all.filter((el) => {
+    let parent = el.parentElement;
+    while (parent && parent !== droppableEl) {
+      if (parent.hasAttribute('data-rfd-droppable-id')) {
+        return false;
+      }
+      parent = parent.parentElement;
+    }
+    return parent === droppableEl;
+  });
+}
+
 // Draggable component
 export interface DraggableProvided {
   innerRef: (element: HTMLElement | null) => void;
@@ -431,7 +451,7 @@ export function Draggable({ draggableId, index, children, isDragDisabled = false
       }
 
       if (underId && droppableUnder) {
-        const draggables = Array.from(droppableUnder.querySelectorAll('[data-rfd-draggable-id]')) as HTMLElement[];
+        const draggables = getDirectDraggablesInDroppable(droppableUnder);
         let targetIndex = draggables.length;
         for (let i = 0; i < draggables.length; i++) {
           const rect = draggables[i].getBoundingClientRect();
@@ -439,7 +459,7 @@ export function Draggable({ draggableId, index, children, isDragDisabled = false
           if (clientY < middle) { targetIndex = i; break; }
         }
         if (import.meta.env?.DEBUG_BUILDER) {
-          console.log('[DND] setOver', { underId, targetIndex });
+          console.log('[DND] setOver', { underId, targetIndex, directCount: draggables.length });
         }
         context.setOver(underId, targetIndex);
       } else if (!underId) {
@@ -481,7 +501,7 @@ export function Draggable({ draggableId, index, children, isDragDisabled = false
 
       let finalDestination: DropLocation | null = null;
       if (underId && droppableUnder) {
-        const draggables = Array.from(droppableUnder.querySelectorAll('[data-rfd-draggable-id]')) as HTMLElement[];
+        const draggables = getDirectDraggablesInDroppable(droppableUnder);
         let targetIndex = draggables.length;
         for (let i = 0; i < draggables.length; i++) {
           const rect = draggables[i].getBoundingClientRect();

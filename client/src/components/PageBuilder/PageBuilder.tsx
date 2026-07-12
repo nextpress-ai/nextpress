@@ -338,7 +338,7 @@ export default function PageBuilder({
 
   const setBlocksFromDnD = useCallback(
     (next: BlockConfig[]) => {
-      commitBlocks(() => next);
+      commitBlocks(() => setParentIds(next, null));
     },
     [commitBlocks],
   );

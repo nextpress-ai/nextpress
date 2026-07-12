@@ -14,7 +14,7 @@ type BlockConfig = {
   type: "block" | "container";
   parentId: string | null;
   label?: string;
-  category?: "basic" | "layout" | "media" | "advanced" | "post";
+  category?: "basic" | "form" | "layout" | "media" | "advanced" | "post";
   content: BlockContent;
   styles?: Record<string, string | number | null | undefined>;
   customCss?: string;
@@ -43,7 +43,7 @@ Access via `nextpress.blocks` or `editor.blocks` inside a session.
 
 | Method | Description |
 |--------|-------------|
-| `names` | Readonly array of all 35 block names |
+| `names` | Readonly array of all 39 block names |
 | `isBlockName(name)` | Type guard for known block names |
 | `fromName(name, params?)` | Create block from registry defaults |
 | `custom({ name, type, content, ... })` | Unknown or custom block names |
@@ -106,11 +106,21 @@ Nested `children` receive `parentId` automatically on build.
 | `icon(params)` | `core/icon` | |
 | `html({ value, sanitized? })` | `core/html` | Default `sanitized: true` |
 
+## Form blocks
+
+| Helper | Block name | Notes |
+|--------|------------|-------|
+| `input(params)` | `core/input` | Text, email, password, etc. |
+| `textarea(params)` | `core/textarea` | Multi-line field |
+| `select(params)` | `core/select` | Dropdown options list |
+
+Form blocks ship with publish-safe default styles (hex colors, not admin CSS variables).
+
 ## Layout blocks
 
-| Helper | Block name |
-|--------|------------|
-| `columns(params)` | `core/columns` |
+| Helper | Block name | Notes |
+|--------|------------|-------|
+| `columns(params)` | `core/columns` | Use `columnCount` or `columnGroups`; sets `settings.columnLayout` |
 | `container(params)` | `core/container` |
 | `group(params)` | `core/group` |
 | `spacer(params)` | `core/spacer` |
@@ -159,9 +169,29 @@ core/gallery, core/video, core/audio, core/spacer, core/separator,
 core/columns, core/container, core/group, core/quote, core/list,
 core/media-text, core/cover, core/file, core/code, core/html,
 core/pullquote, core/preformatted, core/table, core/markdown,
-core/icon, core/divider,
+core/icon, core/divider, core/input, core/textarea, core/select,
 post/title, post/excerpt, post/featured-image, post/list, post/toc,
 post/author-box, post/comments, post/navigation, post/info, post/progress
+```
+
+---
+
+## Page defaults
+
+SDK blocks automatically receive editor shell defaults (`20px` padding, token `units`, registry `defaultStyles`).  
+`pages.create()` and `posts.create()` merge `buildDefaultPageOther()` internally — same design/icons baseline as dashboard Page Settings. Pass `other` only for overrides.
+
+### Multi-column example
+
+```ts
+nextpress.blocks.columns({
+  columnCount: 2,
+  settings: { styles: { gap: "20px" } },
+  children: [
+    nextpress.blocks.paragraph({ text: "Left" }),
+    nextpress.blocks.paragraph({ text: "Right" }),
+  ],
+});
 ```
 
 ---

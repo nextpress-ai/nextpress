@@ -946,6 +946,14 @@
   border-bottom: 1px solid var(--npb-canvas-block-toolbar-border);
   border-radius: var(--npb-radius-input) var(--npb-radius-input) 0 0;
   box-shadow: var(--npb-shadow-surface);
+  position: relative;
+  z-index: 30;
+}
+
+/* Keep block toolbars above canvas content and device preview chrome */
+.npb-editor-shell .group:hover,
+.npb-editor-shell .relative.group {
+  isolation: isolate;
 }
 
 

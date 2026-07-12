@@ -5,6 +5,7 @@ import type { BlockStyles } from "./block-params.js";
 import { createBlockId } from "./create-block-id.js";
 import { applySanitizedBlockOverrides, sanitizeHtmlBlockContent } from "../sanitize/apply-block-overrides.js";
 import { serializeStructuredContent } from "./serialize-block-content.js";
+import { applySdkBlockDefaults } from "../defaults/block-defaults.js";
 
 const GROUP_LAYOUT_KEYS = new Set([
 	"display",
@@ -183,5 +184,5 @@ export const applyEditorSettings = ({
 		settings: settings.advanced ?? {},
 		children,
 	};
-	return applySanitizedBlockOverrides(built, { html, js, css });
+	return applySdkBlockDefaults(applySanitizedBlockOverrides(built, { html, js, css }));
 };

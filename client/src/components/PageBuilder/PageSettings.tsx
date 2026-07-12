@@ -44,6 +44,7 @@ import type {
   PageOther,
   MetaTagEntry,
 } from '@shared/schema-types';
+import { PAGE_FONT_CATALOG } from "@shared/font-catalog";
 
 interface PageSettingsModalProps {
   open: boolean;
@@ -59,19 +60,6 @@ interface OptionApiResponse {
   name: string;
   value: string;
 }
-
-const FONT_OPTIONS = [
-  { value: 'system-ui', label: 'System Default' },
-  { value: 'Inter, sans-serif', label: 'Inter' },
-  { value: 'Georgia, serif', label: 'Georgia' },
-  { value: 'Roboto, sans-serif', label: 'Roboto' },
-  { value: 'Merriweather, serif', label: 'Merriweather' },
-  { value: 'Lato, sans-serif', label: 'Lato' },
-  { value: '"Open Sans", sans-serif', label: 'Open Sans' },
-  { value: '"Playfair Display", serif', label: 'Playfair Display' },
-  { value: '"Source Sans Pro", sans-serif', label: 'Source Sans Pro' },
-  { value: 'Montserrat, sans-serif', label: 'Montserrat' },
-] as const;
 
 const CONTAINER_WIDTH_OPTIONS = [
   { value: '960px', label: '960px' },
@@ -475,7 +463,7 @@ export default function PageSettingsModal({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {FONT_OPTIONS.map((option) => (
+                      {PAGE_FONT_CATALOG.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>

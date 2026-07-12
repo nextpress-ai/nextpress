@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import type { IconReference } from "@/lib/icon-indexes";
 import {
   ICON_SETS,
@@ -44,6 +44,7 @@ type IconSetOption = {
 };
 
 const RESULT_LIMIT = 72;
+const BROWSE_PAGE_SIZE = 48;
 
 const ICON_SET_OPTIONS: IconSetOption[] = [
   {
@@ -85,6 +86,7 @@ export function IconPickerDialog({
   currentIcon,
 }: IconPickerDialogProps) {
   const [search, setSearch] = React.useState("");
+  const [browsePage, setBrowsePage] = React.useState(0);
   const [selectedSet, setSelectedSet] = React.useState(() =>
     currentIcon ? getStorageKey(currentIcon) : "lucide",
   );
@@ -92,6 +94,7 @@ export function IconPickerDialog({
   const syncFromCurrentIcon = useCallback(() => {
     setSelectedSet(currentIcon ? getStorageKey(currentIcon) : "lucide");
     setSearch(getInitialSearch(currentIcon));
+    setBrowsePage(0);
   }, [currentIcon]);
 
   const handleOpenChange = useCallback(
@@ -119,11 +122,23 @@ export function IconPickerDialog({
 
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
+    setBrowsePage(0);
   }, []);
 
   const handleSetChange = useCallback((setKey: string) => {
     setSelectedSet(setKey);
+    setBrowsePage(0);
   }, []);
+
+  const browseTotalPages = Math.max(
+    1,
+    Math.ceil(activeSet.names.length / BROWSE_PAGE_SIZE),
+  );
+
+  const browseSlice = useMemo(() => {
+    const start = browsePage * BROWSE_PAGE_SIZE;
+    return activeSet.names.slice(start, start + BROWSE_PAGE_SIZE);
+  }, [activeSet.names, browsePage]);
 
   const handleSelect = useCallback(
     (iconName: string) => {
@@ -149,7 +164,7 @@ export function IconPickerDialog({
         <DialogHeader className="space-y-1 border-b border-npb-border-subtle px-5 py-4">
           <DialogTitle className="text-base font-semibold">Choose icon</DialogTitle>
           <p className="text-xs text-npb-text-muted">
-            Select a set, type a name — results update as you search.
+            Pick from the grid or search by name.
           </p>
         </DialogHeader>
 
@@ -196,12 +211,54 @@ export function IconPickerDialog({
               {searchHits.length === 1 ? "" : "es"}
               {searchHits.length >= RESULT_LIMIT ? ` (top ${RESULT_LIMIT})` : ""}
             </p>
-          ) : null}
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-npb-text-muted">
+                {activeSet.names.length.toLocaleString()} icons in {activeSet.label}
+              </p>
+              {browseTotalPages > 1 ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={browsePage <= 0}
+                    onClick={() => setBrowsePage((p) => Math.max(0, p - 1))}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-npb-border-default disabled:opacity-40"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-xs text-npb-text-muted tabular-nums">
+                    {browsePage + 1} / {browseTotalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={browsePage >= browseTotalPages - 1}
+                    onClick={() =>
+                      setBrowsePage((p) => Math.min(browseTotalPages - 1, p + 1))
+                    }
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-npb-border-default disabled:opacity-40"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
 
         <ScrollArea className="min-h-[280px] flex-1 px-5 py-3">
-          {!hasSearch ? (
-            <EmptySearchPrompt currentIcon={currentIcon} activeSetLabel={activeSet.label} />
+          {!hasSearch && browseSlice.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+              <p className="text-sm text-npb-text-secondary">This set has no icons yet.</p>
+            </div>
+          ) : !hasSearch ? (
+            <IconGrid
+              iconNames={browseSlice}
+              activeSet={activeSet}
+              currentIcon={currentIcon}
+              onSelect={handleSelect}
+            />
           ) : searchHits.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
               <p className="text-sm text-npb-text-secondary">No icons match &ldquo;{trimmedSearch}&rdquo;</p>
@@ -210,51 +267,12 @@ export function IconPickerDialog({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-6 gap-2 pb-2 sm:grid-cols-8">
-              {searchHits.map(({ name: iconName }) => {
-                const storageName = activeSet.prefix
-                  ? `${activeSet.prefix}:${iconName}`
-                  : iconName;
-                const isSelected = isSameIcon({
-                  current: currentIcon,
-                  iconSet: activeSet.iconSet,
-                  storageName,
-                });
-                const displayName = truncateWithEllipsis({
-                  text: iconName,
-                  maxChars: NPB_ICON_REFERENCE_ROW_MAX_CHARS,
-                });
-
-                return (
-                  <button
-                    key={storageName}
-                    type="button"
-                    onClick={() => handleSelect(iconName)}
-                    className={cn(
-                      "flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-md p-2 transition-colors",
-                      isSelected
-                        ? "bg-npb-interactive-bg-active ring-2 ring-npb-focus"
-                        : "border border-transparent hover:border-npb-border-default hover:bg-npb-interactive-bg-hover",
-                    )}
-                    title={storageName}
-                  >
-                    <IconRenderer
-                      icon={{
-                        iconSet: activeSet.iconSet,
-                        iconName: storageName,
-                        size: 20,
-                        color: "currentColor",
-                        strokeWidth: 2,
-                      }}
-                      size={20}
-                    />
-                    <span className="block w-full min-w-0 truncate text-center text-[10px] leading-tight text-npb-text-muted">
-                      {displayName}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <IconGrid
+              iconNames={searchHits.map((hit) => hit.name)}
+              activeSet={activeSet}
+              currentIcon={currentIcon}
+              onSelect={handleSelect}
+            />
           )}
         </ScrollArea>
       </DialogContent>
@@ -266,31 +284,59 @@ export function IconPickerDialog({
 // SUBCOMPONENTS
 // ============================================================================
 
-type EmptySearchPromptProps = {
+type IconGridProps = {
+  iconNames: readonly string[];
+  activeSet: IconSetOption;
   currentIcon?: IconReference;
-  activeSetLabel: string;
+  onSelect: (iconName: string) => void;
 };
 
-function EmptySearchPrompt({ currentIcon, activeSetLabel }: EmptySearchPromptProps) {
+function IconGrid({ iconNames, activeSet, currentIcon, onSelect }: IconGridProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-npb-surface-raised">
-        <Search className="h-5 w-5 text-npb-text-muted" />
-      </div>
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-npb-text-secondary">Search {activeSetLabel}</p>
-        <p className="text-xs text-npb-text-muted">
-          Examples: <span className="font-medium">home</span>,{" "}
-          <span className="font-medium">arrow</span>,{" "}
-          <span className="font-medium">github</span>
-        </p>
-      </div>
-      {currentIcon ? (
-        <div className="mt-2 flex items-center gap-2 rounded-md border border-npb-border-subtle bg-npb-surface-base px-3 py-2">
-          <IconRenderer icon={currentIcon} size={20} />
-          <span className="text-xs text-npb-text-muted">{currentIcon.iconName}</span>
-        </div>
-      ) : null}
+    <div className="grid grid-cols-6 gap-2 pb-2 sm:grid-cols-8">
+      {iconNames.map((iconName) => {
+        const storageName = activeSet.prefix
+          ? `${activeSet.prefix}:${iconName}`
+          : iconName;
+        const isSelected = isSameIcon({
+          current: currentIcon,
+          iconSet: activeSet.iconSet,
+          storageName,
+        });
+        const displayName = truncateWithEllipsis({
+          text: iconName,
+          maxChars: NPB_ICON_REFERENCE_ROW_MAX_CHARS,
+        });
+
+        return (
+          <button
+            key={storageName}
+            type="button"
+            onClick={() => onSelect(iconName)}
+            className={cn(
+              "flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-md p-2 transition-colors",
+              isSelected
+                ? "bg-npb-interactive-bg-active ring-2 ring-npb-focus"
+                : "border border-transparent hover:border-npb-border-default hover:bg-npb-interactive-bg-hover",
+            )}
+            title={storageName}
+          >
+            <IconRenderer
+              icon={{
+                iconSet: activeSet.iconSet,
+                iconName: storageName,
+                size: 20,
+                color: "currentColor",
+                strokeWidth: 2,
+              }}
+              size={20}
+            />
+            <span className="block w-full min-w-0 truncate text-center text-[10px] leading-tight text-npb-text-muted">
+              {displayName}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

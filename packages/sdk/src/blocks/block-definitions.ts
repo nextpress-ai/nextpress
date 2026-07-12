@@ -64,7 +64,11 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 		label: "Heading",
 		type: "block",
 		category: "basic",
-		defaultContent: () => text("Heading", { level: 2 }),
+		defaultContent: () => text("Your heading here", { level: 2 }),
+		defaultStyles: {
+			fontWeight: "700",
+			margin: "1rem 0",
+		},
 	},
 	"core/paragraph": {
 		name: "core/paragraph",
@@ -111,13 +115,29 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 				alt: "",
 				mediaType: "image",
 			}) as const,
+		defaultStyles: {
+			width: "100%",
+		},
 	},
 	"core/gallery": {
 		name: "core/gallery",
 		label: "Gallery",
 		type: "block",
 		category: "media",
-		defaultContent: () => structured({ images: [], columns: 3, gap: "8px" }),
+		defaultContent: () =>
+			structured({
+				images: [],
+				columns: 3,
+				imageCrop: true,
+				linkTo: "none",
+				sizeSlug: "large",
+				caption: "",
+				className: "",
+			}),
+		defaultStyles: {
+			margin: "1em 0",
+			width: "100%",
+		},
 	},
 	"core/video": {
 		name: "core/video",
@@ -162,7 +182,19 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 		label: "Columns",
 		type: "container",
 		category: "layout",
-		defaultContent: () => structured({ layoutMode: "flex", columns: 2 }),
+		defaultContent: () =>
+			structured({
+				layoutMode: "flex",
+				minColumnWidth: "220px",
+				verticalAlignment: "top",
+				horizontalAlignment: "left",
+				direction: "row",
+				columnVerticalAlignment: "top",
+				columnHorizontalAlignment: "stretch",
+			}),
+		defaultStyles: {
+			margin: "1em 0",
+		},
 	},
 	"core/container": {
 		name: "core/container",
@@ -177,6 +209,9 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 		type: "container",
 		category: "layout",
 		defaultContent: () => structured({ tagName: "div" }),
+		defaultStyles: {
+			padding: "1.25em 2.375em",
+		},
 	},
 	"core/quote": {
 		name: "core/quote",
@@ -302,8 +337,12 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 			width: "100%",
 			padding: "8px 12px",
 			fontSize: "16px",
-			border: "1px solid hsl(var(--border))",
+			lineHeight: "1.5",
+			border: "1px solid #d1d5db",
 			borderRadius: "0.375rem",
+			backgroundColor: "#ffffff",
+			color: "#111827",
+			boxSizing: "border-box",
 		},
 	},
 	"core/textarea": {
@@ -321,8 +360,12 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 			width: "100%",
 			padding: "8px 12px",
 			fontSize: "16px",
-			border: "1px solid hsl(var(--border))",
+			lineHeight: "1.5",
+			border: "1px solid #d1d5db",
 			borderRadius: "0.375rem",
+			backgroundColor: "#ffffff",
+			color: "#111827",
+			boxSizing: "border-box",
 		},
 	},
 	"core/select": {
@@ -343,8 +386,12 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 			width: "100%",
 			padding: "8px 12px",
 			fontSize: "16px",
-			border: "1px solid hsl(var(--border))",
+			lineHeight: "1.5",
+			border: "1px solid #d1d5db",
 			borderRadius: "0.375rem",
+			backgroundColor: "#ffffff",
+			color: "#111827",
+			boxSizing: "border-box",
 		},
 	},
 	"post/title": {

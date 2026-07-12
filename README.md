@@ -2,6 +2,20 @@
 
 A self-hostable WordPress-compatible CMS built in JavaScript/TypeScript.
 
+## Packages
+
+Published npm packages from this monorepo:
+
+| Package | npm | Description | Docs |
+|---------|-----|-------------|------|
+| **SDK** | [`@nextpress-org/sdk`](https://www.npmjs.com/package/@nextpress-org/sdk) | TypeScript client for pages, posts, blocks, and editor workflows | [`packages/sdk/README.md`](packages/sdk/README.md) · [SDK guides](docs/sdk/README.md) |
+| **CLI** | [`@nextpress-org/cli`](https://www.npmjs.com/package/@nextpress-org/cli) | Self-host installer and Docker Compose helper (`nextpress` command) | [`packages/cli/README.md`](packages/cli/README.md) · [CLI usage](docs/cli-usage.md) |
+
+```bash
+pnpm add @nextpress-org/sdk    # programmatic CMS API
+npm install -g @nextpress-org/cli   # optional; install.sh also ships the nextpress command
+```
+
 ## Quick Start
 
 Get started quickly with local development:
@@ -40,49 +54,67 @@ App image on Docker Hub: [https://hub.docker.com/r/husseinkizz/nextpress](https:
 
 ## What You Can Do With Nextpress
 
-### Blocks (42 total)
+### Blocks (39 total)
 
-Nextpress comes with a growing collection of blocks for building pages and posts.
+Nextpress ships **39 blocks** for pages, posts, and templates.
 
 | Category | Count | Status |
 |----------|-------|--------|
-| Basic | 25 | Stable |
-| Icon | 1 | Experimental |
+| Basic | 12 | Stable |
+| Layout | 6 | Stable |
+| Media | 8 | Stable |
+| Form | 3 | Stable |
 | Post | 10 | Stable |
 
-**Basic blocks (25) - Ready to use**
+**Basic blocks (12)**
 
 - [x] Heading
 - [x] Paragraph
 - [x] Button
 - [x] Buttons
-- [x] Image
-- [x] Video
-- [x] Audio
-- [x] File
-- [x] Spacer
-- [x] Separator
-- [x] Divider
-- [x] Columns
-- [x] Group
-- [x] Container
 - [x] Quote
 - [x] Pullquote
 - [x] List
-- [x] Media Text
-- [x] Cover
 - [x] Code
 - [x] HTML
 - [x] Markdown
 - [x] Preformatted
 - [x] Table
+
+**Layout blocks (6)**
+
+- [x] Columns
+- [x] Group
+- [x] Container
+- [x] Spacer
+- [x] Separator
+- [x] Divider
+
+**Media blocks (8)**
+
+- [x] Image
 - [x] Gallery
+- [x] Video
+- [x] Audio
+- [x] Cover
+- [x] Media Text
+- [x] File
+- [x] Icon (see icon sets below)
 
-**Icon block (1) - [Experimental]**
+**Form blocks (3)**
 
-- [x] Icon block with icon sets: Lucide (1,736), react-icons (9 sets, ~28K), SVGL (120+ brands)
+- [x] Text field (`core/input`)
+- [x] Text area (`core/textarea`)
+- [x] Dropdown (`core/select`)
 
-**Post blocks (10) - Ready to use**
+**Icon block (4 icon sets) [Experimental]**
+
+- [x] **Lucide** (1,736 icons)
+- [x] **react-icons** (9 libraries, ~28K icons)
+- [x] **SVGL** (120+ brand logos)
+- [x] **All** (search across every set)
+
+**Post blocks (10)**
 
 - [x] Post Title
 - [x] Featured Image
@@ -95,6 +127,22 @@ Nextpress comes with a growing collection of blocks for building pages and posts
 - [x] Info
 - [x] Progress
 
+### Multiple sites
+
+Run more than one site from a single install:
+
+- [x] Separate pages, posts, media, and settings per site
+- [x] Switch sites from the admin
+- [x] Scope API keys to one site at a time
+
+### WordPress import
+
+Bring content over from an existing WordPress site:
+
+- [x] Import published posts and pages from a public WordPress URL
+- [x] Convert Gutenberg HTML and layout blocks into native NextPress blocks
+- [x] Re-import to refresh content you already brought over
+
 ### REST API
 
 WordPress-compatible endpoints for headless or traditional usage:
@@ -105,13 +153,17 @@ WordPress-compatible endpoints for headless or traditional usage:
 - [x] Users and role management
 - [x] Comments
 - [x] Blogs
-- [x] Authentication (login/logout/session)
+- [x] Authentication (Better Auth + session)
+- [x] Scoped **API keys** for scripts and integrations
+- [x] Multi-site scoping on keys and content
 - [x] Site settings
 - [x] Site options
 - [x] Dashboard data
 - [x] Templates CRUD
+- [x] **WordPress import** (posts and pages)
 - [ ] Themes management
 - [x] Preview mode for drafts
+- [x] Preview **share links** (token-based, no login)
 - [x] Public REST API for headless CMS usage
 
 ### Page Builder
@@ -119,12 +171,19 @@ WordPress-compatible endpoints for headless or traditional usage:
 The visual editor for creating and arranging content:
 
 - [x] Block-based editing with drag and drop
-- [x] Device preview (see how your site looks on Desktop, Tablet, Mobile)
-- [x] Page settings (title, slug, template, status, SEO meta)
-- [x] Block settings (styles, spacing, colors, link URLs)
-- [x] Live preview of changes
-- [x] Undo/redo functionality
-- [x] Auto-save to prevent lost work
+- [x] Device preview (Desktop, Tablet, Mobile)
+- [x] Page settings (title, slug, template, status, SEO meta, fonts, width, padding)
+- [x] Block settings (styles, spacing, colors, hover states, link URLs)
+- [x] Typography and corner-shape presets in settings
+- [x] Gallery with grid layout, per-image editing, captions, and links on the published page
+- [x] Column and group layout that matches the published page
+- [x] Icon picker with browse-before-search across 4 icon sets
+- [x] Live preview from the editor canvas (current unsaved layout)
+- [x] Preview and publish use the same production renderer
+- [x] Undo and redo
+- [x] Auto-save
+- [x] Self-hosted catalog fonts (no third-party font CDN)
+- [x] In-app What's New when you upgrade
 
 ### Template System [Experimental]
 
@@ -156,7 +215,10 @@ Built to grow with your needs:
 - [ ] WordPress-style action and filter hooks for plugins
 - [ ] Theme system with template overrides
 - [x] Template system for creating reusable layouts
-- [x] Public REST API enabling headless CMS usage
+- [x] Public REST API for headless usage
+- [x] Official SDK ([`@nextpress-org/sdk`](packages/sdk/README.md)): pages, posts, blocks, editor sessions, preview links
+- [x] API keys with permission presets in Settings
+- [x] WordPress import for migration workflows
 
 ### Infrastructure
 
@@ -164,29 +226,27 @@ The technical foundation that makes it all work:
 
 | Component | What it means for you |
 |-----------|-----------------------|
-| Database (dev) | PGlite embedded PostgreSQL - zero setup for development |
-| Database (prod) | Full PostgreSQL support for production deployments |
+| Database (development) | PGlite embedded PostgreSQL, zero local setup |
+| Database (production) | Full PostgreSQL support |
 | Hosting | Runs anywhere Docker runs |
-| Install | One-command setup script gets you running fast |
-| Setup | Web-based wizard walks you through initial configuration |
-| Health check | `/api/health` endpoint for monitoring and orchestration |
+| Install | One-command setup script |
+| Setup | Web-based wizard for initial configuration |
+| Upgrades | CLI-driven upgrades with schema checks and backups |
+| Health check | `/api/health` for monitoring and orchestration |
 
-## Current Focus Areas
+## Current Focus
 
-We are actively working on stabilizing these areas:
+Active development areas:
 
-### Known Issues
+| Area | What we are building |
+|------|----------------------|
+| **SDK** | [`@nextpress-org/sdk`](packages/sdk/README.md): block builder, page defaults, editor sessions (beta on npm) |
+| **NextPress MCP** | MCP server so AI tools can manage content and run workflows |
+| **Editor improvements** | Ongoing page builder polish and accessibility |
+| **WordPress compatibility and imports** | Deeper Gutenberg mapping, re-import, REST parity |
+| **AI-powered features** | Assisted editing and automation on SDK and MCP |
 
-These are bugs we are tracking and fixing:
-
-| Issue | Status |
-|-------|--------|
-| Posts do not save content or slug | Root cause fixed (block deselection); needs in-app verification |
-| Cannot set page as homepage | Pending fix |
-| Error creating duplicated page | In progress |
-| Columns do not fit content properly | Fixed |
-| Comments | Needs polish |
-| Media support (SVG, resize) | Needs polish |
+Questions, partnerships, or early access: **[info@nextpress.ai](mailto:info@nextpress.ai)**
 
 ### Planned Features
 
@@ -205,6 +265,7 @@ These features are on our roadmap:
 
 We welcome contributions from the community. Here is how to help:
 
+- **Reach out**: [info@nextpress.ai](mailto:info@nextpress.ai)
 - **Experimental features**: Check the `docs/` directory before contributing to experimental areas, as APIs may change
 - **Issue reporting**: Use the GitHub issue tracker at github.com/pabloh3/nextpress1
 - **Pull requests**: All contributions must pass `pnpm check` and the test suite
