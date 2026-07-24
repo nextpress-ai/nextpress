@@ -4,6 +4,49 @@ Per **AGENTS.md → Workflow**: use `task.md` for work **>30min**; at **task end
 
 ---
 
+## 2026-07-24 — SDK/MCP 2x: patchBlocks + validate
+
+### Summary
+
+- SDK **0.2.0**: `validateBlockTree`, `patchBlockTree`, `buildBlockSchemaCatalog`, `pages.patchBlocks` / `posts.patchBlocks` (get→patch→validate→update + change summary)
+- Server: `validateContentForSave` rejects `UNKNOWN_BLOCK` via `shared/known-block-names.ts` (no DB migration)
+- MCP **0.2.0**: tools `validate_blocks`, `patch_page_blocks`, `patch_post_blocks`; resource `nextpress://blocks/schema`
+- Live MCP integration: 7/7 including patch insert without full tree replace
+
+### Tradeoff
+
+- Patch is client-composed then PUT (same concurrency). Dedicated server JSON-Patch endpoint deferred.
+- Keep `KNOWN_BLOCK_NAMES` aligned with SDK `BLOCK_NAMES` manually.
+
+---
+
+## 2026-07-24 — @nextpress-org/mcp package (v0.1.0)
+
+### Summary
+
+- New package `packages/mcp/` — **`@nextpress-org/mcp`** stdio MCP server
+- Thin adapter: tools/resources → `@nextpress-org/sdk` → existing `/api/*` REST (no Agent API yet)
+- Bin: `nextpress-mcp`; env `NEXTPRESS_URL` + `NEXTPRESS_API_KEY` + `NEXTPRESS_SITE_ID` (all required; siteId matches SDK)
+- Content-core tools: site context, pages/posts CRUD, publish_page, templates, media upload, preview_page, list_block_types, build_blocks
+- Resources: `nextpress://blocks/catalog`, `nextpress://site/map`, `nextpress://site/context`
+- Safe CMS co-ownership: draft defaults, `expectedVersion` on updates, clear `VERSION_STALE` hints
+- Root scripts: `pnpm mcp:build|test|dev|typecheck`
+- Docs: `docs/mcp/getting-started.md`, package README
+- SDK version aligned to **0.1.0** (was 0.0.1)
+
+### Patterns
+
+- Factory-only MCP wiring (`createMcpServer`, `createMcpClient`, `parseMcpConfig`)
+- Tool domains split under `src/tools/*` (≤400 LOC)
+- `formatSdkResult` / `runTool` for agent-readable errors
+- `@modelcontextprotocol/sdk` v1 (`McpServer` + `StdioServerTransport`)
+
+### Tradeoff
+
+- Skipped strategy Phase 1 Agent API; MCP wraps human REST via SDK. Fine for Cursor/Claude content work; semantic `patchBlocks` / schema registry still future.
+
+---
+
 ## 2026-07-02 — @nextpress-org/sdk package (v0.1.0)
 
 ### Summary

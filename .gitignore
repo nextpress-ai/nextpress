@@ -47,3 +47,11 @@ uploads
 
 env
 .npmrc
+
+# Agent / AI workspace (AGENTS.md + context.md stay tracked)
+intent.md
+task.md
+opencode.json
+.opencode/
+.claude/
+docs/

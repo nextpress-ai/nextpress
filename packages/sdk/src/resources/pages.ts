@@ -2,6 +2,12 @@ import type { HttpClient } from "../client/http-client.js";
 import { safeHttpRequest } from "../client/safe-request.js";
 import type { SdkResult } from "../client/sdk-result.js";
 import { parseInput } from "../client/validate-input.js";
+import type { BlockPatchOp } from "../blocks/patch-block-tree.js";
+import {
+	runPatchBlocks,
+	type PatchBlocksParams,
+	type PatchBlocksSuccess,
+} from "../blocks/run-patch-blocks.js";
 import {
 	createPageSchema,
 	idParamSchema,
@@ -22,6 +28,11 @@ export type PagesResource = {
 	create: (input: CreatePageInput) => Promise<SdkResult<Page>>;
 	/** Persist page metadata and block tree — requires expectedVersion from a prior get(). */
 	update: (params: { id: string } & UpdatePageInput) => Promise<SdkResult<Page>>;
+	/**
+	 * Apply path ops (insert/update/move/delete) to the page block tree.
+	 * Validates against the block registry, then saves with expectedVersion.
+	 */
+	patchBlocks: (params: PatchBlocksParams) => Promise<SdkResult<PatchBlocksSuccess<Page>>>;
 	/** Remove a page and its published route. */
 	delete: (params: { id: string }) => Promise<SdkResult<DeleteMessage>>;
 	/** Roll back editor mistakes using server-side version snapshots. */
@@ -32,6 +43,24 @@ export type PagesResource = {
 
 /** Pages CRUD — primary page builder entity (blocks stored on `blocks` field). */
 export function createPagesResource({ http }: { http: HttpClient }): PagesResource {
+	const get = async ({ id }: { id: string }): Promise<Page> => {
+		if (!id.trim()) throw new Error("Invalid pages.get id: id is required");
+		return http.request(`/api/pages/${encodeURIComponent(id)}`);
+	};
+
+	const update = async ({
+		id,
+		...input
+	}: { id: string } & UpdatePageInput): Promise<SdkResult<Page>> => {
+		parseInput({ schema: idParamSchema, input: { id }, label: "pages.update id" });
+		const body = parseInput({
+			schema: updatePageSchema,
+			input: mergePageOtherOnWrite(input, "update"),
+			label: "pages.update input",
+		});
+		return safeHttpRequest(http, `/api/pages/${id}`, { method: "PUT", body });
+	};
+
 	return {
 		list: async (params: ListPagesQuery = {}): Promise<PaginatedResponse<Page, "pages">> => {
 			const query = parseInput({
@@ -42,10 +71,7 @@ export function createPagesResource({ http }: { http: HttpClient }): PagesResour
 			return http.request("/api/pages", { query });
 		},
 
-		get: async ({ id }: { id: string }): Promise<Page> => {
-			if (!id.trim()) throw new Error("Invalid pages.get id: id is required");
-			return http.request(`/api/pages/${encodeURIComponent(id)}`);
-		},
+		get,
 
 		create: async (input: CreatePageInput): Promise<SdkResult<Page>> => {
 			const body = parseInput({
@@ -56,15 +82,17 @@ export function createPagesResource({ http }: { http: HttpClient }): PagesResour
 			return safeHttpRequest(http, "/api/pages", { method: "POST", body });
 		},
 
-		update: async ({ id, ...input }: { id: string } & UpdatePageInput): Promise<SdkResult<Page>> => {
-			parseInput({ schema: idParamSchema, input: { id }, label: "pages.update id" });
-			const body = parseInput({
-				schema: updatePageSchema,
-				input: mergePageOtherOnWrite(input, "update"),
-				label: "pages.update input",
-			});
-			return safeHttpRequest(http, `/api/pages/${id}`, { method: "PUT", body });
-		},
+		update,
+
+		patchBlocks: async ({ id, expectedVersion, ops }: PatchBlocksParams) =>
+			runPatchBlocks({
+				id,
+				expectedVersion,
+				ops: ops as BlockPatchOp[],
+				get,
+				update,
+				label: "pages.patchBlocks",
+			}),
 
 		delete: async ({ id }: { id: string }): Promise<SdkResult<DeleteMessage>> => {
 			parseInput({ schema: idParamSchema, input: { id }, label: "pages.delete id" });

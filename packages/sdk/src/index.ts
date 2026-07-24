@@ -19,6 +19,28 @@ export { applySanitizedBlockOverrides } from "./sanitize/apply-block-overrides.j
 export { applyEditorSettings } from "./blocks/apply-editor-settings.js";
 export { normalizeBlockTree, normalizeBlockSubtree } from "./blocks/normalize-block-tree.js";
 export { BLOCK_DEFINITIONS, BLOCK_NAMES, isBlockName } from "./blocks/block-definitions.js";
+export {
+	validateBlockTree,
+	buildBlockSchemaCatalog,
+	UNKNOWN_BLOCK,
+	INVALID_BLOCK_TYPE,
+	INVALID_BLOCK_STRUCTURE,
+	DUPLICATE_BLOCK_ID,
+	type BlockValidationIssue,
+	type ValidateBlockTreeResult,
+	type BlockSchemaCatalogEntry,
+} from "./blocks/validate-block-tree.js";
+export {
+	patchBlockTree,
+	type BlockPatchOp,
+	type PatchBlockTreeResult,
+	type PatchBlockTreeOk,
+	type PatchBlockTreeErr,
+} from "./blocks/patch-block-tree.js";
+export type {
+	PatchBlocksParams,
+	PatchBlocksSuccess,
+} from "./blocks/run-patch-blocks.js";
 export type {
 	BlockDefinitionMeta,
 	BlockName,

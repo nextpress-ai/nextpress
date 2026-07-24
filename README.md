@@ -241,7 +241,7 @@ Active development areas:
 | Area | What we are building |
 |------|----------------------|
 | **SDK** | [`@nextpress-org/sdk`](packages/sdk/README.md): block builder, page defaults, editor sessions (beta on npm) |
-| **NextPress MCP** | MCP server so AI tools can manage content and run workflows |
+| **NextPress MCP** | [`@nextpress-org/mcp`](packages/mcp/README.md): stdio MCP for Cursor/Claude over the SDK ([getting started](docs/mcp/getting-started.md)) |
 | **Editor improvements** | Ongoing page builder polish and accessibility |
 | **WordPress compatibility and imports** | Deeper Gutenberg mapping, re-import, REST parity |
 | **AI-powered features** | Assisted editing and automation on SDK and MCP |

@@ -1,27 +1,29 @@
 {
-  "name": "@nextpress-org/sdk",
+  "name": "@nextpress-org/mcp",
   "version": "0.2.0",
-  "description": "Official NextPress SDK for managing content, pages, posts, and blocks programmatically",
+  "description": "MCP server for NextPress — manage pages, posts, media, and blocks from Cursor, Claude, and other agents",
   "type": "module",
   "license": "MIT",
-  "sideEffects": false,
+  "bin": {
+    "nextpress-mcp": "./dist/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nextpress-org/nextpress.git",
-    "directory": "packages/sdk"
+    "directory": "packages/mcp"
   },
-  "homepage": "https://github.com/nextpress-org/nextpress/tree/main/packages/sdk#readme",
+  "homepage": "https://github.com/nextpress-org/nextpress/tree/main/packages/mcp#readme",
   "bugs": {
     "url": "https://github.com/nextpress-org/nextpress/issues"
   },
   "keywords": [
     "nextpress",
+    "mcp",
+    "model-context-protocol",
     "cms",
-    "headless",
-    "page-builder",
-    "blocks",
-    "sdk",
-    "typescript"
+    "cursor",
+    "claude",
+    "ai"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -46,20 +48,17 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
-    "test:bun": "bun vitest run",
     "test:integration": "pnpm build && vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "slang-ts": "0.0.7",
+    "@modelcontextprotocol/sdk": "^1.12.3",
+    "@nextpress-org/sdk": "workspace:*",
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.0",
     "tsup": "^8.5.1",
     "typescript": "5.6.3",
     "vitest": "^3.2.4"

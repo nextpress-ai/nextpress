@@ -1,0 +1,4 @@
+dist/
+node_modules/
+*.tgz
+src/test/integration/integration.config.ts

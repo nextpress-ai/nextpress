@@ -21,6 +21,7 @@
     "test:coverage": "vitest --coverage",
     "test:jest": "jest",
     "db:push": "drizzle-kit push",
+    "db:reset": "bash scripts/reset-dev-db.sh",
     "seed:defaults": "node dist/seed-default-content.js",
     "import:users": "tsx scripts/import-users.ts",
     "verify:users": "tsx scripts/verify-users.ts",
@@ -32,7 +33,12 @@
     "sdk:test:integration": "pnpm --filter @nextpress-org/sdk test:integration",
     "sdk:lint": "pnpm --filter @nextpress-org/sdk lint",
     "sdk:lint:fix": "pnpm --filter @nextpress-org/sdk lint:fix",
-    "sdk:dev": "pnpm --filter @nextpress-org/sdk dev"
+    "sdk:dev": "pnpm --filter @nextpress-org/sdk dev",
+    "mcp:build": "pnpm --filter @nextpress-org/mcp build",
+    "mcp:test": "pnpm --filter @nextpress-org/mcp test",
+    "mcp:test:integration": "pnpm --filter @nextpress-org/mcp test:integration",
+    "mcp:dev": "pnpm --filter @nextpress-org/mcp dev",
+    "mcp:typecheck": "pnpm --filter @nextpress-org/mcp typecheck"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.11",

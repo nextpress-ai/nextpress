@@ -3,6 +3,7 @@ import {
 	isContainerHtmlTagName,
 	isGroupHtmlTagName,
 } from "./block-tag-names.js";
+import { isKnownBlockName } from "./known-block-names.js";
 import { mergePageOtherWithDefaults, validatePageOtherForSave } from "./page-other.js";
 import type { PageOther } from "./schema-types.js";
 import { validateIconReference } from "./validate-icon-reference.js";
@@ -10,9 +11,14 @@ import { validateIconReference } from "./validate-icon-reference.js";
 export const INVALID_ICON = "INVALID_ICON" as const;
 export const INVALID_PAGE_OTHER = "INVALID_PAGE_OTHER" as const;
 export const INVALID_BLOCK_TAG = "INVALID_BLOCK_TAG" as const;
+export const UNKNOWN_BLOCK = "UNKNOWN_BLOCK" as const;
 
 export type ContentSaveValidationError = {
-	code: typeof INVALID_ICON | typeof INVALID_PAGE_OTHER | typeof INVALID_BLOCK_TAG;
+	code:
+		| typeof INVALID_ICON
+		| typeof INVALID_PAGE_OTHER
+		| typeof INVALID_BLOCK_TAG
+		| typeof UNKNOWN_BLOCK;
 	message: string;
 	blockId?: string;
 };
@@ -118,6 +124,20 @@ export const validateContentForSave = (params: {
 	}
 
 	const blocks = params.blocks ?? [];
+
+	const unknownBlockError = walkBlocks(blocks, (block) => {
+		if (!block.name || !isKnownBlockName(block.name)) {
+			return {
+				code: UNKNOWN_BLOCK,
+				message: `Unknown block name "${String(block.name)}"`,
+				blockId: block.id,
+			};
+		}
+		return null;
+	});
+	if (unknownBlockError) {
+		return { ok: false, error: unknownBlockError };
+	}
 
 	const tagError = walkBlocks(blocks, validateBlockTagName);
 	if (tagError) {

@@ -65,4 +65,23 @@ describe("validateContentForSave", () => {
 			expect(result.error.code).toBe("INVALID_BLOCK_TAG");
 		}
 	});
+
+	it("rejects unknown block names", () => {
+		const result = validateContentForSave({
+			contentType: "page",
+			blocks: [
+				{
+					id: "x1",
+					name: "core/not-real",
+					type: "block",
+					parentId: null,
+					content: { kind: "text", value: "hi" },
+				},
+			],
+		});
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("UNKNOWN_BLOCK");
+		}
+	});
 });
