@@ -4,7 +4,7 @@ import { registerContentTools } from "./tools/register-content-tools.js";
 import { registerContentResources } from "./resources/register-content-resources.js";
 
 export const MCP_SERVER_NAME = "nextpress";
-export const MCP_SERVER_VERSION = "0.2.0";
+export const MCP_SERVER_VERSION = "0.2.1";
 
 /**
  * Create the NextPress MCP server with content-core tools and resources.
