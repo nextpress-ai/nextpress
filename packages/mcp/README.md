@@ -64,7 +64,7 @@ Claude Desktop uses the same shape in `claude_desktop_config.json`.
 
 CLI flags override env when both are set: `--url`, `--api-key`, `--site-id`.
 
-Keys are created and revoked in the dashboard only. This package consumes keys; it does not mint them.
+Keys are created and revoked in the dashboard only. This package uses keys; it does not create them.
 
 ## Agents and the admin, same content
 

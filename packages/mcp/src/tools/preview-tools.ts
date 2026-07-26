@@ -9,7 +9,7 @@ export function registerPreviewTools({ server, client }: ToolDeps): void {
 		{
 			title: "Preview page",
 			description:
-				"Mint a time-limited share URL so humans can review a draft without logging in.",
+				"Create a time-limited share URL so humans can review a draft without logging in.",
 			inputSchema: {
 				id: z.string().min(1).describe("Page UUID"),
 				expiresInSeconds: z

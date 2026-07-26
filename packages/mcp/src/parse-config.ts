@@ -27,7 +27,7 @@ export function parseMcpConfig({ argv, env }: ParseConfigParams): McpRuntimeConf
 	}
 	if (!apiKey.trim()) {
 		throw new Error(
-			"Missing API key. Set NEXTPRESS_API_KEY or pass --api-key npk_live_… (mint in Settings → System → API Keys)",
+			"Missing API key. Set NEXTPRESS_API_KEY or pass --api-key npk_live_… (create one in Settings → System → API Keys)",
 		);
 	}
 	if (!siteId.trim()) {

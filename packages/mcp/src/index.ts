@@ -46,7 +46,7 @@ Env:
   NEXTPRESS_API_KEY   Bearer API key npk_live_… (required)
   NEXTPRESS_SITE_ID   Site UUID matching the API key (required)
 
-Mint keys in the dashboard: Settings → System → API Keys.
+Create keys in the dashboard: Settings → System → API Keys.
 Prefer the editor scope so agents edit drafts while owners keep CMS control.
 
 Flags override env when both are set.
