@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.3",
-    "@nextpress-org/sdk": "workspace:*",
+    "@nextpress-org/sdk": "workspace:^0.2.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

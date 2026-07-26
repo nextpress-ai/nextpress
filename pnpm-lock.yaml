@@ -434,7 +434,7 @@ importers:
         specifier: ^1.12.3
         version: 1.29.0(zod@3.25.76)
       '@nextpress-org/sdk':
-        specifier: workspace:*
+        specifier: workspace:^0.2.0
         version: link:../sdk
       zod:
         specifier: ^3.24.2
