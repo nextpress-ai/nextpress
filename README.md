@@ -9,10 +9,12 @@ Published npm packages from this monorepo:
 | Package | npm | Description | Docs |
 |---------|-----|-------------|------|
 | **SDK** | [`@nextpress-org/sdk`](https://www.npmjs.com/package/@nextpress-org/sdk) | TypeScript client for pages, posts, blocks, and editor workflows | [`packages/sdk/README.md`](packages/sdk/README.md) · [SDK guides](docs/sdk/README.md) |
+| **MCP** | [`@nextpress-org/mcp`](https://www.npmjs.com/package/@nextpress-org/mcp) | MCP server for Cursor and Claude — agents edit content through the SDK | [`packages/mcp/README.md`](packages/mcp/README.md) |
 | **CLI** | [`@nextpress-org/cli`](https://www.npmjs.com/package/@nextpress-org/cli) | Self-host installer and Docker Compose helper (`nextpress` command) | [`packages/cli/README.md`](packages/cli/README.md) · [CLI usage](docs/cli-usage.md) |
 
 ```bash
 pnpm add @nextpress-org/sdk    # programmatic CMS API
+npx @nextpress-org/mcp         # MCP server for Cursor / Claude
 npm install -g @nextpress-org/cli   # optional; install.sh also ships the nextpress command
 ```
 
