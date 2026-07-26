@@ -8,3 +8,6 @@ allowBuilds:
   bufferutil: true
   es5-ext: true
   esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@nextpress-org/sdk@0.2.0'

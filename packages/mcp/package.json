@@ -5,7 +5,7 @@
   "type": "module",
   "license": "MIT",
   "bin": {
-    "nextpress-mcp": "./dist/index.js"
+    "nextpress-mcp": "dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.3",
-    "@nextpress-org/sdk": "workspace:^0.2.0",
+    "@nextpress-org/sdk": "^0.2.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

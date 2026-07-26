@@ -434,8 +434,8 @@ importers:
         specifier: ^1.12.3
         version: 1.29.0(zod@3.25.76)
       '@nextpress-org/sdk':
-        specifier: workspace:^0.2.0
-        version: link:../sdk
+        specifier: ^0.2.0
+        version: 0.2.0(typescript@5.6.3)
       zod:
         specifier: ^3.24.2
         version: 3.25.76
@@ -1694,6 +1694,10 @@ packages:
 
   '@neondatabase/serverless@0.10.4':
     resolution: {integrity: sha512-2nZuh3VUO9voBauuh+IGYRhGU/MskWHt1IuZvHcJw6GLjDgtqj/KViKo7SIrLdGLdot7vFbiRRw+BgEy3wT9HA==}
+
+  '@nextpress-org/sdk@0.2.0':
+    resolution: {integrity: sha512-D9Zk5pF/8UXJjYvBD8jI6szGHtHcgh/9zhyx8wkWbEecDfAICRK2mUNjbhehTziBpAcHTDo02Wauna1sVjoq2Q==}
+    engines: {node: '>=20'}
 
   '@noble/ciphers@2.2.0':
     resolution: {integrity: sha512-Z6pjIZ/8IJcCGzb2S/0Px5J81yij85xASuk1teLNeg75bfT07MV3a/O2Mtn1I2se43k3lkVEcFaR10N4cgQcZA==}
@@ -6681,6 +6685,13 @@ snapshots:
   '@neondatabase/serverless@0.10.4':
     dependencies:
       '@types/pg': 8.11.6
+
+  '@nextpress-org/sdk@0.2.0(typescript@5.6.3)':
+    dependencies:
+      slang-ts: 0.0.7(typescript@5.6.3)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - typescript
 
   '@noble/ciphers@2.2.0': {}
 
