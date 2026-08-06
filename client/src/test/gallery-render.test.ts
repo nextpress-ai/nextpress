@@ -19,7 +19,9 @@ describe("buildGalleryRenderModel", () => {
 
 		expect(model.columns).toBe(3);
 		expect(model.gridStyle.display).toBe("grid");
-		expect(model.gridStyle.gridTemplateColumns).toBe("repeat(3, 1fr)");
+		expect(model.gridStyle.gridTemplateColumns).toBe(
+			"repeat(auto-fit, minmax(min(200px, 100%), 1fr))",
+		);
 	});
 });
 

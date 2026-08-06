@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
-import { FileText, Plus, Search, Settings2 } from "lucide-react";
+import { FileText, Plus, Search, Settings2, Smartphone } from "lucide-react";
 import { BiPencil } from "react-icons/bi";
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ interface PagesMenuProps {
   currentPageId?: string;
   /** Opens the editor Page Settings modal when set */
   onPageSettingsClick?: () => void;
+  onApplyResponsiveDefaults?: () => void;
 }
 
 /**
@@ -36,6 +37,7 @@ export function PagesMenu({
   children,
   currentPageId,
   onPageSettingsClick,
+  onApplyResponsiveDefaults,
 }: PagesMenuProps) {
   const [, setLocation] = useLocation();
   const [showCommand, setShowCommand] = useState(false);
@@ -75,6 +77,19 @@ export function PagesMenu({
             <Plus className="w-4 h-4" />
             Create New Page
           </DropdownMenuItem>
+          {onApplyResponsiveDefaults ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  onApplyResponsiveDefaults();
+                }}
+              >
+                <Smartphone className="w-4 h-4" />
+                Apply mobile-friendly defaults
+              </DropdownMenuItem>
+            </>
+          ) : null}
           {onPageSettingsClick ? (
             <>
               <DropdownMenuSeparator />

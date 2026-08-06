@@ -33,6 +33,11 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
     return new URLSearchParams(window.location.search).get('live') === '1';
   }, []);
 
+  const isEmbedPreview = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('embed') === '1';
+  }, []);
+
   const previewPath =
     shareToken && contentId
       ? `/api/preview/shared/${contentType}/${contentId}?token=${encodeURIComponent(shareToken)}`
@@ -119,14 +124,14 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
   // Render page builder content
   return (
     <div
-      className="min-h-screen"
+      className={isEmbedPreview ? 'min-h-full' : 'min-h-screen'}
       style={{
         backgroundColor: design?.backgroundColor?.style || '#ffffff',
         color: design?.textColor?.style || undefined,
         fontFamily: design?.fontFamily || undefined,
       }}
     >
-      <title>{title}</title>
+      {!isEmbedPreview ? <title>{title}</title> : null}
       
       {/* Page content — same stack as published pages */}
       <div className="w-full">

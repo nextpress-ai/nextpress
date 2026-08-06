@@ -4,6 +4,60 @@ Per **AGENTS.md → Workflow**: use `task.md` for work **>30min**; at **task end
 
 ---
 
+## 2026-08-06 — Responsive & adaptive 2X
+
+### Summary
+
+- **Single render contract:** `shared/resolve-block-for-surface.ts` — canvas, preview, SPA, SSR all merge responsive defaults + tokens + device CSS the same way
+- **Publish CSS unified:** `shared/publish-block-css.ts` injected via `PublishBlockStyles` (client) and `PageTemplate` (SSR)
+- **Device overrides on publish:** `shared/collect-device-styles-css.ts` emits `@media` from `block.other.deviceStyles` (was editor-only)
+- **Editor WYSIWYG:** `DevicePreview` uses CSS container queries (`npb-canvas`) + `resolveBlockForSurface` in `useBlockState`
+- **Defaults:** container/image/media-text updated; runtime fallbacks in `shared/render-defaults.ts` for legacy content
+- **Validation:** `validateBlockResponsiveHealth()` in shared + SDK; `ResponsiveHealthBanner` in editor sidebar
+- **Audit:** `docs/internal/responsive-audit.md`; design-system §21
+
+### Patterns
+
+- Responsive = automatic CSS/render rules; adaptive = opt-in `deviceStyles` when user edits on tablet/mobile
+- Vertical slice proof: layout → media → typography → interactive (shared contract first, then block fixes)
+- Golden fixtures: `shared/test/fixtures/responsive/fixtures.ts`
+
+### Tradeoff
+
+- Container queries approximate mobile `@media` in editor edit mode; iframe live preview uses real `@media` via preview route
+- SSR and client now share `resolveTokenEntryValue` for theme token resolution
+
+### Gate 3 — **CLOSED** (2026-08-06)
+
+- **36/36** browser matrix @390/768/1280 on layout/content/typography fixtures × editor/preview/SPA/SSR
+- Run: `pnpm audit:gate3-responsive` (report: `docs/internal/gate3-responsive-report.md`)
+- Fixes: UA `figure` margin reset in publish CSS; editor canvas `npb-canvas-page` class + container queries @768 with `!important` on column stack; `DevicePreview` `width:100%` on tablet/mobile
+
+### Polish — **DONE** (2026-08-06)
+
+- **Apply mobile-friendly defaults:** `persistResponsiveDefaultsToBlocks()` in `shared/persist-responsive-defaults.ts`; Page menu + sidebar health banner CTA
+- **SSR token parity:** `shared/resolve-token-entry.ts` resolves `entry.value` theme tokens; `resolveTokenMapForSSR` unified; `PublicBlockRenderer` no longer double-resolves tokens
+- **Iframe live preview:** Eye toggle in builder top bar → `IframeDevicePreview` loads `/preview/...?live=1&embed=1` at device width (true `@media`)
+
+### Optional (deferred)
+
+- Full iframe preview in gate3 audit matrix row (manual sign-off sufficient for now)
+
+### Golden fixtures (2026-08-06)
+
+- Full layout / content / typography stress trees in `shared/test/fixtures/responsive/fixtures.ts`
+- **Demo workflow pages** (SaaS, café, portfolio, blog, newsletter): `shared/test/fixtures/demo-pages/` — seed with `pnpm seed:demo-pages -- --via-api` (see `docs/internal/demo-pages.md`)
+- Seed published pages:
+  - PGlite (stop dev server first): `pnpm seed:responsive-fixtures`
+  - API (dev server running): `pnpm seed:responsive-fixtures -- --via-api`
+  - Optional env: `SEED_EMAIL`, `SEED_PASSWORD`, `SEED_BASE_URL`
+
+### SSR fix (2026-08-06)
+
+- `/pages/:id` no longer uses theme stub — `server/routes/shared/build-published-page-html.ts` shared with `/sites/:siteId/:pageSlug`
+
+---
+
 ## 2026-07-24 — SDK/MCP 2x: patchBlocks + validate
 
 ### Summary
@@ -163,14 +217,18 @@ Intent: [`docs/internal/intent-better-auth.md`](docs/internal/intent-better-auth
 
 ## 2026-05-15 — Local admin login (agent verification)
 
-- **Purpose**: Hand off how agents can **re-verify** local admin sign-in and page builder UI.
+- **Purpose**: Hand off how agents can sign in or create a dev account, then verify page builder UI.
 - **Base URL**: `http://localhost:5000` — HTTP port follows **`PORT`** when set; otherwise server defaults to **5000** (see `server/index.ts`).
-- **Login path**: **`/admin/login`**
-- **Credentials** (local dev — owner-provided):
-  - **Email**: `hssnkizz@gmail.com`
-  - **Password**: `Abcd1234!`
-- **Page builder**: After login, open **`/admin/pages`** → edit a page, or **`/admin/page-builder/page/<id>`** if you know the ID.
-- **How verified**: Cursor **IDE browser MCP** — sign in, toggle light/dark via sun/moon in builder top bar, confirm sidebar/canvas/header stay in sync.
+- **Check setup**: `GET /api/setup/status` → `{ isSetup: true|false }`. If false, use initial setup flow (not register).
+- **Fresh PGlite / no user yet**: create an account at **`/admin/register`**, then sign in at **`/admin/login`**.
+- **Do not assume fixed credentials** — each dev PGlite may have different users or none. Register a new account when sign-in fails.
+- **Register form fields**: username, email, first/last name, password, role (default subscriber is fine for builder audits).
+- **Username rules**: alphanumeric and underscore only — **no hyphens** (Better Auth rejects e.g. `nextpress-agent`).
+- **Password rules**: min 8 chars, at least one uppercase, lowercase, and number.
+- **API register** (same as register page): `POST /api/auth/sign-up/email` with header `Origin: http://localhost:5000` and body `{ email, password, name, username, firstName?, lastName? }`.
+- **API sign-in**: `POST /api/auth/sign-in/email` with same `Origin` header and `{ email, password }`. Confirm via `GET /api/auth/user`.
+- **Page builder**: After login, **`/admin/pages`** → edit a page, or **`/admin/page-builder/page/<id>`**.
+- **How verified**: Cursor **IDE browser MCP** or curl session — sign in, open builder, toggle light/dark in top bar.
 
 ---
 

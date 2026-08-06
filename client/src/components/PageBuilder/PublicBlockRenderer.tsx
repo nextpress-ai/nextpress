@@ -2,52 +2,69 @@ import type { CSSProperties } from "react";
 import * as React from "react";
 import { Suspense } from "react";
 import type { BlockConfig } from "@shared/schema-types";
+import type { DeviceView } from "@shared/block-device-styles";
+import { resolveBlockForSurface } from "@shared/resolve-block-for-surface";
 import { generateBlockAnimationCSS, getEntryAnimationAttributes } from "@shared/animation-utils";
-import { getBlockSiblingFlexItemStyles, getBlockStackLayerWrapperStyles, stripBlockContainerPlacementStyles, type BlockStackDirection } from "@shared/block-container-placement";
-import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
-import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
-import { generateBlockModifierCSS, resolveTokenMap } from "@/lib/tailwind-tokens";
+import {
+	getBlockSiblingFlexItemStyles,
+	getBlockStackLayerWrapperStyles,
+	stripBlockContainerPlacementStyles,
+	type BlockStackDirection,
+} from "@shared/block-container-placement";
 import { BLOCK_COMPONENTS } from "../../../../renderer/react/block-components";
 import { ClientIconBlock } from "./blocks/ClientIconBlock";
 
 type PublicBlockRendererProps = {
 	block: BlockConfig;
 	stackDirection?: BlockStackDirection;
+	deviceView?: DeviceView;
 };
 
 const CLIENT_COMPONENTS: Record<string, React.FC<BlockConfig>> = {
 	"core/icon": ClientIconBlock,
 };
 
-function getPublicBlockStyles(block: BlockConfig) {
-	const tokenResolution = block.other?.tokenMap
-		? resolveTokenMap(block.other.tokenMap, block.other?.units || {})
-		: null;
-	const styles = stripBlockContainerPlacementStyles({ ...block.styles, ...(tokenResolution?.style || {}) });
-	const modifierCSS = tokenResolution?.modifierEntries?.length
-		? generateBlockModifierCSS(block.id, tokenResolution.modifierEntries, {
-				selector:
-					resolveButtonBlockModifierSelector(block) ??
-					resolveFormFieldModifierSelector(block),
-			})
-		: "";
+function getPublicBlockStyles(block: BlockConfig, deviceView?: DeviceView) {
+	const resolved = resolveBlockForSurface({
+		block,
+		surface: deviceView ? "canvas" : "publish",
+		deviceView,
+	});
+
+	const styles = stripBlockContainerPlacementStyles(resolved.inlineStyles);
+	const cssParts = [...resolved.cssFragments].filter(Boolean);
 	const animationCSS = block.other?.animation ? generateBlockAnimationCSS(block.id, block.other.animation) : "";
-	return { css: [modifierCSS, animationCSS].filter(Boolean).join("\n"), styles };
+	if (animationCSS) cssParts.push(animationCSS);
+
+	return {
+		css: cssParts.join("\n"),
+		styles,
+		classNames: resolved.classNames,
+	};
 }
 
-function BlockWrapper({ block, styles, stackDirection, children }: {
+function BlockWrapper({
+	block,
+	styles,
+	classNames,
+	stackDirection,
+	children,
+}: {
 	block: BlockConfig;
 	styles: CSSProperties;
+	classNames: string[];
 	stackDirection: BlockStackDirection;
 	children: React.ReactNode;
 }) {
 	const flexItemPlacement = getBlockSiblingFlexItemStyles(block.styles, stackDirection);
-	const animationAttributes = block.other?.animation?.entry ? getEntryAnimationAttributes(block.other.animation.entry) : {};
+	const animationAttributes = block.other?.animation?.entry
+		? getEntryAnimationAttributes(block.other.animation.entry)
+		: {};
 	return (
 		<div className="block-container w-full">
 			<div style={{ width: "100%", minWidth: 0, ...flexItemPlacement, ...getBlockStackLayerWrapperStyles(block) }}>
 				<div
-					className={`block-${block.id}`}
+					className={classNames.join(" ")}
 					style={{
 						width: styles.width || "100%",
 						minWidth: 0,
@@ -70,14 +87,18 @@ function BlockWrapper({ block, styles, stackDirection, children }: {
  * - Stack direction handling
  * - Lazy-loaded heavy deps (icons, markdown)
  */
-export default function PublicBlockRenderer({ block, stackDirection = "column" }: PublicBlockRendererProps) {
-	const { styles, css } = getPublicBlockStyles(block);
+export default function PublicBlockRenderer({
+	block,
+	stackDirection = "column",
+	deviceView,
+}: PublicBlockRendererProps) {
+	const { styles, css, classNames } = getPublicBlockStyles(block, deviceView);
 	const patchedBlock: BlockConfig = { ...block, styles };
 	const Component = CLIENT_COMPONENTS[block.name] || BLOCK_COMPONENTS[block.name];
 
 	if (!Component) {
 		return (
-			<BlockWrapper block={block} styles={styles} stackDirection={stackDirection}>
+			<BlockWrapper block={block} styles={styles} classNames={classNames} stackDirection={stackDirection}>
 				<div className="rounded border border-dashed border-npb-border-strong p-4 text-sm text-npb-text-muted">
 					{block.label || block.name} block is not available in the public renderer yet.
 				</div>
@@ -87,12 +108,12 @@ export default function PublicBlockRenderer({ block, stackDirection = "column" }
 
 	return (
 		<>
-			<BlockWrapper block={block} styles={styles} stackDirection={stackDirection}>
+			<BlockWrapper block={block} styles={styles} classNames={classNames} stackDirection={stackDirection}>
 				<Suspense fallback={<div style={{ minHeight: "20px" }} />}>
 					<Component {...patchedBlock} />
 				</Suspense>
 			</BlockWrapper>
-			{css && <style dangerouslySetInnerHTML={{ __html: css }} />}
+			{css ? <style dangerouslySetInnerHTML={{ __html: css }} /> : null}
 		</>
 	);
 }

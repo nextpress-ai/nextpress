@@ -7,9 +7,9 @@ import {
 	unregisterBlockState,
 } from "./blockStateRegistry";
 import { useDeviceView } from "../device-view-context";
+import { resolveBlockForSurface } from "@shared/resolve-block-for-surface";
 import {
 	readBlockDeviceStyles,
-	resolveBlockDeviceStyles,
 	type BlockDeviceStyles,
 } from "../resolve-block-device-styles";
 
@@ -105,7 +105,11 @@ export function useBlockState<TContent>({
 	const content = parseContent
 		? parseContent(value.content) ?? getDefaultContent()
 		: (value.content as TContent) ?? getDefaultContent();
-	const styles = resolveBlockDeviceStyles({ block: value, device: deviceView });
+	const styles = resolveBlockForSurface({
+		block: value,
+		surface: "canvas",
+		deviceView,
+	}).inlineStyles;
 	const settings = value.settings;
 
 	// Refs for stable callback identity.

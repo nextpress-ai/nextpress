@@ -1,9 +1,8 @@
 import React from 'react';
 import { Droppable, Draggable, DropPlaceholder } from '@/lib/dnd';
 import DevicePreview from './DevicePreview';
+import { IframeDevicePreview } from './IframeDevicePreview';
 import BlockRenderer from './BlockRenderer';
-import PublicBlockRenderer from './PublicBlockRenderer';
-import { BlockAnimationRuntime } from './BlockAnimationRuntime';
 import { Layers } from 'lucide-react';
 import { useBlockActions } from './BlockActionsContext';
 import type { BlockConfig } from "@shared/schema-types";
@@ -14,6 +13,8 @@ export function BuilderCanvas({
   deviceView,
   selectedBlockId,
   isPreviewMode,
+  previewUrl,
+  previewRefreshKey,
   duplicateBlock,
   deleteBlock,
   hoverHighlight,
@@ -23,24 +24,14 @@ export function BuilderCanvas({
   deviceView: 'desktop' | 'tablet' | 'mobile';
   selectedBlockId: string | null;
   isPreviewMode: boolean;
+  previewUrl?: string;
+  previewRefreshKey?: number;
   duplicateBlock: (blockId: string) => void;
   deleteBlock: (blockId: string) => void;
   hoverHighlight: 'padding' | 'margin' | null;
   onBlockChange?: (updated: any) => void;
 }) {
   const actions = useBlockActions();
-
-  const renderPreviewStack = () => (
-    <div
-      className="flex min-h-full w-full flex-col items-stretch p-4"
-      style={{ gap: PAGE_BLOCK_STACK_GAP }}
-    >
-      <BlockAnimationRuntime contentKey={`builder-preview-${blocks.length}`} />
-      {blocks.map((block) => (
-        <PublicBlockRenderer key={block.id} block={block} />
-      ))}
-    </div>
-  );
 
   const renderEditorStack = () => (
     <Droppable droppableId="canvas">
@@ -101,22 +92,19 @@ export function BuilderCanvas({
 
   return (
     <div className="flex-1 overflow-auto bg-npb-canvas-bg p-8 min-h-0">
-      <DevicePreview device={deviceView}>
-        <div className="bg-npb-canvas-page min-h-full shadow-lg">
-          {isPreviewMode ? (
-            blocks.length === 0 ? (
-              <div className="text-center py-12 text-npb-text-muted">
-                <Layers className="w-12 h-12 mx-auto mb-4" />
-                <p>No blocks to preview yet</p>
-              </div>
-            ) : (
-              renderPreviewStack()
-            )
-          ) : (
-            renderEditorStack()
-          )}
-        </div>
-      </DevicePreview>
+      {isPreviewMode && previewUrl ? (
+        <IframeDevicePreview
+          device={deviceView}
+          previewUrl={previewUrl}
+          refreshKey={previewRefreshKey ?? 0}
+        />
+      ) : (
+        <DevicePreview device={deviceView}>
+          <div className="npb-canvas-page bg-npb-canvas-page min-h-full min-w-0 shadow-lg overflow-x-clip">
+            {renderEditorStack()}
+          </div>
+        </DevicePreview>
+      )}
     </div>
   );
 }

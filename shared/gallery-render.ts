@@ -58,7 +58,7 @@ export const buildGalleryRenderModel = ({
 		shellStyle: styles as CSSProperties | undefined,
 		gridStyle: {
 			display: "grid",
-			gridTemplateColumns: `repeat(${columns}, 1fr)`,
+			gridTemplateColumns: `repeat(auto-fit, minmax(min(200px, 100%), 1fr))`,
 			gap: "16px",
 			width: "100%",
 		},

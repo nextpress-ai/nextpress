@@ -1,3 +1,7 @@
+import React from 'react';
+import { PublishBlockStyles } from './PublishBlockStyles';
+import { EDITOR_CANVAS_CONTAINER_CSS } from '@shared/publish-block-css';
+
 interface DevicePreviewProps {
   device: 'desktop' | 'tablet' | 'mobile';
   children: React.ReactNode;
@@ -8,12 +12,14 @@ export default function DevicePreview({ device, children }: DevicePreviewProps) 
     switch (device) {
       case 'mobile':
         return {
-          maxWidth: '375px',
+          maxWidth: '390px',
+          width: '100%',
           minHeight: '667px',
         };
       case 'tablet':
         return {
           maxWidth: '768px',
+          width: '100%',
           minHeight: '1024px',
         };
       case 'desktop':
@@ -26,17 +32,20 @@ export default function DevicePreview({ device, children }: DevicePreviewProps) 
   };
 
   return (
-    <div className="flex justify-center">
-      <div 
+    <div className="flex min-w-0 justify-center">
+      <div
         style={{
           ...getDeviceStyles(),
-          width: device === 'desktop' ? '100%' : undefined,
           overflowX: 'hidden',
           overflowY: 'visible',
           transition: 'all 300ms ease-in-out',
+          containerType: 'inline-size',
+          containerName: 'npb-canvas',
         }}
         className="transition-all duration-300 ease-in-out"
       >
+        <PublishBlockStyles />
+        <style dangerouslySetInnerHTML={{ __html: EDITOR_CANVAS_CONTAINER_CSS }} />
         <div
           style={{
             width: '100%',

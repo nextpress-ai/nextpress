@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { BlockConfig, Page, Post, Template } from '@shared/schema-types';
 import { DragDropContext } from '@/lib/dnd';
 import type { DropResult as DndDropResult } from '@/lib/dnd';
@@ -28,6 +28,9 @@ import {
   readBlockFromClipboard,
 } from './block-clipboard';
 import { reIdTemplateBlocks } from '@/lib/re-id-template-blocks';
+import { persistResponsiveDefaultsToBlocks } from '@shared/persist-responsive-defaults';
+import { writePreviewSession } from '@shared/preview-session';
+import { useToast } from '@/hooks/use-toast';
 
 function useMountEffect(effect: () => void | (() => void)) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -224,12 +227,66 @@ export default function PageBuilder({
     'desktop',
   );
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<'blocks' | 'settings'>('settings');
   const [hoverHighlight, setHoverHighlight] = useState<
     'padding' | 'margin' | null
   >(null);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [pageSettingsOpen, setPageSettingsOpen] = useState(false);
+  const { toast } = useToast();
+
+  const previewContentType = isTemplate ? 'template' : resolvedContentType;
+  const previewUrl = useMemo(() => {
+    if (!data?.id) return '';
+    if (isTemplate) return `/preview/template/${data.id}?live=1`;
+    if (resolvedContentType === 'post') return `/preview/post/${data.id}?live=1`;
+    return `/preview/page/${data.id}?live=1`;
+  }, [data?.id, isTemplate, resolvedContentType]);
+
+  useEffect(() => {
+    if (!isPreviewMode || !data?.id) return undefined;
+    const timer = setTimeout(() => {
+      writePreviewSession({
+        contentType: previewContentType,
+        contentId: data.id,
+        payload: {
+          blocks,
+          title: isTemplate ? (data as { name?: string }).name : (data as Page).title,
+          design: (data as Page)?.other?.design,
+          savedAt: Date.now(),
+        },
+      });
+      setPreviewRefreshKey((key) => key + 1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [isPreviewMode, blocks, data, isTemplate, previewContentType]);
+
+  const handleApplyResponsiveDefaults = useCallback(() => {
+    const confirmed = window.confirm(
+      'Apply mobile-friendly defaults to blocks that are missing them? Existing styles you set will not be changed.',
+    );
+    if (!confirmed) return;
+
+    const { blocks: nextBlocks, changedCount } = persistResponsiveDefaultsToBlocks({ blocks });
+    if (changedCount === 0) {
+      toast({
+        title: 'Nothing to update',
+        description: 'All blocks already use responsive defaults.',
+      });
+      return;
+    }
+
+    commitBlocks(nextBlocks);
+    toast({
+      title: 'Defaults applied',
+      description: `Updated ${changedCount} block${changedCount === 1 ? '' : 's'} for better mobile layout.`,
+    });
+  }, [blocks, commitBlocks, toast]);
+
+  const handleTogglePreviewMode = useCallback(() => {
+    setIsPreviewMode((prev) => !prev);
+  }, []);
 
   // Parent notification is now done procedurally in commitBlocks
 
@@ -529,6 +586,8 @@ export default function PageBuilder({
               sidebarVisible={sidebarVisible}
               onToggleSidebar={toggleSidebar}
               onInsertTemplate={handleInsertTemplate}
+              blocks={blocks}
+              onApplyResponsiveDefaults={handleApplyResponsiveDefaults}
             />
           )}
           <div className="flex-1 flex flex-col">
@@ -547,12 +606,17 @@ export default function PageBuilder({
               canUndo={canUndo}
               canRedo={canRedo}
               onPageSettingsClick={() => setPageSettingsOpen(true)}
+              isPreviewMode={isPreviewMode}
+              onTogglePreviewMode={previewUrl ? handleTogglePreviewMode : undefined}
+              onApplyResponsiveDefaults={handleApplyResponsiveDefaults}
             />
             <BuilderCanvas
               blocks={blocks}
               deviceView={deviceView}
               selectedBlockId={selectedBlockId}
               isPreviewMode={isPreviewMode}
+              previewUrl={previewUrl}
+              previewRefreshKey={previewRefreshKey}
               duplicateBlock={handleDuplicate}
               deleteBlock={handleDelete}
               hoverHighlight={hoverHighlight}

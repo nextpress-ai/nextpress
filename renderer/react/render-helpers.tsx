@@ -1,11 +1,9 @@
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import type { CSSProperties } from "react";
 import * as React from "react";
-import { getEntryAnimationAttributes } from "@shared/animation-utils";
-import { resolveTokenMapForSSR, collectBlockModifierCSS } from "@shared/token-resolution";
+import { resolveBlockForSurface } from "@shared/resolve-block-for-surface";
 import { BLOCK_COMPONENTS } from "./block-components";
 
-// Re-export for backward compatibility
 export { collectBlockModifierCSS } from "@shared/token-resolution";
 
 // ─── Content Parsers ─────────────────────────────────────────────────────────
@@ -72,38 +70,20 @@ export interface RenderProps {
  * Handles: token resolution, style merging, className building, animation attrs, children rendering.
  */
 export function getRenderProps(block: BlockConfig): RenderProps {
-	// Resolve tokenMap values for SSR
-	const tokenResult = block.other?.tokenMap
-		? resolveTokenMapForSSR(block.id, block.other.tokenMap, block.other?.units || {})
-		: { style: {}, modifierCSS: "" };
+	const resolved = resolveBlockForSurface({ block, surface: "publish" });
 
-	// Merge styles: block.styles + token custom values
-	const mergedStyles: CSSProperties = {
-		...block.styles,
-		...tokenResult.style,
-	};
+	const mergedClassName = resolved.classNames.join(" ");
 
-	// Merge classNames
-	const mergedClassName = [
-		`block-${block.id}`,
-		block.other?.classNames,
-	].filter(Boolean).join(" ");
+	const attributes: Record<string, unknown> = { ...resolved.attributes };
 
-	// Merge attributes: other.attributes + animation entry attrs
-	const attributes: Record<string, unknown> = {
-		...block.other?.attributes,
-		...(block.other?.animation?.entry ? getEntryAnimationAttributes(block.other.animation.entry) : {}),
-	};
-
-	// Render children recursively
 	const children = renderChildBlocks(block.children || []);
 
 	return {
-		style: mergedStyles,
+		style: resolved.inlineStyles,
 		className: mergedClassName,
 		attributes,
 		children,
-		tokenStyles: tokenResult.style,
+		tokenStyles: resolved.tokenStyles,
 	};
 }
 

@@ -3,7 +3,7 @@
  * Placeholders are used for dynamic content injection.
  */
 
-import { GALLERY_PUBLISH_CSS } from '@shared/gallery-render';
+import { PUBLISH_BLOCK_CSS } from '@shared/publish-block-css';
 import { BUNDLED_FONTS_STYLESHEET } from '@shared/font-catalog';
 
 export interface PageRenderOptions {
@@ -58,6 +58,7 @@ export const PageTemplate = (
           line-height: 1.6;
           color: ${options.textColor || '#333'};
           background-color: ${options.backgroundColor || '#fff'};
+          overflow-x: clip;
         }
         
         #page {
@@ -130,45 +131,7 @@ export const PageTemplate = (
           color: #007cba;
         }
         
-        .wp-block-image {
-          margin: 1.5em 0;
-        }
-        
-        .wp-block-image img {
-          max-width: 100%;
-          height: auto;
-          display: block;
-        }
-        
-        .wp-block-image figcaption {
-          margin-top: 0.5em;
-          font-size: 0.875em;
-          color: #666;
-          text-align: center;
-        }
-
-        ${GALLERY_PUBLISH_CSS}
-        
-        .wp-block-columns {
-          display: flex;
-          gap: 2rem;
-          margin: 1.5em 0;
-        }
-        
-        .wp-block-column {
-          flex: 1;
-        }
-        
-        @media (max-width: 768px) {
-          #main-content {
-            padding: 1rem;
-          }
-          
-          .wp-block-columns {
-            flex-direction: column;
-            gap: 1rem;
-          }
-        }
+        ${PUBLISH_BLOCK_CSS}
       </style>
   
       ${headScripts}

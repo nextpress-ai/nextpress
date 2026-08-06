@@ -377,7 +377,12 @@ export function getContainerOuterShellStyle(
 
 	const needsFlexShell = hasContainerShellSizing(styles) || needsVerticalRoom;
 	if (!needsFlexShell) {
-		return { ...stripped, boxSizing: "border-box" };
+		return {
+			...stripped,
+			width: stripped.width ?? "100%",
+			maxWidth: stripped.maxWidth ?? "100%",
+			boxSizing: "border-box",
+		};
 	}
 
 	const {
@@ -389,6 +394,8 @@ export function getContainerOuterShellStyle(
 	return {
 		...restStripped,
 		...resolvedSizing,
+		width: restStripped.width ?? "100%",
+		maxWidth: restStripped.maxWidth ?? "100%",
 		display: "flex",
 		flexDirection: "column",
 		boxSizing: "border-box",

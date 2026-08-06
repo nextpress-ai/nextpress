@@ -74,7 +74,9 @@ const GroupBlock = createBlockDefinition<GroupContent>({
   handlesOwnChildren: true,
   defaultContent: DEFAULT_SEMANTIC_CONTENT,
   defaultStyles: {
-    padding: "1.25em 2.375em",
+    padding: "1rem 1.25rem",
+    width: "100%",
+    boxSizing: "border-box",
   },
   settings: GroupSettings,
   hasSettings: true,

@@ -48,7 +48,7 @@ export const DEFAULT_DATA: MediaTextData = {
   mediaAlt: PLACEHOLDER_IMAGE_ALT,
   mediaPosition: 'left',
   mediaWidth: 50,
-  isStackedOnMobile: false,
+  isStackedOnMobile: true,
   imageFill: false,
   verticalAlignment: 'center',
   href: '',

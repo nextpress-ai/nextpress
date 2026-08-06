@@ -1,4 +1,8 @@
 import type { BlockConfig, TokenEntry } from "./schema-types";
+import {
+	resolveTokenEntryValue,
+	resolvedTokenScreens,
+} from "./resolve-token-entry.js";
 
 // ─── Shared Constants ────────────────────────────────────────────────────────
 
@@ -33,9 +37,8 @@ export function camelToKebab(str: string): string {
 // ─── SSR Token Resolution ────────────────────────────────────────────────────
 
 /**
- * Resolves tokenMap entries to inline styles for SSR.
- * All entries store their resolved CSS value in entry.style.
- * For custom entries with unitCategory, the unit is appended if the style is purely numeric.
+ * Resolves tokenMap entries to inline styles for SSR and publish surfaces.
+ * Theme tokens (entry.value) and custom values (entry.style) both resolve here.
  */
 export function resolveTokenMapForSSR(
 	blockId: string,
@@ -47,17 +50,7 @@ export function resolveTokenMapForSSR(
 	const modifierEntries: Array<{ entry: TokenEntry; resolvedValue: string }> = [];
 
 	for (const entry of Object.values(tokenMap)) {
-		let resolvedValue: string | null = null;
-
-		if (entry.style) {
-			const isNumeric = /^\d*\.?\d+$/.test(entry.style);
-			if (isNumeric && entry.unitCategory && units[entry.unitCategory]) {
-				resolvedValue = `${entry.style}${units[entry.unitCategory]}`;
-			} else {
-				resolvedValue = entry.style;
-			}
-		}
-
+		const resolvedValue = resolveTokenEntryValue(entry, units);
 		if (!resolvedValue) continue;
 
 		if (entry.modifier) {
@@ -78,8 +71,9 @@ export function resolveTokenMapForSSR(
 				return `${selector}${STATE_MODIFIER_MAP[entry.modifier]} { ${cssProp}: ${resolvedValue}; }`;
 			}
 
-			if (BREAKPOINT_MAP[entry.modifier]) {
-				return `@media (min-width: ${BREAKPOINT_MAP[entry.modifier]}) { ${selector} { ${cssProp}: ${resolvedValue}; } }`;
+			const breakpoint = resolvedTokenScreens[entry.modifier] ?? BREAKPOINT_MAP[entry.modifier];
+			if (breakpoint) {
+				return `@media (min-width: ${breakpoint}) { ${selector} { ${cssProp}: ${resolvedValue}; } }`;
 			}
 
 			return "";

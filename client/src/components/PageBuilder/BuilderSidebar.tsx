@@ -19,6 +19,7 @@ import {
   Sidebar,
 } from 'lucide-react';
 import type { BlockConfig } from '@shared/schema-types';
+import { ResponsiveHealthBanner } from './ResponsiveHealthBanner';
 
 /**
  * Header layout: title left; icon cluster L→R — fold all block groups, collapse sidebar.
@@ -32,6 +33,8 @@ export function BuilderSidebar({
   sidebarVisible,
   onToggleSidebar,
   onInsertTemplate,
+  blocks = [],
+  onApplyResponsiveDefaults,
 }: {
   activeTab: 'blocks' | 'settings';
   setActiveTab: (tab: 'blocks' | 'settings') => void;
@@ -41,6 +44,8 @@ export function BuilderSidebar({
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
   onInsertTemplate?: (blocks: BlockConfig[]) => void;
+  blocks?: BlockConfig[];
+  onApplyResponsiveDefaults?: () => void;
 }) {
   const libraryCategories = useMemo(() => buildBlockLibraryCategories(), []);
 
@@ -151,6 +156,7 @@ export function BuilderSidebar({
             </Tooltip>
           </div>
         </div>
+        <ResponsiveHealthBanner blocks={blocks} onApplyDefaults={onApplyResponsiveDefaults} />
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as 'blocks' | 'settings')}

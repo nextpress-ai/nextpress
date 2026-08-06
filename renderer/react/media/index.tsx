@@ -417,17 +417,21 @@ export function FileBlock(block: BlockConfig) {
  */
 export function MediaTextBlock(block: BlockConfig) {
 	const { style, className, attributes, children } = getRenderProps(block);
-	const content = parseMediaContent(block.content);
+	const structured = parseStructuredContent(block.content);
+	const data =
+		structured && typeof structured === "object" && "data" in structured
+			? (structured.data as Record<string, unknown>)
+			: structured;
 
-	const url = content.url as string;
-	const alt = (content.alt as string) || "";
-	const caption = content.caption as string | undefined;
-	const mediaPosition = (content.mediaPosition as string) || "left";
-	const verticalAlignment = content.verticalAlignment as string | undefined;
-	const href = content.href as string | undefined;
-	const linkTarget = (content.linkTarget as string) || (content.target as string) || undefined;
-	const rel = content.rel as string | undefined;
-	const title = content.title as string | undefined;
+	const url = (data?.mediaUrl as string) || (parseMediaContent(block.content).url as string);
+	const alt = (data?.mediaAlt as string) || "";
+	const mediaPosition = (data?.mediaPosition as string) || "left";
+	const verticalAlignment = data?.verticalAlignment as string | undefined;
+	const isStackedOnMobile = data?.isStackedOnMobile !== false;
+	const href = data?.href as string | undefined;
+	const linkTarget = (data?.linkTarget as string) || undefined;
+	const rel = data?.rel as string | undefined;
+	const title = data?.title as string | undefined;
 
 	if (!url) {
 		return null;
@@ -437,6 +441,7 @@ export function MediaTextBlock(block: BlockConfig) {
 		"wp-block-media-text",
 		mediaPosition === "right" ? "has-media-on-the-right" : "",
 		verticalAlignment ? `is-vertically-aligned-${verticalAlignment}` : "",
+		isStackedOnMobile ? "is-stacked-on-mobile" : "",
 		className,
 	]
 		.filter(Boolean)
@@ -451,7 +456,6 @@ export function MediaTextBlock(block: BlockConfig) {
 	const mediaContent = (
 		<>
 			<img src={url} alt={alt || ""} style={{ display: "none" }} />
-			{caption && <figcaption>{caption}</figcaption>}
 		</>
 	);
 

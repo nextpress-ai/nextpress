@@ -117,6 +117,8 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 			}) as const,
 		defaultStyles: {
 			width: "100%",
+			maxWidth: "100%",
+			height: "auto",
 		},
 	},
 	"core/gallery": {
@@ -202,6 +204,14 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 		type: "container",
 		category: "layout",
 		defaultContent: () => structured({ tagName: "div" }),
+		defaultStyles: {
+			padding: "24px",
+			width: "100%",
+			maxWidth: "100%",
+			marginLeft: "auto",
+			marginRight: "auto",
+			boxSizing: "border-box",
+		},
 	},
 	"core/group": {
 		name: "core/group",

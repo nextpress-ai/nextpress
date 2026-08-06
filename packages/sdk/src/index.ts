@@ -31,6 +31,11 @@ export {
 	type BlockSchemaCatalogEntry,
 } from "./blocks/validate-block-tree.js";
 export {
+	validateBlockResponsiveHealth,
+	type ResponsiveHealthIssue,
+	type ResponsiveHealthResult,
+} from "./blocks/validate-block-responsive-health.js";
+export {
 	patchBlockTree,
 	type BlockPatchOp,
 	type PatchBlockTreeResult,

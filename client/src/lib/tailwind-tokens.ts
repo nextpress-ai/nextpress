@@ -1,6 +1,12 @@
 import resolveConfig from 'tailwindcss/resolveConfig'
 import { tailwindThemeExtend } from '@shared/tailwind-theme'
 import { camelToKebab, STATE_MODIFIER_MAP } from '@shared/token-resolution'
+import {
+  composeCustomTokenEntry,
+  resolveThemeTokenEntry,
+  resolveTokenEntryValue,
+  resolvedTokenScreens,
+} from '@shared/resolve-token-entry'
 
 const fullConfig = resolveConfig({
 	content: [],
@@ -23,7 +29,7 @@ export const tokenFontWeight = fullConfig.theme.fontWeight
 export const tokenBorderRadius = fullConfig.theme.borderRadius
 
 /** Responsive breakpoints (for modifier CSS generation) */
-export const tokenScreens = fullConfig.theme.screens
+export const tokenScreens = resolvedTokenScreens
 
 /** Unit categories — available units per category */
 export const unitCategories: Record<string, string[]> = {
@@ -81,57 +87,14 @@ export { STATE_MODIFIER_MAP as stateModifierMap } from '@shared/token-resolution
  * using the Tailwind resolved config theme data.
  */
 export function resolveTokenValue(entry: import('@shared/schema-types').TokenEntry): string | null {
-  if (!entry.value) return null
-
-  const { property, value, variant } = entry
-
-  // Color properties -> look up in theme.colors
-  if (property === "backgroundColor" || property === "color" || property === "borderColor") {
-    const colorGroup = (fullConfig.theme.colors as Record<string, any>)[value]
-    if (typeof colorGroup === "string") return colorGroup
-    if (colorGroup && variant) return colorGroup[variant] ?? null
-    return null
-  }
-
-  // Spacing properties -> look up in theme.spacing
-  if (entry.unitCategory === "spacing") {
-    return (fullConfig.theme.spacing as Record<string, string>)[value] ?? null
-  }
-
-  // Font size -> look up in theme.fontSize
-  if (property === "fontSize") {
-    const fs = (fullConfig.theme.fontSize as Record<string, any>)[value]
-    if (typeof fs === "string") return fs
-    if (Array.isArray(fs)) return fs[0]
-    return null
-  }
-
-  // Font weight -> look up in theme.fontWeight
-  if (property === "fontWeight") {
-    return (fullConfig.theme.fontWeight as Record<string, string>)[value] ?? null
-  }
-
-  // Border radius -> look up in theme.borderRadius
-  if (property === "borderRadius") {
-    return (fullConfig.theme.borderRadius as Record<string, string>)[value] ?? null
-  }
-
-  return null
+  return resolveThemeTokenEntry(entry)
 }
 
 /**
  * Composes a custom (non-token) entry's value with its unit category.
  */
 export function composeCustomValue(entry: import('@shared/schema-types').TokenEntry, units: Record<string, string>): string | null {
-  if (!entry.style) return null
-
-  // If entry has a unitCategory, append the active unit for that category
-  if (entry.unitCategory && units[entry.unitCategory]) {
-    return `${entry.style}${units[entry.unitCategory]}`
-  }
-
-  // No unit needed (colors, etc.) - use style directly
-  return entry.style
+  return composeCustomTokenEntry(entry, units)
 }
 
 /**
@@ -150,9 +113,7 @@ export function resolveTokenMap(
   const modifierEntries: Array<{ entry: import('@shared/schema-types').TokenEntry; resolvedValue: string }> = []
 
   for (const entry of Object.values(tokenMap)) {
-    const resolvedValue = entry.value
-      ? resolveTokenValue(entry)
-      : composeCustomValue(entry, units)
+    const resolvedValue = resolveTokenEntryValue(entry, units)
 
     if (!resolvedValue) continue
 

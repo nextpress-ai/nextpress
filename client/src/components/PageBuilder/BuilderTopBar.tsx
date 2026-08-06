@@ -13,6 +13,8 @@ import {
   RotateCw,
   Sun,
   Moon,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { PagesMenu, BlogMenu, DesignMenu } from "@/components/PageBuilder/EditorBar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -33,6 +35,9 @@ export function BuilderTopBar({
   onPageSettingsClick,
   contentType = "page",
   onApplyTemplate,
+  isPreviewMode = false,
+  onTogglePreviewMode,
+  onApplyResponsiveDefaults,
 }: {
   data: any;
   isTemplate: boolean;
@@ -51,6 +56,9 @@ export function BuilderTopBar({
     templateId: string;
     blocks: BlockConfig[];
   }) => void;
+  isPreviewMode?: boolean;
+  onTogglePreviewMode?: () => void;
+  onApplyResponsiveDefaults?: () => void;
 }) {
   const { isDark, toggleTheme } = useTheme();
   return (
@@ -102,8 +110,23 @@ export function BuilderTopBar({
             </Button>
             {deviceView !== "desktop" ? (
               <span className="text-xs text-npb-text-muted">
-                Style edits apply to {deviceView} only
+                Style edits apply to {deviceView === "mobile" ? "mobile (<768px)" : "tablet (768+)"} only
               </span>
+            ) : (
+              <span className="text-xs text-npb-text-muted hidden sm:inline">
+                Desktop (base styles)
+              </span>
+            )}
+            {onTogglePreviewMode ? (
+              <Button
+                variant={isPreviewMode ? "default" : "outline"}
+                size="sm"
+                aria-label={isPreviewMode ? "Exit live preview" : "Live preview"}
+                title={isPreviewMode ? "Exit live preview" : "Live preview in iframe"}
+                onClick={onTogglePreviewMode}
+              >
+                {isPreviewMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
             ) : null}
           </div>
         </div>
@@ -168,6 +191,7 @@ export function BuilderTopBar({
             <PagesMenu
               currentPageId={data?.id}
               onPageSettingsClick={onPageSettingsClick}
+              onApplyResponsiveDefaults={onApplyResponsiveDefaults}
             >
               <Button
                 type="button"

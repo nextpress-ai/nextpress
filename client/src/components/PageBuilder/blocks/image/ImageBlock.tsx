@@ -183,7 +183,8 @@ const ImageBlock = createBlockDefinition<ImageContent>({
   category: "media",
   defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
-    width: "500px",
+    width: "100%",
+    maxWidth: "100%",
     height: "auto",
   },
   settings: ImageSettings,

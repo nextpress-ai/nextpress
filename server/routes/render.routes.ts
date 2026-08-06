@@ -5,21 +5,10 @@ import { safeTryAsync } from "../utils";
 import path from "path";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
-import { collectBlockModifierCSS } from "@shared/token-resolution";
-import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
-import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
-import { renderBlocksToHtml, getHydrationScript } from "../../renderer/to-html";
-import { PageTemplate } from "../../renderer/templates/page";
-import type { PageRenderOptions } from "../../renderer/templates/page";
-import type { BlockConfig } from "@shared/schema-types";
-import type { BlockAnimation } from "@shared/schema-types";
 import { enrichPostForApi } from "@shared/posts/post-other";
 import { resolveSiteRenderContext } from "./shared/resolve-site-render-context";
 import { getSiteBlogIds } from "./shared/site-content";
-
-import { generateBlockAnimationCSS, getEntryAnimationBaseCSS } from "@shared/animation-utils";
-import { collectBlockCustomCss, collectBlockJsScripts } from "@shared/collect-block-scripts";
-import { BUNDLED_FONTS_STYLESHEET } from "@shared/font-catalog";
+import { buildPublishedPageHtml } from "./shared/build-published-page-html";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -170,9 +159,9 @@ export function createRenderRoutes(deps: Deps): Router {
 					return res.status(404).send(html);
 				}
 
-				const html = await themeManager.renderContent("page", {
+				const html = buildPublishedPageHtml({
 					page,
-					site: context.settings,
+					canonicalUrl: `${req.protocol}://${req.get("host")}/pages/${page.id}`,
 				});
 
 				res.setHeader("Content-Type", "text/html");
@@ -307,98 +296,10 @@ export function createRenderRoutes(deps: Deps): Router {
 					return;
 				}
 
-				// 5. Phase 2: Render blocks to HTML
-				const blocks = (
-					Array.isArray(page.blocks) ? page.blocks : []
-				) as BlockConfig[];
-
-				// Render blocks to HTML directly (no adapter needed)
-				const blockContentHtml = renderBlocksToHtml(blocks);
-
-				// Collect all custom CSS from blocks (sanitized)
-				const allCustomCss = collectBlockCustomCss(blocks);
-
-				// Collect animation CSS rules (hover/loop) from blocks using shared utility
-				const animationCssRules = blocks
-					.filter((b) => b.other?.animation)
-					.map((b) => generateBlockAnimationCSS(b.id, b.other!.animation!))
-					.filter(Boolean)
-					.join("\n");
-
-				// Collect modifier CSS rules (hover states, responsive) from token system
-				const modifierCssRules = blocks
-					.map((b) =>
-						collectBlockModifierCSS(b, {
-							modifierSelector:
-								resolveButtonBlockModifierSelector(b) ??
-								resolveFormFieldModifierSelector(b),
-						}),
-					)
-					.filter(Boolean)
-					.join("\n");
-
-				// Check if any blocks have animations
-				const hasAnimations = blocks.some((b) => b.other?.animation);
-				const hasEntryAnimations = blocks.some((b) => b.other?.animation?.entry);
-
-				const pageOther =
-					page.other && typeof page.other === "object"
-						? (page.other as Record<string, unknown>)
-						: {};
-				const design =
-					(pageOther.design as Record<string, unknown> | undefined) ?? {};
-
-				// Build headScripts with conditional animation assets
-				const headParts: string[] = [
-					`<link rel="stylesheet" href="${BUNDLED_FONTS_STYLESHEET}">`,
-				];
-				if (allCustomCss) headParts.push(`<style>${allCustomCss}</style>`);
-				if (animationCssRules) headParts.push(`<style>${animationCssRules}</style>`);
-				if (modifierCssRules) headParts.push(`<style>${modifierCssRules}</style>`);
-				if (hasAnimations) headParts.push(`<link rel="stylesheet" href="/vendor/animate.min.css">`);
-				if (hasEntryAnimations) {
-					headParts.push(`<style>${getEntryAnimationBaseCSS()}</style>`);
-				}
-				const headScripts = headParts.filter(Boolean).join("\n");
-
-				const bodyParts: string[] = [];
-				if (hasEntryAnimations) {
-					bodyParts.push(`<script src="/vendor/entry-animations.js"></script>`);
-					bodyParts.push(`<script>initEntryAnimations();</script>`);
-				}
-				const blockJsScripts = collectBlockJsScripts(blocks);
-				if (blockJsScripts) {
-					bodyParts.push(blockJsScripts);
-				}
-				const bodyScripts = bodyParts.join("\n");
-
-				// Get hydration script
-				const hydrateScript = getHydrationScript();
-
-				// Build full HTML page — SEO from page.other (design already extracted)
-				const seo = (pageOther.seo as Record<string, unknown> | undefined) ?? {};
-
-				const pageDescription = seo.metaDescription || "";
-				const renderOptions: PageRenderOptions = {
-					fontFamily: design.fontFamily || undefined,
-					containerWidth: design.containerWidth || undefined,
-					padding: design.padding || undefined,
-					backgroundColor: design.backgroundColor?.style || undefined,
-					textColor: design.textColor?.style || undefined,
-					noIndex: seo.noIndex || false,
-					customMeta: Array.isArray(seo.customMeta) ? seo.customMeta : undefined,
-				};
-
-				const html = PageTemplate(
-					seo.metaTitle || page.title || "Untitled Page",
-					pageDescription,
-					seo.canonicalUrl || `${req.protocol}://${req.get("host")}${req.originalUrl}`,
-					headScripts,
-					blockContentHtml,
-					bodyScripts,
-					hydrateScript,
-					renderOptions,
-				);
+				const html = buildPublishedPageHtml({
+					page,
+					canonicalUrl: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+				});
 
 				res.setHeader("Content-Type", "text/html");
 				res.send(html);
