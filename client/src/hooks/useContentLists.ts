@@ -88,7 +88,8 @@ export function useContentLists(options: UseContentListsOptions = {}) {
 		isLoading: templatesLoading,
 		error: templatesError,
 	} = useQuery<ContentListResponse<Template>, Error, Template[]>({
-		queryKey: ["/api/templates"],
+		queryKey: ["/api/templates", { siteId: activeSiteId }],
+		enabled: !!activeSiteId,
 		select: (data) => normalizeScopedList(data, "templates", activeSiteId),
 	});
 

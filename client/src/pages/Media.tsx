@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, Search, Edit, Trash2, Download, Image, FileText, Film, Music, File } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { AdminListPaginationFooter } from "@/components/admin/admin-list-pagination-footer";
+import { useAdminListPagination } from "@/hooks/use-admin-list-pagination";
 import { apiRequest } from "@/lib/queryClient";
 import { appendSiteIdToUrl } from "@/lib/site-api";
 import { useActiveSite } from "@/hooks/useActiveSite";
@@ -43,6 +44,13 @@ export default function MediaPage() {
   const { data: mediaData, isLoading } = useQuery({
     queryKey: ['/api/media', getQueryParams()],
     enabled: !!activeSiteId,
+  });
+
+  const visiblePage = useAdminListPagination({
+    activeSiteId,
+    page,
+    setPage,
+    totalPages: (mediaData as { total_pages?: number } | undefined)?.total_pages,
   });
 
   const uploadMutation = useMutation({
@@ -226,7 +234,7 @@ export default function MediaPage() {
                   className="pl-10 w-64"
                 />
               </div>
-              <p className="text-xs text-npb-text-muted">Search applies to the current page only.</p>
+              <p className="text-xs text-npb-text-muted">Search runs across all items on this site.</p>
               <Select value={selectedFilter} onValueChange={handleFilterChange}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filter by type" />
@@ -358,7 +366,7 @@ export default function MediaPage() {
 
           {mediaData ? (
             <AdminListPaginationFooter
-              page={page}
+              page={visiblePage}
               perPage={20}
               total={(mediaData as { total?: number }).total ?? 0}
               totalPages={(mediaData as { total_pages?: number }).total_pages ?? 1}

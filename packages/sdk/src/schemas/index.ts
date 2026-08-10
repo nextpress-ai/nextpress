@@ -155,6 +155,9 @@ export const listPostsQuerySchema = paginationSchema.extend({
 	/** Dashboard alias — normalized to `blog_id` before the request is sent. */
 	blogId: uuidSchema.optional(),
 	siteId: z.string().uuid().optional(),
+	sort: z.enum(['title', 'createdAt', 'updatedAt', 'menuOrder', 'status']).optional(),
+	order: z.enum(['asc', 'desc']).optional(),
+	search: z.string().max(200).optional(),
 });
 
 export const createPostSchema = z.object({
@@ -179,6 +182,9 @@ export const updatePostSchema = z
 export const listPagesQuerySchema = paginationSchema.extend({
 	status: contentStatusSchema.optional(),
 	siteId: z.string().uuid().optional(),
+	sort: z.enum(['title', 'createdAt', 'updatedAt', 'menuOrder', 'status']).optional(),
+	order: z.enum(['asc', 'desc']).optional(),
+	search: z.string().max(200).optional(),
 });
 
 export const createPageSchema = z.object({

@@ -25,6 +25,8 @@ import {
 import { Plus, Search, Trash2, Pencil, Copy, Layout } from "lucide-react";
 import { useLocation } from "wouter";
 import { AdminLayout } from "@/components/AdminLayout";
+import { AdminListPaginationFooter } from "@/components/admin/admin-list-pagination-footer";
+import { useAdminListPagination } from "@/hooks/use-admin-list-pagination";
 import { TemplateModal } from "@/components/Templates";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +57,23 @@ export default function Templates() {
   const { data: templatesData, isLoading } = useQuery<TemplatesApiResponse>({
     queryKey: ['/api/templates', { type: typeFilter !== 'all' ? typeFilter : undefined, page, per_page: 10 }],
   });
+
+  const visiblePage = useAdminListPagination({
+    activeSiteId: typeFilter,
+    page,
+    setPage,
+    totalPages: templatesData?.total_pages,
+  });
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleTypeFilterChange = (value: string) => {
+    setTypeFilter(value);
+    setPage(1);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -174,11 +193,11 @@ export default function Templates() {
                     <Input
                       placeholder="Search templates..."
                       value={search}
-                      onChange={(e) => setSearch(e.target.value)}
+                      onChange={(e) => handleSearchChange(e.target.value)}
                       className="pl-10 w-64"
                     />
                   </div>
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <Select value={typeFilter} onValueChange={handleTypeFilterChange}>
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="All Types" />
                     </SelectTrigger>
@@ -280,32 +299,16 @@ export default function Templates() {
                 </Table>
               )}
 
-              {/* Pagination */}
-              {templatesData && templatesData.total_pages > 1 && (
-                <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-npb-text-muted">
-                    Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, templatesData.total)} of {templatesData.total} templates
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage(page - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      disabled={page >= templatesData.total_pages}
-                      onClick={() => setPage(page + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
+              {templatesData ? (
+                <AdminListPaginationFooter
+                  page={visiblePage}
+                  perPage={10}
+                  total={templatesData.total}
+                  totalPages={templatesData.total_pages}
+                  itemLabel="templates"
+                  onPageChange={setPage}
+                />
+              ) : null}
             </CardContent>
           </Card>
 

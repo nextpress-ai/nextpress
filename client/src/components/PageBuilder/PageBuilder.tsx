@@ -34,6 +34,7 @@ import { writePreviewSession } from '@shared/preview-session';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { CreatePageModal } from '@/components/Pages/CreatePageModal';
+import { CreatePostDialog } from '@/components/posts/CreatePostDialog';
 import { runParentOwnedSave } from '@/lib/run-parent-save';
 import { SkipLink } from '@/components/a11y/skip-link';
 import { MotionSidebarPanel } from '@/components/motion/motion-primitives';
@@ -77,7 +78,7 @@ interface PageBuilderProps {
   onBlocksChange?: (blocks: BlockConfig[]) => void;
   onSave?: (updatedData: Page | Post | Template) => void;
   onSettingsUpdate?: (updatedData: Page | Post | Template) => void;
-  onSaveRequest?: (blocks: BlockConfig[]) => void | Promise<boolean>;
+  onSaveRequest?: (blocks: BlockConfig[]) => void | Promise<boolean | Page | Post | Template>;
   onPreview?: () => void;
   pageMeta?: {
     title?: string;
@@ -124,6 +125,7 @@ export default function PageBuilder({
   const blocks = currentState; // Direct derivation - no separate state
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [showCreatePageModal, setShowCreatePageModal] = useState(false);
+  const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const historyMutationRef = useRef(0);
   const pendingDeleteUndoRef = useRef<number | null>(null);
   const parentSaveInFlightRef = useRef(false);
@@ -327,7 +329,13 @@ export default function PageBuilder({
     if (onSaveRequest) {
       runParentOwnedSave({
         inFlight: parentSaveInFlightRef,
-        request: () => onSaveRequest(blocks),
+        request: async () => {
+          const result = await onSaveRequest(blocks);
+          if (result && typeof result === 'object' && 'id' in result) {
+            onSave?.(result);
+          }
+          return Boolean(result);
+        },
       });
       return;
     }
@@ -685,6 +693,7 @@ export default function PageBuilder({
                 onTogglePreviewMode={previewUrl ? handleTogglePreviewMode : undefined}
                 onApplyResponsiveDefaults={handleApplyResponsiveDefaults}
                 onCreateNewPage={() => setShowCreatePageModal(true)}
+                onCreateNewPost={() => setShowCreatePostModal(true)}
               />
               <div className="flex min-h-0 flex-1">
                 <BuilderCanvas
@@ -726,6 +735,10 @@ export default function PageBuilder({
         <CreatePageModal
           open={showCreatePageModal}
           onOpenChange={setShowCreatePageModal}
+        />
+        <CreatePostDialog
+          open={showCreatePostModal}
+          onOpenChange={setShowCreatePostModal}
         />
         </div>
       </BlockActionsProvider>

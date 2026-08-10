@@ -23,7 +23,7 @@ import { Plus, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { appendSiteIdToUrl } from "@/lib/site-api";
 import { useActiveSite } from "@/hooks/useActiveSite";
-import { useToast } from "@/hooks/use-toast";
+import { showErrorToast, showSuccessToast } from "@/lib/sonner-toast";
 import type { Blog } from "@shared/schema-types";
 
 interface BlogsResponse {
@@ -97,7 +97,6 @@ interface CreatePostDialogProps {
  */
 export function CreatePostDialog({ open, onOpenChange, initialTitle = '' }: CreatePostDialogProps) {
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
   const { activeSiteId } = useActiveSite();
 
   // Dialog state - step is separate for clarity
@@ -143,7 +142,7 @@ export function CreatePostDialog({ open, onOpenChange, initialTitle = '' }: Crea
       );
       const blog = await response.json();
 
-      toast({ title: "Blog created", description: `"${blog.name}" is ready` });
+      showSuccessToast(`"${blog.name}" is ready`);
 
       // Refresh the blogs list and auto-select the new blog
       await refetchBlogs();
@@ -153,11 +152,7 @@ export function CreatePostDialog({ open, onOpenChange, initialTitle = '' }: Crea
       setStep("select-blog");
     } catch (err) {
       console.error("Error creating blog:", err);
-      toast({
-        title: "Error",
-        description: "Failed to create blog",
-        variant: "destructive",
-      });
+      showErrorToast("Failed to create blog");
     } finally {
       dispatchForm({ type: 'SET_CREATING_BLOG', payload: false });
     }
@@ -177,16 +172,12 @@ export function CreatePostDialog({ open, onOpenChange, initialTitle = '' }: Crea
       });
       const post = await response.json();
 
-      toast({ title: "Post created", description: "Opening editor..." });
+      showSuccessToast("Post created successfully");
       handleClose(false);
       setLocation(`/admin/page-builder/post/${post.id}`);
     } catch (err) {
       console.error("Error creating post:", err);
-      toast({
-        title: "Error",
-        description: "Failed to create post",
-        variant: "destructive",
-      });
+      showErrorToast("Failed to create post");
     } finally {
       dispatchForm({ type: 'SET_CREATING', payload: false });
     }

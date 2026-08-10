@@ -21,6 +21,15 @@ import {
   parseExpectedVersion,
   stripVersionControlFields,
 } from '@shared/content-version';
+import {
+  DEFAULT_POST_LIST_SORT,
+  POST_LIST_SORT_FIELDS,
+  parseContentListSearch,
+  parseContentListSort,
+  toModelOrderBy,
+} from '@shared/content-list-query';
+import { buildTitleSearchFilters } from '../lib/content-list-filters';
+import { z } from 'zod';
 
 /**
  * Creates Posts CRUD routes for the NextPress API.
@@ -95,9 +104,26 @@ export function createPostsRoutes(deps: Deps): Router {
           filters.push({ where: 'blogId', in: blogIds });
         }
 
+        const listSort = parseContentListSort({
+          sort: req.query.sort,
+          order: req.query.order,
+          allowedFields: POST_LIST_SORT_FIELDS,
+          defaults: DEFAULT_POST_LIST_SORT,
+        });
+        const search = parseContentListSearch(req.query.search);
+        filters.push(...buildTitleSearchFilters({ search }));
+
         const posts = filters.length > 0
-          ? await models.posts.findManyWhere(filters, { limit, offset })
-          : await models.posts.findMany({ limit, offset });
+          ? await models.posts.findManyWhere(filters, {
+              limit,
+              offset,
+              orderBy: toModelOrderBy(listSort),
+            })
+          : await models.posts.findMany({
+              limit,
+              offset,
+              orderBy: toModelOrderBy(listSort),
+            });
 
         const total = await models.posts.count({
           where: filters.length > 0 ? filters : undefined,
@@ -123,6 +149,51 @@ export function createPostsRoutes(deps: Deps): Router {
 
       res.json(result);
     })
+  );
+
+  const postReorderSchema = z.object({
+    siteId: z.string().uuid(),
+    items: z
+      .array(
+        z.object({
+          id: z.string().uuid(),
+          menuOrder: z.number().int().min(0),
+        }),
+      )
+      .min(1)
+      .max(100),
+  });
+
+  /**
+   * PATCH /api/posts/reorder - Batch update manual list order for posts on a site
+   */
+  router.patch(
+    '/reorder',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const parsed = postReorderSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: 'Invalid reorder payload' });
+      }
+
+      await assertAuthenticatedSiteAccess({
+        req,
+        models,
+        siteId: parsed.data.siteId,
+      });
+
+      const siteBlogIds = await getSiteBlogIds({ models, siteId: parsed.data.siteId });
+
+      for (const item of parsed.data.items) {
+        const existing = await models.posts.findById(item.id);
+        if (!existing?.blogId || !siteBlogIds.includes(existing.blogId)) {
+          return res.status(403).json({ message: 'One or more posts are not accessible on this site' });
+        }
+        await models.posts.update(item.id, { menuOrder: item.menuOrder });
+      }
+
+      res.json({ ok: true, updated: parsed.data.items.length });
+    }),
   );
 
   /**

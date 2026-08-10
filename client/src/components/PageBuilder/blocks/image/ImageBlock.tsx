@@ -51,9 +51,24 @@ function ImageRenderer({
     [onStylesChange],
   );
 
-  const { imgRef, createHandleMouseDown } = useImageResize({
+  const { imgRef, createHandleMouseDown, resizeByKeyboard } = useImageResize({
     onResizeEnd: handleResizeEnd,
   });
+
+  const handleResizeKeyDown = useCallback(
+    (corner: keyof typeof HANDLE_POSITIONS, event: React.KeyboardEvent) => {
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        resizeByKeyboard(corner, 8);
+        return;
+      }
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        resizeByKeyboard(corner, -8);
+      }
+    },
+    [resizeByKeyboard],
+  );
 
   if (!url) return null;
 
@@ -109,13 +124,9 @@ function ImageRenderer({
                 role="button"
                 tabIndex={0}
                 aria-label="Resize image"
-                title="Drag corner to resize"
+                title="Drag corner to resize. Arrow keys adjust width."
                 onMouseDown={createHandleMouseDown(corner)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                  }
-                }}
+                onKeyDown={(event) => handleResizeKeyDown(corner, event)}
                 className="npb-image-resize-handle"
                 style={{
                   ...position,

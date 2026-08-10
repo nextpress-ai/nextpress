@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS posts (
 	template_id UUID,
 	blocks JSONB DEFAULT '[]',
 	version INTEGER NOT NULL DEFAULT 0,
+	menu_order INTEGER DEFAULT 0,
 	settings JSONB DEFAULT '{}',
 	created_at TIMESTAMP DEFAULT NOW(),
 	updated_at TIMESTAMP DEFAULT NOW(),

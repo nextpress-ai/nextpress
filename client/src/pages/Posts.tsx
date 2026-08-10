@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Eye, Download } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Download, GripVertical } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AdminLayout } from "@/components/AdminLayout";
 import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
@@ -13,6 +13,9 @@ import {
   ContentListBulkBar,
   ContentListPaginationFooter,
   ContentListToolbar,
+  SortableHeader,
+  AdminListViewModeToggle,
+  ContentCardGrid,
 } from "@/components/admin/content-list";
 import { ContentStatusSelect } from "@/components/admin/content-status-select";
 import { CreatePostDialog } from "@/components/posts/CreatePostDialog";
@@ -21,6 +24,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { postEditorPath } from "@/lib/admin-content-routes";
 import { useActiveSite } from "@/hooks/useActiveSite";
 import { useAdminListPagination } from "@/hooks/use-admin-list-pagination";
+import { useAdminListViewMode } from "@/hooks/use-admin-list-view-mode";
+import { useReorderList } from "@/hooks/use-reorder-list";
+import type { ContentListSortOrder } from "@shared/content-list-query";
+import { DEFAULT_POST_LIST_SORT } from "@shared/content-list-query";
 import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { useToast } from "@/hooks/use-toast";
 import type { EnrichedPost } from "@shared/posts/post-other";
@@ -62,13 +69,27 @@ function PostsList({
   activeSiteError = null,
 }: PostsListProps) {
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState(DEFAULT_POST_LIST_SORT.sort);
+  const [order, setOrder] = useState<ContentListSortOrder>(DEFAULT_POST_LIST_SORT.order);
+  const { viewMode, setViewMode } = useAdminListViewMode("posts");
   const [page, setPage] = useState(1);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [idsToDelete, setIdsToDelete] = useState<string[]>([]);
   const [location, setLocation] = useLocation();
-  const postsQueryKey = ['/api/posts', { status: 'any', type: 'post', page, per_page: 10, siteId: activeSiteId }];
+  const postsQueryKey = [
+    '/api/posts',
+    {
+      status: 'any',
+      page,
+      per_page: 10,
+      siteId: activeSiteId,
+      sort,
+      order,
+      ...(search.trim() ? { search: search.trim() } : {}),
+    },
+  ];
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -102,11 +123,33 @@ function PostsList({
     totalPages: postsData?.total_pages,
   });
 
-  const filteredPosts = postsData?.posts?.filter((post: EnrichedPost) =>
-    post.title.toLowerCase().includes(search.toLowerCase())
-  ) || [];
+  const posts = postsData?.posts ?? [];
+  const selection = useBulkSelection(posts);
 
-  const selection = useBulkSelection(filteredPosts);
+  const reorderEnabled = sort === 'menuOrder' && order === 'asc';
+  const reorderMutation = useMutation({
+    mutationFn: async (items: Array<{ id: string; menuOrder: number }>) => {
+      await apiRequest('PATCH', '/api/posts/reorder', {
+        siteId: activeSiteId,
+        items,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Could not update post order',
+        variant: 'destructive',
+      });
+    },
+  });
+  const reorder = useReorderList({
+    items: posts,
+    enabled: reorderEnabled,
+    onReorder: reorderMutation.mutateAsync,
+  });
 
   useEffect(() => {
     selection.clear();
@@ -114,6 +157,16 @@ function PostsList({
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
+    setPage(1);
+  };
+
+  const handleSortChange = (field: string) => {
+    if (sort === field) {
+      setOrder((current) => (current === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSort(field as typeof sort);
+      setOrder(field === 'menuOrder' ? 'asc' : 'desc');
+    }
     setPage(1);
   };
 
@@ -182,6 +235,7 @@ function PostsList({
             placeholder="Search posts..."
             onSearchChange={handleSearchChange}
           />
+          <AdminListViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
           <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
             <Download className="w-4 h-4 mr-2" />
             Import
@@ -223,14 +277,47 @@ function PostsList({
             <div role="status" className="py-8 text-center text-npb-text-muted">
               Loading posts...
             </div>
-          ) : filteredPosts.length === 0 ? (
+          ) : posts.length === 0 ? (
             <div className="text-center py-8 text-npb-text-muted">
               No posts found. <Button variant="link" onClick={handleNewPost}>Create your first post</Button>
             </div>
+          ) : viewMode === 'cards' ? (
+            <ContentCardGrid
+              items={posts}
+              hrefForItem={(item) => postEditorPath(item.id)}
+              renderMeta={(item) => (
+                <span>{item.status || 'draft'} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}</span>
+              )}
+              renderActions={(item) => (
+                <>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={postEditorPath(item.id)}>
+                      <Edit className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      window.open(
+                        item.status === 'publish' && item.slug
+                          ? `/post/${item.slug}`
+                          : `/preview/post/${item.id}`,
+                        '_blank',
+                      )
+                    }>
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
+            />
           ) : (
             <Table className="admin-list-table">
               <TableHeader>
                 <TableRow>
+                  {reorderEnabled ? (
+                    <TableHead className="w-8" aria-label="Drag to reorder" />
+                  ) : null}
                   <TableHead className="w-10">
                     <Checkbox
                       checked={
@@ -244,15 +331,34 @@ function PostsList({
                       aria-label="Select all posts on this page"
                     />
                   </TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead>
+                    <SortableHeader label="Title" field="title" activeField={sort} order={order} onSortChange={handleSortChange} />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader label="Status" field="status" activeField={sort} order={order} onSortChange={handleSortChange} />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader label="Date" field="updatedAt" activeField={sort} order={order} onSortChange={handleSortChange} />
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPosts.map((post: EnrichedPost) => (
-                  <TableRow key={post.id} data-state={selection.selectedIds.has(post.id) ? "selected" : undefined}>
+                {posts.map((post: EnrichedPost) => (
+                  <TableRow
+                    key={post.id}
+                    data-state={selection.selectedIds.has(post.id) ? "selected" : undefined}
+                    className={reorder.dragOverId === post.id ? 'bg-npb-accent/5' : undefined}
+                    draggable={reorderEnabled}
+                    onDragStart={reorder.onDragStart(post.id)}
+                    onDragOver={reorder.onDragOver(post.id)}
+                    onDrop={reorder.onDrop(post.id)}
+                    onDragEnd={reorder.onDragEnd}>
+                    {reorderEnabled ? (
+                      <TableCell className="w-8 cursor-grab text-npb-text-muted">
+                        <GripVertical className="h-4 w-4" aria-hidden />
+                      </TableCell>
+                    ) : null}
                     <TableCell>
                       <Checkbox
                         checked={selection.selectedIds.has(post.id)}

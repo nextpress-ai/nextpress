@@ -42,6 +42,7 @@ export function BuilderTopBar({
   onTogglePreviewMode,
   onApplyResponsiveDefaults,
   onCreateNewPage,
+  onCreateNewPost,
 }: {
   data: any;
   isTemplate: boolean;
@@ -66,6 +67,7 @@ export function BuilderTopBar({
   onTogglePreviewMode?: () => void;
   onApplyResponsiveDefaults?: () => void;
   onCreateNewPage?: () => void;
+  onCreateNewPost?: () => void;
 }) {
   const { isDark, toggleTheme } = useTheme();
   return (
@@ -173,7 +175,10 @@ export function BuilderTopBar({
 
           <div className="text-sm text-npb-text-muted">{blocks.length} blocks</div>
 
-          <BlogMenu currentPostId={data?.id} blogId={data?.blogId ?? undefined}>
+          <BlogMenu
+            currentPostId={data?.id}
+            blogId={data?.blogId ?? undefined}
+            onCreateNewPost={onCreateNewPost}>
             <Button variant="outline" size="sm" className="gap-2">
               <Pen className="w-4 h-4" />
               Blog

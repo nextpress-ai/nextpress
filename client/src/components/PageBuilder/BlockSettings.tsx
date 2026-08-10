@@ -135,6 +135,7 @@ interface BlockSettingsProps {
 
 export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSettingsProps) {
   const [customCss, setCustomCss] = useState(block.customCss || '');
+  const [paddingLinked, setPaddingLinked] = useState(true);
   const accessor = getBlockStateAccessor(block.id);
 
   // Display conditions from block settings
@@ -623,6 +624,40 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
               }}
               className="mb-4"
             />
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <span className="text-xs text-npb-text-muted">
+                {paddingLinked ? 'All sides stay linked' : 'Each side edits independently'}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setPaddingLinked((linked) => !linked)}>
+                {paddingLinked ? 'Edit sides separately' : 'Link all sides'}
+              </Button>
+            </div>
+            {paddingLinked ? (
+              <FreeformSpacingSideRow
+                label="All sides"
+                value={(() => {
+                  const sides = getPaddingValues();
+                  const allMatch =
+                    sides.top === sides.right &&
+                    sides.top === sides.bottom &&
+                    sides.top === sides.left;
+                  return allMatch ? sides.top : sides.top || '';
+                })()}
+                hoverArea="padding"
+                onHoverArea={onHoverArea}
+                onCommit={(full) => {
+                  commitSpacingSide('paddingTop', full);
+                  commitSpacingSide('paddingRight', full);
+                  commitSpacingSide('paddingBottom', full);
+                  commitSpacingSide('paddingLeft', full);
+                }}
+              />
+            ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {(
                 [
@@ -642,6 +677,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 />
               ))}
             </div>
+            )}
           </div>
 
           {/* Margin */}

@@ -125,6 +125,20 @@ describe('BlogMenu', () => {
     expect(dialog).toHaveAttribute('data-type', 'post');
   });
 
+  test('calls onCreateNewPost instead of fallback dialog when provided', async () => {
+    const onCreateNewPost = vi.fn();
+    renderBlogMenu({ onCreateNewPost });
+
+    const trigger = screen.getByText('Blog');
+    await user.click(trigger);
+
+    const createItem = screen.getByText('Create New Post');
+    await user.click(createItem);
+
+    expect(onCreateNewPost).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('create-dialog')).not.toBeInTheDocument();
+  });
+
   test('highlights current post in command palette', async () => {
     renderBlogMenu({ currentPostId: 'post-2' });
     

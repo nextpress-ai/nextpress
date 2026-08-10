@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Check, Trash2, AlertTriangle, MessageCircle, Edit } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
+import { AdminListPaginationFooter } from "@/components/admin/admin-list-pagination-footer";
+import { useAdminListPagination } from "@/hooks/use-admin-list-pagination";
 import { apiRequest } from "@/lib/queryClient";
 import { useActiveSite } from "@/hooks/useActiveSite";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +41,23 @@ export default function CommentsPage() {
     queryKey: ['/api/comments', getQueryParams()],
     enabled: Boolean(activeSiteId),
   });
+
+  const visiblePage = useAdminListPagination({
+    activeSiteId: `${activeSiteId ?? ''}:${selectedStatus}`,
+    page,
+    setPage,
+    totalPages: (commentsData as { total_pages?: number } | undefined)?.total_pages,
+  });
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleStatusChange = (value: string) => {
+    setSelectedStatus(value);
+    setPage(1);
+  };
 
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -199,11 +218,11 @@ export default function CommentsPage() {
                 <Input
                   placeholder="Search comments..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10 w-64"
                 />
               </div>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -330,32 +349,16 @@ export default function CommentsPage() {
                 </Table>
               )}
 
-              {/* Pagination */}
-              {(commentsData && (commentsData as any).total_pages > 1 && (
-                <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-npb-text-muted">
-                    Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, (commentsData as any).total)} of {(commentsData as any).total} comments
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage(page - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      disabled={page >= (commentsData as any).total_pages}
-                      onClick={() => setPage(page + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )) as React.ReactNode}
+              {commentsData ? (
+                <AdminListPaginationFooter
+                  page={visiblePage}
+                  perPage={20}
+                  total={(commentsData as { total?: number }).total ?? 0}
+                  totalPages={(commentsData as { total_pages?: number }).total_pages ?? 1}
+                  itemLabel="comments"
+                  onPageChange={setPage}
+                />
+              ) : null}
             </CardContent>
           </Card>
 

@@ -56,7 +56,15 @@ function PostListRenderer({
         status: statusParam,
       });
       if (cfg.blogId) params.set('blog_id', cfg.blogId);
-      if (cfg.orderBy) params.set('order_by', cfg.orderBy);
+      if (cfg.orderBy) {
+        const sortField =
+          cfg.orderBy === 'date'
+            ? 'createdAt'
+            : cfg.orderBy === 'title'
+              ? 'title'
+              : cfg.orderBy;
+        params.set('sort', sortField);
+      }
       if (cfg.order) params.set('order', cfg.order);
 
       const res = await fetch(`/api/posts?${params.toString()}`, {

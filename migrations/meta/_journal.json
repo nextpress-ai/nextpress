@@ -45,10 +45,10 @@
       "breakpoints": true
     },
     {
-      "idx": 6,
+      "idx": 7,
       "version": "7",
-      "when": 1783100000000,
-      "tag": "0006_posts_version",
+      "when": 1783200000000,
+      "tag": "0007_posts_menu_order",
       "breakpoints": true
     }
   ]

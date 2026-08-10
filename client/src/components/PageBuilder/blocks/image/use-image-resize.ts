@@ -28,6 +28,8 @@ interface UseImageResizeResult {
   resizeWidth: number | null;
   /** Create onMouseDown handler for a specific resize handle */
   createHandleMouseDown: (handle: ResizeHandle) => (e: React.MouseEvent) => void;
+  /** Nudge width from the keyboard in pixel steps */
+  resizeByKeyboard: (handle: ResizeHandle, delta: number) => void;
 }
 
 /**
@@ -171,9 +173,30 @@ export function useImageResize({ onResizeEnd }: UseImageResizeOptions): UseImage
     [handleMouseMove, handleMouseUp],
   );
 
+  const resizeByKeyboard = useCallback(
+    (handle: ResizeHandle, delta: number) => {
+      const img = imgRef.current;
+      if (!img) return;
+
+      const rect = img.getBoundingClientRect();
+      const signedDelta = handle === "bottom-right" ? delta : -delta;
+      let newWidth = Math.max(50, Math.round(rect.width + signedDelta));
+
+      const canvas = img.closest('[aria-label="Canvas"]');
+      if (canvas) {
+        const canvasWidth = canvas.getBoundingClientRect().width;
+        newWidth = Math.min(newWidth, Math.max(50, canvasWidth));
+      }
+
+      onResizeEnd(newWidth);
+    },
+    [onResizeEnd],
+  );
+
   return {
     imgRef,
     resizeWidth: resizeWidthRef.current,
     createHandleMouseDown,
+    resizeByKeyboard,
   };
 }

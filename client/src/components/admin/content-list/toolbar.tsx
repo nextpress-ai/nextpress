@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { ContentListToolbarProps } from './types';
 
-const CURRENT_PAGE_SEARCH_HINT = 'Search applies to the current page only.';
+const CURRENT_PAGE_SEARCH_HINT = 'Search runs across all items on this site.';
 const SEARCH_INPUT_ID = 'content-list-search';
 
 /**
@@ -19,7 +19,7 @@ export function ContentListToolbar({
   compact = false,
 }: ContentListToolbarProps): JSX.Element {
   return (
-    <div className={cn(compact ? 'flex items-center' : 'flex flex-col items-end gap-1', className)}>
+    <div className={cn(compact ? 'flex flex-col items-end gap-0.5' : 'flex flex-col items-end gap-1', className)}>
       <label htmlFor={SEARCH_INPUT_ID} className="sr-only">
         {placeholder}
       </label>
@@ -31,13 +31,13 @@ export function ContentListToolbar({
         <Input
           id={SEARCH_INPUT_ID}
           placeholder={placeholder}
-          title={compact ? hint : undefined}
+          title={hint}
           value={value}
           onChange={(event) => onSearchChange(event.target.value)}
           className={cn('pl-10', compact ? 'h-8 w-44 sm:w-52 text-sm' : 'w-64')}
         />
       </div>
-      {!compact ? <p className="text-xs text-npb-text-muted">{hint}</p> : null}
+      <p className={cn('text-xs text-npb-text-muted', compact ? 'text-right' : '')}>{hint}</p>
     </div>
   );
 }

@@ -18,7 +18,15 @@ import {
   parseExpectedVersion,
   stripVersionControlFields,
 } from '@shared/content-version';
-import { deletePageWithDependencies, PageDeleteError } from '../lib/delete-page';
+import {
+  DEFAULT_PAGE_LIST_SORT,
+  PAGE_LIST_SORT_FIELDS,
+  parseContentListSearch,
+  parseContentListSort,
+  toModelOrderBy,
+} from '@shared/content-list-query';
+import { buildTitleSearchFilters } from '../lib/content-list-filters';
+import { z } from 'zod';
 
 /**
  * Validates that a slug is unique (application-level check before insert).
@@ -107,13 +115,27 @@ export function createPagesRoutes(deps: Deps): Router {
           filters.push({ where: 'siteId', equals: siteId });
         }
 
+        const listSort = parseContentListSort({
+          sort: req.query.sort,
+          order: req.query.order,
+          allowedFields: PAGE_LIST_SORT_FIELDS,
+          defaults: DEFAULT_PAGE_LIST_SORT,
+        });
+        const search = parseContentListSearch(req.query.search);
+        filters.push(...buildTitleSearchFilters({ search }));
+
         const pages =
           filters.length > 0
             ? await models.pages.findManyWhere(filters, {
                 limit,
                 offset,
+                orderBy: toModelOrderBy(listSort),
               })
-            : await models.pages.findMany({ limit, offset });
+            : await models.pages.findMany({
+                limit,
+                offset,
+                orderBy: toModelOrderBy(listSort),
+              });
 
         const total = await models.pages.count({
           where: filters.length > 0 ? filters : undefined,
@@ -139,6 +161,49 @@ export function createPagesRoutes(deps: Deps): Router {
 
       res.json(result);
     })
+  );
+
+  const pageReorderSchema = z.object({
+    siteId: z.string().uuid(),
+    items: z
+      .array(
+        z.object({
+          id: z.string().uuid(),
+          menuOrder: z.number().int().min(0),
+        }),
+      )
+      .min(1)
+      .max(100),
+  });
+
+  /**
+   * PATCH /api/pages/reorder - Batch update menu order for pages on a site
+   */
+  router.patch(
+    '/reorder',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const parsed = pageReorderSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: 'Invalid reorder payload' });
+      }
+
+      await assertAuthenticatedSiteAccess({
+        req,
+        models,
+        siteId: parsed.data.siteId,
+      });
+
+      for (const item of parsed.data.items) {
+        const existing = await models.pages.findById(item.id);
+        if (!existing || existing.siteId !== parsed.data.siteId) {
+          return res.status(403).json({ message: 'One or more pages are not accessible on this site' });
+        }
+        await models.pages.update(item.id, { menuOrder: item.menuOrder });
+      }
+
+      res.json({ ok: true, updated: parsed.data.items.length });
+    }),
   );
 
   /**

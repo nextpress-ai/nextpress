@@ -25,6 +25,8 @@ interface BlogMenuProps {
   children: ReactNode;
   currentPostId?: string;
   blogId?: string;
+  /** Opens in-builder create post dialog instead of navigating away */
+  onCreateNewPost?: () => void;
 }
 
 /**
@@ -32,7 +34,12 @@ interface BlogMenuProps {
  * Opens Command palette for searchable post list
  * Can filter posts by blogId if provided
  */
-export function BlogMenu({ children, currentPostId, blogId }: BlogMenuProps) {
+export function BlogMenu({
+  children,
+  currentPostId,
+  blogId,
+  onCreateNewPost,
+}: BlogMenuProps) {
   const [, setLocation] = useLocation();
   const [showCommand, setShowCommand] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -44,6 +51,10 @@ export function BlogMenu({ children, currentPostId, blogId }: BlogMenuProps) {
   };
 
   const handleCreateNew = () => {
+    if (onCreateNewPost) {
+      onCreateNewPost();
+      return;
+    }
     setShowCreate(true);
   };
 
@@ -95,12 +106,14 @@ export function BlogMenu({ children, currentPostId, blogId }: BlogMenuProps) {
         </CommandList>
       </CommandDialog>
 
-      {/* Create Post Dialog */}
-      <CreateContentDialog
-        open={showCreate}
-        onOpenChange={setShowCreate}
-        type="post"
-      />
+      {/* Fallback create flow when builder does not supply in-place dialog */}
+      {!onCreateNewPost ? (
+        <CreateContentDialog
+          open={showCreate}
+          onOpenChange={setShowCreate}
+          type="post"
+        />
+      ) : null}
     </>
   );
 }

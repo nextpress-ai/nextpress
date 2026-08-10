@@ -6,13 +6,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Eye, Pencil, Home } from "lucide-react";
+import { Plus, Trash2, Eye, Pencil, Home, GripVertical } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
 import {
   ContentListBulkBar,
   ContentListPaginationFooter,
   ContentListToolbar,
+  SortableHeader,
+  AdminListViewModeToggle,
+  ContentCardGrid,
 } from "@/components/admin/content-list";
 import { ContentStatusSelect } from "@/components/admin/content-status-select";
 import { CreatePageModal } from "@/components/Pages/CreatePageModal";
@@ -21,6 +24,10 @@ import { pageEditorPath } from "@/lib/admin-content-routes";
 import { appendSiteIdToUrl, buildSiteOptionUrl } from "@/lib/site-api";
 import { useActiveSite } from "@/hooks/useActiveSite";
 import { useAdminListPagination } from "@/hooks/use-admin-list-pagination";
+import { useAdminListViewMode } from "@/hooks/use-admin-list-view-mode";
+import { useReorderList } from "@/hooks/use-reorder-list";
+import type { ContentListSortOrder } from "@shared/content-list-query";
+import { DEFAULT_PAGE_LIST_SORT } from "@shared/content-list-query";
 import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { useToast } from "@/hooks/use-toast";
 import type { Page } from "@shared/schema-types";
@@ -66,12 +73,26 @@ function PagesList({
   activeSiteError = null,
 }: PagesListProps) {
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState(DEFAULT_PAGE_LIST_SORT.sort);
+  const [order, setOrder] = useState<ContentListSortOrder>(DEFAULT_PAGE_LIST_SORT.order);
+  const { viewMode, setViewMode } = useAdminListViewMode("pages");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [location, setLocation] = useLocation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [idsToDelete, setIdsToDelete] = useState<string[]>([]);
-  const pagesQueryKey = ['/api/pages', { status: 'any', page, per_page: 10, siteId: activeSiteId }];
+  const pagesQueryKey = [
+    '/api/pages',
+    {
+      status: 'any',
+      page,
+      per_page: 10,
+      siteId: activeSiteId,
+      sort,
+      order,
+      ...(search.trim() ? { search: search.trim() } : {}),
+    },
+  ];
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -118,14 +139,37 @@ function PagesList({
     },
   });
 
-  const filteredPages = pagesData?.pages?.filter((page: Page) =>
-    page.title.toLowerCase().includes(search.toLowerCase())
-  ) || [];
+  const pages = pagesData?.pages ?? [];
   const homepageSlug = homepageOption?.value;
   const isHomepage = (target: Page) => !!homepageSlug && target.slug === homepageSlug;
-  const deletablePages = filteredPages.filter((page) => !isHomepage(page));
+  const deletablePages = pages.filter((page) => !isHomepage(page));
 
   const selection = useBulkSelection(deletablePages);
+
+  const reorderEnabled = sort === 'menuOrder' && order === 'asc';
+  const reorderMutation = useMutation({
+    mutationFn: async (items: Array<{ id: string; menuOrder: number }>) => {
+      await apiRequest('PATCH', '/api/pages/reorder', {
+        siteId: activeSiteId,
+        items,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Could not update page order',
+        variant: 'destructive',
+      });
+    },
+  });
+  const reorder = useReorderList({
+    items: pages,
+    enabled: reorderEnabled,
+    onReorder: reorderMutation.mutateAsync,
+  });
 
   useEffect(() => {
     selection.clear();
@@ -133,6 +177,16 @@ function PagesList({
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
+    setPage(1);
+  };
+
+  const handleSortChange = (field: string) => {
+    if (sort === field) {
+      setOrder((current) => (current === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSort(field as typeof sort);
+      setOrder(field === 'menuOrder' ? 'asc' : 'desc');
+    }
     setPage(1);
   };
 
@@ -256,6 +310,7 @@ function PagesList({
             placeholder="Search pages..."
             onSearchChange={handleSearchChange}
           />
+          <AdminListViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
           <Button className="npb-btn-accent" onClick={handleNewPage}>
             <Plus className="w-4 h-4 mr-2" />
             Add New Page
@@ -293,14 +348,35 @@ function PagesList({
                 <div role="status" className="py-8 text-center text-npb-text-muted">
                   Loading pages...
                 </div>
-              ) : filteredPages.length === 0 ? (
+              ) : pages.length === 0 ? (
                 <div className="text-center py-8 text-npb-text-muted">
                   No pages found. <Button variant="link" onClick={handleNewPage}>Create your first page</Button>
                 </div>
+              ) : viewMode === 'cards' ? (
+                <ContentCardGrid
+                  items={pages}
+                  hrefForItem={(item) => pageEditorPath(item.id)}
+                  renderMeta={(item) => (
+                    <span>{item.status || 'draft'} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}</span>
+                  )}
+                  renderActions={(item) => (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => handlePageBuilder(item.id)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleView(item)}>
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </>
+                  )}
+                />
               ) : (
                 <Table className="admin-list-table">
                   <TableHeader>
                     <TableRow>
+                      {reorderEnabled ? (
+                        <TableHead className="w-8" aria-label="Drag to reorder" />
+                      ) : null}
                       <TableHead className="w-10">
                         <Checkbox
                           checked={
@@ -314,15 +390,34 @@ function PagesList({
                           aria-label="Select all pages on this page"
                         />
                       </TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
+                      <TableHead>
+                        <SortableHeader label="Title" field="title" activeField={sort} order={order} onSortChange={handleSortChange} />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHeader label="Status" field="status" activeField={sort} order={order} onSortChange={handleSortChange} />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHeader label="Date" field="updatedAt" activeField={sort} order={order} onSortChange={handleSortChange} />
+                      </TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPages.map((page: Page) => (
-                      <TableRow key={page.id} data-state={selection.selectedIds.has(page.id) ? "selected" : undefined}>
+                    {pages.map((page: Page) => (
+                      <TableRow
+                        key={page.id}
+                        data-state={selection.selectedIds.has(page.id) ? "selected" : undefined}
+                        className={reorder.dragOverId === page.id ? 'bg-npb-accent/5' : undefined}
+                        draggable={reorderEnabled}
+                        onDragStart={reorder.onDragStart(page.id)}
+                        onDragOver={reorder.onDragOver(page.id)}
+                        onDrop={reorder.onDrop(page.id)}
+                        onDragEnd={reorder.onDragEnd}>
+                        {reorderEnabled ? (
+                          <TableCell className="w-8 cursor-grab text-npb-text-muted">
+                            <GripVertical className="h-4 w-4" aria-hidden />
+                          </TableCell>
+                        ) : null}
                         <TableCell>
                           <Checkbox
                             checked={selection.selectedIds.has(page.id)}

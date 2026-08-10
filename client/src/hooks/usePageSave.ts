@@ -1,10 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { BlockConfig, Page, Post } from "@shared/schema-types";
 import { VERSION_STALE } from "@shared/content-version";
-import { stripVisualContentFromBlocks } from "@shared/strip-visual-content-from-blocks";
 import { savePageDraft } from "@/lib/pageDraftStorage";
+import { saveEditorBlocks } from "@/lib/save-editor-blocks";
 
 type SaveContentType = "page" | "post";
 
@@ -12,13 +11,6 @@ function getEntityLabel(isTemplate: boolean, contentType: SaveContentType) {
 	if (isTemplate) return "Template";
 	return contentType === "post" ? "Post" : "Page";
 }
-
-const readExpectedVersion = (data: Page | Post, contentType: SaveContentType): number => {
-	if (contentType === "page") {
-		return (data as Page).version ?? 0;
-	}
-	return (data as Post & { version?: number }).version ?? 0;
-};
 
 export function usePageSave({
 	isTemplate,
@@ -46,27 +38,16 @@ export function usePageSave({
 		mutationFn: async (builderData: BlockConfig[]) => {
 			if (!data) return null;
 
-			const blocks = stripVisualContentFromBlocks(builderData);
-
-			const endpoint =
-				contentType === "post" ? `/api/posts/${data.id}` : `/api/pages/${data.id}`;
-			const expectedVersion =
-				pageMeta?.version ?? readExpectedVersion(data, contentType);
-
-			const payload: Record<string, unknown> = {
+			return saveEditorBlocks({
+				contentType,
+				id: data.id,
+				expectedVersion: pageMeta?.version,
 				title: pageMeta?.title ?? data.title,
 				slug: pageMeta?.slug ?? data.slug,
-				status: pageMeta?.status ?? data.status,
-				blocks,
-				expectedVersion,
-			};
-
-			if (pageMeta?.other) {
-				payload.other = pageMeta.other;
-			}
-
-			const response = await apiRequest("PUT", endpoint, payload);
-			return await response.json();
+				status: pageMeta?.status ?? data.status ?? "draft",
+				blocks: builderData,
+				other: pageMeta?.other,
+			});
 		},
 		onSuccess: (updatedData) => {
 			const isPage = !isTemplate && contentType === "page";
@@ -78,7 +59,7 @@ export function usePageSave({
 				title: "Success",
 				description: `${getEntityLabel(isTemplate, contentType)} saved successfully`,
 			});
-			onSave?.(updatedData);
+			onSave?.(updatedData as Page | Post);
 
 			if (isTemplate) {
 				queryClient.invalidateQueries({ queryKey: ["/api/templates"] });

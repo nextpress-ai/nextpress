@@ -28,11 +28,8 @@ import {
   savePostDraft,
 } from '@/lib/postDraftStorage';
 import { VERSION_STALE } from '@shared/content-version';
-import { stripVisualContentFromBlocks } from '@shared/strip-visual-content-from-blocks';
-import {
-  buildEditorSavePayload,
-  resolveEditorSaveTarget,
-} from '@/lib/editor-save-target';
+import { saveEditorBlocks } from '@/lib/save-editor-blocks';
+import { runParentOwnedSave } from '@/lib/run-parent-save';
 import {
   shouldRestoreLocalDraft,
   stampDraftTimestamp,
@@ -154,6 +151,28 @@ const adaptTemplateToEditorData = (template: Template): EditorData =>
     other: (template.other as Record<string, unknown>) ?? {},
   }) as unknown as EditorData;
 
+const readRemoteEntityMeta = (
+  updated: Page | Post | Template,
+  isTemplate: boolean,
+): { title: string; slug: string; status: string; version: number } => {
+  if (isTemplate) {
+    return {
+      title: (updated as Template).name,
+      slug: '',
+      status: 'publish',
+      version: 0,
+    };
+  }
+
+  const entity = updated as Page | Post;
+  return {
+    title: entity.title ?? '',
+    slug: entity.slug ?? '',
+    status: entity.status ?? 'draft',
+    version: readExpectedVersion(entity),
+  };
+};
+
 export default function PageBuilderEditor({
   postId,
   isSlug = false,
@@ -165,6 +184,7 @@ export default function PageBuilderEditor({
   const [pageState, dispatchPageState] = useReducer(pageStateReducer, initialPageState);
   const [isSaving, setIsSaving] = useState(false);
   const draftSaveRef = useRef<NodeJS.Timeout | null>(null);
+  const parentSaveInFlightRef = useRef(false);
   const latestPageStateRef = useRef<PageState>(initialPageState);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -250,15 +270,12 @@ export default function PageBuilderEditor({
       localDraft = localResult.status ? localResult.data : null;
     }
 
-    const toTs = (value: unknown) => {
-      if (!value) return 0;
-      if (value instanceof Date) return value.getTime();
-      return Date.parse(String(value));
-    };
-
-    const remoteTs = toTs(data.updatedAt);
-    const localTs = toTs(localDraft?.updatedAt);
-    const useLocal = localDraft && localTs > remoteTs;
+    const useLocal =
+      localDraft &&
+      shouldRestoreLocalDraft({
+        localUpdatedAt: localDraft.updatedAt as Date | string | null | undefined,
+        remoteUpdatedAt: data.updatedAt,
+      });
     const source = useLocal ? localDraft : data;
 
     const initialBlocks = setParentIds(
@@ -269,6 +286,8 @@ export default function PageBuilderEditor({
     const initialSlug = String(source?.slug || '');
     const initialStatus = String(source?.status || 'draft');
 
+    const initialVersion = readExpectedVersion(data);
+
     dispatchPageState({
       type: 'LOAD',
       payload: {
@@ -276,6 +295,7 @@ export default function PageBuilderEditor({
         title: initialTitle,
         slug: initialSlug,
         status: initialStatus,
+        version: initialVersion,
       },
     });
     latestPageStateRef.current = {
@@ -283,6 +303,7 @@ export default function PageBuilderEditor({
       title: initialTitle,
       slug: initialSlug,
       status: initialStatus,
+      version: initialVersion,
       isInitialized: true,
     };
 
@@ -293,7 +314,24 @@ export default function PageBuilderEditor({
 
     // Persist initial draft (skip for templates)
     if (!isTemplate) {
-      if (isPost) {
+      if (useLocal) {
+        const stampedDraft = stampDraftTimestamp({
+          ...data,
+          title: initialTitle,
+          slug: initialSlug,
+          status: initialStatus,
+          blocks: initialBlocks,
+        });
+        if (isPost) {
+          savePostDraft(data.id, stampedDraft);
+        } else {
+          savePageDraftWithHistory(
+            data.id,
+            { ...stampedDraft, version: initialVersion },
+            3,
+          );
+        }
+      } else if (isPost) {
         savePostDraft(data.id, data);
       } else {
         savePageDraft(data.id, data);
@@ -338,35 +376,41 @@ export default function PageBuilderEditor({
     draftSaveRef.current = setTimeout(() => {
       // When inline-editing a post, save draft to post storage
       if (inlinePostId && inlinePostData) {
-        savePostDraft(inlinePostId, {
-          ...inlinePostData,
-          title: next.title,
-          slug: next.slug,
-          status: next.status,
-          blocks: next.blocks,
-        });
+        savePostDraft(
+          inlinePostId,
+          stampDraftTimestamp({
+            ...inlinePostData,
+            title: next.title,
+            slug: next.slug,
+            status: next.status,
+            blocks: next.blocks,
+          }),
+        );
         return;
       }
 
       if (isPost) {
-        savePostDraft(data.id, {
-          ...data,
-          title: next.title,
-          slug: next.slug,
-          status: next.status,
-          blocks: next.blocks,
-        });
+        savePostDraft(
+          data.id,
+          stampDraftTimestamp({
+            ...data,
+            title: next.title,
+            slug: next.slug,
+            status: next.status,
+            blocks: next.blocks,
+          }),
+        );
       } else {
         savePageDraftWithHistory(
           data.id,
-          {
+          stampDraftTimestamp({
             ...data,
             title: next.title,
             slug: next.slug,
             status: next.status,
             blocks: next.blocks,
             version: data.version ?? 0,
-          },
+          }),
           3,
         );
       }
@@ -490,6 +534,67 @@ export default function PageBuilderEditor({
     queueDraftSave(meta);
   };
 
+  const handleRemoteEntityUpdate = useCallback(
+    (updated: Page | Post | Template) => {
+      if (!data?.id) return;
+
+      const isInlineTarget =
+        inlinePostId != null && updated.id === inlinePostId;
+
+      if (isInlineTarget) {
+        setInlinePostData(updated as Post);
+        queryClient.setQueryData([`/api/posts/${inlinePostId}`], updated);
+      } else {
+        queryClient.setQueryData([`${apiBase}/${data.id}`], updated);
+      }
+
+      const meta = readRemoteEntityMeta(updated, isTemplate);
+      dispatchPageState({ type: 'UPDATE_METADATA', payload: meta });
+      latestPageStateRef.current = {
+        ...latestPageStateRef.current,
+        ...meta,
+      };
+
+      if (
+        !isTemplate &&
+        !isInlineTarget &&
+        !isPost &&
+        'slug' in updated &&
+        updated.slug
+      ) {
+        storeSlugToIdMapping(updated.slug, updated.id);
+      }
+
+      queryClient.invalidateQueries({ queryKey: [apiBase] });
+    },
+    [apiBase, data?.id, inlinePostId, isPost, isTemplate, queryClient],
+  );
+
+  const clearPersistedDraft = useCallback(() => {
+    if (!data?.id) return;
+
+    if (inlinePostId) {
+      clearPostDraft(inlinePostId);
+      return;
+    }
+
+    if (isTemplate) return;
+
+    if (isPost) {
+      clearPostDraft(data.id);
+    } else {
+      clearPageDraft(data.id);
+    }
+  }, [data?.id, inlinePostId, isPost, isTemplate]);
+
+  const handlePublished = useCallback(
+    (updated: Page | Post) => {
+      handleRemoteEntityUpdate(updated);
+      clearPersistedDraft();
+    },
+    [clearPersistedDraft, handleRemoteEntityUpdate],
+  );
+
   if (isLoading || (data && !pageState.isInitialized)) {
     return (
       <div className="flex h-screen bg-npb-canvas-bg">
@@ -540,7 +645,7 @@ export default function PageBuilderEditor({
         title: 'Success',
         description: 'Post saved successfully',
       });
-      clearPostDraft(inlinePostId);
+      clearPersistedDraft();
       queryClient.invalidateQueries({
         queryKey: [`/api/posts/${inlinePostId}`],
       });
@@ -554,14 +659,11 @@ export default function PageBuilderEditor({
       description: `${label} saved successfully`,
     });
 
-    if (isTemplate) {
-      // Templates don't use drafts — just invalidate the query
+    if (!isTemplate) {
+      clearPersistedDraft();
+    } else {
       queryClient.invalidateQueries({ queryKey: [`${apiBase}/${postId}`] });
       queryClient.invalidateQueries({ queryKey: [apiBase] });
-    } else if (isPost) {
-      clearPostDraft(data.id);
-    } else {
-      clearPageDraft(data.id);
     }
     queryClient.invalidateQueries({ queryKey: [`${apiBase}/${postId}`] });
     queryClient.invalidateQueries({ queryKey: [apiBase] });
@@ -569,14 +671,11 @@ export default function PageBuilderEditor({
 
   const handlePageBuilderSave = async (
     blocksOverride?: BlockConfig[],
-  ): Promise<boolean> => {
+  ): Promise<Page | Post | Template | false> => {
     if (!data) return false;
 
     setIsSaving(true);
     try {
-      const blocks = stripVisualContentFromBlocks(
-        blocksOverride ?? pageState.blocks,
-      );
       const editorContentType = inlinePostId
         ? 'post'
         : isTemplate
@@ -584,47 +683,26 @@ export default function PageBuilderEditor({
           : isPost
             ? 'post'
             : 'page';
-      const target = resolveEditorSaveTarget({
+
+      const updated = await saveEditorBlocks({
         contentType: editorContentType,
         id: inlinePostId ?? data.id,
         expectedVersion: readExpectedVersion(inlinePostData ?? data),
-      });
-      const payload = buildEditorSavePayload({
-        target,
         title: pageState.title,
         slug: pageState.slug,
         status: pageState.status,
-        blocks,
+        blocks: Array.isArray(blocksOverride) ? blocksOverride : pageState.blocks,
       });
 
-      // When inline-editing a post, save to the post API
-      if (inlinePostId) {
-        const response = await apiRequest('PUT', target.endpoint, payload);
-        const updated = await response.json();
-        savePostDraft(updated.id, updated);
-        clearPostDraft(updated.id);
-        setInlinePostData(updated);
-        queryClient.setQueryData([`/api/posts/${inlinePostId}`], updated);
-        handleSave();
-        return true;
-      }
+      handleRemoteEntityUpdate(updated);
+      clearPersistedDraft();
 
-      const response = await apiRequest('PUT', target.endpoint, payload);
-      const updated = await response.json();
-
-      // Persist and clear draft (skip for templates)
-      if (isTemplate) {
-        // Templates don't use drafts
-      } else if (isPost) {
-        savePostDraft(updated.id, updated);
-        clearPostDraft(updated.id);
-      } else {
-        savePageDraft(updated.id, updated);
-        clearPageDraft(updated.id);
-      }
-      queryClient.setQueryData([`${apiBase}/${data.id}`], updated);
-      handleSave();
-      return true;
+      const label = isTemplate ? 'Template' : isPost || inlinePostId ? 'Post' : 'Page';
+      toast({
+        title: 'Success',
+        description: `${label} saved successfully`,
+      });
+      return updated;
     } catch (err) {
       console.error(`Error saving ${type}:`, err);
       const error = err as Error & { code?: string };
@@ -766,7 +844,12 @@ export default function PageBuilderEditor({
 
             <Button
               size="sm"
-              onClick={handlePageBuilderSave}
+              onClick={() => {
+                runParentOwnedSave({
+                  inFlight: parentSaveInFlightRef,
+                  request: () => handlePageBuilderSave(),
+                });
+              }}
               disabled={isSaving}
               className="flex items-center gap-2 npb-btn-accent"
               data-testid="button-save">
@@ -777,7 +860,7 @@ export default function PageBuilderEditor({
               <PublishDialog
                 post={isInlineEditing ? inlinePostData ?? undefined : data}
                 blocks={pageState.blocks}
-                onPublished={handleSave}
+                onPublished={handlePublished}
                 disabled={isSaving}
                 contentType={isInlineEditing || isPost ? 'post' : 'page'}
               />
@@ -795,13 +878,16 @@ export default function PageBuilderEditor({
             blocks={pageState.blocks}
             onBlocksChange={handleBlocksChange}
             onSave={handleSave}
+            onSettingsUpdate={handleRemoteEntityUpdate}
             onSaveRequest={handlePageBuilderSave}
             onPreview={handlePreview}
             pageMeta={{
               title: pageState.title,
               slug: pageState.slug,
               status: pageState.status,
-              version: isInlineEditing ? 0 : data.version,
+              version: inlinePostId
+                ? readExpectedVersion(inlinePostData ?? data)
+                : pageState.version,
             }}
             onPageMetaChange={handlePageMetaChange}
             currentPostId={inlinePostId || data?.id}
