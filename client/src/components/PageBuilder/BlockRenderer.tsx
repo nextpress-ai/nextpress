@@ -22,7 +22,7 @@ import {
   hasContainerShellSizing,
   stackNeedsVerticalPlacementRoom,
 } from "@shared/block-container-placement";
-import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
+import { resolveSpacingSides } from '@/lib/resolve-spacing-sides';
 import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
 import {
   Tooltip,
@@ -387,18 +387,10 @@ export default function BlockRenderer({
     ? (hoverHighlight ?? actions?.hoverHighlight ?? null)
     : null;
 
-  const marginString: string = (block.styles?.margin as string) || '0px';
-  const parseMargin = (value: string): [string, string, string, string] => {
-    const parts = value.trim().split(/\s+/);
-    if (parts.length === 1) return [parts[0], parts[0], parts[0], parts[0]];
-    if (parts.length === 2) return [parts[0], parts[1], parts[0], parts[1]];
-    if (parts.length === 3) return [parts[0], parts[1], parts[2], parts[1]];
-    return [parts[0], parts[1], parts[2], parts[3]];
-  };
-  const [mTop, mRight, mBottom, mLeft] = parseMargin(marginString);
-  const paddingString: string = (block.styles?.padding as string) || '0px';
-  const parsePadding = parseMargin;
-  const [pTop, pRight, pBottom, pLeft] = parsePadding(paddingString);
+  const paddingSides = resolveSpacingSides({ styles: block.styles as Record<string, unknown> | undefined, prefix: 'padding' });
+  const marginSides = resolveSpacingSides({ styles: block.styles as Record<string, unknown> | undefined, prefix: 'margin' });
+  const { top: pTop, right: pRight, bottom: pBottom, left: pLeft } = paddingSides;
+  const { top: mTop, right: mRight, bottom: mBottom, left: mLeft } = marginSides;
 
   // Resolve tokenMap to inline styles + modifier CSS
   const tokenResolution = block.other?.tokenMap
@@ -498,8 +490,8 @@ export default function BlockRenderer({
    * hover-anywhere behavior.
    */
   const useTopToolbarHoverStrip = isContainer && !isPreview;
-  /** Toolbar is hover-only so it never sticks when a block stays selected without pointer motion. */
-  const showBlockToolbar = isHovered;
+  /** Toolbar stays visible while selected so actions remain reachable without hover. */
+  const showBlockToolbar = isHovered || effectiveSelected;
   const baseBlockLabel = blockRegistry[block.name]?.label || block.name;
   const iconRefForToolbar =
     block.name === 'core/icon' ? extractIconReferenceFromBlockContent(block.content) : null;
@@ -576,7 +568,7 @@ export default function BlockRenderer({
           className={`${!isPreview ? 'cursor-pointer' : ''} transition-all duration-200`}>
           <div
             data-block-id={block.id}
-            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'block-ring-fade' : ''} ${!isPreview && isHovered && !effectiveSelected ? 'npb-canvas-block-hover' : ''} relative`}
+            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'npb-canvas-block-selected' : ''} ${!isPreview && isHovered && !effectiveSelected ? 'npb-canvas-block-hover' : ''} relative`}
             style={{
               width: '100%',
               minWidth: 0,

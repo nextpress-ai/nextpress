@@ -259,7 +259,7 @@ describe('BlockRenderer', () => {
       )
 
       const highlight = document.querySelector('.block-test-block')
-      expect(highlight).toHaveClass('block-ring-fade')
+      expect(highlight).toHaveClass('npb-canvas-block-selected')
     })
 
     it('should not show controls in preview mode', () => {

@@ -32,9 +32,9 @@ describe('BlogMenu', () => {
   let user: ReturnType<typeof userEvent.setup>;
 
   const mockPosts = [
-    { id: 'post-1', title: 'First Blog Post', status: 'published' },
+    { id: 'post-1', title: 'First Blog Post', status: 'publish' },
     { id: 'post-2', title: 'Second Blog Post', status: 'draft' },
-    { id: 'post-3', title: 'Third Blog Post', status: 'published' },
+    { id: 'post-3', title: 'Third Blog Post', status: 'publish' },
   ];
 
   beforeEach(() => {
@@ -108,7 +108,7 @@ describe('BlogMenu', () => {
     const postItem = screen.getByText('First Blog Post');
     await user.click(postItem);
 
-    expect(mockSetLocation).toHaveBeenCalledWith('/admin/posts/post-1/edit');
+    expect(mockSetLocation).toHaveBeenCalledWith('/admin/page-builder/post/post-1');
   });
 
   test('opens create dialog when Create New Post is clicked', async () => {
@@ -153,11 +153,11 @@ describe('BlogMenu', () => {
 
     const firstPost = await screen.findByText('First Blog Post');
     const firstPostRow = firstPost.closest('[role]') as HTMLElement | null;
-    expect(within(firstPostRow!).getByText('published')).toBeInTheDocument();
+    expect(within(firstPostRow!).getByText('Published')).toBeInTheDocument();
 
     const secondPost = screen.getByText('Second Blog Post');
     const secondPostRow = secondPost.closest('[role]') as HTMLElement | null;
-    expect(within(secondPostRow!).getByText('draft')).toBeInTheDocument();
+    expect(within(secondPostRow!).getByText('Draft')).toBeInTheDocument();
   });
 
   test('shows "All Posts" heading when no blogId is provided', async () => {

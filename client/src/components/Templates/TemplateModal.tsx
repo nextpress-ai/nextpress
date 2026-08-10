@@ -274,7 +274,7 @@ export function TemplateModal({ open, onOpenChange, initialData }: TemplateModal
             <Button
               type="submit"
               disabled={mutation.isPending}
-              className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+              className="npb-btn-accent"
             >
               {mutation.isPending
                 ? isEdit

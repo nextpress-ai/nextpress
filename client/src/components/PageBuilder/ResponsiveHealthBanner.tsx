@@ -26,24 +26,24 @@ export function ResponsiveHealthBanner({
 
   return (
     <div
-      className="mx-3 mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
+      className="mx-3 mb-3 rounded-md border border-amber-600/35 bg-amber-500/15 px-3 py-2 text-xs text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
       role="status"
     >
-      <p className="font-medium text-amber-50">Mobile layout check</p>
-      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-amber-100/90">
+      <p className="font-medium text-amber-950 dark:text-amber-50">Mobile layout check</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-amber-900/90 dark:text-amber-100/90">
         {preview.map((issue) => (
           <li key={`${issue.blockId}-${issue.code}`}>{issue.message}</li>
         ))}
       </ul>
       {issues.length > 3 ? (
-        <p className="mt-1 text-amber-100/70">{issues.length - 3} more on this page</p>
+        <p className="mt-1 text-amber-800/80 dark:text-amber-100/70">{issues.length - 3} more on this page</p>
       ) : null}
       {onApplyDefaults ? (
         <Button
           type="button"
           size="sm"
           variant="outline"
-          className="mt-2 h-7 border-amber-400/50 bg-transparent text-amber-50 hover:bg-amber-500/20"
+          className="mt-2 h-7 border-amber-700/40 bg-amber-50/80 text-amber-950 hover:bg-amber-100 dark:border-amber-400/50 dark:bg-transparent dark:text-amber-50 dark:hover:bg-amber-500/20"
           onClick={onApplyDefaults}
         >
           Apply mobile-friendly defaults

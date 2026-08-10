@@ -5,6 +5,10 @@ import { useContentLists } from '@/hooks/useContentLists';
 import { getQueryFn } from '@/lib/queryClient';
 import type { Post, Template, Theme } from '@shared/schema-types';
 
+vi.mock('@/hooks/useActiveSite', () => ({
+  useActiveSite: () => ({ activeSiteId: 'site-test-1' }),
+}));
+
 // Mock data
 const mockPages: Post[] = [
   {
@@ -188,7 +192,7 @@ describe('useContentLists', () => {
         } as Response);
       }
       return Promise.reject(new Error('Unknown endpoint'));
-    }) as any;
+    }) as typeof fetch;
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -337,7 +341,7 @@ describe('useContentLists', () => {
         ok: true,
         json: async () => [],
       } as Response);
-    }) as any;
+    }) as typeof fetch;
 
     const { result } = renderHook(() => useContentLists(), { wrapper });
 
@@ -371,5 +375,58 @@ describe('useContentLists', () => {
     // Templates and themes should not be affected by blogId
     expect(result.current.templates).toHaveLength(1);
     expect(result.current.themes).toHaveLength(1);
+  });
+
+  test('requests non-public content with active-site and API query keys', async () => {
+    const { result } = renderHook(() => useContentLists({ blogId: 'blog-1' }), {
+      wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    const calls = vi.mocked(global.fetch).mock.calls.map(([url]) => String(url));
+    const pagesUrl = calls.find((url) => url.includes('/api/pages'));
+    const postsUrl = calls.find((url) => url.includes('/api/posts'));
+
+    expect(pagesUrl).toContain('status=any');
+    expect(pagesUrl).toContain('per_page=50');
+    expect(pagesUrl).toContain('siteId=site-test-1');
+    expect(postsUrl).toContain('status=any');
+    expect(postsUrl).toContain('per_page=50');
+    expect(postsUrl).toContain('blog_id=blog-1');
+    expect(postsUrl).toContain('siteId=site-test-1');
+    expect(postsUrl).not.toContain('blogId=');
+  });
+
+  test('rejects a normalized response carrying another site scope', async () => {
+    global.fetch = vi.fn((url: string) => {
+      if (url.includes('/api/pages')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ pages: mockPages, siteId: 'site-other' }),
+        } as Response);
+      }
+      if (url.includes('/api/posts')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ posts: mockPosts, siteId: 'site-test-1' }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => [],
+      } as Response);
+    }) as typeof fetch;
+
+    const { result } = renderHook(() => useContentLists(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.pages).toEqual([]);
+    expect(result.current.posts).toHaveLength(mockPosts.length);
   });
 });

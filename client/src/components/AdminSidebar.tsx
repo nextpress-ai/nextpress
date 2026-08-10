@@ -58,7 +58,7 @@ export default function AdminSidebar() {
   return (
     <div className="admin-sidebar fixed left-0 top-8 bottom-0 z-40 w-40 overflow-hidden">
       <div className="flex h-full flex-col">
-        <nav className="flex-1 space-y-1 overflow-y-auto pt-3">
+        <nav className="flex-1 space-y-1 overflow-y-auto pt-3" aria-label="Admin">
           {groupedItems.main?.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -69,6 +69,7 @@ export default function AdminSidebar() {
               <Link
                 key={item.path}
                 href={item.path}
+                aria-current={isActive ? 'page' : undefined}
                 className={`admin-sidebar-link ${isActive ? 'admin-sidebar-link-active' : ''}`}
               >
                 <Icon className="mr-3 h-4 w-4 shrink-0" />
@@ -80,8 +81,10 @@ export default function AdminSidebar() {
           {Object.entries(groupedItems)
             .filter(([key]) => key !== 'main')
             .map(([section, items]) => (
-              <div key={section} className="px-4 py-2">
-                <div className="admin-sidebar-section-label">{section}</div>
+              <div key={section} className="px-4 py-2" role="group" aria-label={section}>
+                <div className="admin-sidebar-section-label" aria-hidden="true">
+                  {section}
+                </div>
                 <div className="ml-2 space-y-1">
                   {items.map((item) => {
                     const Icon = item.icon;
@@ -91,6 +94,7 @@ export default function AdminSidebar() {
                       <Link
                         key={item.path}
                         href={item.path}
+                        aria-current={isActive ? 'page' : undefined}
                         className={`admin-sidebar-link admin-sidebar-link-sub ${
                           isActive ? 'admin-sidebar-link-active' : ''
                         }`}

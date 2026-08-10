@@ -84,6 +84,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 interface CreatePostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialTitle?: string;
 }
 
 /**
@@ -94,14 +95,17 @@ interface CreatePostDialogProps {
  * Once a blog is selected and a title is entered, the dialog creates
  * the post via POST /api/posts and navigates to the page builder.
  */
-export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) {
+export function CreatePostDialog({ open, onOpenChange, initialTitle = '' }: CreatePostDialogProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { activeSiteId } = useActiveSite();
 
   // Dialog state - step is separate for clarity
   const [step, setStep] = useState<DialogStep>("select-blog");
-  const [form, dispatchForm] = useReducer(formReducer, initialFormState);
+  const [form, dispatchForm] = useReducer(formReducer, {
+    ...initialFormState,
+    postTitle: initialTitle,
+  });
 
   // Fetch existing blogs
   const { data: blogsData, isLoading: blogsLoading, refetch: refetchBlogs } = useQuery<BlogsResponse>({

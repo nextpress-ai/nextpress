@@ -5,7 +5,7 @@ import { buildFlexRowColumnStyle } from "@shared/columns-flex-style";
 /**
  * Column layout metadata persisted on container blocks (`settings.columnLayout`).
  */
-export interface ColumnLayout {
+export interface ColumnLayout extends Record<string, unknown> {
 	columnId: string;
 	width?: string;
 	blockIds: string[];
@@ -23,6 +23,7 @@ export interface ColumnsData extends Record<string, unknown> {
 	direction?: "row" | "column";
 	columnVerticalAlignment?: "top" | "center" | "bottom" | "stretch";
 	columnHorizontalAlignment?: "left" | "center" | "right" | "stretch";
+	columnLayout?: ColumnLayout[];
 }
 
 export type ColumnsContent = BlockContent & {
@@ -34,53 +35,17 @@ export function readColumnsData(content: BlockContent): ColumnsData {
 	if (!content) return {};
 	if (typeof content === "object" && "kind" in content) {
 		if (content.kind === "structured" && content.data && typeof content.data === "object") {
-			const data = content.data as Record<string, unknown>;
-			return {
-				layoutMode: typeof data.layoutMode === "string" ? (data.layoutMode as ColumnsData["layoutMode"]) : undefined,
-				gap: typeof data.gap === "string" ? data.gap : undefined,
-				minColumnWidth: typeof data.minColumnWidth === "string" ? data.minColumnWidth : undefined,
-				verticalAlignment: typeof data.verticalAlignment === "string"
-					? (data.verticalAlignment as ColumnsData["verticalAlignment"])
-					: undefined,
-				horizontalAlignment: typeof data.horizontalAlignment === "string"
-					? (data.horizontalAlignment as ColumnsData["horizontalAlignment"])
-					: undefined,
-				direction: typeof data.direction === "string" ? (data.direction as ColumnsData["direction"]) : undefined,
-				columnVerticalAlignment: typeof data.columnVerticalAlignment === "string"
-					? (data.columnVerticalAlignment as ColumnsData["columnVerticalAlignment"])
-					: undefined,
-				columnHorizontalAlignment: typeof data.columnHorizontalAlignment === "string"
-					? (data.columnHorizontalAlignment as ColumnsData["columnHorizontalAlignment"])
-					: undefined,
-			};
+			return { ...(content.data as ColumnsData) };
 		}
 		return {};
 	}
-	const legacy = content as unknown as Record<string, unknown>;
-	return {
-		layoutMode: typeof legacy.layoutMode === "string" ? (legacy.layoutMode as ColumnsData["layoutMode"]) : undefined,
-		gap: typeof legacy.gap === "string" ? legacy.gap : undefined,
-		minColumnWidth: typeof legacy.minColumnWidth === "string" ? legacy.minColumnWidth : undefined,
-		verticalAlignment: typeof legacy.verticalAlignment === "string"
-			? (legacy.verticalAlignment as ColumnsData["verticalAlignment"])
-			: undefined,
-		horizontalAlignment: typeof legacy.horizontalAlignment === "string"
-			? (legacy.horizontalAlignment as ColumnsData["horizontalAlignment"])
-			: undefined,
-		direction: typeof legacy.direction === "string" ? (legacy.direction as ColumnsData["direction"]) : undefined,
-		columnVerticalAlignment: typeof legacy.columnVerticalAlignment === "string"
-			? (legacy.columnVerticalAlignment as ColumnsData["columnVerticalAlignment"])
-			: undefined,
-		columnHorizontalAlignment: typeof legacy.columnHorizontalAlignment === "string"
-			? (legacy.columnHorizontalAlignment as ColumnsData["columnHorizontalAlignment"])
-			: undefined,
-	};
+	return { ...(content as ColumnsData) };
 }
 
 export function writeColumnsData(prev: BlockContent, updates: Partial<ColumnsData>): BlockContent {
 	const current = readColumnsData(prev);
 	const next: ColumnsData = { ...current, ...updates };
-	return { kind: "structured", data: next as Record<string, unknown> };
+	return { kind: "structured", data: next };
 }
 
 type ColumnsBlockLike = {
@@ -217,6 +182,23 @@ type ColumnLayoutBlock = {
 	children?: { id: string }[];
 };
 
+const sanitizeColumnLayout = (column: ColumnLayout): ColumnLayout | null => {
+	if (
+		!column ||
+		typeof column !== "object" ||
+		typeof column.columnId !== "string" ||
+		!Array.isArray(column.blockIds) ||
+		!column.blockIds.every((blockId) => typeof blockId === "string")
+	) {
+		return null;
+	}
+
+	return {
+		...column,
+		blockIds: [...column.blockIds],
+	};
+};
+
 /**
  * Assigns unmapped children to the first column so public/preview render matches the editor.
  */
@@ -224,13 +206,16 @@ export function normalizeColumnLayoutWithChildren(
 	layout: ColumnLayout[],
 	children: { id: string }[],
 ): ColumnLayout[] {
-	const assigned = new Set(layout.flatMap((col) => col.blockIds ?? []));
+	const safeLayout = layout
+		.map((column) => sanitizeColumnLayout(column))
+		.filter((column): column is ColumnLayout => column !== null);
+	const assigned = new Set(safeLayout.flatMap((col) => col.blockIds));
 	const orphans = children.filter((child) => !assigned.has(child.id)).map((child) => child.id);
 	if (orphans.length === 0) {
-		return layout;
+		return safeLayout;
 	}
 
-	const [first, ...rest] = layout;
+	const [first, ...rest] = safeLayout;
 	if (!first) {
 		return [{ columnId: "default-col-1", width: "100%", blockIds: orphans }];
 	}
@@ -251,7 +236,7 @@ export function readColumnLayoutFromBlock(block: ColumnLayoutBlock): ColumnLayou
 	const data = readColumnsData(
 		block.content ?? ({ kind: "structured", data: {} } as BlockContent),
 	);
-	const fromContent = (data as { columnLayout?: ColumnLayout[] }).columnLayout;
+	const fromContent = data.columnLayout;
 	if (Array.isArray(fromContent) && fromContent.length > 0) {
 		return normalizeColumnLayoutWithChildren(fromContent, block.children ?? []);
 	}

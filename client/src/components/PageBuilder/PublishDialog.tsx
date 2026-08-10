@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { VERSION_STALE } from "@shared/content-version";
 import type { Post, Page, BlockConfig } from "@shared/schema-types";
-
-const readExpectedVersion = (entity: Post | Page): number => entity.version ?? 0;
+import { buildPublishPayload } from "@/lib/publish-payload";
 
 interface PublishDialogProps {
   post?: Post | Page;
@@ -45,25 +44,6 @@ export default function PublishDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Update slug when post changes
-  useEffect(() => {
-    if (post?.slug) {
-      setSlug(post.slug);
-      setOriginalSlug(post.slug);
-    }
-  }, [post?.slug]);
-
-  // Force close dialog when post status changes to ensure fresh data on next open
-  useEffect(() => {
-    if (open && post) {
-      // Close dialog to force refresh on next open
-      const currentStatus = post.status;
-      if (currentStatus !== (post.status === 'publish' ? 'publish' : 'draft')) {
-        setOpen(false);
-      }
-    }
-  }, [post?.status, open]);
-
   // Generate slug from title if empty
   const generateSlug = (title: string) => {
     return title
@@ -79,22 +59,16 @@ export default function PublishDialog({
       
       const isPage = contentType === 'page';
       const endpoint = isPage ? `/api/pages/${post.id}` : `/api/posts/${post.id}`;
-      
-      const publishData: Record<string, unknown> = {
-        blocks: blocks,
-        status: 'publish',
-        publishedAt: new Date().toISOString(),
-        slug: slug || generateSlug(post.title),
-        expectedVersion: readExpectedVersion(post),
-      };
-
-      // Include siteId for pages (required field)
-      if (isPage && (post as any).siteId) {
-        publishData.siteId = (post as any).siteId;
-      }
+      const publishData = buildPublishPayload({
+        post,
+        blocks,
+        slug,
+        contentType,
+        action: 'publish',
+      });
 
       const response = await apiRequest('PUT', endpoint, publishData);
-      return await response.json();
+      return (await response.json()) as Post | Page;
     },
     onSuccess: (updatedData) => {
       const isPage = contentType === 'page';
@@ -114,9 +88,6 @@ export default function PublishDialog({
         queryClient.invalidateQueries({ queryKey: [`/api/posts/${post?.id}`] });
       }
 
-      if (isPage) {
-        window.setTimeout(() => window.location.reload(), 250);
-      }
     },
     onError: (error: Error & { code?: string }) => {
       if (error.code === VERSION_STALE) {
@@ -141,22 +112,16 @@ export default function PublishDialog({
       
       const isPage = contentType === 'page';
       const endpoint = isPage ? `/api/pages/${post.id}` : `/api/posts/${post.id}`;
-      
-      const unpublishData: Record<string, unknown> = {
-        blocks: blocks,
-        status: 'draft',
-        publishedAt: null,
+      const unpublishData = buildPublishPayload({
+        post,
+        blocks,
         slug: post.slug,
-        expectedVersion: readExpectedVersion(post),
-      };
-
-      // Include siteId for pages (required field)
-      if (isPage && (post as any).siteId) {
-        unpublishData.siteId = (post as any).siteId;
-      }
+        contentType,
+        action: 'unpublish',
+      });
 
       const response = await apiRequest('PUT', endpoint, unpublishData);
-      return await response.json();
+      return (await response.json()) as Post | Page;
     },
     onSuccess: (updatedData) => {
       const isPage = contentType === 'page';
@@ -211,12 +176,21 @@ export default function PublishDialog({
     unpublishMutation.mutate();
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      const nextSlug = post?.slug || "";
+      setSlug(nextSlug);
+      setOriginalSlug(nextSlug);
+    }
+    setOpen(nextOpen);
+  };
+
   const isPublished = post?.status === 'publish';
   const hasSlugChanged = slug !== originalSlug;
   const postType = contentType;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           size="sm"

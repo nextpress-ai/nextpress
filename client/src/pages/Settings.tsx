@@ -798,7 +798,7 @@ export default function Settings() {
         </span>
       ) : null}
       <Button
-        className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+        className="npb-btn-accent"
         onClick={handleSave}
         disabled={saveMutation.isPending}
       >
@@ -1066,7 +1066,7 @@ export default function Settings() {
                                 type="button"
                                 onClick={() => handleFileUpload('logo')}
                                 disabled={uploadingLogo}
-                                className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+                                className="npb-btn-accent"
                               >
                                 <Upload className="w-4 h-4 mr-2" />
                                 {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
@@ -1166,7 +1166,7 @@ export default function Settings() {
                               type="button"
                               onClick={() => handleFileUpload('favicon')}
                               disabled={uploadingFavicon}
-                              className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+                              className="npb-btn-accent"
                             >
                               <Upload className="w-4 h-4 mr-2" />
                               {uploadingFavicon ? 'Uploading...' : 'Upload Favicon'}

@@ -160,6 +160,47 @@ export const listQueryRequiresAuth = (status: string | undefined): boolean => {
 	return normalized !== "publish";
 };
 
+/**
+ * Resolves and verifies site scope before listing non-public content.
+ * Session callers must select a site; site-bound API keys may use their bound site.
+ */
+export async function resolveNonPublicListSiteId({
+	req,
+	models,
+	requestedSiteId,
+}: {
+	req: Request;
+	models: Deps["models"];
+	requestedSiteId?: string;
+}): Promise<string> {
+	const authContext = await resolveRequestAuth(req);
+	if (!authContext) {
+		throw new ContentAccessError("Unauthorized", 401);
+	}
+
+	attachRequestAuth(req, authContext);
+
+	const siteId = requestedSiteId ?? getRequestAuthSiteId(req);
+	if (!siteId) {
+		if (authContext.method === "apiKey") {
+			throw new ContentAccessError("This API key is not bound to a site");
+		}
+		throw new ContentAccessError(
+			"A site must be selected to list non-public content",
+			400,
+		);
+	}
+
+	await assertSiteContentAccess({
+		models,
+		userId: authContext.userId,
+		siteId,
+		apiKeySiteId: getRequestAuthSiteId(req),
+	});
+
+	return siteId;
+}
+
 /** Used by authenticated routes to enforce site scope on mutations. */
 export async function assertAuthenticatedSiteAccess({
 	req,

@@ -64,7 +64,8 @@ import {
 	WIDTH_PRESETS,
 	HEIGHT_PRESETS,
 	FONT_SIZE_PRESETS,
-	BORDER_RADIUS_PRESETS,
+  BORDER_RADIUS_PRESETS,
+  SPACING_PRESETS,
 } from "@shared/dimension-presets";
 import { BLOCK_FONT_CATALOG } from "@shared/font-catalog";
 
@@ -600,6 +601,28 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 Padding
               </Label>
             </div>
+            <SettingsChipGroup
+              label="Quick padding (all sides)"
+              options={SPACING_PRESETS.map((preset) => ({
+                value: preset.value,
+                label: preset.label,
+              }))}
+              value={(() => {
+                const sides = getPaddingValues();
+                const allMatch =
+                  sides.top === sides.right &&
+                  sides.top === sides.bottom &&
+                  sides.top === sides.left;
+                return allMatch ? sides.top : '';
+              })()}
+              onChange={(value) => {
+                commitSpacingSide('paddingTop', value);
+                commitSpacingSide('paddingRight', value);
+                commitSpacingSide('paddingBottom', value);
+                commitSpacingSide('paddingLeft', value);
+              }}
+              className="mb-4"
+            />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {(
                 [

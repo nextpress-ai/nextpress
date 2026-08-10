@@ -1,48 +1,105 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Edit, Trash2, Eye, Download } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AdminLayout } from "@/components/AdminLayout";
 import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
+import {
+  ContentListBulkBar,
+  ContentListPaginationFooter,
+  ContentListToolbar,
+} from "@/components/admin/content-list";
+import { ContentStatusSelect } from "@/components/admin/content-status-select";
 import { CreatePostDialog } from "@/components/posts/CreatePostDialog";
 import { WordPressImportDialog } from "@/components/import/WordPressImportDialog";
 import { apiRequest } from "@/lib/queryClient";
+import { postEditorPath } from "@/lib/admin-content-routes";
 import { useActiveSite } from "@/hooks/useActiveSite";
+import { useAdminListPagination } from "@/hooks/use-admin-list-pagination";
 import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { useToast } from "@/hooks/use-toast";
 import type { EnrichedPost } from "@shared/posts/post-other";
+import { Badge } from "@/components/ui/badge";
 
-interface PostsResponse {
+type PostsResponse = {
   posts: EnrichedPost[];
   total: number;
   page: number;
   per_page: number;
   total_pages: number;
-}
+};
 
 export default function Posts() {
-  const { activeSiteId } = useActiveSite();
+  const {
+    activeSiteId,
+    isLoading: activeSiteLoading,
+    error: activeSiteError,
+  } = useActiveSite();
+  return (
+    <PostsList
+      key={activeSiteId || "no-active-site"}
+      activeSiteId={activeSiteId}
+      activeSiteLoading={activeSiteLoading}
+      activeSiteError={activeSiteError}
+    />
+  );
+}
+
+type PostsListProps = {
+  activeSiteId: string;
+  activeSiteLoading?: boolean;
+  activeSiteError?: Error | null;
+};
+
+function PostsList({
+  activeSiteId,
+  activeSiteLoading = false,
+  activeSiteError = null,
+}: PostsListProps) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [idsToDelete, setIdsToDelete] = useState<string[]>([]);
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const postsQueryKey = ['/api/posts', { status: 'any', type: 'post', page, per_page: 10, siteId: activeSiteId }];
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: postsData, isLoading } = useQuery<PostsResponse>({
-    queryKey: ['/api/posts', { status: 'any', type: 'post', page, per_page: 10, siteId: activeSiteId }],
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const createParam = urlParams.get('create');
+    const titleParam = urlParams.get('title');
+
+    if (createParam === 'true') {
+      setShowCreateDialog(true);
+      const newUrl = titleParam
+        ? `/admin/posts?title=${encodeURIComponent(titleParam)}`
+        : '/admin/posts';
+      setLocation(newUrl, { replace: true });
+    }
+  }, [location, setLocation]);
+
+  const {
+    data: postsData,
+    isLoading,
+    error: postsError,
+  } = useQuery<PostsResponse>({
+    queryKey: postsQueryKey,
     enabled: !!activeSiteId,
+  });
+  const visiblePage = useAdminListPagination({
+    activeSiteId,
+    page,
+    setPage,
+    totalPages: postsData?.total_pages,
   });
 
   const filteredPosts = postsData?.posts?.filter((post: EnrichedPost) =>
@@ -54,6 +111,11 @@ export default function Posts() {
   useEffect(() => {
     selection.clear();
   }, [page, activeSiteId, selection.clear]);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -103,88 +165,70 @@ export default function Posts() {
     }
   };
 
-  const handleEdit = (postId: string) => {
-    setLocation(`/admin/page-builder/post/${postId}`);
-  };
-
   const handleNewPost = () => {
     setShowCreateDialog(true);
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-      publish: "default",
-      draft: "secondary",
-      private: "outline",
-      trash: "destructive",
-    };
-    return <Badge variant={variants[status] || "secondary"}>{status}</Badge>;
-  };
+  const initialCreateTitle = new URLSearchParams(window.location.search).get('title') || '';
 
   return (
     <AdminLayout
       title="Posts"
       actions={
-        <>
-          <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <ContentListToolbar
+            compact
+            value={search}
+            placeholder="Search posts..."
+            onSearchChange={handleSearchChange}
+          />
+          <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
             <Download className="w-4 h-4 mr-2" />
-            Import from WordPress
+            Import
           </Button>
-          <Button
-            className="bg-npb-accent hover:bg-npb-accent-hover text-white"
-            onClick={handleNewPost}
-          >
+          <Button className="npb-btn-accent" onClick={handleNewPost}>
             <Plus className="w-4 h-4 mr-2" />
             Add New Post
           </Button>
-        </>
+        </div>
       }
     >
       <Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)]">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>All Posts</CardTitle>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-npb-text-muted w-4 h-4" />
-                <Input
-                  placeholder="Search posts..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
+        <CardContent className="pt-4">
+          <ContentListBulkBar
+            visible={selection.selectedCount > 0}
+            selectedCount={selection.selectedCount}
+            itemLabel="post"
+            onDelete={() => openDeleteDialog(selection.selectedIdList)}
+            onClear={selection.clear}
+            deletePending={deleteMutation.isPending}
+          />
+          {activeSiteLoading ? (
+            <div role="status" className="py-8 text-center text-npb-text-muted">
+              Loading site...
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {selection.selectedCount > 0 && (
-            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-npb-border-default bg-npb-surface-raised px-4 py-3">
-              <span className="text-sm text-npb-text-primary">
-                {selection.selectedCount}{" "}
-                {selection.selectedCount === 1 ? "post" : "posts"} selected
-              </span>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => openDeleteDialog(selection.selectedIdList)}
-                disabled={deleteMutation.isPending}
-              >
-                Delete selected
-              </Button>
-              <Button variant="ghost" size="sm" onClick={selection.clear}>
-                Clear selection
-              </Button>
+          ) : activeSiteError ? (
+            <div role="alert" className="py-8 text-center text-npb-text-muted">
+              Could not load active site.
             </div>
-          )}
-          {isLoading ? (
-            <div className="text-center py-8 text-npb-text-muted">Loading posts...</div>
+          ) : !activeSiteId ? (
+            <div role="status" className="py-8 text-center text-npb-text-muted">
+              No active site available.
+            </div>
+          ) : postsError ? (
+            <div role="alert" className="py-8 text-center text-npb-text-muted">
+              Could not load posts. Try again.
+            </div>
+          ) : isLoading ? (
+            <div role="status" className="py-8 text-center text-npb-text-muted">
+              Loading posts...
+            </div>
           ) : filteredPosts.length === 0 ? (
             <div className="text-center py-8 text-npb-text-muted">
               No posts found. <Button variant="link" onClick={handleNewPost}>Create your first post</Button>
             </div>
           ) : (
-            <Table>
+            <Table className="admin-list-table">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">
@@ -219,7 +263,9 @@ export default function Posts() {
                     <TableCell>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-npb-text-primary">{post.title}</span>
+                          <Link href={postEditorPath(post.id)} className="font-medium text-npb-text-primary hover:text-npb-accent">
+                            {post.title}
+                          </Link>
                           {post.isImported && (
                             <Badge variant="outline" className="text-xs">
                               Imported
@@ -234,7 +280,13 @@ export default function Posts() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(post.status || 'draft')}
+                      <ContentStatusSelect
+                        contentKind="post"
+                        contentId={post.id}
+                        status={post.status || 'draft'}
+                        version={post.version}
+                        queryKeys={[postsQueryKey, ['/api/posts']]}
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
@@ -253,6 +305,7 @@ export default function Posts() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => window.open(post.status === 'publish' && post.slug ? `/post/${post.slug}` : `/preview/post/${post.id}`, '_blank')}
+                                aria-label={`View ${post.title} in new tab`}
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
@@ -269,9 +322,11 @@ export default function Posts() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleEdit(post.id)}
+                                asChild
                               >
-                                <Edit className="w-4 h-4" />
+                                <Link href={postEditorPath(post.id)} aria-label={`Edit ${post.title}`}>
+                                  <Edit className="w-4 h-4" />
+                                </Link>
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -288,6 +343,7 @@ export default function Posts() {
                                 size="sm"
                                 onClick={() => handleDelete(post.id)}
                                 disabled={deleteMutation.isPending}
+                                aria-label={`Delete post ${post.title}`}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -305,37 +361,24 @@ export default function Posts() {
             </Table>
           )}
 
-          {postsData && postsData.total_pages > 1 && (
-            <div className="flex items-center justify-between mt-6">
-              <div className="text-sm text-npb-text-muted">
-                Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, postsData.total)} of {postsData.total} posts
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= postsData.total_pages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          {postsData && !postsError && activeSiteId && !activeSiteLoading ? (
+            <ContentListPaginationFooter
+              page={visiblePage}
+              perPage={10}
+              total={postsData.total}
+              totalPages={postsData.total_pages}
+              itemLabel="posts"
+              onPageChange={setPage}
+            />
+          ) : null}
         </CardContent>
       </Card>
 
       <CreatePostDialog
+        key={`${showCreateDialog}-${initialCreateTitle}`}
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
+        initialTitle={initialCreateTitle}
       />
       <WordPressImportDialog
         open={showImportDialog}

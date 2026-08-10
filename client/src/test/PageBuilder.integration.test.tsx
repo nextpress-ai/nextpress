@@ -192,7 +192,7 @@ vi.mock("../components/PageBuilder/PageBuilder", () => {
 				)}
 				<div>
 					<button
-						aria-label="desktop"
+						aria-label="Desktop preview"
 						className={device === "desktop" ? "active" : ""}
 						onClick={() => setDevice("desktop")}
 					>

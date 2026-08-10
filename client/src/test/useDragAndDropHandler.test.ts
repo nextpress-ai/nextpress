@@ -4,6 +4,7 @@ import { useDragAndDropHandler } from '../hooks/useDragAndDropHandler'
 import type { BlockConfig } from '@shared/schema-types'
 import type { DropResult } from '@/lib/dnd'
 import * as toastModule from '@/hooks/use-toast'
+import { buildColumnDroppableId } from '../components/PageBuilder/blocks/columns/columns-model'
 
 // Mock the block registry
 vi.mock('../components/PageBuilder/blocks', () => ({
@@ -99,6 +100,128 @@ describe('useDragAndDropHandler', () => {
   })
 
   describe('handleDragEnd', () => {
+    it('allows same-index moves between columns with duplicate legacy IDs', () => {
+      const first = createMockBlock('column-child-a')
+      const second = createMockBlock('column-child-b')
+      const columns = createMockBlock('columns-1', 'core/columns', [first, second])
+      columns.settings = {
+        columnLayout: [
+          { columnId: 'default-col-1', blockIds: [first.id] },
+          { columnId: 'default-col-1', blockIds: [second.id] },
+        ],
+      }
+      const { result } = renderHook(() =>
+        useDragAndDropHandler([columns], setBlocks, setSelectedBlockId, setActiveTab)
+      )
+
+      act(() => {
+        result.current.handleDragEnd({
+          draggableId: first.id,
+          type: 'DEFAULT',
+          source: {
+            droppableId: buildColumnDroppableId({
+              columnsBlockId: columns.id,
+              columnId: 'default-col-1',
+              columnIndex: 0,
+            }),
+            index: 0,
+          },
+          destination: {
+            droppableId: buildColumnDroppableId({
+              columnsBlockId: columns.id,
+              columnId: 'default-col-1',
+              columnIndex: 1,
+            }),
+            index: 0,
+          },
+          reason: 'DROP',
+          mode: 'FLUID',
+          combine: null,
+        })
+      })
+
+      const next = setBlocks.mock.calls[0][0] as BlockConfig[]
+      const nextColumns = next[0]
+      const nextLayout = nextColumns.settings?.columnLayout as Array<{
+        blockIds: string[]
+      }>
+      expect(nextLayout.map((column) => column.blockIds)).toEqual([[], [
+        first.id,
+        second.id,
+      ]])
+      expect(nextColumns.children?.map((child) => child.id)).toEqual([
+        first.id,
+        second.id,
+      ])
+    })
+
+    it('updates source and destination layouts across columns blocks', () => {
+      const sourceChild = createMockBlock('source-child')
+      const destinationChild = createMockBlock('destination-child')
+      const sourceColumns = createMockBlock('columns-source', 'core/columns', [sourceChild])
+      sourceColumns.settings = {
+        columnLayout: [
+          { columnId: 'default-col-1', blockIds: [sourceChild.id] },
+        ],
+      }
+      const destinationColumns = createMockBlock(
+        'columns-destination',
+        'core/columns',
+        [destinationChild],
+      )
+      destinationColumns.settings = {
+        columnLayout: [
+          { columnId: 'default-col-1', blockIds: [destinationChild.id] },
+        ],
+      }
+      const { result } = renderHook(() =>
+        useDragAndDropHandler(
+          [sourceColumns, destinationColumns],
+          setBlocks,
+          setSelectedBlockId,
+          setActiveTab,
+        )
+      )
+
+      act(() => {
+        result.current.handleDragEnd({
+          draggableId: sourceChild.id,
+          type: 'DEFAULT',
+          source: {
+            droppableId: buildColumnDroppableId({
+              columnsBlockId: sourceColumns.id,
+              columnId: 'default-col-1',
+              columnIndex: 0,
+            }),
+            index: 0,
+          },
+          destination: {
+            droppableId: buildColumnDroppableId({
+              columnsBlockId: destinationColumns.id,
+              columnId: 'default-col-1',
+              columnIndex: 0,
+            }),
+            index: 0,
+          },
+          reason: 'DROP',
+          mode: 'FLUID',
+          combine: null,
+        })
+      })
+
+      const next = setBlocks.mock.calls[0][0] as BlockConfig[]
+      const nextSource = next[0]
+      const nextDestination = next[1]
+      expect(
+        (nextSource.settings?.columnLayout as Array<{ blockIds: string[] }>)[0]
+          .blockIds,
+      ).toEqual([])
+      expect(
+        (nextDestination.settings?.columnLayout as Array<{ blockIds: string[] }>)[0]
+          .blockIds,
+      ).toEqual([sourceChild.id, destinationChild.id])
+    })
+
     it('should do nothing if no destination', () => {
       const { result } = renderHook(() => 
         useDragAndDropHandler(blocks, setBlocks, setSelectedBlockId, setActiveTab)

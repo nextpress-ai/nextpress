@@ -1,9 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Post, Template, Theme } from "@shared/schema-types";
+import { useActiveSite } from "@/hooks/useActiveSite";
 
-interface UseContentListsOptions {
+type UseContentListsOptions = {
 	blogId?: string | null;
-}
+};
+
+type ListEnvelope<T> = {
+	pages?: T[];
+	posts?: T[];
+	templates?: T[];
+	siteId?: string | null;
+};
+
+type ListKey = "pages" | "posts" | "templates";
+
+type ContentListResponse<T> = T[] | ListEnvelope<T>;
+
+const CONTENT_LIST_PAGE_SIZE = 50;
+
+const normalizeScopedList = <T>(
+	data: ContentListResponse<T> | undefined,
+	key: ListKey,
+	activeSiteId: string,
+): T[] => {
+	if (!data) return [];
+	if (Array.isArray(data)) return data;
+	if (data.siteId && data.siteId !== activeSiteId) return [];
+	return data[key] ?? [];
+};
 
 /**
  * Centralized hook for fetching content lists used in EditorBar
@@ -13,22 +38,24 @@ interface UseContentListsOptions {
  */
 export function useContentLists(options: UseContentListsOptions = {}) {
 	const { blogId } = options;
+	const {
+		activeSiteId,
+		isLoading: activeSiteLoading,
+		error: activeSiteError,
+	} = useActiveSite();
 
 	// Fetch all pages (posts with type='page')
 	const {
 		data: pages,
 		isLoading: pagesLoading,
 		error: pagesError,
-	} = useQuery<Post[] | { pages: Post[] }, Error, Post[]>({
-		queryKey: ["/api/pages", { status: "any", per_page: 50 }],
-		// The /api/pages endpoint returns an object { pages, total, ... }
-		// but some tests/mock setups may return just an array. Normalize both.
-		select: (data) => {
-			if (!data) return [] as Post[];
-			if (Array.isArray(data)) return data as Post[];
-			const maybePages = (data as any).pages;
-			return Array.isArray(maybePages) ? maybePages : ([] as Post[]);
-		},
+	} = useQuery<ContentListResponse<Post>, Error, Post[]>({
+		queryKey: [
+			"/api/pages",
+			{ status: "any", per_page: CONTENT_LIST_PAGE_SIZE, siteId: activeSiteId },
+		],
+		enabled: !!activeSiteId,
+		select: (data) => normalizeScopedList(data, "pages", activeSiteId),
 	});
 
 	// Fetch posts with optional blog filtering
@@ -36,17 +63,20 @@ export function useContentLists(options: UseContentListsOptions = {}) {
 		data: posts,
 		isLoading: postsLoading,
 		error: postsError,
-	} = useQuery<Post[] | { posts: Post[] }, Error, Post[]>({
-		queryKey: blogId ? ["/api/posts", { blogId }] : ["/api/posts"],
+	} = useQuery<ContentListResponse<Post>, Error, Post[]>({
+		queryKey: [
+			"/api/posts",
+			{
+				status: "any",
+				per_page: CONTENT_LIST_PAGE_SIZE,
+				...(blogId ? { blog_id: blogId } : {}),
+				siteId: activeSiteId,
+			},
+		],
+		enabled: !!activeSiteId,
 		// Normalize API shape and apply client-side filtering if needed
 		select: (data) => {
-			let list: Post[];
-			if (!data) list = [] as Post[];
-			else if (Array.isArray(data)) list = data as Post[];
-			else
-				list = Array.isArray((data as any).posts)
-					? (data as any).posts
-					: ([] as Post[]);
+			const list = normalizeScopedList(data, "posts", activeSiteId);
 			if (!blogId) return list;
 			return list.filter((post) => post.blogId === blogId);
 		},
@@ -57,15 +87,9 @@ export function useContentLists(options: UseContentListsOptions = {}) {
 		data: templates,
 		isLoading: templatesLoading,
 		error: templatesError,
-	} = useQuery<Template[] | { templates: Template[] }, Error, Template[]>({
+	} = useQuery<ContentListResponse<Template>, Error, Template[]>({
 		queryKey: ["/api/templates"],
-		// Normalize { templates, ... } to an array
-		select: (data) => {
-			if (!data) return [] as Template[];
-			if (Array.isArray(data)) return data as Template[];
-			const maybe = (data as any).templates;
-			return Array.isArray(maybe) ? maybe : ([] as Template[]);
-		},
+		select: (data) => normalizeScopedList(data, "templates", activeSiteId),
 	});
 
 	// Fetch all themes
@@ -100,9 +124,21 @@ export function useContentLists(options: UseContentListsOptions = {}) {
 
 		// Combined loading state
 		isLoading:
-			pagesLoading || postsLoading || templatesLoading || themesLoading,
+			activeSiteLoading ||
+			pagesLoading ||
+			postsLoading ||
+			templatesLoading ||
+			themesLoading,
 
 		// Combined error state
-		hasError: !!(pagesError || postsError || templatesError || themesError),
+		hasError: !!(
+			activeSiteError ||
+			pagesError ||
+			postsError ||
+			templatesError ||
+			themesError
+		),
+		activeSiteLoading,
+		activeSiteError,
 	};
 }

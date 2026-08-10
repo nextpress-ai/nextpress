@@ -1,12 +1,35 @@
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, File, MessageCircle, Users, Plus, ExternalLink } from 'lucide-react';
+import {
+  FileText,
+  File,
+  MessageCircle,
+  Users,
+  Plus,
+  ExternalLink,
+  Pencil,
+  Image,
+  Command,
+} from 'lucide-react';
 import { AdminLayout } from '@/components/AdminLayout';
 import { useActiveSite } from '@/hooks/useActiveSite';
 import { ThemeColorPreview } from '@/components/themes/theme-color-preview';
 import { Link } from 'wouter';
+import { postEditorPath } from '@/lib/admin-content-routes';
+import { formatContentStatus } from '@/lib/format-content-status';
+import {
+  MotionPressable,
+  MotionStagger,
+  MotionStaggerItem,
+} from '@/components/motion/motion-primitives';
 import type { Theme } from '@shared/schema-types';
+
+const QUICK_ACTIONS = [
+  { label: 'New post', href: '/admin/posts?create=true', icon: FileText },
+  { label: 'New page', href: '/admin/pages?create=true', icon: File },
+  { label: 'Media', href: '/admin/media', icon: Image },
+] as const;
 
 export default function Dashboard() {
   const { activeSiteId } = useActiveSite();
@@ -41,8 +64,8 @@ export default function Dashboard() {
 
   const headerActions = (
     <>
-      <Link href="/admin/posts">
-        <Button size="sm" className="bg-npb-accent hover:bg-npb-accent-hover text-white">
+      <Link href="/admin/posts?create=true">
+        <Button size="sm" className="npb-btn-accent">
           <Plus className="mr-2 h-4 w-4" />
           New Post
         </Button>
@@ -58,49 +81,69 @@ export default function Dashboard() {
 
   return (
     <AdminLayout title="Dashboard" actions={headerActions}>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+      <MotionStagger className="mb-4 flex flex-wrap gap-2">
+        {QUICK_ACTIONS.map(({ label, href, icon: Icon }) => (
+          <MotionStaggerItem key={href}>
+            <Link href={href}>
+              <MotionPressable className="inline-flex items-center gap-2 rounded-[var(--npb-radius-input)] border border-npb-border-default bg-npb-surface-base px-3 py-2 text-sm font-medium text-npb-text-primary shadow-[var(--npb-shadow-surface)] hover:bg-npb-interactive-bg-hover">
+                <Icon className="h-4 w-4 text-npb-accent" aria-hidden />
+                {label}
+              </MotionPressable>
+            </Link>
+          </MotionStaggerItem>
+        ))}
+        <MotionStaggerItem>
+          <div className="inline-flex items-center gap-1.5 rounded-[var(--npb-radius-input)] border border-dashed border-npb-border-strong px-3 py-2 text-xs text-npb-text-muted">
+            <Command className="h-3.5 w-3.5" aria-hidden />
+            <span>
+              Press <kbd className="rounded border border-npb-border-default px-1 font-mono text-[10px]">⌘K</kbd> to jump anywhere
+            </span>
+          </div>
+        </MotionStaggerItem>
+      </MotionStagger>
+
+      <MotionStagger className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         {statsItems.map((item) => {
           const Icon = item.icon;
           return (
-            <Link key={item.label} href={item.href}>
-              <div className="rounded-[var(--npb-radius-surface)] bg-npb-surface-raised p-4 transition-colors hover:bg-npb-surface-inset">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-npb-text-primary">
-                      {statsLoading ? '…' : item.value}
-                    </p>
-                    <p className="text-sm text-npb-text-muted">{item.label}</p>
+            <MotionStaggerItem key={item.label}>
+              <Link href={item.href}>
+                <MotionPressable className="rounded-[var(--npb-radius-surface)] bg-npb-surface-raised p-4 transition-colors hover:bg-npb-surface-inset">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-npb-text-primary">
+                        {statsLoading ? '…' : item.value}
+                      </p>
+                      <p className="text-sm text-npb-text-muted">{item.label}</p>
+                    </div>
+                    <Icon className="h-5 w-5 text-npb-accent" />
                   </div>
-                  <Icon className="h-5 w-5 text-npb-accent" />
-                </div>
-              </div>
-            </Link>
+                </MotionPressable>
+              </Link>
+            </MotionStaggerItem>
           );
         })}
-      </div>
+      </MotionStagger>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
         <Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)] lg:col-span-2">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg font-semibold text-npb-text-primary">Recent Posts</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             {postsLoading ? (
-              <div className="py-8 text-center text-npb-text-muted">Loading…</div>
-            ) : (recentPosts as { posts?: Array<{ id: string; title: string; excerpt?: string; createdAt: string; status: string }> })?.posts?.length ? (
+              <div className="py-6 text-center text-npb-text-muted">Loading…</div>
+            ) : (recentPosts as { posts?: Array<{ id: string; title: string; createdAt: string; status: string }> })?.posts?.length ? (
               <div className="divide-y divide-npb-divider">
-                {(recentPosts as { posts: Array<{ id: string; title: string; excerpt?: string; createdAt: string; status: string }> }).posts.map((post) => (
-                  <div key={post.id} className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0">
+                {(recentPosts as { posts: Array<{ id: string; title: string; createdAt: string; status: string }> }).posts.map((post) => (
+                  <div key={post.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                     <div className="min-w-0 flex-1">
-                      <Link href={`/admin/posts`}>
+                      <Link href={postEditorPath(post.id)}>
                         <h4 className="truncate font-medium text-npb-text-primary hover:text-npb-accent">
                           {post.title}
                         </h4>
                       </Link>
-                      {post.excerpt ? (
-                        <p className="mt-1 line-clamp-2 text-sm text-npb-text-muted">{post.excerpt}</p>
-                      ) : null}
-                      <div className="mt-2 flex items-center gap-3 text-xs text-npb-text-muted">
+                      <div className="mt-1 flex items-center gap-3 text-xs text-npb-text-muted">
                         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
                         <span
                           className={`rounded px-1.5 py-0.5 ${
@@ -109,17 +152,27 @@ export default function Dashboard() {
                               : 'bg-npb-status-warning/15 text-npb-status-warning'
                           }`}
                         >
-                          {post.status === 'publish' ? 'Published' : 'Draft'}
+                          {formatContentStatus(post.status)}
                         </span>
                       </div>
                     </div>
+                    <Link href={postEditorPath(post.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Edit ${post.title}`}
+                        title="Edit in page builder"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center text-npb-text-muted">
+              <div className="py-6 text-center text-npb-text-muted">
                 No posts yet.{' '}
-                <Link href="/admin/posts" className="text-npb-accent hover:underline">
+                <Link href="/admin/posts?create=true" className="text-npb-accent hover:underline">
                   Create your first post
                 </Link>
               </div>
@@ -128,7 +181,7 @@ export default function Dashboard() {
         </Card>
 
         <Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)]">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg font-semibold text-npb-text-primary">Active Theme</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -136,9 +189,9 @@ export default function Dashboard() {
               <>
                 <ThemeColorPreview
                   settings={(activeTheme as Theme).settings as { colors?: Record<string, string> }}
-                  className="h-28 w-full rounded-[var(--npb-radius-surface)]"
+                  className="h-24 w-full rounded-[var(--npb-radius-surface)]"
                 />
-                <h4 className="mt-4 font-semibold text-npb-text-primary">
+                <h4 className="mt-3 font-semibold text-npb-text-primary">
                   {(activeTheme as Theme).name}
                 </h4>
                 {(activeTheme as Theme).description ? (
@@ -148,9 +201,9 @@ export default function Dashboard() {
                 ) : null}
               </>
             ) : (
-              <p className="py-4 text-sm text-npb-text-muted">No theme active.</p>
+              <p className="py-3 text-sm text-npb-text-muted">No theme active.</p>
             )}
-            <Link href="/admin/themes" className="mt-4 block">
+            <Link href="/admin/themes" className="mt-3 block">
               <Button variant="outline" size="sm" className="w-full">
                 Manage Themes
               </Button>

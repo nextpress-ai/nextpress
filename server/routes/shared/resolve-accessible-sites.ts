@@ -13,7 +13,7 @@ export type SiteListItem = {
  * Falls back to the default site when none are linked yet.
  */
 export const resolveAccessibleSites = async (params: {
-	models: Deps["models"];
+	models: Pick<Deps["models"], "sites" | "userRoles">;
 	userId: string;
 }): Promise<SiteListItem[]> => {
 	const { models, userId } = params;

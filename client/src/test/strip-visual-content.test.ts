@@ -27,4 +27,42 @@ describe("stripVisualContentFromBlock", () => {
 		expect(data.flexDirection).toBeUndefined();
 		expect(data.gap).toBeUndefined();
 	});
+
+	it("preserves columns semantic metadata while stripping visual fields", () => {
+		const block: BlockConfig = {
+			id: "columns-1",
+			name: "core/columns",
+			type: "container",
+			parentId: null,
+			content: {
+				kind: "structured",
+				data: {
+					layoutMode: "flex",
+					gap: "16px",
+					direction: "row",
+					semanticRole: "feature-grid",
+					columnLayout: [
+						{
+							columnId: "default-col-1",
+							blockIds: ["child-1"],
+							label: "Primary",
+						},
+					],
+				},
+			},
+		};
+
+		const next = stripVisualContentFromBlock(block);
+		const data = (next.content as { data: Record<string, unknown> }).data;
+		expect(data.gap).toBeUndefined();
+		expect(data.direction).toBeUndefined();
+		expect(data.semanticRole).toBe("feature-grid");
+		expect(data.columnLayout).toEqual([
+			{
+				columnId: "default-col-1",
+				blockIds: ["child-1"],
+				label: "Primary",
+			},
+		]);
+	});
 });

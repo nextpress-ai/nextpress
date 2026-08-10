@@ -89,20 +89,6 @@ describe('PagesMenu', () => {
   });
 
   test('navigates to page edit view when page is selected', async () => {
-    // Mock window.location.href
-    let hrefValue = '';
-    Object.defineProperty(window, 'location', {
-      value: {
-        get href() {
-          return hrefValue;
-        },
-        set href(value: string) {
-          hrefValue = value;
-        },
-      },
-      writable: true,
-    });
-
     const user = userEvent.setup();
     renderPagesMenu();
     
@@ -119,7 +105,7 @@ describe('PagesMenu', () => {
     const pageItem = screen.getByText('Home Page');
     await user.click(pageItem);
 
-    expect(hrefValue).toBe('/admin/page-builder/page/page-1');
+    expect(mockSetLocation).toHaveBeenCalledWith('/admin/page-builder/page/page-1');
   });
 
   test('navigates to create when Create New Page is clicked', async () => {
@@ -189,6 +175,6 @@ describe('PagesMenu', () => {
 
     const secondPage = screen.getByText('About Page');
     const secondPageRow = secondPage.closest('[role]') as HTMLElement | null;
-    expect(within(secondPageRow!).getByText('draft')).toBeInTheDocument();
+    expect(within(secondPageRow!).getByText('Draft')).toBeInTheDocument();
   });
 });

@@ -95,6 +95,7 @@ export const tailwindThemeExtend = {
 			accent: {
 				DEFAULT: "var(--npb-accent)",
 				hover: "var(--npb-accent-hover)",
+				foreground: "var(--npb-accent-foreground)",
 			},
 			focus: "var(--npb-focus-ring)",
 			status: {

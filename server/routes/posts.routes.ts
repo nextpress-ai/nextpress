@@ -7,11 +7,12 @@ import { enrichPostForApi } from '@shared/posts/post-other';
 import { getSiteBlogIds } from './shared/site-content';
 import {
   assertAuthenticatedSiteAccess,
+  ContentAccessError,
   ensureNonPublicContentAccess,
   listQueryRequiresAuth,
   resolveContentSiteId,
+  resolveNonPublicListSiteId,
 } from '../lib/content-access';
-import { attachRequestAuth, resolveRequestAuth } from '../auth';
 import { validateContentForSave } from '@shared/validate-content-save';
 import {
   VERSION_REQUIRED,
@@ -47,23 +48,23 @@ export function createPostsRoutes(deps: Deps): Router {
     asyncHandler(async (req, res) => {
       const { err, result } = await safeTryAsync(async () => {
         const rawStatus = typeof req.query.status === 'string' ? req.query.status : CONFIG.STATUS.PUBLISH;
-        if (listQueryRequiresAuth(rawStatus)) {
-          const authContext = await resolveRequestAuth(req);
-          if (!authContext) {
-            throw Object.assign(new Error('Unauthorized'), { statusCode: 401 });
-          }
-          attachRequestAuth(req, authContext);
-        }
+        const { status = CONFIG.STATUS.PUBLISH, blog_id } = req.query;
+        const requestedSiteId =
+          typeof req.query.siteId === 'string' && req.query.siteId.trim()
+            ? req.query.siteId.trim()
+            : undefined;
+        const siteId = listQueryRequiresAuth(rawStatus)
+          ? await resolveNonPublicListSiteId({
+              req,
+              models,
+              requestedSiteId,
+            })
+          : requestedSiteId;
 
         const { page, limit, offset } = parsePaginationParams(
           req.query,
           CONFIG.PAGINATION.DEFAULT_POSTS_PER_PAGE
         );
-        const { status = CONFIG.STATUS.PUBLISH, blog_id } = req.query;
-        const siteId =
-          typeof req.query.siteId === 'string' && req.query.siteId.trim()
-            ? req.query.siteId.trim()
-            : undefined;
 
         // Handle 'any' status to show all posts (for admin interface)
         const actualStatus = parseStatusParam(status as string);
@@ -73,6 +74,12 @@ export function createPostsRoutes(deps: Deps): Router {
           filters.push({ where: 'status', equals: actualStatus });
         }
         if (blog_id && typeof blog_id === 'string') {
+          if (siteId) {
+            const siteBlogIds = await getSiteBlogIds({ models, siteId });
+            if (!siteBlogIds.includes(blog_id)) {
+              throw new ContentAccessError('This blog cannot be accessed on this site');
+            }
+          }
           filters.push({ where: 'blogId', equals: blog_id });
         } else if (siteId) {
           const blogIds = await getSiteBlogIds({ models, siteId });
@@ -108,8 +115,8 @@ export function createPostsRoutes(deps: Deps): Router {
       if (err) {
         console.error('Error fetching posts:', err);
         const statusCode = (err as { statusCode?: number }).statusCode ?? 500;
-        if (statusCode === 401) {
-          return res.status(401).json({ message: 'Unauthorized' });
+        if (statusCode === 400 || statusCode === 401 || statusCode === 403) {
+          return res.status(statusCode).json({ message: err.message });
         }
         return res.status(500).json({ message: 'Failed to fetch posts' });
       }

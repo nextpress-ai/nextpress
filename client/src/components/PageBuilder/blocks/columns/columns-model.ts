@@ -20,6 +20,22 @@ export const DEFAULT_CONTENT: ColumnsContent = {
   },
 };
 
+/**
+ * Scopes editor droppable IDs by block and position so legacy duplicate column
+ * metadata cannot register one destination over another.
+ */
+export function buildColumnDroppableId({
+	columnsBlockId,
+	columnId,
+	columnIndex,
+}: {
+	columnsBlockId: string;
+	columnId: string;
+	columnIndex: number;
+}): string {
+	return `columns:${columnsBlockId}:${columnIndex}:${columnId}`;
+}
+
 function cloneColumnLayout(layout: ColumnLayout[]): ColumnLayout[] {
   return layout.map((column) => ({
     ...column,

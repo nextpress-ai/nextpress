@@ -38,7 +38,7 @@ export function CreateContentDialog({
     const encodedTitle = encodeURIComponent(title);
     const path = type === 'page'
       ? `/admin/pages?create=true&title=${encodedTitle}`
-      : `/admin/posts/new?title=${encodedTitle}`;
+      : `/admin/posts?create=true&title=${encodedTitle}`;
     
     setLocation(path);
     

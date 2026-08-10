@@ -1,8 +1,43 @@
 import { describe, expect, it } from "vitest";
 import type { BlockConfig } from "@shared/schema-types";
-import { readColumnLayoutFromBlock } from "@shared/columns-layout";
+import {
+	readColumnLayoutFromBlock,
+	readColumnsData,
+	writeColumnsData,
+} from "@shared/columns-layout";
 
 describe("readColumnLayoutFromBlock", () => {
+	it("preserves structured semantic metadata and columnLayout", () => {
+		const columnLayout = [
+			{
+				columnId: "col-1",
+				width: "50%",
+				blockIds: ["heading-1"],
+				label: "Primary",
+			},
+		];
+		const content = {
+			kind: "structured" as const,
+			data: {
+				layoutMode: "flex" as const,
+				columnLayout,
+				semanticRole: "feature-grid",
+				customData: { source: "legacy-import" },
+			},
+		};
+
+		expect(readColumnsData(content)).toEqual(content.data);
+		expect(
+			writeColumnsData(content, { gap: "24px" }),
+		).toEqual({
+			kind: "structured",
+			data: {
+				...content.data,
+				gap: "24px",
+			},
+		});
+	});
+
 	it("reads columnLayout from settings, not content", () => {
 		const block: BlockConfig = {
 			id: "columns-1",

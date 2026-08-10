@@ -28,6 +28,7 @@ type ActiveSiteContextValue = {
 	activeSiteId: string;
 	activeSite: ActiveSiteItem | undefined;
 	isLoading: boolean;
+	error: Error | null;
 	setActiveSiteId: (siteId: string) => void;
 	formatSiteLabel: typeof formatSiteLabel;
 };
@@ -50,7 +51,7 @@ export function ActiveSiteProvider({ children }: { children: ReactNode }) {
 	const queryClient = useQueryClient();
 	const [activeSiteId, setActiveSiteIdState] = useState("");
 
-	const { data: sitesData, isLoading } = useQuery<SitesResponse>({
+	const { data: sitesData, isLoading, error } = useQuery<SitesResponse>({
 		queryKey: ["/api/sites"],
 		enabled: isAuthenticated,
 	});
@@ -96,10 +97,11 @@ export function ActiveSiteProvider({ children }: { children: ReactNode }) {
 			activeSiteId,
 			activeSite,
 			isLoading,
+			error,
 			setActiveSiteId,
 			formatSiteLabel,
 		}),
-		[sites, activeSiteId, activeSite, isLoading, setActiveSiteId],
+		[sites, activeSiteId, activeSite, isLoading, error, setActiveSiteId],
 	);
 
 	return <ActiveSiteContext.Provider value={value}>{children}</ActiveSiteContext.Provider>;

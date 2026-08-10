@@ -18,16 +18,10 @@ interface ImageRendererProps {
   onStylesChange?: (updates: Partial<React.CSSProperties>) => void;
 }
 
-const HANDLE_BASE_STYLE: React.CSSProperties = {
-  position: "absolute",
-  width: 12,
-  height: 12,
-  background: "#3b82f6",
-  border: "2px solid #fff",
-  borderRadius: "50%",
-  zIndex: 10,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-};
+const HANDLE_POSITIONS = {
+  'bottom-right': { bottom: -6, right: -6, cursor: 'nwse-resize' },
+  'bottom-left': { bottom: -6, left: -6, cursor: 'nesw-resize' },
+} as const;
 
 function ImageRenderer({
   content,
@@ -108,26 +102,28 @@ function ImageRenderer({
 
       {showHandles && (
         <>
-          <div
-            onMouseDown={createHandleMouseDown("bottom-right")}
-            style={{
-              ...HANDLE_BASE_STYLE,
-              bottom: caption ? 28 : -6,
-              right: -6,
-              cursor: "nwse-resize",
-            }}
-            title="Drag to resize"
-          />
-          <div
-            onMouseDown={createHandleMouseDown("bottom-left")}
-            style={{
-              ...HANDLE_BASE_STYLE,
-              bottom: caption ? 28 : -6,
-              left: -6,
-              cursor: "nesw-resize",
-            }}
-            title="Drag to resize"
-          />
+          {(Object.entries(HANDLE_POSITIONS) as Array<[keyof typeof HANDLE_POSITIONS, typeof HANDLE_POSITIONS[keyof typeof HANDLE_POSITIONS]]>).map(
+            ([corner, position]) => (
+              <div
+                key={corner}
+                role="button"
+                tabIndex={0}
+                aria-label="Resize image"
+                title="Drag corner to resize"
+                onMouseDown={createHandleMouseDown(corner)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                  }
+                }}
+                className="npb-image-resize-handle"
+                style={{
+                  ...position,
+                  bottom: caption ? 28 : position.bottom,
+                }}
+              />
+            ),
+          )}
         </>
       )}
     </figure>

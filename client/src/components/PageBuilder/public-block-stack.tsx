@@ -10,6 +10,7 @@ type PageDesign = PageOther["design"];
 type PublicBlockStackProps = {
   blocks: BlockConfig[];
   design?: PageDesign;
+  pageTitle?: string;
   animationContentKey: string;
   testId?: string;
   deviceView?: "desktop" | "tablet" | "mobile";
@@ -22,6 +23,7 @@ type PublicBlockStackProps = {
 export function PublicBlockStack({
   blocks,
   design,
+  pageTitle,
   animationContentKey,
   testId,
   deviceView,
@@ -49,6 +51,9 @@ export function PublicBlockStack({
       <PublishBlockStyles />
       {deviceAndTokenCss ? (
         <style dangerouslySetInnerHTML={{ __html: deviceAndTokenCss }} />
+      ) : null}
+      {pageTitle ? (
+        <h1 className="sr-only">{pageTitle}</h1>
       ) : null}
       <BlockAnimationRuntime contentKey={animationContentKey} />
       {blocks.map((block) => (

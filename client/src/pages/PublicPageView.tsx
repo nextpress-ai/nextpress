@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
+import { useLocation } from "wouter";
 import { Helmet } from "react-helmet";
 import { PublicBlockStack } from "@/components/PageBuilder/public-block-stack";
 import Landing from "@/pages/Landing";
+import { appendSiteIdToUrl } from "@/lib/site-api";
+import { SkipLink } from "@/components/a11y/skip-link";
 import type { Post } from "@shared/schema-types";
 import type { BlockConfig } from "@shared/schema-types";
 import type { PageOther } from "@shared/schema-types";
@@ -28,8 +31,16 @@ interface PublicPageViewProps {
   type?: 'page' | 'post' | 'homepage';
 }
 
+const getPublicSiteIdHint = (location: string): string | undefined => {
+  const queryStart = location.indexOf('?');
+  if (queryStart < 0) return undefined;
+  const query = location.slice(queryStart + 1).split('#')[0];
+  return new URLSearchParams(query).get('siteId') ?? undefined;
+};
+
 export default function PublicPageView({ slug: propSlug, type = 'page' }: PublicPageViewProps) {
   const { slug: routeSlug } = useParams();
+  const [location] = useLocation();
   const slug = propSlug || routeSlug;
   
   // Determine the API endpoint based on type
@@ -39,11 +50,12 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
     }
     return `/api/public/${type}/${slug}`;
   };
+  const apiEndpoint = appendSiteIdToUrl(getApiEndpoint(), getPublicSiteIdHint(location));
 
   const { data, isLoading, error } = useQuery({
-    queryKey: [getApiEndpoint()],
+    queryKey: [apiEndpoint],
     queryFn: async () => {
-      const response = await fetch(getApiEndpoint());
+      const response = await fetch(apiEndpoint);
       if (!response.ok) {
         throw new Error('Content not found');
       }
@@ -55,12 +67,17 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
   if (isLoading) {
     return (
       <div className="min-h-screen bg-npb-canvas-bg">
-        <div className="mx-auto flex min-h-screen max-w-4xl items-center justify-center px-6 py-12">
+        <div
+          className="mx-auto flex min-h-screen max-w-4xl items-center justify-center px-6 py-12"
+          role="status"
+          aria-live="polite"
+          aria-busy="true">
           <div className="w-full animate-pulse space-y-5">
             <div className="h-10 rounded bg-npb-border-subtle sm:h-14" />
             <div className="h-4 rounded bg-npb-border-subtle" />
             <div className="h-4 w-4/5 rounded bg-npb-border-subtle" />
           </div>
+          <span className="sr-only">Loading page content</span>
         </div>
       </div>
     );
@@ -122,6 +139,7 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
         fontFamily: design?.fontFamily || undefined,
       }}
     >
+      <SkipLink href="#main-content">Skip to content</SkipLink>
       {/* SEO Meta Tags */}
       <Helmet>
         <title>{metaTitle}</title>
@@ -153,7 +171,7 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
       </Helmet>
 
       {/* Page content */}
-      <div className="w-full">
+      <main id="main-content" className="w-full" tabIndex={-1}>
         {/* Handle pages with traditional content (non-page builder) */}
         {!data.usePageBuilder && data.content ? (
           <div 
@@ -207,13 +225,14 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
               <PublicBlockStack
                 blocks={blocks}
                 design={design}
+                pageTitle={data.title}
                 animationContentKey={`${type}-${data.id}-${blocks.length}`}
                 testId="page-builder-content"
               />
             )}
           </>
         )}
-      </div>
+      </main>
 
       {/* Post footer for blog posts */}
       {type === 'post' && (

@@ -17,6 +17,8 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { useContentLists } from '@/hooks/useContentLists';
+import { postEditorPath } from '@/lib/admin-content-routes';
+import { formatContentStatus } from '@/lib/format-content-status';
 import { CreateContentDialog } from './CreateContentDialog';
 
 interface BlogMenuProps {
@@ -38,7 +40,7 @@ export function BlogMenu({ children, currentPostId, blogId }: BlogMenuProps) {
 
   const handlePostSelect = (postId: string) => {
     setShowCommand(false);
-    setLocation(`/admin/posts/${postId}/edit`);
+    setLocation(postEditorPath(postId));
   };
 
   const handleCreateNew = () => {
@@ -77,13 +79,14 @@ export function BlogMenu({ children, currentPostId, blogId }: BlogMenuProps) {
             {posts.map((post) => (
               <CommandItem
                 key={post.id}
+                value={`${post.title ?? ''} ${post.slug ?? ''} ${post.id}`}
                 onSelect={() => handlePostSelect(post.id)}
                 className={currentPostId === post.id ? 'bg-accent' : ''}>
                 <Pen className="w-4 h-4" />
                 <span>{post.title}</span>
                 {post.status && (
                   <span className="ml-auto text-xs text-muted-foreground">
-                    {post.status}
+                    {formatContentStatus(post.status)}
                   </span>
                 )}
               </CommandItem>

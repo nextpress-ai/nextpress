@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Switch, Route } from 'wouter';
+import { Switch, Route, useLocation } from 'wouter';
 import { queryClient } from './lib/queryClient';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -10,6 +10,8 @@ import { AppLoadingShell } from '@/components/app-loading-shell';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { ActiveSiteProvider } from '@/hooks/useActiveSite';
 import PublicPageView from '@/pages/PublicPageView';
+import { AdminChrome } from '@/components/admin/admin-shell';
+import { GlobalCommandPalette } from '@/components/admin/global-command-palette';
 
 const NotFound = lazy(() => import('@/pages/not-found'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
@@ -36,6 +38,7 @@ function RouteFallback() {
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [location] = useLocation();
   
   // Check setup status on mount
   const { data: setupStatus, isLoading: isCheckingSetup } = useQuery({
@@ -158,8 +161,19 @@ function Router() {
     </Suspense>
   );
 
+  const isAdminContentRoute =
+    isAuthenticated &&
+    location.startsWith('/admin') &&
+    !location.startsWith('/admin/login') &&
+    !location.startsWith('/admin/register') &&
+    !location.startsWith('/admin/page-builder');
+  const routedContent = isAdminContentRoute ? <AdminChrome>{routes}</AdminChrome> : routes;
+
   return isAuthenticated ? (
-    <ActiveSiteProvider>{routes}</ActiveSiteProvider>
+    <ActiveSiteProvider>
+      <GlobalCommandPalette />
+      {routedContent}
+    </ActiveSiteProvider>
   ) : (
     routes
   );

@@ -212,7 +212,7 @@ export default function Users() {
 			title="Users"
 			actions={
 				<Button
-					className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+					className="npb-btn-accent"
 					onClick={handleNewUser}
 				>
 					<UserPlus className="w-4 h-4 mr-2" />

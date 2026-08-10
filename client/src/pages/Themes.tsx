@@ -14,7 +14,7 @@ import type { Theme } from '@shared/schema-types';
 const rendererBadgeClass = (renderer: string | undefined | null): string => {
   const map: Record<string, string> = {
     nextjs: 'bg-npb-text-primary text-npb-text-inverse',
-    react: 'bg-npb-accent text-white',
+    react: 'npb-btn-accent',
     custom: 'bg-npb-surface-inset text-npb-text-primary border border-npb-border-default',
   };
   return map[renderer ?? ''] ?? 'bg-npb-surface-inset text-npb-text-secondary';
@@ -145,7 +145,7 @@ export default function Themes() {
                       </div>
                     </div>
                     <Button
-                      className="w-full bg-npb-accent hover:bg-npb-accent-hover text-white"
+                      className="w-full npb-btn-accent"
                       onClick={() => activateMutation.mutate(theme.id)}
                       disabled={activateMutation.isPending}
                     >

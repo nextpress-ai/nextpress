@@ -252,7 +252,7 @@ export function ApiKeysPanel() {
         </div>
         <Button
           type="button"
-          className="bg-npb-accent hover:bg-npb-accent-hover text-white shrink-0"
+          className="npb-btn-accent shrink-0"
           onClick={openCreateDialog}
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -412,7 +412,7 @@ export function ApiKeysPanel() {
             </Button>
             <Button
               type="button"
-              className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+              className="npb-btn-accent"
               disabled={
                 !newKeyName.trim() ||
                 !createSiteId ||
@@ -461,7 +461,7 @@ export function ApiKeysPanel() {
             </Button>
             <Button
               type="button"
-              className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+              className="npb-btn-accent"
               disabled={editScopes.length === 0 || updateScopesMutation.isPending}
               onClick={() =>
                 editingKey &&
@@ -544,7 +544,7 @@ export function ApiKeysPanel() {
             </Button>
             <Button
               type="button"
-              className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+              className="npb-btn-accent"
               onClick={() =>
                 revealedCredentials && copyValue(revealedCredentials.key, 'API key')
               }

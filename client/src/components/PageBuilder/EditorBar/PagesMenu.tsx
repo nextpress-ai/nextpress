@@ -19,6 +19,8 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { useContentLists } from "@/hooks/useContentLists";
+import { pageEditorPath } from "@/lib/admin-content-routes";
+import { formatContentStatus } from "@/lib/format-content-status";
 import { Badge } from "@/components/ui/badge";
 
 interface PagesMenuProps {
@@ -27,6 +29,8 @@ interface PagesMenuProps {
   /** Opens the editor Page Settings modal when set */
   onPageSettingsClick?: () => void;
   onApplyResponsiveDefaults?: () => void;
+  /** Opens in-builder create page modal instead of navigating away */
+  onCreateNewPage?: () => void;
 }
 
 /**
@@ -38,6 +42,7 @@ export function PagesMenu({
   currentPageId,
   onPageSettingsClick,
   onApplyResponsiveDefaults,
+  onCreateNewPage,
 }: PagesMenuProps) {
   const [, setLocation] = useLocation();
   const [showCommand, setShowCommand] = useState(false);
@@ -45,10 +50,14 @@ export function PagesMenu({
 
   const handlePageSelect = (pageId: string) => {
     setShowCommand(false);
-    window.location.href = `/admin/page-builder/page/${pageId}`;
+    setLocation(pageEditorPath(pageId));
   };
 
   const handleCreateNew = () => {
+    if (onCreateNewPage) {
+      onCreateNewPage();
+      return;
+    }
     setLocation("/admin/pages?create=true");
   };
 
@@ -124,7 +133,7 @@ export function PagesMenu({
               return (
                 <CommandItem
                   key={page.id}
-                  value={page.id}
+                  value={`${page.title ?? ''} ${page.slug ?? ''} ${page.id}`}
                   onSelect={() => handlePageSelect(page.id)}
                   className={`
                     group cursor-pointer px-3 py-2.5 rounded-md transition-colors
@@ -157,7 +166,7 @@ export function PagesMenu({
                           )}`}
                         >
                           <BiPencil className="h-2 w-2 text-npb-text-muted group-hover:text-npb-text-secondary" />
-                          {page.status}
+                          {formatContentStatus(page.status)}
                         </Badge>
                       )}
                     </div>

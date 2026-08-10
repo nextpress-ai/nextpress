@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { BlockConfig } from '@shared/schema-types';
 import { insertNewBlock, moveExistingBlock } from '@/lib/handlers/treeUtils';
+import { buildColumnDroppableId } from '../components/PageBuilder/blocks/columns/columns-model';
 
 // Mock registry for creation
 vi.mock('@/components/PageBuilder/blocks', () => ({
@@ -38,6 +39,28 @@ describe('Columns DnD mapping helpers (integration via tree ops)', () => {
 
   beforeEach(() => {
     blocks = [makeColumns()];
+  });
+
+  it('scopes duplicate and default column IDs by block and index', () => {
+    const ids = [
+      buildColumnDroppableId({
+        columnsBlockId: 'columns-a',
+        columnId: 'default-col-1',
+        columnIndex: 0,
+      }),
+      buildColumnDroppableId({
+        columnsBlockId: 'columns-a',
+        columnId: 'default-col-1',
+        columnIndex: 1,
+      }),
+      buildColumnDroppableId({
+        columnsBlockId: 'columns-b',
+        columnId: 'default-col-1',
+        columnIndex: 0,
+      }),
+    ];
+
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('insertNewBlock inserts under Columns parent regardless of column subzone (simulated)', () => {

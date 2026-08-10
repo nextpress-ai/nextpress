@@ -49,10 +49,10 @@ export function ApiKeyScopesPicker({
               key={preset.id}
               type="button"
               size="sm"
-              variant={activePresetId === preset.id ? 'default' : 'outline'}
+              variant="outline"
               className={
                 activePresetId === preset.id
-                  ? 'bg-npb-accent hover:bg-npb-accent-hover text-white'
+                  ? 'npb-btn-accent border-transparent'
                   : undefined
               }
               onClick={() => onApplyPreset(preset)}

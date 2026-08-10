@@ -38,13 +38,14 @@ import type {
   Post,
   Template,
   TokenEntry,
-  PageSeoSettings,
-  PageDesignSettings,
-  PageIconSettings,
   PageOther,
   MetaTagEntry,
 } from '@shared/schema-types';
 import { PAGE_FONT_CATALOG } from "@shared/font-catalog";
+import {
+  buildPageSettingsPayload,
+  type PageSettingsFormValues,
+} from '@/lib/page-settings-payload';
 
 interface PageSettingsModalProps {
   open: boolean;
@@ -60,6 +61,19 @@ interface OptionApiResponse {
   name: string;
   value: string;
 }
+
+type EditablePageFields = {
+  title?: string | null;
+  name?: string | null;
+  slug?: string | null;
+  status?: string | null;
+  featuredImage?: string | null;
+  allowComments?: boolean | null;
+  password?: string | null;
+  parentId?: string | null;
+  menuOrder?: number | null;
+  templateId?: string | null;
+};
 
 const CONTAINER_WIDTH_OPTIONS = [
   { value: '960px', label: '960px' },
@@ -86,6 +100,7 @@ export default function PageSettingsModal({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { activeSiteId } = useActiveSite();
+  const editablePage = page as (Page | Post | Template) & EditablePageFields;
 
   const { data: homepageOption } = useQuery<OptionApiResponse | null>({
     queryKey: ['/api/options/homepage_page_slug', { siteId: activeSiteId }],
@@ -107,15 +122,15 @@ export default function PageSettingsModal({
   const currentIcons = pageOther?.icons;
 
   // General tab state
-  const [title, setTitle] = useState((page as any)?.title ?? (page as any)?.name ?? '');
-  const [slug, setSlug] = useState((page as any)?.slug ?? '');
-  const [status, setStatus] = useState((page as any)?.status ?? 'draft');
-  const [featuredImage, setFeaturedImage] = useState((page as any)?.featuredImage ?? '');
-  const [allowComments, setAllowComments] = useState((page as any)?.allowComments ?? false);
-  const [password, setPassword] = useState((page as any)?.password ?? '');
-  const [parentId, setParentId] = useState((page as any)?.parentId ?? '');
-  const [menuOrder, setMenuOrder] = useState((page as any)?.menuOrder ?? 0);
-  const [templateId, setTemplateId] = useState((page as any)?.templateId ?? '');
+  const [title, setTitle] = useState(editablePage?.title ?? editablePage?.name ?? '');
+  const [slug, setSlug] = useState(editablePage?.slug ?? '');
+  const [status, setStatus] = useState(editablePage?.status ?? 'draft');
+  const [featuredImage, setFeaturedImage] = useState(editablePage?.featuredImage ?? '');
+  const [allowComments, setAllowComments] = useState(editablePage?.allowComments ?? false);
+  const [password, setPassword] = useState(editablePage?.password ?? '');
+  const [parentId, setParentId] = useState(editablePage?.parentId ?? '');
+  const [menuOrder, setMenuOrder] = useState(editablePage?.menuOrder ?? 0);
+  const [templateId, setTemplateId] = useState(editablePage?.templateId ?? '');
   const [setAsHomepage, setSetAsHomepage] = useState(false);
 
   // SEO tab state
@@ -137,7 +152,7 @@ export default function PageSettingsModal({
   const [textColor, setTextColor] = useState<TokenEntry | undefined>(currentDesign?.textColor);
 
   // Icon settings state (pages only)
-  const [iconDefaultSet, setIconDefaultSet] = useState<string>(currentIcons?.defaultSet ?? 'lucide');
+  const [iconDefaultSet, setIconDefaultSet] = useState(currentIcons?.defaultSet ?? 'lucide');
   const [iconDefaultSize, setIconDefaultSize] = useState<number>(currentIcons?.defaultSize ?? 24);
 
   const saveMutation = useMutation({
@@ -147,60 +162,35 @@ export default function PageSettingsModal({
         throw new Error('Publish this page before setting it as the homepage');
       }
 
-      // Build SEO settings
-      const seoSettings: PageSeoSettings = {
-        metaTitle: metaTitle || undefined,
-        metaDescription: metaDescription || undefined,
-        canonicalUrl: canonicalUrl || undefined,
-        noIndex,
-        customMeta: customMetaTags.length > 0 ? customMetaTags : undefined,
-      };
-
-      // Build Design settings (pages only)
-      const designSettings: PageDesignSettings | undefined =
-        contentType === 'page'
-          ? {
-              fontFamily,
-              containerWidth,
-              padding,
-              backgroundColor,
-              textColor,
-            }
-          : undefined;
-
-      // Build icon settings (pages only)
-      const iconSettings: PageIconSettings | undefined =
-        contentType === 'page'
-          ? {
-              defaultSet: iconDefaultSet as PageIconSettings['defaultSet'],
-              defaultSize: iconDefaultSize,
-            }
-          : undefined;
-
-      // Build other field
-      const other: PageOther = {
-        seo: seoSettings,
-        ...(designSettings && { design: designSettings }),
-        ...(iconSettings && { icons: iconSettings }),
-      };
-
-      // Build payload with all fields
-      const payload: any = {
+      const values: PageSettingsFormValues = {
         title,
         slug,
         status,
-        featuredImage: featuredImage || undefined,
+        featuredImage,
         allowComments,
-        password: password || undefined,
-        other,
+        password,
+        parentId,
+        menuOrder,
+        templateId,
+        metaTitle,
+        metaDescription,
+        canonicalUrl,
+        noIndex,
+        customMetaTags,
+        fontFamily,
+        containerWidth,
+        padding,
+        backgroundColor,
+        textColor,
+        iconDefaultSet,
+        iconDefaultSize,
       };
-
-      // Add page-specific fields
-      if (contentType === 'page') {
-        payload.parentId = parentId || undefined;
-        payload.menuOrder = menuOrder;
-        payload.templateId = templateId || undefined;
-      }
+      const payload = buildPageSettingsPayload({
+        page,
+        isTemplate,
+        contentType,
+        values,
+      });
 
       const endpoint = isTemplate
         ? `/api/templates/${page.id}`
@@ -209,7 +199,7 @@ export default function PageSettingsModal({
           : `/api/pages/${page.id}`;
 
       const response = await apiRequest('PUT', endpoint, payload);
-      const updatedPage = await response.json();
+      const updatedPage = (await response.json()) as Page | Post | Template;
 
       if (contentType === 'page' && (setAsHomepage || isCurrentHomepage) && slug) {
         await apiRequest('POST', appendSiteIdToUrl('/api/options', activeSiteId), {
@@ -220,10 +210,19 @@ export default function PageSettingsModal({
 
       return updatedPage;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: Page | Post | Template) => {
       // Notify parent of meta changes for main save button
       if (onMetaChange) {
-        onMetaChange({ title, slug, status });
+        if (isTemplate) {
+          onMetaChange({ title: (data as Template).name });
+        } else {
+          const updated = data as Page | Post;
+          onMetaChange({
+            title: updated.title ?? '',
+            slug: updated.slug ?? '',
+            status: updated.status ?? 'draft',
+          });
+        }
       }
 
       // Notify parent of full update
@@ -251,7 +250,7 @@ export default function PageSettingsModal({
       // Close modal
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to save settings',

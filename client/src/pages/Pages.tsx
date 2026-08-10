@@ -1,44 +1,77 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Trash2, Eye, Pencil, Home } from "lucide-react";
+import { Plus, Trash2, Eye, Pencil, Home } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
+import {
+  ContentListBulkBar,
+  ContentListPaginationFooter,
+  ContentListToolbar,
+} from "@/components/admin/content-list";
+import { ContentStatusSelect } from "@/components/admin/content-status-select";
 import { CreatePageModal } from "@/components/Pages/CreatePageModal";
 import { apiRequest } from "@/lib/queryClient";
+import { pageEditorPath } from "@/lib/admin-content-routes";
 import { appendSiteIdToUrl, buildSiteOptionUrl } from "@/lib/site-api";
 import { useActiveSite } from "@/hooks/useActiveSite";
+import { useAdminListPagination } from "@/hooks/use-admin-list-pagination";
 import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { useToast } from "@/hooks/use-toast";
 import type { Page } from "@shared/schema-types";
 
-interface PagesApiResponse {
+type PagesApiResponse = {
   pages: Page[];
   total: number;
   page: number;
   per_page: number;
   total_pages: number;
-}
+};
 
-interface OptionApiResponse {
+type OptionApiResponse = {
   name: string;
   value: string;
-}
+};
 
 export default function Pages() {
-  const { activeSiteId } = useActiveSite();
+  const {
+    activeSiteId,
+    isLoading: activeSiteLoading,
+    error: activeSiteError,
+  } = useActiveSite();
+  return (
+    <PagesList
+      key={activeSiteId || "no-active-site"}
+      activeSiteId={activeSiteId}
+      activeSiteLoading={activeSiteLoading}
+      activeSiteError={activeSiteError}
+    />
+  );
+}
+
+type PagesListProps = {
+  activeSiteId: string;
+  activeSiteLoading?: boolean;
+  activeSiteError?: Error | null;
+};
+
+function PagesList({
+  activeSiteId,
+  activeSiteLoading = false,
+  activeSiteError = null,
+}: PagesListProps) {
   const [search, setSearch] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [location, setLocation] = useLocation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [idsToDelete, setIdsToDelete] = useState<string[]>([]);
+  const pagesQueryKey = ['/api/pages', { status: 'any', page, per_page: 10, siteId: activeSiteId }];
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -59,9 +92,19 @@ export default function Pages() {
     }
   }, [location, setLocation]);
 
-  const { data: pagesData, isLoading } = useQuery<PagesApiResponse>({
-    queryKey: ['/api/pages', { status: 'any', page, per_page: 10, siteId: activeSiteId }],
+  const {
+    data: pagesData,
+    isLoading,
+    error: pagesError,
+  } = useQuery<PagesApiResponse>({
+    queryKey: pagesQueryKey,
     enabled: !!activeSiteId,
+  });
+  const visiblePage = useAdminListPagination({
+    activeSiteId,
+    page,
+    setPage,
+    totalPages: pagesData?.total_pages,
   });
 
   const { data: homepageOption } = useQuery<OptionApiResponse | null>({
@@ -87,6 +130,11 @@ export default function Pages() {
   useEffect(() => {
     selection.clear();
   }, [page, activeSiteId, selection.clear]);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -190,81 +238,67 @@ export default function Pages() {
   };
 
   const handlePageBuilder = (pageId: string) => {
-    setLocation(`/admin/page-builder/page/${pageId}`);
+    setLocation(pageEditorPath(pageId));
   };
 
   const handleSetHomepage = (targetPage: Page) => {
     homepageMutation.mutate(targetPage);
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
-      publish: "default",
-      draft: "secondary",
-      private: "outline",
-      trash: "destructive"
-    };
-    return <Badge variant={variants[status] || "secondary"}>{status}</Badge>;
-  };
-
   return (
     <AdminLayout
       title="Pages"
       actions={
-        <Button
-          className="bg-npb-accent hover:bg-npb-accent-hover text-white"
-          onClick={handleNewPage}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Page
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <ContentListToolbar
+            compact
+            value={search}
+            placeholder="Search pages..."
+            onSearchChange={handleSearchChange}
+          />
+          <Button className="npb-btn-accent" onClick={handleNewPage}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Page
+          </Button>
+        </div>
       }
     >
           <Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)]">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>All Pages</CardTitle>
-                <div className="flex items-center space-x-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-npb-text-muted w-4 h-4" />
-                    <Input
-                      placeholder="Search pages..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="pl-10 w-64"
-                    />
-                  </div>
+            <CardContent className="pt-4">
+              <ContentListBulkBar
+                visible={selection.selectedCount > 0}
+                selectedCount={selection.selectedCount}
+                itemLabel="page"
+                onDelete={() => openDeleteDialog(selection.selectedIdList)}
+                onClear={selection.clear}
+                deletePending={deleteMutation.isPending}
+              />
+              {activeSiteLoading ? (
+                <div role="status" className="py-8 text-center text-npb-text-muted">
+                  Loading site...
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {selection.selectedCount > 0 && (
-                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-npb-border-default bg-npb-surface-raised px-4 py-3">
-                  <span className="text-sm text-npb-text-primary">
-                    {selection.selectedCount}{" "}
-                    {selection.selectedCount === 1 ? "page" : "pages"} selected
-                  </span>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => openDeleteDialog(selection.selectedIdList)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    Delete selected
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={selection.clear}>
-                    Clear selection
-                  </Button>
+              ) : activeSiteError ? (
+                <div role="alert" className="py-8 text-center text-npb-text-muted">
+                  Could not load active site.
                 </div>
-              )}
-              {isLoading ? (
-                <div className="text-center py-8 text-npb-text-muted">Loading pages...</div>
+              ) : !activeSiteId ? (
+                <div role="status" className="py-8 text-center text-npb-text-muted">
+                  No active site available.
+                </div>
+              ) : pagesError ? (
+                <div role="alert" className="py-8 text-center text-npb-text-muted">
+                  Could not load pages. Try again.
+                </div>
+              ) : isLoading ? (
+                <div role="status" className="py-8 text-center text-npb-text-muted">
+                  Loading pages...
+                </div>
               ) : filteredPages.length === 0 ? (
                 <div className="text-center py-8 text-npb-text-muted">
                   No pages found. <Button variant="link" onClick={handleNewPage}>Create your first page</Button>
                 </div>
               ) : (
-                <Table>
+                <Table className="admin-list-table">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">
@@ -304,7 +338,9 @@ export default function Pages() {
                         <TableCell>
                           <div>
                             <div className="font-medium text-npb-text-primary flex items-center gap-2">
-                              {page.title}
+                              <Link href={pageEditorPath(page.id)} className="hover:text-npb-accent">
+                                {page.title}
+                              </Link>
                               {(page.other as any)?.isBlogPage && (
                                 <Badge variant="outline" className="text-xs font-normal text-blue-600 border-blue-300">Blog</Badge>
                               )}
@@ -315,7 +351,13 @@ export default function Pages() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {getStatusBadge(page.status || 'draft')}
+                          <ContentStatusSelect
+                            contentKind="page"
+                            contentId={page.id}
+                            status={page.status || 'draft'}
+                            version={page.version}
+                            queryKeys={[pagesQueryKey, ['/api/pages']]}
+                          />
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
@@ -331,6 +373,7 @@ export default function Pages() {
                               variant="ghost" 
                               size="sm"
                               onClick={() => handleView(page)}
+                              aria-label={page.status === 'publish' ? `View published page ${page.title}` : `Preview page ${page.title}`}
                               title={page.status === 'publish' ? 'View published page' : 'Preview page'}
                             >
                               <Eye className="w-4 h-4" />
@@ -339,6 +382,7 @@ export default function Pages() {
                               variant="ghost" 
                               size="sm"
                               onClick={() => handlePageBuilder(page.id)}
+                              aria-label={`Edit ${page.title} with Page Builder`}
                               title="Edit with Page Builder"
                             >
                               <Pencil className="w-4 h-4" />
@@ -347,6 +391,11 @@ export default function Pages() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleSetHomepage(page)}
+                              aria-label={
+                                page.status === 'publish'
+                                  ? `Set ${page.title} as homepage`
+                                  : `Publish ${page.title} before setting homepage`
+                              }
                               title={page.status === 'publish' ? 'Set as homepage' : 'Publish page before setting homepage'}
                               disabled={
                                 page.status !== 'publish' ||
@@ -361,6 +410,11 @@ export default function Pages() {
                               size="sm"
                               onClick={() => handleDelete(page.id)}
                               disabled={deleteMutation.isPending || isHomepage(page)}
+                              aria-label={
+                                isHomepage(page)
+                                  ? `Cannot delete ${page.title} while it is the homepage`
+                                  : `Delete page ${page.title}`
+                              }
                               title={
                                 isHomepage(page)
                                   ? "Choose a different homepage before deleting this page"
@@ -377,32 +431,16 @@ export default function Pages() {
                 </Table>
               )}
 
-              {/* Pagination */}
-              {pagesData && pagesData.total_pages > 1 && (
-                <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-npb-text-muted">
-                    Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, pagesData.total)} of {pagesData.total} pages
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage(page - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      disabled={page >= pagesData.total_pages}
-                      onClick={() => setPage(page + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
+              {pagesData && !pagesError && activeSiteId && !activeSiteLoading ? (
+                <ContentListPaginationFooter
+                  page={visiblePage}
+                  perPage={10}
+                  total={pagesData.total}
+                  totalPages={pagesData.total_pages}
+                  itemLabel="pages"
+                  onPageChange={setPage}
+                />
+              ) : null}
             </CardContent>
           </Card>
 

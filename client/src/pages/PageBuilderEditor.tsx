@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { BlockConfig, Page, Post, Template } from '@shared/schema-types';
 import { storeSlugToIdMapping, getPageIdFromSlug } from '@/lib/editorStorage';
 import { setParentIds } from '@/lib/handlers/treeUtils';
+import { apiRequest } from '@/lib/queryClient';
 import {
   clearPageDraft,
   loadPageDraft,
@@ -28,24 +29,47 @@ import {
 } from '@/lib/postDraftStorage';
 import { VERSION_STALE } from '@shared/content-version';
 import { stripVisualContentFromBlocks } from '@shared/strip-visual-content-from-blocks';
+import {
+  buildEditorSavePayload,
+  resolveEditorSaveTarget,
+} from '@/lib/editor-save-target';
+import {
+  shouldRestoreLocalDraft,
+  stampDraftTimestamp,
+} from '@/lib/editor-persistence';
 
 type PageState = {
   blocks: BlockConfig[];
   title: string;
   slug: string;
   status: string;
+  version: number;
   isInitialized: boolean;
 };
 
 type PageAction =
   | { type: 'RESET' }
-  | { type: 'LOAD'; payload: { blocks: BlockConfig[]; title: string; slug: string; status: string } };
+  | {
+      type: 'LOAD';
+      payload: {
+        blocks: BlockConfig[];
+        title: string;
+        slug: string;
+        status: string;
+        version?: number;
+      };
+    }
+  | {
+      type: 'UPDATE_METADATA';
+      payload: { title: string; slug: string; status: string; version: number };
+    };
 
 const initialPageState: PageState = {
   blocks: [],
   title: '',
   slug: '',
   status: 'draft',
+  version: 0,
   isInitialized: false,
 };
 
@@ -60,7 +84,13 @@ function pageStateReducer(state: PageState, action: PageAction): PageState {
         title: action.payload.title,
         slug: action.payload.slug,
         status: action.payload.status,
+        version: action.payload.version ?? state.version,
         isInitialized: true,
+      };
+    case 'UPDATE_METADATA':
+      return {
+        ...state,
+        ...action.payload,
       };
     default:
       return state;
@@ -537,29 +567,39 @@ export default function PageBuilderEditor({
     queryClient.invalidateQueries({ queryKey: [apiBase] });
   };
 
-  const handlePageBuilderSave = async (): Promise<boolean> => {
+  const handlePageBuilderSave = async (
+    blocksOverride?: BlockConfig[],
+  ): Promise<boolean> => {
     if (!data) return false;
 
     setIsSaving(true);
     try {
-      const { apiRequest } = await import('@/lib/queryClient');
-      const blocks = stripVisualContentFromBlocks(pageState.blocks);
+      const blocks = stripVisualContentFromBlocks(
+        blocksOverride ?? pageState.blocks,
+      );
+      const editorContentType = inlinePostId
+        ? 'post'
+        : isTemplate
+          ? 'template'
+          : isPost
+            ? 'post'
+            : 'page';
+      const target = resolveEditorSaveTarget({
+        contentType: editorContentType,
+        id: inlinePostId ?? data.id,
+        expectedVersion: readExpectedVersion(inlinePostData ?? data),
+      });
+      const payload = buildEditorSavePayload({
+        target,
+        title: pageState.title,
+        slug: pageState.slug,
+        status: pageState.status,
+        blocks,
+      });
 
       // When inline-editing a post, save to the post API
       if (inlinePostId) {
-        const expectedVersion = readExpectedVersion(inlinePostData ?? data);
-        const postPayload = {
-          title: pageState.title,
-          slug: pageState.slug,
-          status: pageState.status,
-          blocks,
-          expectedVersion,
-        };
-        const response = await apiRequest(
-          'PUT',
-          `/api/posts/${inlinePostId}`,
-          postPayload,
-        );
+        const response = await apiRequest('PUT', target.endpoint, payload);
         const updated = await response.json();
         savePostDraft(updated.id, updated);
         clearPostDraft(updated.id);
@@ -569,21 +609,7 @@ export default function PageBuilderEditor({
         return true;
       }
 
-      const payload = isTemplate
-        ? { name: pageState.title, blocks }
-        : {
-            title: pageState.title,
-            slug: pageState.slug,
-            status: pageState.status,
-            blocks,
-            expectedVersion: readExpectedVersion(data),
-          };
-
-      const response = await apiRequest(
-        'PUT',
-        `${apiBase}/${data.id}`,
-        payload,
-      );
+      const response = await apiRequest('PUT', target.endpoint, payload);
       const updated = await response.json();
 
       // Persist and clear draft (skip for templates)
@@ -692,18 +718,26 @@ export default function PageBuilderEditor({
             </Button>
             <div className="flex items-center gap-2 flex-1 max-w-md">
               {isInlineEditing && (
-                <FileText className="w-4 h-4 npb-chrome-accent flex-shrink-0" />
+                <FileText className="w-4 h-4 npb-chrome-accent flex-shrink-0" aria-hidden />
               )}
-              <span className="text-sm npb-chrome-muted flex-shrink-0">
+              <label
+                htmlFor="page-builder-title"
+                className="text-sm npb-chrome-muted flex-shrink-0">
                 {isInlineEditing
                   ? 'Editing Post:'
                   : `Editing ${isTemplate ? 'Template' : isPost ? 'Post' : 'Page'}:`}
-              </span>
+              </label>
               <Input
+                id="page-builder-title"
                 value={pageState.title}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 className="npb-chrome-input text-sm h-8"
                 placeholder="Enter title..."
+                aria-label={
+                  isInlineEditing
+                    ? 'Post title'
+                    : `${isTemplate ? 'Template' : isPost ? 'Post' : 'Page'} title`
+                }
               />
             </div>
           </div>
@@ -734,18 +768,18 @@ export default function PageBuilderEditor({
               size="sm"
               onClick={handlePageBuilderSave}
               disabled={isSaving}
-              className="flex items-center gap-2 bg-npb-accent hover:bg-npb-accent-hover text-white"
+              className="flex items-center gap-2 npb-btn-accent"
               data-testid="button-save">
               <Save className="w-4 h-4" />
               {isSaving ? 'Saving...' : 'Save'}
             </Button>
             {!isTemplate && (
               <PublishDialog
-                post={data}
+                post={isInlineEditing ? inlinePostData ?? undefined : data}
                 blocks={pageState.blocks}
                 onPublished={handleSave}
                 disabled={isSaving}
-                contentType={isPost ? 'post' : 'page'}
+                contentType={isInlineEditing || isPost ? 'post' : 'page'}
               />
             )}
           </div>
@@ -761,6 +795,7 @@ export default function PageBuilderEditor({
             blocks={pageState.blocks}
             onBlocksChange={handleBlocksChange}
             onSave={handleSave}
+            onSaveRequest={handlePageBuilderSave}
             onPreview={handlePreview}
             pageMeta={{
               title: pageState.title,

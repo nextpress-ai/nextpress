@@ -52,7 +52,7 @@ export default function NotFound() {
             </Button>
             <Button
               onClick={handleGoHome}
-              className="flex-1 bg-npb-accent hover:bg-npb-accent-hover text-white"
+              className="flex-1 npb-btn-accent"
             >
               <Home className="mr-2 h-4 w-4" />
               Go to Home

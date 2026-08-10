@@ -33,6 +33,8 @@ export function ImageBlock(block: BlockConfig) {
 
 	const imageStyle: React.CSSProperties = {
 		...style,
+		maxWidth: style.maxWidth ?? "100%",
+		height: style.height ?? (width ? undefined : "auto"),
 		...(width ? { width } : {}),
 		...(height ? { height } : {}),
 		...(objectFit
@@ -40,7 +42,15 @@ export function ImageBlock(block: BlockConfig) {
 			: {}),
 	};
 
-	const image = <img src={url} alt={alt || ""} style={imageStyle} />;
+	const imageAlt = alt.trim();
+	const image = (
+		<img
+			src={url}
+			alt={imageAlt}
+			style={imageStyle}
+			role={imageAlt ? undefined : 'presentation'}
+		/>
+	);
 
 	// Determine link href based on linkDestination
 	const linkHref =
@@ -424,7 +434,7 @@ export function MediaTextBlock(block: BlockConfig) {
 			: structured;
 
 	const url = (data?.mediaUrl as string) || (parseMediaContent(block.content).url as string);
-	const alt = (data?.mediaAlt as string) || "";
+	const alt = ((data?.mediaAlt as string) || "").trim();
 	const mediaPosition = (data?.mediaPosition as string) || "left";
 	const verticalAlignment = data?.verticalAlignment as string | undefined;
 	const isStackedOnMobile = data?.isStackedOnMobile !== false;
@@ -454,9 +464,12 @@ export function MediaTextBlock(block: BlockConfig) {
 	};
 
 	const mediaContent = (
-		<>
-			<img src={url} alt={alt || ""} style={{ display: "none" }} />
-		</>
+		<img
+			src={url}
+			alt={alt}
+			className="sr-only"
+			aria-hidden={alt ? undefined : true}
+		/>
 	);
 
 	// Wrap media in <a> if there's a link, otherwise use <figure>

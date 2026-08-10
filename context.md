@@ -58,7 +58,149 @@ Per **AGENTS.md → Workflow**: use `task.md` for work **>30min**; at **task end
 
 ---
 
-## 2026-07-24 — SDK/MCP 2x: patchBlocks + validate
+## 2026-08-07 — Builder library and inspector split
+
+### Summary
+
+- Extracted reusable `BuilderLibraryPanel` and `BuilderInspectorPanel` bodies.
+- `BuilderResponsiveSidebar` mounts exactly one tree: split rails at `1280px`, existing tabbed sidebar below.
+- Wide rails use `18rem` library and `22rem` inspector CSS tokens around a flexible canvas.
+
+### Patterns and tradeoffs
+
+- `useMediaQuery` uses `useSyncExternalStore`, avoiding component effects and duplicate DnD IDs.
+- Library remains mounted in wide mode; compact mode preserves existing tab behavior and collapse control.
+- Library accordion state belongs to shell instance, so viewport crossing resets fold state.
+
+### Verification
+
+- Focused builder tests: **19/19** passed.
+- `pnpm build` transformed 3,703 modules, then environment terminated chunk rendering with exit 143.
+- Full type-check still reports pre-existing unrelated diagnostics; no new diagnostics from this slice.
+
+---
+
+## 2026-08-07 — Foundational UX and QA (targeted pass)
+
+### Summary
+
+Implemented the approved **targeted** slice of the Foundational UX plan. Structural items remain **approval-gated** (see deferred list below).
+
+### Navigation and site correctness
+
+- **`client/src/lib/admin-content-routes.ts`**: canonical builder paths (`postEditorPath`, `pageEditorPath`)
+- **BlogMenu** → `/admin/page-builder/post/:id` (was broken `/admin/posts/:id/edit`)
+- **Dashboard** recent titles + edit icon → post builder
+- **PagesMenu** → wouter nav (no hard reload); cmdk `value` includes title/slug
+- **`useContentLists`** + **MediaPickerDialog** → `activeSiteId` in query keys and upload URL
+- **CreateContentDialog** post path → `/admin/posts?create=true&title=…`; **Posts** opens create dialog from URL
+
+### List UX (no shared framework migration)
+
+- **`AdminListPaginationFooter`**: totals always visible, even on one-page results
+- **Posts/Pages**: title links to builder, inline **`ContentStatusSelect`** with `expectedVersion`, search resets page + “current page only” hint
+- **Media**: thumbnail/filename open details dialog; shared pagination footer
+
+### Builder / loading
+
+- **`index.html`**: minimal pre-React theme-aware background (reduces white flash)
+- **CreatePageModal** opens in-builder from PagesMenu (`onCreateNewPage`)
+- **BlockRenderer**: persistent `npb-canvas-block-selected` outline; toolbar stays visible when selected
+- **`resolve-spacing-sides.ts`**: padding/margin highlight parity (shorthand + longhand)
+- **PageBuilder** delete → toast with Undo (invalidated after further edits)
+- **ImageBlock**: tokenized resize handles (`.npb-image-resize-handle`)
+- **renderer/react/media**: `maxWidth: 100%` on published images
+
+### Tests added/updated
+
+- `BlogMenu.test.tsx`, `Dashboard.test.tsx`, `BlockRenderer.test.tsx`, `useContentLists.test.tsx`, `resolve-spacing-sides.test.ts`
+- **42/42** targeted vitest pass (2026-08-07)
+
+### QA backlog — still deferred (explicit approval required)
+
+1. Shared content-list framework + multi-screen migration
+2. Persistent admin route shell / Suspense redesign
+3. Header Save / Ctrl+S persistence unification
+4. Global column `children` / `columnLayout` reconciliation
+5. Global Command/Ctrl+K palette
+6. Backend/SDK search, sorting, drag ordering, DB changes
+
+Decision packets for each deferred item live in the plan dossiers; **`backup/foundational-ux-qa/intent.md`** records this pass scope.
+
+### Tradeoffs
+
+- List search remains client-side on the loaded page only (labeled in UI); server-backed search/sort needs API approval
+- Delete undo uses undo stack (one step); further edits invalidate the toast action
+- `pnpm check` still reports pre-existing server/shared TS errors unrelated to this pass
+
+---
+
+## 2026-08-07 — Deferred UX architecture slices
+
+### Implemented
+
+- **Admin route shell:** `AdminChrome` now owns persistent top bar/sidebar outside the
+  route `Suspense` boundary for authenticated admin content. `AdminLayout` remains a
+  standalone-compatible page frame. Builder, public, auth, and setup routes keep their
+  own chrome.
+- **Global palette:** authenticated Ctrl/Cmd+K navigation/create palette uses active-site
+  content results, ignores editable fields, and leaves destructive actions out of scope.
+- **Builder split:** wide view uses fixed library and inspector rails at 1280px and above;
+  compact view retains the tabbed sidebar. `useSyncExternalStore` selects one tree, so DnD
+  IDs are not duplicated.
+- **Save path:** header Save and builder Ctrl/Cmd+S now call one parent-owned remote save
+  operation. `editor-save-target.ts` resolves endpoint/version and payload shape. Local
+  draft storage remains separate. Page settings now sends `expectedVersion`; inline publish
+  targets the inline post rather than its parent page.
+- **Columns:** `reconcileColumnLayouts` is pure, deterministic, idempotent, and
+  diagnostics-only. It removes stale references and duplicate memberships, then places
+  direct orphans in first-column child order.
+
+### Verification
+
+- Full suite: **95 files, 702 tests passed**.
+- Production build: `pnpm build` passed.
+- Focused deferred tests: route shell, global palette, save target, list primitives,
+  builder inspector/responsive split, and columns reconciliation passed.
+- `pnpm check` still reports the previously documented server/shared TypeScript errors;
+  no new errors came from these slices.
+
+### Still contract-gated
+
+- Backend/SDK search and sorting semantics, database/index changes, persisted view
+  preferences, and drag ordering remain unimplemented. No database command or migration
+  ran. Reorder needs resource-specific policy and concurrency behavior before code.
+- Full migration of Media, Comments, and Templates remains deferred after the Posts/Pages
+  list pilot.
+
+### Safety
+
+- Deferred backups live under `backup/foundational-ux-qa/deferred-before-*`.
+- Decision record: `backup/foundational-ux-qa/intent.md`.
+
+---
+
+## 2026-08-07 — Shared content-list foundation pilot
+
+### Summary
+
+- Added typed list primitives under `client/src/components/admin/content-list/`.
+- Moved pagination behavior into `ContentListPaginationFooter`; legacy `AdminListPaginationFooter` import remains compatible.
+- Posts and Pages now import pagination from the new domain. Media, Comments, and Templates remain unchanged.
+- Query keys, current-page-only semantics, page reset, and row/action markup remain
+  page-owned; Posts and Pages now use the shared typed search toolbar.
+
+### Verification
+
+- Focused list tests: **14/14** (`content-list.test.tsx`, `useContentLists.test.tsx`)
+- Reversible backups: `backup/foundational-ux-qa/deferred-before-list/`
+
+### Tradeoff
+
+- Toolbar and pagination primitives are wired only into Posts and Pages to limit migration
+  surface. Media, Comments, and Templates retain their existing list implementations.
+
+---
 
 ### Summary
 
@@ -506,3 +648,45 @@ BlockConfig[] (single type)
 - 8 outdated docs archived to `/trash/docs-archive-20260610/` (report-1/2/4, my-notes, phase7-tasks, templates-enhancement-plan, homepage-admin-routing-task, client/plan)
 - 5 root docs moved to `docs/internal/` (intent, task, COPYWRITING, documentation-guidelines); design guidance consolidated to `docs/design-system.md`
 - Only `AGENTS.md` and `context.md` remain at root
+
+---
+
+## 2026-08-07 — Columns reconciliation diagnostics
+
+- `shared/reconcile-columns-layout.ts` provides pure, diagnostics-only global reconciliation.
+- First membership wins; stale references and duplicates are removed; direct orphans append to first column in child order.
+- No load/save wiring; 35 focused column tests pass.
+
+---
+
+## 2026-08-10 — Accessibility pass (admin, editor, published pages)
+
+- **Skip links**: `client/src/components/a11y/skip-link.tsx` + `.skip-link` CSS. Wired in `AdminChrome`, `PageBuilder`, and `PublicPageView`.
+- **Landmarks**: Admin `main#admin-main-content`; public SPA `main#main-content` (SSR already had `#main-content`); editor canvas `#builder-canvas`.
+- **Published pages**: Loading state uses `role="status"`; page-builder pages get sr-only `<h1>` via `PublicBlockStack.pageTitle`.
+- **Admin lists**: Icon buttons on Pages/Posts have `aria-label`; content-list search has associated `<label>`.
+- **Editor**: Device/undo/redo/sidebar toggles labeled + `aria-pressed` where relevant; block library search labeled; **Add** button per block (keyboard alternative to drag); canvas blocks focusable with Enter/Space select; title field labeled in `PageBuilderEditor`.
+- **Publish renderers**: Image decorative alt handling; Media Text uses sr-only img (not `display:none`) for screen reader alt text.
+- **Sidebar**: `aria-label="Admin"` on nav; section groups labeled for screen readers; section label contrast bumped slightly.
+
+---
+
+## 2026-08-10 — Contrast pass (admin, editor, controls)
+
+- **`--npb-accent-foreground`**: white on light accent blue; dark text on lighter `#60a5fa` accent in dark mode.
+- **`.npb-btn-accent`**: replaces scattered `bg-npb-accent text-white` on CTAs (fixes dark-mode white-on-light-blue).
+- **shadcn controls**: `Button` ghost/outline, `Input`, `Textarea`, `Select`, `Toggle`, dropdown sub-triggers, toast actions — explicit `text-foreground` / `bg-background` pairs.
+- **Admin lists**: `ContentStatusSelect` uses `text-npb-text-primary`; admin-page form controls inherit readable text on surfaces.
+- **ResponsiveHealthBanner**: amber warning uses dark text in light theme, light text in dark theme.
+- **`.npb-interactive-ghost`**: base text color set (not hover-only).
+
+---
+
+## 2026-08-10 — Motion + admin UX streamlining
+
+- **Motion layer**: `client/src/lib/motion-presets.ts`, `use-prefers-reduced-motion.ts`, `components/motion/motion-primitives.tsx` (Framer Motion). Disabled in tests and when `prefers-reduced-motion`.
+- **Admin pages**: `MotionPage` enter on main content; sticky page headers (`top: 8` below top bar).
+- **Lists (Posts/Pages)**: search moved to page header (compact toolbar, no extra card row); sticky table headers; tighter row padding; animated `ContentListBulkBar`.
+- **Dashboard**: quick-action chips (New post/page, Media, ⌘K hint); staggered stat cards; compact recent posts (no excerpt block).
+- **Editor**: sidebar slide-in via `MotionSidebarPanel`; softer empty-canvas hint with motion.
+- **Command palette**: Create actions listed before Navigation for fewer steps to new content.

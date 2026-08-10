@@ -107,7 +107,7 @@ describe('CreateContentDialog', () => {
     fireEvent.change(input, { target: { value: 'My New Post' } });
     fireEvent.click(createButton);
     
-    expect(mockSetLocation).toHaveBeenCalledWith('/admin/posts/new?title=My%20New%20Post');
+    expect(mockSetLocation).toHaveBeenCalledWith('/admin/posts?create=true&title=My%20New%20Post');
   });
 
   test('encodes title with special characters in URL', () => {

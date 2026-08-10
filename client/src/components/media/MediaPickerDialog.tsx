@@ -9,6 +9,8 @@ import { Image as ImageIcon, Film, Music, File, Upload } from "lucide-react";
 import { ImageDropzone } from "@/components/ui/image-dropzone";
 import type { Media } from "@shared/schema-types";
 import { isImageMedia } from "@/lib/is-image-asset";
+import { useActiveSite } from "@/hooks/useActiveSite";
+import { appendSiteIdToUrl } from "@/lib/site-api";
 
 type MediaKind = "any" | "image" | "video" | "audio";
 
@@ -32,9 +34,11 @@ export default function MediaPickerDialog({ open, onOpenChange, onSelect, kind =
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"library" | "upload">("library");
   const queryClient = useQueryClient();
+  const { activeSiteId } = useActiveSite();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["/api/media", { per_page: 100, page: 1 }],
+    queryKey: ["/api/media", { per_page: 100, page: 1, siteId: activeSiteId }],
+    enabled: open && !!activeSiteId,
   });
 
   const items: Media[] = (data as any)?.media || [];
@@ -67,7 +71,7 @@ export default function MediaPickerDialog({ open, onOpenChange, onSelect, kind =
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch("/api/media", {
+    const response = await fetch(appendSiteIdToUrl("/api/media", activeSiteId), {
       method: "POST",
       body: formData,
       credentials: "include",
@@ -88,7 +92,7 @@ export default function MediaPickerDialog({ open, onOpenChange, onSelect, kind =
     onOpenChange(false);
 
     return mediaItem.url;
-  }, [queryClient, onSelect, onOpenChange]);
+  }, [queryClient, onSelect, onOpenChange, activeSiteId]);
 
   const renderThumb = (m: Media) => {
     if (isImageMedia(m)) {
