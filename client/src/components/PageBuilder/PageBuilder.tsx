@@ -6,7 +6,8 @@ import { generateBlockId } from './utils';
 import { useDragAndDropHandler } from '../../hooks/useDragAndDropHandler';
 import { usePageSave } from '../../hooks/usePageSave';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
-import { BuilderSidebar } from './BuilderSidebar';
+import { BuilderResponsiveSidebar, useBuilderWideLayout } from './BuilderResponsiveSidebar';
+import { BuilderInspectorSidebar } from './BuilderInspectorSidebar';
 import { BuilderTopBar } from './BuilderTopBar';
 import { BuilderCanvas } from './BuilderCanvas';
 import PageSettingsModal from './PageSettings';
@@ -31,6 +32,11 @@ import { reIdTemplateBlocks } from '@/lib/re-id-template-blocks';
 import { persistResponsiveDefaultsToBlocks } from '@shared/persist-responsive-defaults';
 import { writePreviewSession } from '@shared/preview-session';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
+import { CreatePageModal } from '@/components/Pages/CreatePageModal';
+import { runParentOwnedSave } from '@/lib/run-parent-save';
+import { SkipLink } from '@/components/a11y/skip-link';
+import { MotionSidebarPanel } from '@/components/motion/motion-primitives';
 
 function useMountEffect(effect: () => void | (() => void)) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,6 +76,8 @@ interface PageBuilderProps {
   blocks?: BlockConfig[];
   onBlocksChange?: (blocks: BlockConfig[]) => void;
   onSave?: (updatedData: Page | Post | Template) => void;
+  onSettingsUpdate?: (updatedData: Page | Post | Template) => void;
+  onSaveRequest?: (blocks: BlockConfig[]) => void | Promise<boolean>;
   onPreview?: () => void;
   pageMeta?: {
     title?: string;
@@ -91,6 +99,8 @@ export default function PageBuilder({
   blocks: propBlocks,
   onBlocksChange,
   onSave,
+  onSettingsUpdate,
+  onSaveRequest,
   onPreview,
   pageMeta,
   onPageMetaChange,
@@ -113,6 +123,10 @@ export default function PageBuilder({
     useUndoRedo<BlockConfig[]>(initialBlocks);
   const blocks = currentState; // Direct derivation - no separate state
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [showCreatePageModal, setShowCreatePageModal] = useState(false);
+  const historyMutationRef = useRef(0);
+  const pendingDeleteUndoRef = useRef<number | null>(null);
+  const parentSaveInFlightRef = useRef(false);
 
   /**
    * Detect when the parent swaps propBlocks externally (e.g. inline post editing).
@@ -179,6 +193,11 @@ export default function PageBuilder({
           : next;
       if (resolved === current) return;
 
+      if (resolved !== current) {
+        historyMutationRef.current += 1;
+        pendingDeleteUndoRef.current = null;
+      }
+
       // Coalesce rapid edits: replace current entry if within 300ms window
       if (isCoalescingRef.current) {
         replaceCurrentState(resolved);
@@ -233,6 +252,8 @@ export default function PageBuilder({
     'padding' | 'margin' | null
   >(null);
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [inspectorVisible, setInspectorVisible] = useState(true);
+  const isWideLayout = useBuilderWideLayout();
   const [pageSettingsOpen, setPageSettingsOpen] = useState(false);
   const { toast } = useToast();
 
@@ -291,7 +312,7 @@ export default function PageBuilder({
   // Parent notification is now done procedurally in commitBlocks
 
   const selectedBlock = selectedBlockId
-    ? findBlock(blocks, selectedBlockId)
+    ? (findBlock(blocks, selectedBlockId) ?? null)
     : null;
 
   const saveMutation = usePageSave({
@@ -303,6 +324,14 @@ export default function PageBuilder({
   });
 
   const handleSave = useCallback(() => {
+    if (onSaveRequest) {
+      runParentOwnedSave({
+        inFlight: parentSaveInFlightRef,
+        request: () => onSaveRequest(blocks),
+      });
+      return;
+    }
+
     if (!isTemplate && resolvedContentType === 'page' && data?.id) {
       savePageDraftWithHistory(data.id as string, {
         ...data,
@@ -314,7 +343,15 @@ export default function PageBuilder({
     if (data) {
       onSave?.(data);
     }
-  }, [blocks, saveMutation, onSave, data, isTemplate, resolvedContentType]);
+  }, [
+    blocks,
+    saveMutation,
+    onSave,
+    onSaveRequest,
+    data,
+    isTemplate,
+    resolvedContentType,
+  ]);
 
   // Refs for keyboard shortcut handlers so useMountEffect captures stable references
   const handleSaveRef = useRef(handleSave);
@@ -480,6 +517,9 @@ export default function PageBuilder({
 
   const handleDelete = useCallback(
     (id: string) => {
+      const deletedBlock = findBlock(blocks, id);
+      const blockLabel =
+        blockRegistry[deletedBlock?.name ?? '']?.label ?? deletedBlock?.name ?? 'Block';
       const shouldClearSelection =
         selectedBlockId === id ||
         (selectedBlockId != null && isDescendant(blocks, id, selectedBlockId));
@@ -493,8 +533,28 @@ export default function PageBuilder({
         setSelectedBlockId(null);
         setActiveTab('blocks');
       }
+
+      const undoGeneration = historyMutationRef.current;
+      pendingDeleteUndoRef.current = undoGeneration;
+
+      toast({
+        title: 'Block deleted',
+        description: `${blockLabel} removed from the page.`,
+        action: (
+          <ToastAction
+            altText="Undo delete"
+            onClick={() => {
+              if (pendingDeleteUndoRef.current !== undoGeneration) return;
+              undo();
+              pendingDeleteUndoRef.current = null;
+            }}
+          >
+            Undo
+          </ToastAction>
+        ),
+      });
     },
-    [blocks, commitBlocks, selectedBlockId, setActiveTab],
+    [blocks, commitBlocks, selectedBlockId, setActiveTab, toast, undo],
   );
 
   // Keep keyboard-shortcut refs current (handlers defined above the listener)
@@ -505,6 +565,10 @@ export default function PageBuilder({
 
   const toggleSidebar = () => {
     setSidebarVisible(!sidebarVisible);
+  };
+
+  const toggleInspector = () => {
+    setInspectorVisible(!inspectorVisible);
   };
 
   /**
@@ -524,13 +588,16 @@ export default function PageBuilder({
       resetState(blocks);
       onBlocksChange?.(blocks);
       setSelectedBlockId(null);
-      setActiveTab('blocks');
+      if (!isWideLayout) {
+        setActiveTab('blocks');
+      }
     },
-    [resetState, onBlocksChange],
+    [isWideLayout, resetState, onBlocksChange],
   );
 
   return (
-    <div className="npb-editor-shell flex h-full bg-npb-canvas-bg">
+    <div className="npb-editor-shell flex h-full min-h-0 flex-col bg-npb-canvas-bg">
+      <SkipLink href="#builder-canvas">Skip to canvas</SkipLink>
       <PageProvider pageOther={data?.other as any}>
         <DeviceViewProvider device={deviceView}>
         <BlockActionsProvider
@@ -538,12 +605,15 @@ export default function PageBuilder({
           selectedBlockId,
           onSelect: (id) => {
             setSelectedBlockId(id);
-            setActiveTab('settings');
+            if (!isWideLayout) {
+              setActiveTab('settings');
+            }
           },
           onDuplicate: handleDuplicate,
           onDelete: handleDelete,
           hoverHighlight,
         }}>
+        <div className="flex min-h-0 flex-1 flex-col">
         <DragDropContext
           onDragEnd={(result: DndDropResult) => handleDragEnd(result)}
           onDragStart={() => {/* DnD started */}}
@@ -576,64 +646,88 @@ export default function PageBuilder({
               </div>
             );
           }}>
-          {sidebarVisible && (
-            <BuilderSidebar
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              selectedBlock={selectedBlock}
-              updateBlock={updateBlockPartial}
-              setHoverHighlight={setHoverHighlight}
-              sidebarVisible={sidebarVisible}
-              onToggleSidebar={toggleSidebar}
-              onInsertTemplate={handleInsertTemplate}
-              blocks={blocks}
-              onApplyResponsiveDefaults={handleApplyResponsiveDefaults}
-            />
-          )}
-          <div className="flex-1 flex flex-col">
-            <BuilderTopBar
-              data={data}
-              isTemplate={isTemplate}
-              contentType={contentType ?? 'page'}
-              onApplyTemplate={handleApplyTemplateFromDesign}
-              deviceView={deviceView}
-              setDeviceView={setDeviceView}
-              blocks={blocks}
-              sidebarVisible={sidebarVisible}
-              onToggleSidebar={toggleSidebar}
-              onUndo={undo}
-              onRedo={redo}
-              canUndo={canUndo}
-              canRedo={canRedo}
-              onPageSettingsClick={() => setPageSettingsOpen(true)}
-              isPreviewMode={isPreviewMode}
-              onTogglePreviewMode={previewUrl ? handleTogglePreviewMode : undefined}
-              onApplyResponsiveDefaults={handleApplyResponsiveDefaults}
-            />
-            <BuilderCanvas
-              blocks={blocks}
-              deviceView={deviceView}
-              selectedBlockId={selectedBlockId}
-              isPreviewMode={isPreviewMode}
-              previewUrl={previewUrl}
-              previewRefreshKey={previewRefreshKey}
-              duplicateBlock={handleDuplicate}
-              deleteBlock={handleDelete}
-              hoverHighlight={hoverHighlight}
-              onBlockChange={handleBlockChange}
-            />
+          <div className="flex min-h-0 flex-1">
+            {sidebarVisible ? (
+              <MotionSidebarPanel visible={sidebarVisible} className="h-full shrink-0">
+                <BuilderResponsiveSidebar
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  selectedBlock={selectedBlock}
+                  updateBlock={updateBlockPartial}
+                  setHoverHighlight={setHoverHighlight}
+                  sidebarVisible={sidebarVisible}
+                  onToggleSidebar={toggleSidebar}
+                  onInsertTemplate={handleInsertTemplate}
+                  blocks={blocks}
+                  onApplyResponsiveDefaults={handleApplyResponsiveDefaults}
+                />
+              </MotionSidebarPanel>
+            ) : null}
+            <div className="npb-editor-main flex min-h-0 min-w-0 flex-1 flex-col">
+              <BuilderTopBar
+                data={data}
+                isTemplate={isTemplate}
+                contentType={contentType ?? 'page'}
+                onApplyTemplate={handleApplyTemplateFromDesign}
+                deviceView={deviceView}
+                setDeviceView={setDeviceView}
+                blocks={blocks}
+                sidebarVisible={sidebarVisible}
+                onToggleSidebar={toggleSidebar}
+                inspectorVisible={isWideLayout ? inspectorVisible : undefined}
+                onToggleInspector={isWideLayout ? toggleInspector : undefined}
+                onUndo={undo}
+                onRedo={redo}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onPageSettingsClick={() => setPageSettingsOpen(true)}
+                isPreviewMode={isPreviewMode}
+                onTogglePreviewMode={previewUrl ? handleTogglePreviewMode : undefined}
+                onApplyResponsiveDefaults={handleApplyResponsiveDefaults}
+                onCreateNewPage={() => setShowCreatePageModal(true)}
+              />
+              <div className="flex min-h-0 flex-1">
+                <BuilderCanvas
+                  blocks={blocks}
+                  deviceView={deviceView}
+                  selectedBlockId={selectedBlockId}
+                  isPreviewMode={isPreviewMode}
+                  previewUrl={previewUrl}
+                  previewRefreshKey={previewRefreshKey}
+                  duplicateBlock={handleDuplicate}
+                  deleteBlock={handleDelete}
+                  hoverHighlight={hoverHighlight}
+                  onBlockChange={handleBlockChange}
+                />
+                {isWideLayout && inspectorVisible ? (
+                  <MotionSidebarPanel visible={inspectorVisible} className="h-full shrink-0">
+                    <BuilderInspectorSidebar
+                      selectedBlock={selectedBlock}
+                      updateBlock={updateBlockPartial}
+                      setHoverHighlight={setHoverHighlight}
+                      onToggleInspector={toggleInspector}
+                    />
+                  </MotionSidebarPanel>
+                ) : null}
+              </div>
+            </div>
           </div>
         </DragDropContext>
         <PageSettingsModal
-          key={data?.id}
+          key={`${data?.id ?? ''}:${pageSettingsOpen}`}
           open={pageSettingsOpen}
           onOpenChange={setPageSettingsOpen}
           page={data}
           isTemplate={isTemplate}
-          onUpdate={onSave}
+          onUpdate={onSettingsUpdate}
           onMetaChange={onPageMetaChange}
           contentType={resolvedContentType}
         />
+        <CreatePageModal
+          open={showCreatePageModal}
+          onOpenChange={setShowCreatePageModal}
+        />
+        </div>
       </BlockActionsProvider>
         </DeviceViewProvider>
       </PageProvider>

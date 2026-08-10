@@ -15,6 +15,7 @@ import {
   Moon,
   Eye,
   EyeOff,
+  PanelRightOpen,
 } from "lucide-react";
 import { PagesMenu, BlogMenu, DesignMenu } from "@/components/PageBuilder/EditorBar";
 import { useTheme } from "@/components/ThemeProvider";
@@ -28,6 +29,8 @@ export function BuilderTopBar({
   blocks,
   sidebarVisible,
   onToggleSidebar,
+  inspectorVisible,
+  onToggleInspector,
   onUndo,
   onRedo,
   canUndo,
@@ -38,6 +41,7 @@ export function BuilderTopBar({
   isPreviewMode = false,
   onTogglePreviewMode,
   onApplyResponsiveDefaults,
+  onCreateNewPage,
 }: {
   data: any;
   isTemplate: boolean;
@@ -46,6 +50,8 @@ export function BuilderTopBar({
   blocks: any[];
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
+  inspectorVisible?: boolean;
+  onToggleInspector?: () => void;
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
@@ -59,6 +65,7 @@ export function BuilderTopBar({
   isPreviewMode?: boolean;
   onTogglePreviewMode?: () => void;
   onApplyResponsiveDefaults?: () => void;
+  onCreateNewPage?: () => void;
 }) {
   const { isDark, toggleTheme } = useTheme();
   return (
@@ -72,6 +79,7 @@ export function BuilderTopBar({
                 size="sm"
                 onClick={onToggleSidebar}
                 className="npb-interactive-ghost p-1 h-auto"
+                aria-label="Show block library"
               >
                 <Sidebar className="w-5 h-5 text-npb-text-primary" />
               </Button>
@@ -84,7 +92,8 @@ export function BuilderTopBar({
             <Button
               variant={deviceView === "desktop" ? "default" : "outline"}
               size="sm"
-              aria-label="desktop"
+              aria-label="Desktop preview"
+              aria-pressed={deviceView === "desktop"}
               className={deviceView === "desktop" ? "active" : ""}
               onClick={() => setDeviceView("desktop")}
             >
@@ -93,7 +102,8 @@ export function BuilderTopBar({
             <Button
               variant={deviceView === "tablet" ? "default" : "outline"}
               size="sm"
-              aria-label="tablet"
+              aria-label="Tablet preview"
+              aria-pressed={deviceView === "tablet"}
               className={deviceView === "tablet" ? "active" : ""}
               onClick={() => setDeviceView("tablet")}
             >
@@ -102,7 +112,8 @@ export function BuilderTopBar({
             <Button
               variant={deviceView === "mobile" ? "default" : "outline"}
               size="sm"
-              aria-label="mobile"
+              aria-label="Mobile preview"
+              aria-pressed={deviceView === "mobile"}
               className={deviceView === "mobile" ? "active" : ""}
               onClick={() => setDeviceView("mobile")}
             >
@@ -122,6 +133,7 @@ export function BuilderTopBar({
                 variant={isPreviewMode ? "default" : "outline"}
                 size="sm"
                 aria-label={isPreviewMode ? "Exit live preview" : "Live preview"}
+                aria-pressed={isPreviewMode}
                 title={isPreviewMode ? "Exit live preview" : "Live preview in iframe"}
                 onClick={onTogglePreviewMode}
               >
@@ -131,6 +143,20 @@ export function BuilderTopBar({
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {inspectorVisible === false && onToggleInspector ? (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onToggleInspector}
+                className="npb-interactive-ghost p-1 h-auto"
+                aria-label="Show block settings"
+              >
+                <PanelRightOpen className="w-5 h-5 text-npb-text-primary" />
+              </Button>
+              <Separator orientation="vertical" className="h-6" />
+            </>
+          ) : null}
           <Button
             variant="ghost"
             size="sm"
@@ -172,6 +198,7 @@ export function BuilderTopBar({
                 variant="outline"
                 onClick={onUndo}
                 disabled={canUndo === false}
+                aria-label="Undo"
                 title="Undo (Ctrl+Z)"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -183,6 +210,7 @@ export function BuilderTopBar({
                 variant="outline"
                 onClick={onRedo}
                 disabled={canRedo === false}
+                aria-label="Redo"
                 title="Redo (Ctrl+Shift+Z)"
               >
                 <RotateCw className="w-4 h-4" />
@@ -192,6 +220,7 @@ export function BuilderTopBar({
               currentPageId={data?.id}
               onPageSettingsClick={onPageSettingsClick}
               onApplyResponsiveDefaults={onApplyResponsiveDefaults}
+              onCreateNewPage={onCreateNewPage}
             >
               <Button
                 type="button"

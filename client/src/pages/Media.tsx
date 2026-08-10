@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Search, Edit, Trash2, Download, Image, FileText, Film, Music, File } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
+import { AdminListPaginationFooter } from "@/components/admin/admin-list-pagination-footer";
 import { apiRequest } from "@/lib/queryClient";
 import { appendSiteIdToUrl } from "@/lib/site-api";
 import { useActiveSite } from "@/hooks/useActiveSite";
@@ -190,13 +191,23 @@ export default function MediaPage() {
     media.alt?.toLowerCase().includes(search.toLowerCase())
   ) || [];
 
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleFilterChange = (value: string) => {
+    setSelectedFilter(value);
+    setPage(1);
+  };
+
   return (
     <AdminLayout
       title="Media Library"
       actions={
         <Button
           onClick={() => setIsUploadOpen(true)}
-          className="bg-npb-accent hover:bg-npb-accent-hover text-white"
+          className="npb-btn-accent"
         >
           <Upload className="w-4 h-4 mr-2" />
           Add New Media
@@ -211,11 +222,12 @@ export default function MediaPage() {
                 <Input
                   placeholder="Search media..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10 w-64"
                 />
               </div>
-              <Select value={selectedFilter} onValueChange={setSelectedFilter}>
+              <p className="text-xs text-npb-text-muted">Search applies to the current page only.</p>
+              <Select value={selectedFilter} onValueChange={handleFilterChange}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filter by type" />
                 </SelectTrigger>
@@ -250,7 +262,19 @@ export default function MediaPage() {
                   {filteredMedia.map((media: Media) => (
                     <Card key={media.id} className="group hover:shadow-md transition-shadow">
                       <CardContent className="p-3">
-                        <div className="aspect-square mb-3 bg-npb-surface-inset rounded-lg overflow-hidden relative">
+                        <div
+                          className="aspect-square mb-3 bg-npb-surface-inset rounded-lg overflow-hidden relative cursor-pointer"
+                          onClick={() => handleEdit(media)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleEdit(media);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Open details for ${media.originalName}`}
+                        >
                           {media.mimeType.startsWith('image/') ? (
                             <img 
                               src={media.url} 
@@ -293,9 +317,14 @@ export default function MediaPage() {
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-sm font-medium truncate" title={media.originalName}>
+                          <button
+                            type="button"
+                            className="text-sm font-medium truncate text-left w-full hover:text-npb-accent"
+                            title={media.originalName}
+                            onClick={() => handleEdit(media)}
+                          >
                             {media.originalName}
-                          </p>
+                          </button>
                           <p className="text-xs text-npb-text-muted">
                             {formatFileSize(media.size)}
                           </p>
@@ -327,28 +356,16 @@ export default function MediaPage() {
             }
           })() as any}
 
-          {/* Pagination */}
-          {mediaData && (mediaData as any).total_pages > 1 && (
-            <div className="mt-8 flex justify-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setPage(page - 1)}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <span className="flex items-center px-4 text-sm text-npb-text-muted">
-                Page {page} of {(mediaData as any).total_pages}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => setPage(page + 1)}
-                disabled={page === (mediaData as any).total_pages}
-              >
-                Next
-              </Button>
-            </div>
-          )}
+          {mediaData ? (
+            <AdminListPaginationFooter
+              page={page}
+              perPage={20}
+              total={(mediaData as { total?: number }).total ?? 0}
+              totalPages={(mediaData as { total_pages?: number }).total_pages ?? 1}
+              itemLabel="items"
+              onPageChange={setPage}
+            />
+          ) : null}
 
       {/* Upload Dialog */}
       <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>

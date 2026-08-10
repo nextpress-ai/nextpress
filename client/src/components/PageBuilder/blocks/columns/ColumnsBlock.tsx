@@ -19,6 +19,7 @@ import {
 } from "@shared/block-container-placement";
 import {
   DEFAULT_CONTENT,
+  buildColumnDroppableId,
   parseColumnsContent,
   serializeColumnsContent,
 } from "./columns-model";
@@ -33,6 +34,7 @@ export { buildColumnsLayout, removeColumnAndCleanup } from "./columns-model";
 // ============================================================================
 
 interface ColumnsRendererProps {
+  columnsBlockId: string;
   content: ColumnsContent;
   styles?: React.CSSProperties;
   children?: BlockConfig[];
@@ -44,6 +46,7 @@ interface ColumnsRendererProps {
 }
 
 function ColumnsRenderer({
+  columnsBlockId,
   content,
   styles,
   children,
@@ -86,15 +89,20 @@ function ColumnsRenderer({
 
   return (
     <BlockShell blockClass="wp-block-columns" style={containerStyle}>
-      {layout.map((column) => {
+      {layout.map((column, columnIndex) => {
         const columnChildren = childBlocks.filter((child) =>
           column.blockIds.includes(child.id)
         );
+        const columnDroppableId = buildColumnDroppableId({
+          columnsBlockId,
+          columnId: column.columnId,
+          columnIndex,
+        });
         const columnStyle = buildColumnStyle(data, layoutMode, direction, column, layout);
 
         return (
           <div
-            key={column.columnId}
+            key={columnDroppableId}
             className="wp-block-column"
               style={{
                 ...columnStyle,
@@ -135,7 +143,7 @@ function ColumnsRenderer({
                 ))}
               </div>
             ) : (
-              <Droppable droppableId={column.columnId} direction="vertical">
+              <Droppable droppableId={columnDroppableId} direction="vertical">
                 {(provided, snapshot) => (
                   <div
                     ref={provided.innerRef}
@@ -260,6 +268,7 @@ function ColumnsBlockView({
 
   return (
     <ColumnsRenderer
+      columnsBlockId={value.id}
       content={content}
       styles={styles}
       layoutData={layoutData}

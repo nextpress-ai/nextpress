@@ -82,6 +82,8 @@ export type BlockLibraryProps = {
   onCategoryOpenChange?: (categoryId: string, open: boolean) => void;
 };
 
+const BLOCK_SEARCH_INPUT_ID = 'block-library-search';
+
 export default function BlockLibrary({
   categories: categoriesProp,
   openCategories: openCategoriesProp,
@@ -136,13 +138,20 @@ export default function BlockLibrary({
   return (
     <div className="space-y-4">
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-npb-text-muted" />
+        <label htmlFor={BLOCK_SEARCH_INPUT_ID} className="sr-only">
+          Search blocks
+        </label>
+        <Search
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-npb-text-muted"
+          aria-hidden
+        />
         <Input
-          type="text"
+          id={BLOCK_SEARCH_INPUT_ID}
+          type="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search blocks..."
-          className="h-9 rounded-none border-npb-border-default bg-npb-surface-base pl-9 pr-9 text-sm text-npb-text-primary focus-visible:outline-none"
+          className="h-9 rounded-none border-npb-border-default bg-npb-surface-base pl-9 pr-9 text-sm text-npb-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-npb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-npb-surface-base"
         />
         {isSearching && (
           <button
@@ -206,16 +215,17 @@ export default function BlockLibrary({
                               <Card
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                {...provided.dragHandleProps}
                                 data-dnd-debug-id={block.id}
                                 title={block.description}
-                                className={`cursor-grab bg-npb-surface-base text-npb-text-secondary border border-npb-border-default rounded-none hover:bg-npb-interactive-bg-hover hover:border-npb-border-strong hover:shadow-md hover:scale-[1.02] transition-all duration-200 ease-out ${
+                                className={`relative bg-npb-surface-base text-npb-text-secondary border border-npb-border-default rounded-none hover:bg-npb-interactive-bg-hover hover:border-npb-border-strong hover:shadow-md hover:scale-[1.02] transition-all duration-200 ease-out ${
                                   snapshot.isDragging
                                     ? 'opacity-60 scale-105 border-npb-border-strong shadow-xl bg-npb-interactive-bg-active'
                                     : ''
                                 }`}>
                                 <CardContent className="p-4">
-                                  <div className="flex flex-col items-center gap-3 text-center overflow-ellipsis">
+                                  <div
+                                    className="flex flex-col items-center gap-3 text-center overflow-ellipsis cursor-grab active:cursor-grabbing"
+                                    {...provided.dragHandleProps}>
                                     <div className="w-10 h-10 bg-npb-surface-inset rounded-none flex items-center justify-center group-hover:bg-npb-interactive-bg-active transition-colors">
                                       {block.icon ? (
                                         <block.icon className="w-5 h-5 text-npb-text-secondary" />

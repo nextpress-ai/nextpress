@@ -4,9 +4,13 @@ import DevicePreview from './DevicePreview';
 import { IframeDevicePreview } from './IframeDevicePreview';
 import BlockRenderer from './BlockRenderer';
 import { Layers } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useBlockActions } from './BlockActionsContext';
+import { useMotionEnabled } from '@/lib/use-prefers-reduced-motion';
+import { pageEnterVariants, MOTION_PAGE } from '@/lib/motion-presets';
 import type { BlockConfig } from "@shared/schema-types";
 import { getBlockSiblingFlexItemStyles, PAGE_BLOCK_STACK_GAP } from "@shared/block-container-placement";
+import { blockRegistry } from './blocks';
 
 export function BuilderCanvas({
   blocks,
@@ -32,6 +36,17 @@ export function BuilderCanvas({
   onBlockChange?: (updated: any) => void;
 }) {
   const actions = useBlockActions();
+  const motionEnabled = useMotionEnabled();
+
+  const emptyCanvas = (
+    <div
+      className="pointer-events-none py-10 text-center text-npb-text-muted"
+      role="status">
+      <Layers className="mx-auto mb-3 h-10 w-10" aria-hidden />
+      <p className="text-sm">Drag blocks from the library to start</p>
+      <p className="mt-1 text-xs text-npb-text-muted">Select a block on the canvas to edit settings</p>
+    </div>
+  );
 
   const renderEditorStack = () => (
     <Droppable droppableId="canvas">
@@ -39,17 +54,26 @@ export function BuilderCanvas({
         <div
           ref={provided.innerRef}
           {...provided.droppableProps}
+          id="builder-canvas"
           role="region"
-          aria-label="Canvas"
+          aria-label="Page canvas"
+          tabIndex={-1}
           className={`min-h-full p-4 flex flex-col items-stretch w-full ${snapshot.isDraggingOver ? 'bg-npb-accent/10' : ''}`}
           style={{ gap: PAGE_BLOCK_STACK_GAP }}
         >
-          {blocks.length === 0 && (
-            <div className="text-center py-12 text-npb-text-muted pointer-events-none">
-              <Layers className="w-12 h-12 mx-auto mb-4" />
-              <p>Drag blocks from the sidebar to start building your page</p>
-            </div>
-          )}
+          {blocks.length === 0 ? (
+            motionEnabled ? (
+              <motion.div
+                variants={pageEnterVariants}
+                initial="hidden"
+                animate="visible"
+                transition={MOTION_PAGE}>
+                {emptyCanvas}
+              </motion.div>
+            ) : (
+              emptyCanvas
+            )
+          ) : null}
           {blocks.map((block, index) => (
             <React.Fragment key={block.id}>
               {snapshot.placeholderIndex === index && <DropPlaceholder />}
@@ -64,8 +88,18 @@ export function BuilderCanvas({
                       minWidth: 0,
                       ...getBlockSiblingFlexItemStyles(block.styles, 'column'),
                     }}
+                    tabIndex={0}
+                    role="group"
+                    aria-label={`${blockRegistry[block.name]?.label ?? block.name} block`}
+                    aria-current={selectedBlockId === block.id ? 'true' : undefined}
                     onClick={() => {
                       actions?.onSelect(block.id);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        actions?.onSelect(block.id);
+                      }
                     }}
                   >
                     <BlockRenderer

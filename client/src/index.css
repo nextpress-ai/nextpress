@@ -50,6 +50,7 @@
   /* Accent & Focus */
   --npb-accent: #3b82f6;
   --npb-accent-hover: #2563eb;
+  --npb-accent-foreground: #ffffff;
   --npb-focus-ring: #3b82f6;
 
   /* Shape */
@@ -109,6 +110,7 @@
 
   --npb-accent: #60a5fa;
   --npb-accent-hover: #3b82f6;
+  --npb-accent-foreground: #18181b;
   --npb-focus-ring: #60a5fa;
 
   --npb-shadow-surface: 0 1px 2px 0 rgb(0 0 0 / 0.3);
@@ -187,11 +189,26 @@
  * Radix viewport hides native bars; sibling scrollbar + thumb styled explicitly (~7px, ~4px radius, quiet zinc).
  */
 .npb-editor-shell {
+  --npb-builder-wide-breakpoint: 1280px;
+  --npb-builder-library-width: 18rem;
+  --npb-builder-inspector-width: 22rem;
+  --npb-builder-rail-edge: var(--npb-border-strong);
   --npb-scrollbar-track: transparent;
   --npb-scrollbar-thumb: color-mix(in srgb, rgb(113 113 122) 30%, transparent);
   --npb-scrollbar-thumb-hover: color-mix(in srgb, rgb(82 82 91) 52%, transparent);
   scrollbar-width: thin;
   scrollbar-color: var(--npb-scrollbar-thumb) var(--npb-scrollbar-track);
+}
+
+.npb-editor-shell .npb-builder-library-sidebar {
+  border-right-color: var(--npb-builder-rail-edge);
+}
+
+.npb-editor-shell .npb-builder-inspector-sidebar {
+  border-left-color: var(--npb-builder-rail-edge);
+  box-shadow:
+    inset 1px 0 0 0 color-mix(in srgb, var(--npb-border-subtle) 65%, transparent),
+    var(--npb-shadow-surface);
 }
 
 .npb-editor-shell .npb-editor-sidebar {
@@ -393,7 +410,7 @@
     --npb-sidebar-tablist-bg: rgb(243 244 246);
     --npb-sidebar-tablist-border: rgb(229 231 235);
     --npb-sidebar-tablist-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.7);
-    --npb-sidebar-tab-inactive: rgb(107 114 128);
+    --npb-sidebar-tab-inactive: rgb(82 82 91);
     --npb-sidebar-tab-active-bg: rgb(255 255 255);
     --npb-sidebar-tab-active-text: rgb(24 24 27);
     --npb-sidebar-tab-active-shadow: 0 1px 0 0 rgb(0 0 0 / 0.06), inset 0 1px 0 0 rgb(255 255 255 / 0.9);
@@ -409,12 +426,12 @@
     --npb-settings-hero-bg: rgb(3 3 5);
     --npb-settings-hero-border: rgb(63 63 70 / 0.52);
     --npb-settings-hero-title: rgb(250 250 250);
-    --npb-settings-hero-sub: rgb(113 113 122);
+    --npb-settings-hero-sub: rgb(161 161 170);
     --npb-settings-panel-bg: rgb(9 9 11 / 0.88);
     --npb-settings-panel-border: rgb(63 63 70 / 0.38);
     --npb-settings-label: rgb(244 244 245);
     --npb-settings-hint: rgb(228 228 231);
-    --npb-settings-hint-muted: rgb(113 113 122);
+    --npb-settings-hint-muted: rgb(161 161 170);
     --npb-settings-divider: rgb(63 63 70 / 0.3);
     --npb-chip-border: rgb(63 63 70 / 0.45);
     --npb-chip-bg: rgb(9 9 11 / 0.95);
@@ -433,7 +450,7 @@
     --npb-coll-header-divider: rgb(63 63 70 / 0.26);
     --npb-coll-title: rgb(250 250 250);
     --npb-coll-icon: rgb(200 200 204);
-    --npb-coll-chevron: rgb(113 113 122);
+    --npb-coll-chevron: rgb(161 161 170);
     --npb-coll-shadow: 0 1px 0 0 rgb(0 0 0 / 0.35);
     --npb-coll-body-text: rgb(228 228 231);
     --npb-settings-hero-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
@@ -445,11 +462,11 @@
     --npb-sidebar-field-shadow: 0 1px 0 0 rgb(0 0 0 / 0.28);
     --npb-sidebar-field-focus-border: rgb(161 161 170);
     --npb-sidebar-field-focus-ring: rgb(161 161 170 / 0.45);
-    --npb-sidebar-field-placeholder: rgb(113 113 122);
+    --npb-sidebar-field-placeholder: rgb(161 161 170);
     --npb-sidebar-tablist-bg: rgb(12 12 15);
     --npb-sidebar-tablist-border: rgb(63 63 70 / 0.38);
     --npb-sidebar-tablist-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.03);
-    --npb-sidebar-tab-inactive: rgb(130 130 138);
+    --npb-sidebar-tab-inactive: rgb(161 161 170);
     --npb-sidebar-tab-active-bg: rgb(24 24 27);
     --npb-sidebar-tab-active-text: rgb(250 250 250);
     --npb-sidebar-tab-active-shadow: 0 1px 0 0 rgb(0 0 0 / 0.45), inset 0 1px 0 0 rgb(255 255 255 / 0.05), 0 0 0 1px rgb(63 63 70 / 0.42);
@@ -719,15 +736,20 @@
   to { opacity: 1; }
 }
 
-/* Block selection ring: visible briefly then fades out so content is unobstructed */
-@keyframes block-ring-fade {
-  0%   { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3b82f6; }
-  60%  { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3b82f6; }
-  100% { box-shadow: 0 0 0 2px transparent, 0 0 0 4px transparent; }
+/* Block selection ring: stays visible while the block is selected */
+.npb-canvas-block-selected {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--npb-accent, #3b82f6);
 }
 
-.block-ring-fade {
-  animation: block-ring-fade 2s ease-out forwards;
+.npb-image-resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--npb-accent, #3b82f6);
+  border: 2px solid var(--npb-surface-base, #fff);
+  border-radius: 2px;
+  z-index: 10;
+  box-shadow: var(--npb-shadow-surface, 0 1px 3px rgba(0, 0, 0, 0.3));
 }
 
 /* Admin shell — top bar always dark; main area follows global theme */
@@ -764,7 +786,36 @@
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: rgb(113 113 122);
+  color: rgb(161 161 170);
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0.5rem;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  border-radius: var(--npb-radius-input, 0);
+  background: rgb(255 255 255);
+  color: rgb(24 24 27);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 0 0 2px rgb(59 130 246);
+}
+
+.skip-link:focus {
+  left: 0.5rem;
+  outline: none;
+}
+
+.admin-shell .skip-link:focus {
+  left: 10.5rem;
+}
+
+.npb-editor-shell .skip-link:focus {
+  left: 0.75rem;
+  top: 0.75rem;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -845,7 +896,8 @@
 @media (prefers-reduced-motion: reduce) {
   .np-sidebar-attention-dot,
   .np-sidebar-attention-dot--urgent,
-  .np-sidebar-attention-banner--update {
+  .np-sidebar-attention-banner--update,
+  .content-fade-in {
     animation: none;
   }
 }
@@ -860,9 +912,54 @@
   box-shadow: 0 1px 0 var(--npb-divider);
 }
 
+.admin-list-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--npb-surface-raised);
+  box-shadow: 0 1px 0 var(--npb-divider);
+}
+
+.admin-list-table tbody td {
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
 .admin-page-content .rounded-lg,
 .admin-page-content [data-slot="card"] {
   border-radius: var(--npb-radius-surface);
+}
+
+/**
+ * Admin lists and forms — keep control text readable on surface tokens in both themes.
+ */
+.admin-page-content input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+.admin-page-content textarea,
+.admin-page-content select,
+.admin-page-content [data-radix-select-trigger] {
+  color: var(--npb-text-primary);
+}
+
+.admin-page-content input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+.admin-page-content textarea,
+.admin-page-content select {
+  background-color: var(--npb-surface-base);
+}
+
+.admin-page-content [role="tab"][data-state="inactive"] {
+  color: var(--npb-text-secondary);
+}
+
+.admin-page-content [role="tab"][data-state="active"] {
+  color: var(--npb-text-primary);
+}
+
+/* Builder shell (top bar + canvas chrome outside sidebar field rules) */
+.npb-editor-shell input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+.npb-editor-shell textarea,
+.npb-editor-shell select,
+.npb-editor-shell [data-radix-select-trigger] {
+  color: var(--npb-text-primary);
 }
 
 /* Page builder editor chrome — always dark regardless of theme */
@@ -924,16 +1021,34 @@
   transition: background-color var(--npb-duration-normal) ease;
 }
 
+/* Primary accent actions — foreground flips in dark mode for WCAG AA */
+.npb-btn-accent {
+  background-color: var(--npb-accent) !important;
+  color: var(--npb-accent-foreground) !important;
+  transition:
+    background-color var(--npb-duration-normal) ease,
+    color var(--npb-duration-normal) ease;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .npb-interactive-emphasis:hover {
     background-color: var(--npb-interactive-emphasis-bg-hover);
     color: var(--npb-interactive-emphasis-text);
   }
 
+  .npb-btn-accent:hover {
+    background-color: var(--npb-accent-hover) !important;
+    color: var(--npb-accent-foreground) !important;
+  }
+
   .npb-interactive-ghost:hover {
     background-color: var(--npb-interactive-bg-hover);
     color: var(--npb-interactive-text-active);
   }
+}
+
+.npb-interactive-ghost {
+  color: var(--npb-interactive-text-active);
 }
 
 /* Canvas block hover + toolbar — accent outline, solid toolbar surface */

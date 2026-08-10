@@ -38,14 +38,19 @@ export function MediaUrlField({
   return (
     <div>
       <SettingsLabel htmlFor={id}>{label}</SettingsLabel>
-      <div className="mt-1 flex items-center gap-2">
+      <div className="mt-1 space-y-2">
         <Input
           id={id}
+          className="w-full"
           value={value}
           onChange={(e) => onChange({ url: e.target.value })}
           placeholder={placeholder}
         />
-        <Button type="button" variant="outline" onClick={() => setPickerOpen(true)}>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full justify-center"
+          onClick={() => setPickerOpen(true)}>
           {libraryButtonLabel}
         </Button>
       </div>
