@@ -31,4 +31,35 @@ describe('saveEditorBlocks', () => {
     });
     expect(result).toEqual({ id: 'page-1', title: 'Home', version: 2 });
   });
+
+  it('sends excerpt and featured image on post save', async () => {
+    const { apiRequest } = await import('@/lib/queryClient');
+    vi.mocked(apiRequest).mockResolvedValue({
+      json: async () => ({ id: 'post-1', title: 'First headline', version: 2 }),
+    } as Response);
+
+    await saveEditorBlocks({
+      contentType: 'post',
+      id: 'post-1',
+      expectedVersion: 1,
+      title: 'First headline',
+      slug: 'first-post',
+      status: 'draft',
+      blocks: [],
+      excerpt: 'A custom excerpt',
+      featuredImage: 'https://cdn.example/hero.jpg',
+      other: { categories: ['News'], tags: ['launch'] },
+    });
+
+    expect(apiRequest).toHaveBeenCalledWith('PUT', '/api/posts/post-1', {
+      title: 'First headline',
+      slug: 'first-post',
+      status: 'draft',
+      blocks: [],
+      expectedVersion: 1,
+      excerpt: 'A custom excerpt',
+      featuredImage: 'https://cdn.example/hero.jpg',
+      other: { categories: ['News'], tags: ['launch'] },
+    });
+  });
 });

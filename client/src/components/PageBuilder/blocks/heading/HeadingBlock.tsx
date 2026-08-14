@@ -88,6 +88,7 @@ function HeadingRenderer({ content, styles }: HeadingRendererProps) {
   const level = content.level || 2;
   const Tag = `h${level}` as keyof JSX.IntrinsicElements;
   const mergedStyles: React.CSSProperties = {
+    color: "var(--npb-text-primary)",
     fontSize: HEADING_FONT_SIZES[level],
     fontWeight: HEADING_FONT_WEIGHTS[level],
     ...styles,
@@ -218,7 +219,7 @@ export const HeadingBlock = createBlockDefinition<HeadingContent>({
   defaultContent: DEFAULT_CONTENT,
   defaultStyles: {
     fontWeight: "700",
-    margin: "1rem 0",
+    margin: "0",
   },
   settings: LegacyHeadingSettings,
   hasSettings: true,

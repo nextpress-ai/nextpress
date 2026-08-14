@@ -3,29 +3,61 @@ import type { CSSProperties } from "react";
 import * as React from "react";
 import { resolveBlockForSurface } from "@shared/resolve-block-for-surface";
 import { BLOCK_COMPONENTS } from "./block-components";
+import { headingLevelFromTag, readBlockContentData } from "@shared/read-block-content";
 
 export { collectBlockModifierCSS } from "@shared/token-resolution";
 
+let clientBlockComponents: Record<string, React.FC<BlockConfig>> = {};
+
+/**
+ * Preview/SPA can register fetch-capable post blocks so nested column children
+ * use the same client components as root blocks.
+ */
+export function registerClientBlockComponents(
+	components: Record<string, React.FC<BlockConfig>>,
+): void {
+	clientBlockComponents = components;
+}
+
+/** Resolve a block renderer, preferring client overrides when registered. */
+export function getBlockComponent(
+	name: string,
+): React.FC<BlockConfig> | undefined {
+	return clientBlockComponents[name] || BLOCK_COMPONENTS[name];
+}
+
 // ─── Content Parsers ─────────────────────────────────────────────────────────
 
-/** Unwrap text content: { kind: "text", value, ...rest } → { value, ...rest } */
+/** Unwrap text content: `{ kind: "text" }` or structured `{ text, tag }`. */
 export function parseTextContent(content: BlockContent | undefined): Record<string, unknown> {
-	if (!content || content.kind !== "text") return { value: "" };
-	const { kind, ...rest } = content;
-	return rest;
+	if (!content) return { value: "" };
+	if (content.kind === "text") {
+		const { kind: _kind, ...rest } = content;
+		return rest;
+	}
+	const data = readBlockContentData(content);
+	const value =
+		(typeof data.value === "string" && data.value) ||
+		(typeof data.text === "string" && data.text) ||
+		(typeof data.content === "string" && data.content) ||
+		"";
+	const level = headingLevelFromTag(data.level ?? data.tag, 2);
+	return { ...data, value, level };
 }
 
-/** Unwrap media content: { kind: "media", url, alt, ...rest } → { url, alt, ...rest } */
+/** Unwrap media content: `{ kind: "media" }` or structured `{ url, alt }`. */
 export function parseMediaContent(content: BlockContent | undefined): Record<string, unknown> {
-	if (!content || content.kind !== "media") return {};
-	const { kind, ...rest } = content;
-	return rest;
+	if (!content) return {};
+	if (content.kind === "media") {
+		const { kind: _kind, ...rest } = content;
+		return rest;
+	}
+	return readBlockContentData(content);
 }
 
-/** Unwrap structured content: { kind: "structured", data } → data */
+/** Unwrap structured content: `{ kind: "structured", data }` → data, with flat fallback. */
 export function parseStructuredContent(content: BlockContent | undefined): Record<string, unknown> {
-	if (!content || content.kind !== "structured") return {};
-	return content.data || {};
+	return readBlockContentData(content);
 }
 
 /** Unwrap HTML content from structured, html, or legacy shapes. */
@@ -45,14 +77,21 @@ export function parseHtmlContent(content: BlockContent | undefined): { content: 
 	return { content: (content as Record<string, unknown>).content as string || "", sanitized: false };
 }
 
-/** Unwrap markdown content: { kind: "markdown", value, textAlign } → { content, textAlign } */
+/** Unwrap markdown content: `{ kind: "markdown" }` or structured `{ content }`. */
 export function parseMarkdownContent(content: BlockContent | undefined): { content: string; textAlign?: string } {
 	if (!content) return { content: "" };
 	if (content.kind === "markdown") {
 		return { content: content.value || "", textAlign: content.textAlign };
 	}
-	// Fallback for legacy format
-	return { content: (content as Record<string, unknown>).value as string || "", textAlign: (content as Record<string, unknown>).textAlign as string | undefined };
+	const data = readBlockContentData(content);
+	const markdown =
+		(typeof data.content === "string" && data.content) ||
+		(typeof data.value === "string" && data.value) ||
+		"";
+	return {
+		content: markdown,
+		textAlign: typeof data.textAlign === "string" ? data.textAlign : undefined,
+	};
 }
 
 // ─── Render Props ────────────────────────────────────────────────────────────
@@ -97,7 +136,7 @@ export function renderChildBlocks(children: BlockConfig[]): React.ReactNode {
 	return (
 		<>
 			{children.map((child) => {
-				const ChildComponent = BLOCK_COMPONENTS[child.name];
+				const ChildComponent = getBlockComponent(child.name);
 				if (!ChildComponent) return null;
 				return <ChildComponent key={child.id} {...child} />;
 			})}

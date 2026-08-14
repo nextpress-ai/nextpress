@@ -3,6 +3,7 @@ import type { Deps } from './shared/deps';
 import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
 import { enrichPostForApi } from '@shared/posts/post-other';
+import { attachPostAuthor } from '../lib/attach-post-author';
 import { resolvePublicSite, readPublicSiteIdHint } from './shared/resolve-public-site';
 import { getSiteBlogIds } from './shared/site-content';
 
@@ -70,7 +71,7 @@ export function createPublicRoutes(deps: Deps): Router {
           return;
         }
 
-        res.json(enrichPostForApi(post));
+        res.json(await attachPostAuthor({ models, post: enrichPostForApi(post) }));
       });
 
       if (err) {

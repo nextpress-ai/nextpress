@@ -12,7 +12,9 @@ import {
 	type BlockStackDirection,
 } from "@shared/block-container-placement";
 import { BLOCK_COMPONENTS } from "../../../../renderer/react/block-components";
+import { registerClientBlockComponents } from "../../../../renderer/react/render-helpers";
 import { ClientIconBlock } from "./blocks/ClientIconBlock";
+import { CLIENT_POST_COMPONENTS } from "./client-post-blocks";
 
 type PublicBlockRendererProps = {
 	block: BlockConfig;
@@ -22,7 +24,10 @@ type PublicBlockRendererProps = {
 
 const CLIENT_COMPONENTS: Record<string, React.FC<BlockConfig>> = {
 	"core/icon": ClientIconBlock,
+	...CLIENT_POST_COMPONENTS,
 };
+
+registerClientBlockComponents(CLIENT_COMPONENTS);
 
 function getPublicBlockStyles(block: BlockConfig, deviceView?: DeviceView) {
 	const resolved = resolveBlockForSurface({

@@ -107,6 +107,7 @@ export function HeadingBlock(block: BlockConfig) {
 	const mergedStyle: React.CSSProperties = {
 		fontSize: HEADING_FONT_SIZES[level],
 		fontWeight: HEADING_FONT_WEIGHTS[level],
+		color: "var(--npb-text-primary)",
 		...style,
 		...(textAlign
 			? { textAlign: textAlign as React.CSSProperties["textAlign"] }
@@ -159,6 +160,7 @@ export function ParagraphBlock(block: BlockConfig) {
 		.join(" ");
 
 	const mergedStyle: React.CSSProperties = {
+		color: "var(--npb-text-primary)",
 		...style,
 		...(effectiveTextAlign
 			? { textAlign: effectiveTextAlign as React.CSSProperties["textAlign"] }

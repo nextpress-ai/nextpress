@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { render, screen, fireEvent, within, act } from '@testing-library/react'
 import { DragDropContext } from '@/lib/dnd'
 import BlockRenderer, { ContainerChildren } from '../components/PageBuilder/BlockRenderer'
 import { BlockActionsProvider } from '../components/PageBuilder/BlockActionsContext'
+import { CANVAS_BLOCK_TOOLBAR_IDLE_MS } from '../components/PageBuilder/use-canvas-block-toolbar'
 import type { BlockConfig, BlockContent } from '@shared/schema-types'
 
 function getText(content: BlockContent): string {
@@ -245,6 +246,30 @@ describe('BlockRenderer', () => {
       expect(mockActions.onSelect).toHaveBeenCalledWith('test-block')
     })
 
+    it('does not bubble click to the canvas parent', () => {
+      const onCanvasClick = vi.fn()
+      const block = createMockBlock('test-block', 'core/paragraph')
+
+      renderWithProviders(
+        <div onClick={onCanvasClick}>
+          <BlockRenderer
+            block={block}
+            isSelected={false}
+            isPreview={false}
+            onDuplicate={() => {}}
+            onDelete={() => {}}
+          />
+        </div>
+      )
+
+      const paragraphElement = document.querySelector('.wp-block-paragraph')
+      const blockElement = paragraphElement?.closest('.relative.group')
+      fireEvent.click(blockElement!)
+
+      expect(mockActions.onSelect).toHaveBeenCalledWith('test-block')
+      expect(onCanvasClick).not.toHaveBeenCalled()
+    })
+
     it('should show selection highlight when selected', () => {
       const block = createMockBlock('test-block', 'core/paragraph')
       
@@ -260,6 +285,7 @@ describe('BlockRenderer', () => {
 
       const highlight = document.querySelector('.block-test-block')
       expect(highlight).toHaveClass('npb-canvas-block-selected')
+      expect(highlight).toHaveAttribute('data-chrome', 'true')
     })
 
     it('should not show controls in preview mode', () => {
@@ -327,6 +353,43 @@ describe('BlockRenderer', () => {
       fireEvent.click(buttons[1])
       
       expect(onDelete).toHaveBeenCalled()
+    })
+
+    it('fades the toolbar and selection ring after idle, while the block stays selected', () => {
+      vi.useFakeTimers()
+      try {
+        const block = createMockBlock('test-block', 'core/paragraph')
+
+        renderWithProviders(
+          <BlockRenderer
+            block={block}
+            isSelected={true}
+            isPreview={false}
+            onDuplicate={() => {}}
+            onDelete={() => {}}
+          />
+        )
+
+        const toolbar = document.querySelector('.npb-canvas-toolbar')
+        expect(toolbar).toHaveAttribute('data-open', 'true')
+        const selectedBlock = document.querySelector('.block-test-block')
+        expect(selectedBlock).toHaveClass('npb-canvas-block-selected')
+        expect(selectedBlock).toHaveAttribute('data-chrome', 'true')
+
+        act(() => {
+          vi.advanceTimersByTime(CANVAS_BLOCK_TOOLBAR_IDLE_MS)
+        })
+
+        expect(document.querySelector('.npb-canvas-toolbar')).toHaveAttribute(
+          'data-open',
+          'false',
+        )
+        const idleBlock = document.querySelector('.block-test-block')
+        expect(idleBlock).toHaveClass('npb-canvas-block-selected')
+        expect(idleBlock).toHaveAttribute('data-chrome', 'false')
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 

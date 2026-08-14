@@ -15,6 +15,9 @@ import {
 } from '../lib/sdk-auth';
 import { assertPreviewContentAccess, ContentAccessError } from '../lib/content-access';
 import { previewShareRateLimit } from '../middleware/preview-share-rate-limit';
+import { attachPostAuthor } from '../lib/attach-post-author';
+import { isPreviewableContentStatus } from '@shared/read-block-content';
+import { enrichPostForApi } from '@shared/posts/post-other';
 
 const DEFAULT_PREVIEW_TTL_SECONDS = 300;
 const MAX_PREVIEW_TTL_SECONDS = 3600;
@@ -146,7 +149,7 @@ export function createPreviewRoutes(deps: Deps): Router {
           return res.status(404).json({ message: 'Post not found' });
         }
 
-        if (post.status !== 'publish' && post.status !== 'preview') {
+        if (!isPreviewableContentStatus(post.status)) {
           return res
             .status(404)
             .json({ message: 'Post not available for preview' });
@@ -163,7 +166,7 @@ export function createPreviewRoutes(deps: Deps): Router {
           });
         }
 
-        res.json(post);
+        res.json(await attachPostAuthor({ models, post: enrichPostForApi(post) }));
       });
 
       if (err) {
@@ -188,7 +191,7 @@ export function createPreviewRoutes(deps: Deps): Router {
         }
 
         const status = (page as { status?: string }).status;
-        if (status !== 'publish' && status !== 'preview' && status !== 'draft') {
+        if (!isPreviewableContentStatus(status)) {
           return res
             .status(404)
             .json({ message: 'Page not available for preview' });
@@ -265,10 +268,10 @@ async function loadPreviewContent({
 }) {
   if (contentType === 'post') {
     const post = await models.posts.findById(contentId);
-    if (!post || (post.status !== 'publish' && post.status !== 'preview' && post.status !== 'draft')) {
+    if (!post || !isPreviewableContentStatus(post.status)) {
       return null;
     }
-    return post;
+    return attachPostAuthor({ models, post: enrichPostForApi(post) });
   }
 
   if (contentType === 'page') {
@@ -278,7 +281,7 @@ async function loadPreviewContent({
       return null;
     }
     const status = (page as { status?: string }).status;
-    if (status !== 'publish' && status !== 'preview' && status !== 'draft') {
+    if (!isPreviewableContentStatus(status)) {
       return null;
     }
     return page;

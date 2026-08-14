@@ -67,7 +67,7 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 		defaultContent: () => text("Your heading here", { level: 2 }),
 		defaultStyles: {
 			fontWeight: "700",
-			margin: "1rem 0",
+			margin: "0",
 		},
 	},
 	"core/paragraph": {

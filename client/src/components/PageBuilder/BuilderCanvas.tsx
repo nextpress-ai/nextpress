@@ -60,6 +60,7 @@ export function BuilderCanvas({
           tabIndex={-1}
           className={`min-h-full p-4 flex flex-col items-stretch w-full ${snapshot.isDraggingOver ? 'bg-npb-accent/10' : ''}`}
           style={{ gap: PAGE_BLOCK_STACK_GAP }}
+          onClick={() => actions?.onSelect(null)}
         >
           {blocks.length === 0 ? (
             motionEnabled ? (
@@ -92,7 +93,8 @@ export function BuilderCanvas({
                     role="group"
                     aria-label={`${blockRegistry[block.name]?.label ?? block.name} block`}
                     aria-current={selectedBlockId === block.id ? 'true' : undefined}
-                    onClick={() => {
+                    onClick={(event) => {
+                      event.stopPropagation();
                       actions?.onSelect(block.id);
                     }}
                     onKeyDown={(event) => {
@@ -125,7 +127,10 @@ export function BuilderCanvas({
   );
 
   return (
-    <div className="flex-1 overflow-auto bg-npb-canvas-bg p-8 min-h-0">
+    <div
+      className="flex-1 overflow-auto bg-npb-canvas-bg p-8 min-h-0"
+      onClick={() => actions?.onSelect(null)}
+    >
       {isPreviewMode && previewUrl ? (
         <IframeDevicePreview
           device={deviceView}
@@ -134,7 +139,7 @@ export function BuilderCanvas({
         />
       ) : (
         <DevicePreview device={deviceView}>
-          <div className="npb-canvas-page bg-npb-canvas-page min-h-full min-w-0 shadow-lg overflow-x-clip">
+          <div className="npb-canvas-page bg-npb-canvas-page text-npb-text-primary min-h-full min-w-0 shadow-lg overflow-x-clip">
             {renderEditorStack()}
           </div>
         </DevicePreview>

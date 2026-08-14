@@ -3,7 +3,6 @@ import type { BlockConfig } from '@shared/schema-types';
 import { SettingsLabel } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { CollapsibleCard } from '@/components/ui/collapsible-card';
 import { Eye, Tag } from 'lucide-react';
 import { type PostNavigationContent, DEFAULT_CONTENT } from './post-navigation-model';
@@ -84,32 +83,6 @@ export function PostNavigationSettings({
               className="mt-1 h-9 text-sm"
             />
           </div>
-        </div>
-      </CollapsibleCard>
-
-      {/* Post */}
-      <CollapsibleCard title="Post" icon={Tag} defaultOpen={false}>
-        <div className="space-y-2">
-          <SettingsLabel>Post ID</SettingsLabel>
-          {content?.postId ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="font-mono text-xs truncate">
-                {content.postId}
-              </Badge>
-              <button
-                onClick={() => updateContent({ postId: '' })}
-                className="text-xs text-npb-text-muted hover:text-npb-status-error">
-                clear
-              </button>
-            </div>
-          ) : (
-            <Input
-              value={content?.postId || ''}
-              onChange={(e) => updateContent({ postId: e.target.value })}
-              placeholder="Auto-set when added to a post"
-              className="h-9 text-sm"
-            />
-          )}
         </div>
       </CollapsibleCard>
     </div>

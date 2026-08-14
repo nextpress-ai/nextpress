@@ -29,6 +29,8 @@ import {
 } from '@/lib/postDraftStorage';
 import { VERSION_STALE } from '@shared/content-version';
 import { saveEditorBlocks } from '@/lib/save-editor-blocks';
+import { collectPostFieldsFromBlocks } from '@shared/collect-post-fields-from-blocks';
+import { parsePostOther } from '@shared/posts/post-other';
 import { runParentOwnedSave } from '@/lib/run-parent-save';
 import {
   shouldRestoreLocalDraft,
@@ -183,6 +185,12 @@ export default function PageBuilderEditor({
   const [, setLocation] = useLocation();
   const [pageState, dispatchPageState] = useReducer(pageStateReducer, initialPageState);
   const [isSaving, setIsSaving] = useState(false);
+  const [postDoc, setPostDoc] = useState({
+    excerpt: '',
+    featuredImage: '',
+    categories: [] as string[],
+    tags: [] as string[],
+  });
   const draftSaveRef = useRef<NodeJS.Timeout | null>(null);
   const parentSaveInFlightRef = useRef(false);
   const latestPageStateRef = useRef<PageState>(initialPageState);
@@ -297,6 +305,20 @@ export default function PageBuilderEditor({
         status: initialStatus,
         version: initialVersion,
       },
+    });
+    const loadedPost = source as {
+      excerpt?: string | null;
+      featuredImage?: string | null;
+      categories?: string[];
+      tags?: string[];
+      other?: unknown;
+    };
+    const loadedOther = parsePostOther(loadedPost.other);
+    setPostDoc({
+      excerpt: String(loadedPost.excerpt ?? ''),
+      featuredImage: String(loadedPost.featuredImage ?? ''),
+      categories: loadedPost.categories ?? loadedOther.categories ?? [],
+      tags: loadedPost.tags ?? loadedOther.tags ?? [],
     });
     latestPageStateRef.current = {
       blocks: initialBlocks,
@@ -534,6 +556,20 @@ export default function PageBuilderEditor({
     queueDraftSave(meta);
   };
 
+  const handlePostDocumentChange = (patch: {
+    excerpt?: string;
+    featuredImage?: string;
+    categories?: string[];
+    tags?: string[];
+  }) => {
+    setPostDoc((current) => ({
+      excerpt: patch.excerpt ?? current.excerpt,
+      featuredImage: patch.featuredImage ?? current.featuredImage,
+      categories: patch.categories ?? current.categories,
+      tags: patch.tags ?? current.tags,
+    }));
+  };
+
   const handleRemoteEntityUpdate = useCallback(
     (updated: Page | Post | Template) => {
       if (!data?.id) return;
@@ -684,14 +720,29 @@ export default function PageBuilderEditor({
             ? 'post'
             : 'page';
 
+      const saveBlocks = Array.isArray(blocksOverride) ? blocksOverride : pageState.blocks;
+      const fromBlocks = collectPostFieldsFromBlocks(saveBlocks);
+      const existingOther =
+        ((inlinePostData ?? data) as { other?: Record<string, unknown> } | undefined)?.other ?? {};
+
       const updated = await saveEditorBlocks({
         contentType: editorContentType,
         id: inlinePostId ?? data.id,
         expectedVersion: readExpectedVersion(inlinePostData ?? data),
-        title: pageState.title,
+        title: fromBlocks.title || pageState.title,
         slug: pageState.slug,
         status: pageState.status,
-        blocks: Array.isArray(blocksOverride) ? blocksOverride : pageState.blocks,
+        blocks: saveBlocks,
+        excerpt: fromBlocks.excerpt ?? postDoc.excerpt ?? null,
+        featuredImage: fromBlocks.featuredImage ?? postDoc.featuredImage ?? null,
+        other:
+          editorContentType === 'post'
+            ? {
+                ...existingOther,
+                categories: postDoc.categories,
+                tags: postDoc.tags,
+              }
+            : undefined,
       });
 
       handleRemoteEntityUpdate(updated);
@@ -890,6 +941,7 @@ export default function PageBuilderEditor({
                 : pageState.version,
             }}
             onPageMetaChange={handlePageMetaChange}
+            onPostDocumentChange={handlePostDocumentChange}
             currentPostId={inlinePostId || data?.id}
             contentType={isTemplate ? 'template' : type}
             isTemplateEditor={isTemplate}

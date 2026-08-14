@@ -9,7 +9,7 @@ export type PreviewSessionPayload = {
 
 const STORAGE_PREFIX = "npb-preview:";
 
-/** Builds sessionStorage key for editor → preview handoff. */
+/** Builds localStorage key for editor → preview handoff. */
 export const getPreviewSessionKey = ({
 	contentType,
 	contentId,
@@ -28,9 +28,9 @@ export const writePreviewSession = ({
 	contentId: string;
 	payload: PreviewSessionPayload;
 }): void => {
-	if (typeof sessionStorage === "undefined") return;
+	if (typeof localStorage === "undefined") return;
 	try {
-		sessionStorage.setItem(
+		localStorage.setItem(
 			getPreviewSessionKey({ contentType, contentId }),
 			JSON.stringify(payload),
 		);
@@ -49,9 +49,9 @@ export const readPreviewSession = ({
 	contentId: string;
 	maxAgeMs?: number;
 }): PreviewSessionPayload | null => {
-	if (typeof sessionStorage === "undefined") return null;
+	if (typeof localStorage === "undefined") return null;
 	try {
-		const raw = sessionStorage.getItem(
+		const raw = localStorage.getItem(
 			getPreviewSessionKey({ contentType, contentId }),
 		);
 		if (!raw) return null;

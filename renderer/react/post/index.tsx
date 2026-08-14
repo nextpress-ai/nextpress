@@ -14,15 +14,29 @@ export function PostAuthorBoxBlock(block: BlockConfig) {
 	const showBio = data.showBio !== false;
 	const isVertical = (data.layout as string) === "vertical";
 	const avatarSize = (data.avatarSize as number) || 48;
+	const name = (data.name as string) || "Author Name";
+	const bio = (data.bio as string) || "Author bio placeholder.";
+	const avatar = typeof data.avatar === "string" ? data.avatar : "";
 
 	const mergedClassName = ["wp-block-post-author-box", className].filter(Boolean).join(" ");
 
 	return (
 		<div className={mergedClassName || undefined} style={{ display: "flex", flexDirection: isVertical ? "column" : "row", alignItems: isVertical ? "center" : "flex-start", gap: "12px", ...style }} {...attributes}>
-			{showAvatar && <div className="wp-block-post-author-box__avatar" style={{ width: avatarSize, height: avatarSize, borderRadius: "50%", backgroundColor: "var(--npb-border-default)", flexShrink: 0 }} />}
+			{showAvatar && (
+				avatar ? (
+					<img
+						className="wp-block-post-author-box__avatar"
+						src={avatar}
+						alt={name}
+						style={{ width: avatarSize, height: avatarSize, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+					/>
+				) : (
+					<div className="wp-block-post-author-box__avatar" style={{ width: avatarSize, height: avatarSize, borderRadius: "50%", backgroundColor: "var(--npb-border-default)", flexShrink: 0 }} />
+				)
+			)}
 			<div className="wp-block-post-author-box__info">
-				{showName && <strong className="wp-block-post-author-box__name">Author Name</strong>}
-				{showBio && <p className="wp-block-post-author-box__bio" style={{ margin: "4px 0 0", color: "var(--npb-text-secondary)", fontSize: "0.875rem" }}>Author bio placeholder.</p>}
+				{showName && <strong className="wp-block-post-author-box__name">{name}</strong>}
+				{showBio && <p className="wp-block-post-author-box__bio" style={{ margin: "4px 0 0", color: "var(--npb-text-secondary)", fontSize: "0.875rem" }}>{bio}</p>}
 			</div>
 		</div>
 	);
@@ -86,10 +100,40 @@ export function PostInfoBlock(block: BlockConfig) {
 	const isInline = layout === "inline";
 	const separator = isInline ? " · " : undefined;
 
+	const hasBoundMeta =
+		typeof data.publishedAt === "string" ||
+		Array.isArray(data.categories) ||
+		Array.isArray(data.tags);
+
 	const items: string[] = [];
-	if (showDate) items.push("January 15, 2025");
-	if (showCategories) items.push("Technology, Design");
-	if (showTags) items.push("#react #nextpress #cms");
+	const publishedAt = typeof data.publishedAt === "string" ? data.publishedAt : "";
+	const categories = Array.isArray(data.categories)
+		? data.categories.filter((item): item is string => typeof item === "string")
+		: [];
+	const tags = Array.isArray(data.tags)
+		? data.tags.filter((item): item is string => typeof item === "string")
+		: [];
+	if (showDate) {
+		if (publishedAt) {
+			items.push(
+				new Date(publishedAt).toLocaleDateString(undefined, {
+					year: "numeric",
+					month: "long",
+					day: "numeric",
+				}),
+			);
+		} else if (!hasBoundMeta) {
+			items.push("January 15, 2025");
+		}
+	}
+	if (showCategories) {
+		if (categories.length > 0) items.push(categories.join(", "));
+		else if (!hasBoundMeta) items.push("Technology, Design");
+	}
+	if (showTags) {
+		if (tags.length > 0) items.push(tags.map((tag) => `#${tag}`).join(" "));
+		else if (!hasBoundMeta) items.push("#react #nextpress #cms");
+	}
 	if (showReadTime) items.push("5 min read");
 
 	return (

@@ -21,6 +21,18 @@ type PullquoteContent = {
   className?: string;
 };
 
+function quotePlainText(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+}
+
+function quoteHtmlFromPlain(text: string): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return `<p>${escaped}</p>`;
+}
+
 const DEFAULT_CONTENT: PullquoteContent = {
   value: '<p>Add a quote that stands out from the rest of your content.</p>',
   citation: '',
@@ -114,8 +126,8 @@ function PullquoteSettings({ block, onUpdate }: PullquoteSettingsProps) {
             <SettingsLabel htmlFor="pullquote-content">Quote Content</SettingsLabel>
             <Textarea
               id="pullquote-content"
-              value={content?.value || ''}
-              onChange={(e) => updateContent({ value: e.target.value })}
+              value={quotePlainText(content?.value || '')}
+              onChange={(e) => updateContent({ value: quoteHtmlFromPlain(e.target.value) })}
               placeholder="Enter your quote here..."
               rows={4}
               className="mt-1"

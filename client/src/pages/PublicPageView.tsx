@@ -9,6 +9,7 @@ import { SkipLink } from "@/components/a11y/skip-link";
 import type { Post } from "@shared/schema-types";
 import type { BlockConfig } from "@shared/schema-types";
 import type { PageOther } from "@shared/schema-types";
+import type { AuthorDisplay } from "@shared/author-display";
 
 /**
  * Extended post data type for public page rendering.
@@ -24,6 +25,9 @@ interface PublicPageData extends Post {
   type?: string;
   /** Page builder block data (legacy alias for blocks) */
   builderData?: BlockConfig[];
+  author?: AuthorDisplay | null;
+  categories?: string[];
+  tags?: string[];
 }
 
 interface PublicPageViewProps {
@@ -131,11 +135,11 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
 
   return (
     <div 
-      className="min-h-screen" 
+      className="np-visitor-document min-h-screen" 
       data-testid={`public-${type}-view`}
       style={{
         backgroundColor: design?.backgroundColor?.style || '#ffffff',
-        color: design?.textColor?.style || undefined,
+        color: design?.textColor?.style || '#18181b',
         fontFamily: design?.fontFamily || undefined,
       }}
     >
@@ -228,6 +232,23 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
                 pageTitle={data.title}
                 animationContentKey={`${type}-${data.id}-${blocks.length}`}
                 testId="page-builder-content"
+                post={
+                  type === "post"
+                    ? {
+                        id: data.id,
+                        authorId: data.authorId,
+                        title: data.title,
+                        excerpt: data.excerpt,
+                        featuredImage: data.featuredImage,
+                        publishedAt: data.publishedAt,
+                        createdAt: data.createdAt,
+                        categories: data.categories,
+                        tags: data.tags,
+                        author: data.author,
+                        other: data.other,
+                      }
+                    : undefined
+                }
               />
             )}
           </>

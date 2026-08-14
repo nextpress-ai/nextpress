@@ -31,7 +31,7 @@ export function MarkdownBlock(block: BlockConfig) {
 	});
 
 	return (
-		<div className={blockClass} style={style}>
+		<div className={blockClass} style={{ color: "var(--npb-text-primary)", ...style }}>
 			<Suspense fallback={<div style={{ minHeight: "20px" }} />}>
 				<ReactMarkdown
 					remarkPlugins={remarkPlugins}

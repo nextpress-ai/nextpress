@@ -11,6 +11,7 @@ import { FileText, Settings } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
 import { createBlockDefinition } from '../createBlockDefinition';
 import { BlockShell } from '../shared/block-shell';
+import { usePostDocument } from '../../PageContext';
 
 // ============================================================================
 // TYPES
@@ -70,26 +71,48 @@ function truncateText(
 interface PostExcerptRendererProps {
   content: PostExcerptContent;
   styles?: React.CSSProperties;
+  onTextChange?: (text: string) => void;
 }
 
 /**
  * Pure presentational renderer for the post excerpt.
- * Renders static truncated text in both editor and preview mode.
- * Content is edited via the sidebar settings panel.
+ * Editor canvas is inline-editable; preview shows the truncated summary.
  */
-function PostExcerptRenderer({ content, styles }: PostExcerptRendererProps) {
-  const text = content?.text || '';
+function PostExcerptRenderer({ content, styles, onTextChange }: PostExcerptRendererProps) {
+  const postDocument = usePostDocument();
+  const raw = content?.text || '';
+  const text =
+    raw && raw !== DEFAULT_CONTENT.text
+      ? raw
+      : postDocument?.excerpt || raw;
   const maxLength = content?.maxLength ?? DEFAULT_CONTENT.maxLength!;
   const showReadMore = content?.showReadMore ?? true;
   const readMoreText = content?.readMoreText || 'Read More';
 
-  const { truncated, wasTruncated } = truncateText(text, maxLength);
+  const { truncated } = truncateText(text, maxLength);
 
   return (
     <BlockShell blockClass="wp-block-post-excerpt" className={content?.className} style={styles}>
-      <p className="wp-block-post-excerpt__excerpt">
-        {truncated || 'Write your post excerpt...'}
-      </p>
+      {onTextChange ? (
+        <textarea
+          aria-label="Post excerpt"
+          value={text}
+          maxLength={maxLength}
+          rows={3}
+          onChange={(e) => {
+            const next = e.target.value.slice(0, maxLength);
+            onTextChange(next);
+            postDocument?.updateDocument({ excerpt: next });
+          }}
+          placeholder="Write your post excerpt..."
+          className="wp-block-post-excerpt__excerpt w-full resize-y bg-transparent p-0 outline-none"
+          style={{ font: 'inherit', color: 'inherit', lineHeight: 'inherit' }}
+        />
+      ) : (
+        <p className="wp-block-post-excerpt__excerpt">
+          {truncated || 'Write your post excerpt...'}
+        </p>
+      )}
       {showReadMore && (
         <p className="wp-block-post-excerpt__more-link">
           <button type="button" onClick={(e) => e.preventDefault()} className="text-blue-600 hover:text-blue-800 underline">
@@ -120,11 +143,29 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
     onUpdate,
     defaultContent: DEFAULT_CONTENT,
   });
+  const postDocument = usePostDocument();
 
   const currentMaxLength =
     content?.maxLength ?? DEFAULT_CONTENT.maxLength!;
   const currentShowReadMore = content?.showReadMore ?? true;
   const currentReadMoreText = content?.readMoreText || 'Read More';
+  const rawExcerptText =
+    content?.text && content.text !== DEFAULT_CONTENT.text
+      ? content.text
+      : postDocument?.excerpt || content?.text || '';
+  const excerptText =
+    rawExcerptText.length > currentMaxLength
+      ? rawExcerptText.slice(0, currentMaxLength)
+      : rawExcerptText;
+
+  const setMaxLength = (nextMaxLength: number) => {
+    updateContent({
+      maxLength: nextMaxLength,
+      ...(rawExcerptText.length > nextMaxLength
+        ? { text: rawExcerptText.slice(0, nextMaxLength) }
+        : {}),
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -134,12 +175,23 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
           <SettingsLabel htmlFor="excerpt-text">Excerpt Text</SettingsLabel>
           <Textarea
             id="excerpt-text"
-            value={content?.text || ''}
-            onChange={(e) => updateContent({ text: e.target.value })}
+            value={excerptText}
+            maxLength={currentMaxLength}
+            onChange={(e) => {
+              const text = e.target.value.slice(0, currentMaxLength);
+              updateContent({ text });
+              postDocument?.updateDocument({ excerpt: text });
+            }}
             placeholder="Write the post excerpt..."
             rows={4}
             className="mt-1 text-sm resize-y"
+            aria-describedby="excerpt-text-count"
           />
+          <p
+            id="excerpt-text-count"
+            className="mt-1 text-xs tabular-nums text-npb-text-muted">
+            {excerptText.length} / {currentMaxLength} characters
+          </p>
         </div>
       </CollapsibleCard>
 
@@ -151,7 +203,7 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
             <div className="flex items-center justify-between">
             <SettingsLabel>Max Length</SettingsLabel>
               <span className="text-xs text-npb-text-muted">
-                {currentMaxLength} chars
+                {currentMaxLength} characters
               </span>
             </div>
             <Slider
@@ -159,7 +211,9 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
               min={MAX_LENGTH_MIN}
               max={MAX_LENGTH_MAX}
               step={MAX_LENGTH_STEP}
-              onValueChange={([val]) => updateContent({ maxLength: val })}
+              onValueChange={([val]) => {
+                if (typeof val === 'number') setMaxLength(val);
+              }}
             />
           </div>
 
@@ -201,7 +255,7 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
 /**
  * Post Excerpt block definition for the PageBuilder.
  * Displays a configurable post excerpt with truncation and optional "Read More" link.
- * Content is edited via the sidebar settings panel.
+ * Content is edited on the canvas or in the sidebar.
  */
 const PostExcerptBlock = createBlockDefinition<PostExcerptContent>({
   id: 'post/excerpt',
@@ -210,10 +264,22 @@ const PostExcerptBlock = createBlockDefinition<PostExcerptContent>({
   description: 'Display a summary excerpt of the post',
   category: 'post',
   defaultContent: DEFAULT_CONTENT,
-  defaultStyles: { margin: '0 0 1em 0' },
+  defaultStyles: { margin: '0' },
   settings: PostExcerptSettings,
   hasSettings: true,
-  render: ({ content, styles }) => <PostExcerptRenderer content={content} styles={styles} />,
+  render: ({ content, styles, setContent, isPreview }) => (
+    <PostExcerptRenderer
+      content={content}
+      styles={styles}
+      onTextChange={
+        isPreview
+          ? undefined
+          : (text) => {
+              setContent((prev) => ({ ...prev, text }));
+            }
+      }
+    />
+  ),
 });
 
 export default PostExcerptBlock;

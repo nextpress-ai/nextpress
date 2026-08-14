@@ -15,25 +15,25 @@ import {
   PLACEHOLDER_ADJACENT,
 } from './post-navigation-model';
 import { PostNavigationSettings } from './post-navigation-settings';
+import { usePostDocument } from '../../PageContext';
 
 // ============================================================================
 // DATA HOOK
 // ============================================================================
 
-/** Fetch adjacent posts from the API in preview mode. Returns placeholder data in editor. */
+/** Fetch adjacent posts from the API. Returns placeholder data without a post id. */
 function useAdjacentPosts(
   postId: string | undefined,
-  isPreview: boolean,
 ): AdjacentPostsData | null {
   const { data } = useQuery({
     queryKey: ['adjacent-posts', postId],
     queryFn: () =>
-      fetch(`/api/posts/${postId}/adjacent`)
+      fetch(`/api/posts/${postId}/adjacent`, { credentials: 'include' })
         .then((res) => {
           if (!res.ok) throw new Error('Failed to fetch adjacent posts');
           return res.json();
         }),
-    enabled: !!isPreview && !!postId,
+    enabled: !!postId,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -59,14 +59,16 @@ function PostNavigationRenderer({
   styles,
   isPreview,
 }: PostNavigationRendererProps) {
+  const postDocument = usePostDocument();
   const showThumbnail = content?.showThumbnail ?? false;
   const showLabel = content?.showLabel ?? true;
   const prevLabel = content?.prevLabel || 'Previous Post';
   const nextLabel = content?.nextLabel || 'Next Post';
+  const postId = content?.postId || postDocument?.postId;
 
-  const adjacentData = useAdjacentPosts(content?.postId, !!isPreview);
+  const adjacentData = useAdjacentPosts(postId);
   const displayData: AdjacentPostsData =
-    isPreview && adjacentData ? adjacentData : PLACEHOLDER_ADJACENT;
+    adjacentData ?? (postId ? { prev: undefined, next: undefined } : PLACEHOLDER_ADJACENT);
 
   const hasPrev = !!displayData.prev;
   const hasNext = !!displayData.next;
@@ -75,7 +77,9 @@ function PostNavigationRenderer({
     return (
       <BlockShell blockClass="wp-block-post-navigation" className={content?.className} style={styles}>
         <p className="text-sm text-npb-text-muted text-center py-4">
-          No adjacent posts found.
+          {isPreview
+            ? 'Previous and next posts appear here when more posts in this blog are published.'
+            : 'Previous and next posts appear here after you publish more posts in this blog.'}
         </p>
       </BlockShell>
     );

@@ -14,6 +14,8 @@ import { Image as ImageIcon, Settings } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
 import { createBlockDefinition } from '../createBlockDefinition';
 import { BlockShell } from '../shared/block-shell';
+import { MediaUrlField } from '../shared/media-url-field';
+import { usePostDocument } from '../../PageContext';
 
 // ============================================================================
 // TYPES
@@ -100,21 +102,25 @@ function PostFeaturedImageRenderer({
   isEditor = false,
   onChangeUrl,
 }: RendererProps) {
+  const postDocument = usePostDocument();
   const [isHovered, setIsHovered] = useState(false);
   const [editUrl, setEditUrl] = useState('');
 
   const {
-    url = '',
+    url: contentUrl = '',
     alt = 'Featured image',
     caption = '',
     objectFit = 'cover',
     aspectRatio = '16/9',
     className = '',
   } = content ?? {};
+  const url = contentUrl || postDocument?.featuredImage || '';
 
   const handleApply = () => {
     if (onChangeUrl && editUrl.trim()) {
-      onChangeUrl(editUrl.trim());
+      const nextUrl = editUrl.trim();
+      onChangeUrl(nextUrl);
+      postDocument?.updateDocument({ featuredImage: nextUrl });
       setEditUrl('');
     }
   };
@@ -200,21 +206,28 @@ function PostFeaturedImageSettings({
     onUpdate,
     defaultContent: DEFAULT_CONTENT,
   });
+  const postDocument = usePostDocument();
+  const imageUrl = content?.url || postDocument?.featuredImage || '';
+
+  const setUrl = (url: string) => {
+    updateContent({ url });
+    postDocument?.updateDocument({ featuredImage: url });
+  };
 
   return (
     <div className="space-y-4">
       <CollapsibleCard title="Image" icon={ImageIcon} defaultOpen={true}>
         <div className="space-y-4">
-          <div>
-            <SettingsLabel htmlFor="fi-url">Image URL</SettingsLabel>
-            <Input
-              id="fi-url"
-              value={content?.url || ''}
-              onChange={(e) => updateContent({ url: e.target.value })}
-              placeholder="https://example.com/image.jpg"
-              className="h-9"
-            />
-          </div>
+          <MediaUrlField
+            id="fi-url"
+            label="Featured image"
+            value={imageUrl}
+            kind="image"
+            placeholder="Paste an image URL or choose from the library"
+            libraryButtonLabel="Choose from library"
+            onChange={({ url }) => setUrl(url)}
+            onLibrarySelect={({ item }) => setUrl(item.url)}
+          />
           <div>
             <SettingsLabel htmlFor="fi-alt">Alt Text</SettingsLabel>
             <Input

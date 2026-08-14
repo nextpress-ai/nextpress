@@ -49,4 +49,41 @@ describe("applyResponsiveDefaults", () => {
 		expect(input.styles.width).toBe("100%");
 		expect(input.styles.fontSize).toBe("16px");
 	});
+
+	it("collapses factory padding and margin that doubled the page stack gap", () => {
+		const heading = applyResponsiveDefaults({
+			block: {
+				id: "h1",
+				name: "core/heading",
+				styles: { padding: "20px", margin: "1rem 0" },
+			} as never,
+			tier: "large",
+		});
+		expect(heading.styles.padding).toBe("20px 20px 0");
+		expect(heading.styles.margin).toBe("0");
+
+		const excerpt = applyResponsiveDefaults({
+			block: {
+				id: "e1",
+				name: "post/excerpt",
+				styles: { padding: "20px", margin: "0 0 1em 0" },
+			} as never,
+			tier: "large",
+		});
+		expect(excerpt.styles.padding).toBe("20px 20px 0");
+		expect(excerpt.styles.margin).toBe("0");
+	});
+
+	it("leaves custom spacing untouched", () => {
+		const heading = applyResponsiveDefaults({
+			block: {
+				id: "h2",
+				name: "core/heading",
+				styles: { padding: "32px", margin: "2rem 0" },
+			} as never,
+			tier: "large",
+		});
+		expect(heading.styles.padding).toBe("32px");
+		expect(heading.styles.margin).toBe("2rem 0");
+	});
 });

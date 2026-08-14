@@ -39,6 +39,38 @@ const readStructuredData = (block: BlockConfig): Record<string, unknown> => {
 const hasUserFontSize = (styles: CSSProperties | undefined): boolean =>
 	Boolean(styles?.fontSize);
 
+const FACTORY_STACK_MARGINS = new Set([
+	"1rem 0",
+	"1em 0",
+	"2em 0",
+	"0.5em 0",
+	"0 0 1em 0",
+	"0px",
+	"0",
+]);
+
+const TEXT_STACK_BLOCK_NAMES = new Set([
+	"core/heading",
+	"core/paragraph",
+	"post/title",
+	"post/excerpt",
+]);
+
+/**
+ * Factory blocks used to ship `padding: 20px` plus vertical margin *and* sit in a
+ * flex stack with `PAGE_BLOCK_STACK_GAP`. Collapse that doubled rhythm at render
+ * so canvas and publish match without rewriting saved styles.
+ */
+function collapseFactoryStackSpacing(blockName: string, styles: CSSProperties): void {
+	const margin = typeof styles.margin === "string" ? styles.margin.trim() : "";
+	if (FACTORY_STACK_MARGINS.has(margin)) {
+		styles.margin = "0";
+	}
+	if (TEXT_STACK_BLOCK_NAMES.has(blockName) && styles.padding === "20px") {
+		styles.padding = "20px 20px 0";
+	}
+}
+
 /** Applies responsive runtime defaults — does not mutate the block. */
 export function applyResponsiveDefaults({
 	block,
@@ -51,6 +83,7 @@ export function applyResponsiveDefaults({
 	const classNames: string[] = [];
 	const warnings: ResponsiveWarning[] = [];
 	const tierPadding = SPACING_BY_TIER.containerPadding[tier];
+	collapseFactoryStackSpacing(block.name, styles);
 
 	switch (block.name) {
 		case "core/container": {

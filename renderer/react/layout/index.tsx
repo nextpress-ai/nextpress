@@ -1,8 +1,7 @@
 import * as React from "react";
 import type { JSX } from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import { getRenderProps, parseStructuredContent, renderChildBlocks } from "../render-helpers";
-import { BLOCK_COMPONENTS } from "../block-components";
+import { getRenderProps, parseStructuredContent, renderChildBlocks, getBlockComponent } from "../render-helpers";
 import {
 	buildColumnStyle,
 	buildColumnsContainerStyle,
@@ -60,7 +59,7 @@ export function ColumnsBlock(block: BlockConfig) {
 	}[columnVerticalAlignment];
 
 	const renderChild = (child: BlockConfig): React.ReactNode => {
-		const ChildComponent = BLOCK_COMPONENTS[child.name];
+		const ChildComponent = getBlockComponent(child.name);
 		if (!ChildComponent) {
 			return null;
 		}
@@ -143,7 +142,7 @@ export function GroupBlock(block: BlockConfig) {
 	});
 
 	const renderChild = (child: BlockConfig): React.ReactNode => {
-		const ChildComponent = BLOCK_COMPONENTS[child.name];
+		const ChildComponent = getBlockComponent(child.name);
 		if (!ChildComponent) {
 			return null;
 		}
@@ -210,7 +209,7 @@ export function ContainerBlock(block: BlockConfig) {
 	});
 
 	const renderChild = (child: BlockConfig, index: number): React.ReactNode => {
-		const ChildComponent = BLOCK_COMPONENTS[child.name];
+		const ChildComponent = getBlockComponent(child.name);
 		if (!ChildComponent) {
 			return null;
 		}

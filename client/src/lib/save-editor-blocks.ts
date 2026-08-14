@@ -15,6 +15,8 @@ export type SaveEditorBlocksParams = {
   slug: string;
   status: string;
   blocks: BlockConfig[];
+  excerpt?: string | null;
+  featuredImage?: string | null;
   other?: Record<string, unknown>;
 };
 
@@ -29,6 +31,8 @@ export async function saveEditorBlocks({
   slug,
   status,
   blocks,
+  excerpt,
+  featuredImage,
   other,
 }: SaveEditorBlocksParams): Promise<Page | Post | Template> {
   const target = resolveEditorSaveTarget({ contentType, id, expectedVersion });
@@ -40,9 +44,16 @@ export async function saveEditorBlocks({
     blocks: stripVisualContentFromBlocks(blocks),
   });
 
+  const extra: Record<string, unknown> = {};
+  if (target.contentType === 'post') {
+    if (excerpt !== undefined) extra.excerpt = excerpt;
+    if (featuredImage !== undefined) extra.featuredImage = featuredImage;
+  }
+  if (other && target.contentType !== 'template') extra.other = other;
+
   const requestPayload =
-    other && target.contentType !== 'template'
-      ? { ...(payload as Record<string, unknown>), other }
+    Object.keys(extra).length > 0
+      ? { ...(payload as Record<string, unknown>), ...extra }
       : payload;
 
   const response = await apiRequest('PUT', target.endpoint, requestPayload);

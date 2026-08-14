@@ -26,10 +26,15 @@ export function createCommentsRoutes(deps: Deps): Router {
     asyncHandler(async (req, res) => {
       const {
         post_id,
+        postId,
         status = 'approved',
         page = 1,
         per_page = 10,
       } = req.query;
+      const resolvedPostId =
+        (typeof post_id === 'string' && post_id) ||
+        (typeof postId === 'string' && postId) ||
+        '';
       const siteId =
         typeof req.query.siteId === 'string' && req.query.siteId.trim()
           ? req.query.siteId.trim()
@@ -38,7 +43,7 @@ export function createCommentsRoutes(deps: Deps): Router {
       const offset = (parseInt(page as string) - 1) * limit;
 
       const filters: Array<{ where: string; equals?: unknown; in?: unknown[] }> = [
-        ...(post_id ? [{ where: 'postId', equals: post_id }] : []),
+        ...(resolvedPostId ? [{ where: 'postId', equals: resolvedPostId }] : []),
         ...(status && status !== 'all' ? [{ where: 'status', equals: status }] : []),
       ];
 

@@ -224,9 +224,16 @@ export function HtmlBlock(block: BlockConfig) {
  */
 export function PullquoteBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
-	const content = parseTextContent(block.content);
-	const text = (content.value as string) || "";
-	const citation = content.citation as string | undefined;
+	const data = parseStructuredContent(block.content);
+	const legacy = parseTextContent(block.content);
+	const valueHtml =
+		(typeof data.value === "string" && data.value.trim() && data.value) ||
+		(typeof legacy.value === "string" && legacy.value.trim()
+			? `<p>${legacy.value}</p>`
+			: "");
+	const citation =
+		(typeof data.citation === "string" && data.citation) ||
+		(legacy.citation as string | undefined);
 
 	const mergedClassName = ["wp-block-pullquote", className]
 		.filter(Boolean)
@@ -239,9 +246,9 @@ export function PullquoteBlock(block: BlockConfig) {
 			{...attributes}
 		>
 			<blockquote>
-				<p>{text}</p>
+				<div dangerouslySetInnerHTML={{ __html: sanitizeHtml(valueHtml) }} />
 			</blockquote>
-			{citation && <cite>{citation}</cite>}
+			{citation ? <cite>{citation}</cite> : null}
 		</figure>
 	);
 }

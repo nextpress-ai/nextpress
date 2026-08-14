@@ -152,7 +152,7 @@ export function getDefaultBlock(type: string, id: string): BlockConfig | null {
     category: def.category,
     content,
     styles: {
-      padding: '20px',
+      padding: '20px 20px 0',
       margin: '0px',
       ...def.defaultStyles,
     },

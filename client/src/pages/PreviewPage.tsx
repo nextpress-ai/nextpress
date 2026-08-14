@@ -5,6 +5,8 @@ import { AppLoadingShell } from "@/components/app-loading-shell";
 import { AlertCircle } from "lucide-react";
 import type { Post, Template } from "@shared/schema-types";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
+import type { AuthorDisplay } from "@shared/author-display";
+import type { BindablePostDocument } from "@shared/bind-post-blocks";
 import { PublicBlockStack } from "@/components/PageBuilder/public-block-stack";
 import { readPreviewSession } from "@shared/preview-session";
 
@@ -14,10 +16,19 @@ interface PreviewPageProps {
   type?: 'post' | 'page' | 'template';
 }
 
+type PreviewPost = Post & {
+  blocks?: BlockConfig[];
+  builderData?: BlockConfig[];
+  content?: string;
+  usePageBuilder?: boolean;
+  author?: AuthorDisplay | null;
+  categories?: string[];
+  tags?: string[];
+};
+
 export default function PreviewPage({ postId, templateId, type }: PreviewPageProps) {
   const params = useParams();
   
-  // Get ID from props or URL params
   const contentId = postId || templateId || params.id;
   const contentType = type || params.type || (templateId ? 'template' : 'post');
 
@@ -45,18 +56,38 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
         ? `/api/preview/template/${contentId}`
         : `/api/preview/${contentType}/${contentId}`;
 
-  const { data, isLoading, error } = useQuery({
+  const postFallbackPath =
+    !shareToken && contentType === 'post' && contentId
+      ? `/api/posts/${contentId}`
+      : '';
+
+  const previewQuery = useQuery({
     queryKey: [previewPath],
     enabled: !!contentId,
   });
+  const postFallbackQuery = useQuery({
+    queryKey: [postFallbackPath],
+    enabled: Boolean(postFallbackPath && previewQuery.isError),
+  });
 
-  // Loading state
-  if (isLoading) {
+  const data = previewQuery.data ?? postFallbackQuery.data;
+  const isLoading =
+    previewQuery.isLoading ||
+    Boolean(previewQuery.isError && postFallbackPath && postFallbackQuery.isLoading);
+  const error = postFallbackPath && previewQuery.isError
+    ? postFallbackQuery.error
+    : previewQuery.error;
+
+  const liveSession =
+    useLiveEditorBlocks && contentId
+      ? readPreviewSession({ contentType, contentId })
+      : null;
+
+  if (isLoading && !liveSession) {
     return <AppLoadingShell label="Loading preview…" />;
   }
 
-  // Error state
-  if (error || !data) {
+  if ((error || !data) && !liveSession) {
     const isUnauthorized =
       error instanceof Error && error.message.startsWith('401:');
     return (
@@ -80,36 +111,45 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
     );
   }
 
-  const liveSession =
-    useLiveEditorBlocks && contentId
-      ? readPreviewSession({ contentType, contentId })
-      : null;
-
-  // Extract blocks from data (prefer live editor handoff when opening from builder)
   let blocks: BlockConfig[] = liveSession?.blocks ?? [];
   let title = liveSession?.title ?? '';
-  
+  let bindablePost: BindablePostDocument | undefined;
+
   if (contentType === 'template') {
-    const template = data as Template;
+    const template = data as Template | undefined;
     if (blocks.length === 0) {
-      blocks = (template.blocks as BlockConfig[]) || [];
+      blocks = (template?.blocks as BlockConfig[]) || [];
     }
-    if (!title) title = template.name;
+    if (!title) title = template?.name ?? '';
   } else {
-    const item = data as Post & { blocks?: BlockConfig[] };
+    const item = data as PreviewPost | undefined;
     if (blocks.length === 0) {
-      blocks = (item.blocks ?? (item as any).builderData) as BlockConfig[] ?? [];
+      blocks = (item?.blocks ?? item?.builderData ?? []) as BlockConfig[];
     }
-    if (!title) title = item.title ?? '';
-    
-    // If post doesn't use page builder, show traditional content
-    if (!(item as any).usePageBuilder && (item as any).content) {
+    if (!title) title = item?.title ?? '';
+    if (contentType === 'post' && (item || contentId)) {
+      bindablePost = {
+        id: item?.id ?? contentId,
+        authorId: item?.authorId,
+        title: item?.title ?? title,
+        excerpt: item?.excerpt,
+        featuredImage: item?.featuredImage,
+        publishedAt: item?.publishedAt,
+        createdAt: item?.createdAt,
+        categories: item?.categories,
+        tags: item?.tags,
+        author: item?.author,
+        other: item?.other,
+      };
+    }
+
+    if (item && !item.usePageBuilder && item.content) {
       return (
         <div className="min-h-screen bg-white">
           <div className="max-w-4xl mx-auto px-6 py-12">
             <article className="prose prose-lg max-w-none">
               <h1>{item.title}</h1>
-              <div dangerouslySetInnerHTML={{ __html: (item as any).content }} />
+              <div dangerouslySetInnerHTML={{ __html: item.content }} />
             </article>
           </div>
         </div>
@@ -117,23 +157,20 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
     }
   }
 
-  // Extract page design settings (fontFamily, padding, containerWidth, colors)
-  const pageOther = (data as { other?: PageOther })?.other;
+  const pageOther = (data as { other?: PageOther } | undefined)?.other;
   const design = liveSession?.design ?? pageOther?.design;
 
-  // Render page builder content
   return (
     <div
-      className={isEmbedPreview ? 'min-h-full' : 'min-h-screen'}
+      className={`np-visitor-document ${isEmbedPreview ? 'min-h-full' : 'min-h-screen'}`}
       style={{
         backgroundColor: design?.backgroundColor?.style || '#ffffff',
-        color: design?.textColor?.style || undefined,
+        color: design?.textColor?.style || '#18181b',
         fontFamily: design?.fontFamily || undefined,
       }}
     >
       {!isEmbedPreview ? <title>{title}</title> : null}
       
-      {/* Page content — same stack as published pages */}
       <div className="w-full">
         {blocks.length === 0 ? (
           <div className="flex min-h-[400px] items-center justify-center">
@@ -153,6 +190,7 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
             design={design}
             animationContentKey={`${contentType}-${contentId}-${blocks.length}`}
             testId="preview-page-builder-content"
+            post={bindablePost}
           />
         )}
       </div>

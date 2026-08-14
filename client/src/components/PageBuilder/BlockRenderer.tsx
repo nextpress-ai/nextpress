@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, isValidElement, ReactNode } from 'react';
+import React, { isValidElement, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Copy, Trash2, GripVertical } from 'lucide-react';
 import type { BlockConfig } from '@shared/schema-types';
@@ -39,11 +39,7 @@ import {
   NPB_ICON_REFERENCE_ROW_MAX_CHARS,
   truncateWithEllipsis,
 } from '@/lib/truncate-with-ellipsis';
-
-/** Mount-only cleanup wrapper (matches PageBuilder / editor pattern). */
-function useMountEffect(effect: () => void | (() => void)) {
-  useEffect(effect, []);
-}
+import { useCanvasBlockToolbar } from './use-canvas-block-toolbar';
 
 /** Ring fade and entry preview both use `animation`; keep preview on an inner wrapper. */
 function isEntryPreviewAnimationEnd(
@@ -54,9 +50,6 @@ function isEntryPreviewAnimationEnd(
   const ended = event.animationName;
   return ended === animName || ended.endsWith(animName);
 }
-
-/** Hover-only: entire floating toolbar hides after this idle period without pointer movement. */
-const CANVAS_HOVER_TOOLBAR_IDLE_MS = 3000;
 
 export function ContainerChildren({
   block,
@@ -244,6 +237,8 @@ function BlockEditorToolbarPanel({
   onDuplicate,
   onDelete,
   className,
+  open,
+  engageHandlers,
 }: {
   label: string;
   /** Full toolbar string when `label` is JS-truncated (block name, icon ref, etc.). */
@@ -252,13 +247,24 @@ function BlockEditorToolbarPanel({
   onDuplicate: () => void;
   onDelete: () => void;
   className?: string;
+  open: boolean;
+  engageHandlers: {
+    onMouseEnter: () => void;
+    onMouseLeave: () => void;
+  };
 }) {
   const labelClass =
     'block min-w-0 flex-1 px-2 text-left text-xs text-npb-text-secondary';
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className={`min-w-0 max-w-full ${className ?? ''}`}>
+      <div
+        className={`min-w-0 max-w-full ${className ?? ''}`}
+        data-open={open ? 'true' : 'false'}
+        inert={!open}
+        onMouseEnter={engageHandlers.onMouseEnter}
+        onMouseLeave={engageHandlers.onMouseLeave}
+      >
         {labelTooltip ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -336,52 +342,18 @@ export default function BlockRenderer({
   dragHandleProps,
   onBlockChange,
 }: BlockRendererProps) {
-  const [isHovered, setIsHovered] = useState(false);
   const actions = useBlockActions();
   const effectiveSelected = isSelected || actions?.selectedBlockId === block.id;
-  const idleHideToolbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearCanvasHoverToolbarIdleTimer = () => {
-    if (idleHideToolbarTimerRef.current != null) {
-      clearTimeout(idleHideToolbarTimerRef.current);
-      idleHideToolbarTimerRef.current = null;
-    }
-  };
-
-  const scheduleCanvasHoverToolbarIdleHide = () => {
-    clearCanvasHoverToolbarIdleTimer();
-    idleHideToolbarTimerRef.current = setTimeout(() => {
-      idleHideToolbarTimerRef.current = null;
-      setIsHovered(false);
-    }, CANVAS_HOVER_TOOLBAR_IDLE_MS);
-  };
-
-  useMountEffect(() => () => {
-    clearCanvasHoverToolbarIdleTimer();
+  const {
+    toolbarOpen,
+    paintToolbar,
+    blockHoverHandlers,
+    toolbarEngageHandlers,
+    onBlockInteract,
+  } = useCanvasBlockToolbar({
+    enabled: !isPreview,
+    isSelected: effectiveSelected,
   });
-
-  const handleCanvasHoverEnter = () => {
-    setIsHovered(true);
-    scheduleCanvasHoverToolbarIdleHide();
-  };
-
-  const handleCanvasHoverLeave = () => {
-    clearCanvasHoverToolbarIdleTimer();
-    setIsHovered(false);
-  };
-
-  /**
-   * Resets idle timer on real pointer movement only. Coalesced / no-op pointermove events
-   * (movement 0) would otherwise keep resetting the timer so the hover toolbar never hides.
-   */
-  const handleCanvasHoverPointerMove = (e: React.PointerEvent) => {
-    if (e.movementX === 0 && e.movementY === 0) return;
-    setIsHovered((prev) => {
-      if (!prev) return true;
-      return prev;
-    });
-    scheduleCanvasHoverToolbarIdleHide();
-  };
 
   const effectiveHoverHighlight = effectiveSelected
     ? (hoverHighlight ?? actions?.hoverHighlight ?? null)
@@ -490,8 +462,6 @@ export default function BlockRenderer({
    * hover-anywhere behavior.
    */
   const useTopToolbarHoverStrip = isContainer && !isPreview;
-  /** Toolbar stays visible while selected so actions remain reachable without hover. */
-  const showBlockToolbar = isHovered || effectiveSelected;
   const baseBlockLabel = blockRegistry[block.name]?.label || block.name;
   const iconRefForToolbar =
     block.name === 'core/icon' ? extractIconReferenceFromBlockContent(block.content) : null;
@@ -521,41 +491,44 @@ export default function BlockRenderer({
       {...(isPreview || useTopToolbarHoverStrip
         ? {}
         : {
-            onMouseEnter: handleCanvasHoverEnter,
-            onMouseLeave: handleCanvasHoverLeave,
-            onPointerMove: handleCanvasHoverPointerMove,
+            onMouseEnter: blockHoverHandlers.onMouseEnter,
+            onMouseLeave: blockHoverHandlers.onMouseLeave,
+            onPointerMove: blockHoverHandlers.onPointerMove,
           })}
       onClick={(e) => {
         if (!isPreview) {
           e.stopPropagation();
-          clearCanvasHoverToolbarIdleTimer();
+          onBlockInteract();
           actions?.onSelect(block.id);
-          scheduleCanvasHoverToolbarIdleHide();
         }
       }}>
-      {!isPreview && !useTopToolbarHoverStrip && showBlockToolbar && (
+      {!isPreview && !useTopToolbarHoverStrip && paintToolbar && (
         <BlockEditorToolbarPanel
           label={blockToolbarLabel}
           labelTooltip={blockToolbarLabelTooltip}
           dragHandleProps={dragHandleProps}
           onDuplicate={onDuplicate}
           onDelete={onDelete}
+          open={toolbarOpen}
+          engageHandlers={toolbarEngageHandlers}
           className={`absolute top-0 left-0 right-0 z-30 ${toolbarPanelClass}`}
         />
       )}
       {!isPreview && useTopToolbarHoverStrip && (
         <div
           className="absolute top-0 left-0 right-0 z-30 flex flex-col"
-          onMouseEnter={handleCanvasHoverEnter}
-          onMouseLeave={handleCanvasHoverLeave}
-          onPointerMove={handleCanvasHoverPointerMove}>
-          {showBlockToolbar ? (
+          onMouseEnter={blockHoverHandlers.onMouseEnter}
+          onMouseLeave={blockHoverHandlers.onMouseLeave}
+          onPointerMove={blockHoverHandlers.onPointerMove}>
+          {paintToolbar ? (
             <BlockEditorToolbarPanel
               label={blockToolbarLabel}
               labelTooltip={blockToolbarLabelTooltip}
               dragHandleProps={dragHandleProps}
               onDuplicate={onDuplicate}
               onDelete={onDelete}
+              open={toolbarOpen}
+              engageHandlers={toolbarEngageHandlers}
               className={toolbarPanelClass}
             />
           ) : (
@@ -568,7 +541,8 @@ export default function BlockRenderer({
           className={`${!isPreview ? 'cursor-pointer' : ''} transition-all duration-200`}>
           <div
             data-block-id={block.id}
-            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'npb-canvas-block-selected' : ''} ${!isPreview && isHovered && !effectiveSelected ? 'npb-canvas-block-hover' : ''} relative`}
+            data-chrome={!isPreview && toolbarOpen ? 'true' : 'false'}
+            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'npb-canvas-block-selected' : ''} ${!isPreview && toolbarOpen && !effectiveSelected ? 'npb-canvas-block-hover' : ''} relative`}
             style={{
               width: '100%',
               minWidth: 0,

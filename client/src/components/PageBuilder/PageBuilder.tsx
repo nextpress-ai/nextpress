@@ -13,7 +13,9 @@ import { BuilderCanvas } from './BuilderCanvas';
 import PageSettingsModal from './PageSettings';
 import { blockRegistry } from './blocks';
 import { BlockActionsProvider } from './BlockActionsContext';
-import { PageProvider } from './PageContext';
+import { PageProvider, type PostDocumentFields, type PostDocumentValue } from './PageContext';
+import { parsePostOther } from '@shared/posts/post-other';
+import type { AuthorDisplay } from '@shared/author-display';
 import { savePageDraftWithHistory } from '@/lib/pageDraftStorage';
 import {
   findBlock,
@@ -89,6 +91,12 @@ interface PageBuilderProps {
   onPageMetaChange?: (
     meta: Partial<{ title: string; slug: string; status: string }>,
   ) => void;
+  onPostDocumentChange?: (patch: {
+    excerpt?: string;
+    featuredImage?: string;
+    categories?: string[];
+    tags?: string[];
+  }) => void;
   currentPostId?: string;
   contentType?: 'post' | 'page' | 'template';
   isTemplateEditor?: boolean;
@@ -105,6 +113,7 @@ export default function PageBuilder({
   onPreview,
   pageMeta,
   onPageMetaChange,
+  onPostDocumentChange,
   currentPostId,
   contentType,
   isTemplateEditor = false,
@@ -126,6 +135,36 @@ export default function PageBuilder({
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [showCreatePageModal, setShowCreatePageModal] = useState(false);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
+  const postRecord = data as {
+    id?: string;
+    authorId?: string | null;
+    excerpt?: string | null;
+    featuredImage?: string | null;
+    categories?: string[];
+    tags?: string[];
+    publishedAt?: string | Date | null;
+    createdAt?: string | Date | null;
+    author?: AuthorDisplay | null;
+    other?: unknown;
+  } | undefined;
+  const parsedPostOther = parsePostOther(postRecord?.other);
+  const [postDoc, setPostDoc] = useState({
+    excerpt: String(postRecord?.excerpt ?? ''),
+    featuredImage: String(postRecord?.featuredImage ?? ''),
+    categories: postRecord?.categories ?? parsedPostOther.categories ?? [],
+    tags: postRecord?.tags ?? parsedPostOther.tags ?? [],
+  });
+  const [prevPostDocId, setPrevPostDocId] = useState(postRecord?.id);
+  if (postRecord?.id !== prevPostDocId) {
+    setPrevPostDocId(postRecord?.id);
+    const nextOther = parsePostOther(postRecord?.other);
+    setPostDoc({
+      excerpt: String(postRecord?.excerpt ?? ''),
+      featuredImage: String(postRecord?.featuredImage ?? ''),
+      categories: postRecord?.categories ?? nextOther.categories ?? [],
+      tags: postRecord?.tags ?? nextOther.tags ?? [],
+    });
+  }
   const historyMutationRef = useRef(0);
   const pendingDeleteUndoRef = useRef<number | null>(null);
   const parentSaveInFlightRef = useRef(false);
@@ -603,17 +642,54 @@ export default function PageBuilder({
     [isWideLayout, resetState, onBlocksChange],
   );
 
+  const updatePostDocument = (patch: PostDocumentFields) => {
+    setPostDoc((current) => ({
+      excerpt: patch.excerpt ?? current.excerpt,
+      featuredImage: patch.featuredImage ?? current.featuredImage,
+      categories: patch.categories ?? current.categories,
+      tags: patch.tags ?? current.tags,
+    }));
+    if (patch.title !== undefined) {
+      onPageMetaChange?.({ title: patch.title });
+    }
+    onPostDocumentChange?.(patch);
+  };
+
+  const postDocument: PostDocumentValue | null =
+    resolvedContentType === 'post' && (currentPostId || postRecord?.id)
+      ? {
+          contentType: 'post',
+          postId: currentPostId || postRecord?.id,
+          authorId: postRecord?.authorId ?? undefined,
+          title: pageMeta?.title ?? '',
+          excerpt: postDoc.excerpt,
+          featuredImage: postDoc.featuredImage,
+          categories: postDoc.categories,
+          tags: postDoc.tags,
+          publishedAt:
+            postRecord?.publishedAt instanceof Date
+              ? postRecord.publishedAt.toISOString()
+              : postRecord?.publishedAt ?? null,
+          createdAt:
+            postRecord?.createdAt instanceof Date
+              ? postRecord.createdAt.toISOString()
+              : postRecord?.createdAt ?? null,
+          author: postRecord?.author ?? null,
+          updateDocument: updatePostDocument,
+        }
+      : null;
+
   return (
     <div className="npb-editor-shell flex h-full min-h-0 flex-col bg-npb-canvas-bg">
       <SkipLink href="#builder-canvas">Skip to canvas</SkipLink>
-      <PageProvider pageOther={data?.other as any}>
+      <PageProvider pageOther={data?.other as any} postDocument={postDocument}>
         <DeviceViewProvider device={deviceView}>
         <BlockActionsProvider
         value={{
           selectedBlockId,
           onSelect: (id) => {
             setSelectedBlockId(id);
-            if (!isWideLayout) {
+            if (id && !isWideLayout) {
               setActiveTab('settings');
             }
           },

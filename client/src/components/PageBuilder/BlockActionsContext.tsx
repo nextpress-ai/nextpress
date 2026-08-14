@@ -4,7 +4,7 @@ export type HoverHighlight = 'padding' | 'margin' | null;
 
 export interface BlockActionsContextValue {
   selectedBlockId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string | null) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   hoverHighlight: HoverHighlight;

@@ -4,6 +4,7 @@ import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
 import { coerceDates } from './shared/date-coerce';
 import { enrichPostForApi } from '@shared/posts/post-other';
+import { attachPostAuthor } from '../lib/attach-post-author';
 import { getSiteBlogIds } from './shared/site-content';
 import {
   assertAuthenticatedSiteAccess,
@@ -197,6 +198,69 @@ export function createPostsRoutes(deps: Deps): Router {
   );
 
   /**
+   * GET /api/posts/:id/adjacent - Previous and next posts in the same blog.
+   */
+  router.get(
+    '/:id/adjacent',
+    asyncHandler(async (req, res) => {
+      const post = await models.posts.findById(req.params.id);
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+
+      const siteId = await resolveContentSiteId({
+        models,
+        contentType: 'post',
+        contentId: post.id,
+      });
+      if (siteId) {
+        const allowed = await ensureNonPublicContentAccess({
+          req,
+          res,
+          models,
+          siteId,
+          status: post.status,
+        });
+        if (!allowed) {
+          return;
+        }
+      } else if (post.status !== 'publish') {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      if (!post.blogId) {
+        return res.json({ prev: null, next: null });
+      }
+
+      const siblings = (await models.posts.findManyWhere(
+        [{ where: 'blogId', equals: post.blogId }],
+        {
+          limit: 200,
+          orderBy: { property: 'createdAt', order: 'ascending' },
+        },
+      )).filter((item) => item.status === 'publish' || item.id === post.id);
+      const index = siblings.findIndex((item) => item.id === post.id);
+      const toAdjacent = (item: (typeof siblings)[number] | undefined) =>
+        item
+          ? {
+              id: item.id,
+              title: item.title,
+              slug: item.slug,
+              featuredImage: item.featuredImage,
+            }
+          : null;
+
+      res.json({
+        prev: index > 0 ? toAdjacent(siblings[index - 1]) : null,
+        next:
+          index >= 0 && index < siblings.length - 1
+            ? toAdjacent(siblings[index + 1])
+            : null,
+      });
+    }),
+  );
+
+  /**
    * GET /api/posts/:id - Get single post by ID
    */
   router.get(
@@ -229,7 +293,7 @@ export function createPostsRoutes(deps: Deps): Router {
           return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        res.json(enrichPostForApi(post));
+        res.json(await attachPostAuthor({ models, post: enrichPostForApi(post) }));
       } catch (error) {
         console.error('Error fetching post:', error);
         res.status(500).json({ message: 'Failed to fetch post' });

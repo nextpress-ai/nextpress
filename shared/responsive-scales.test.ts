@@ -33,5 +33,6 @@ describe("responsive-scales", () => {
 		expect(MIN_TOUCH_TARGET_PX).toBe(44);
 		expect(MIN_FORM_FONT_SIZE).toBe("16px");
 		expect(FLUID_HEADING_CSS).toContain("clamp(");
+		expect(FLUID_HEADING_CSS).toContain("wp-block-post-title");
 	});
 });

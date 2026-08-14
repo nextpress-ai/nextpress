@@ -22,25 +22,23 @@ import {
   buildClassName,
 } from './post-info-model';
 import { PostInfoSettings } from './post-info-settings';
+import { usePostDocument } from '../../PageContext';
 
 // ============================================================================
 // DATA FETCH
 // ============================================================================
 
 /** Fetch post metadata from the API. Returns null while loading or on failure. */
-function usePostMeta(
-  postId: string | undefined,
-  isPreview: boolean,
-): PostMeta | null {
+function usePostMeta(postId: string | undefined): PostMeta | null {
   const { data } = useQuery({
     queryKey: ['post-meta', postId],
     queryFn: () =>
-      fetch(`/api/posts/${postId}`)
+      fetch(`/api/posts/${postId}`, { credentials: 'include' })
         .then((res) => {
           if (!res.ok) throw new Error('fetch failed');
           return res.json();
         }),
-    enabled: !!isPreview && !!postId,
+    enabled: !!postId,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -81,13 +79,30 @@ function CategoryBadge({ children }: { children: React.ReactNode }) {
 function PostInfoRenderer({
   content,
   styles,
-  isPreview,
 }: PostInfoRendererProps) {
+  const postDocument = usePostDocument();
   const layout = content?.layout ?? 'inline';
   const dateFormat = content?.dateFormat ?? 'long';
   const className = buildClassName(content, layout);
-  const fetched = usePostMeta(content?.postId, !!isPreview);
-  const meta: PostMeta = isPreview && fetched ? fetched : PLACEHOLDER_META;
+  const postId = content?.postId || postDocument?.postId;
+  const fetched = usePostMeta(postId);
+  const hasLivePost = Boolean(postId);
+  const meta: PostMeta = hasLivePost
+    ? {
+        publishedAt:
+          fetched?.publishedAt ||
+          postDocument?.publishedAt ||
+          postDocument?.createdAt ||
+          undefined,
+        categories:
+          (postDocument?.categories?.length
+            ? postDocument.categories
+            : fetched?.categories) ?? [],
+        tags:
+          (postDocument?.tags?.length ? postDocument.tags : fetched?.tags) ?? [],
+        wordCount: fetched?.wordCount,
+      }
+    : PLACEHOLDER_META;
   const items: React.ReactNode[] = [];
   const itemKeys: string[] = [];
 
