@@ -6,6 +6,7 @@ import {
   buildColumnsLayout,
   removeColumnAndCleanup,
 } from '@/components/PageBuilder/blocks/columns/ColumnsBlock';
+import type { ColumnLayout } from '@shared/columns-layout';
 
 // Mock the block registry
 vi.mock('@/components/PageBuilder/blocks', () => ({
@@ -94,12 +95,6 @@ vi.mock('@/components/PageBuilder/blocks', () => ({
     return registry[type] || null;
   }
 }));
-
-interface ColumnLayout {
-  columnId: string;
-  width: string;
-  blockIds: string[];
-}
 
 describe('ColumnsBlock with New Structure', () => {
   let columnsBlock: BlockConfig;

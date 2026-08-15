@@ -103,7 +103,7 @@ const walkBlocks = (
  * Validates page/post save payloads: page.other shape, block tag names, icon references.
  */
 export const validateContentForSave = (params: {
-	blocks?: BlockConfig[] | null;
+	blocks?: unknown[] | BlockConfig[] | null;
 	other?: unknown;
 	contentType?: "page" | "post";
 }): ContentSaveValidationResult => {
@@ -123,7 +123,7 @@ export const validateContentForSave = (params: {
 		other = mergePageOtherWithDefaults();
 	}
 
-	const blocks = params.blocks ?? [];
+	const blocks = (params.blocks ?? []) as BlockConfig[];
 
 	const unknownBlockError = walkBlocks(blocks, (block) => {
 		if (!block.name || !isKnownBlockName(block.name)) {

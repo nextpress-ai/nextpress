@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type JSX } from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { validateBlockResponsiveHealth } from "@shared/validate-block-responsive-health";
 import { Button } from "@/components/ui/button";

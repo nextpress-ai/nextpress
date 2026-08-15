@@ -60,12 +60,10 @@ export default function Register() {
 				data.username;
 
 			const result = await authClient.signUp.email({
-				email: data.email,
-				password: data.password,
+				email: data.email ?? "",
+				password: data.password ?? "",
 				name: displayName,
-				username: data.username,
-				firstName: data.firstName,
-				lastName: data.lastName,
+				username: data.username ?? "",
 			});
 
 			if (result.error) {
@@ -140,6 +138,7 @@ export default function Register() {
 												autoComplete="email"
 												className="h-10"
 												{...field}
+												value={field.value ?? ""}
 											/>
 										</FormControl>
 										<FormMessage />
@@ -160,6 +159,7 @@ export default function Register() {
 													autoComplete="given-name"
 													className="h-10"
 													{...field}
+													value={field.value ?? ""}
 												/>
 											</FormControl>
 											<FormMessage />
@@ -179,6 +179,7 @@ export default function Register() {
 													autoComplete="family-name"
 													className="h-10"
 													{...field}
+													value={field.value ?? ""}
 												/>
 											</FormControl>
 											<FormMessage />
@@ -201,6 +202,7 @@ export default function Register() {
 													autoComplete="new-password"
 													className="h-10 pr-10"
 													{...field}
+													value={field.value ?? ""}
 												/>
 												<Button
 													type="button"

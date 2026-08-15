@@ -31,7 +31,7 @@ function withNullsForRemovedStyleKeys(
 		return undefined;
 	}
 	const merged: Record<string, string | number | null | undefined> = {
-		...(next as Record<string, string, number | null | undefined>),
+		...(next as Record<string, string | number | null | undefined>),
 	};
 	if (!prev) {
 		return merged as React.CSSProperties;
@@ -178,7 +178,7 @@ export function useBlockState<TContent>({
 						)(prev)
 					: update;
 			const stylesForTree = withNullsForRemovedStyleKeys(prev, next);
-			stylesRef.current = stylesForTree;
+			stylesRef.current = stylesForTree ?? prev;
 
 			if (deviceView === "desktop") {
 				const updatedBlock = { ...valueRef.current, styles: stylesForTree };

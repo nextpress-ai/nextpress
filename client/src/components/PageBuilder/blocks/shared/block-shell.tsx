@@ -8,7 +8,7 @@ type BlockShellProps = {
   className?: string;
   style?: React.CSSProperties;
   as?: keyof JSX.IntrinsicElements;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 } & Omit<React.HTMLAttributes<HTMLElement>, "className" | "style" | "children">;
 
 /**
@@ -19,10 +19,11 @@ export function BlockShell({
   blockClass,
   className,
   style,
-  as: Tag = "div",
+  as = "div",
   children,
   ...rest
 }: BlockShellProps): JSX.Element {
+  const Tag = as as React.ElementType;
   const mergedClass = [blockClass, className].filter(Boolean).join(" ");
   return (
     <Tag className={mergedClass} style={style} {...rest}>

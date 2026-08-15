@@ -14,11 +14,14 @@ vi.mock('wouter', () => ({
     children: ReactNode;
     className?: string;
     'aria-current'?: string;
-  }) => (
-    <a href={href} className={className} aria-current={ariaCurrent}>
-      {children}
-    </a>
-  ),
+  }) => {
+    const ariaCurrentValue = ariaCurrent as "page" | "step" | "location" | "date" | "time" | "true" | "false" | boolean | undefined;
+    return (
+      <a href={href} className={className} aria-current={ariaCurrentValue}>
+        {children}
+      </a>
+    ) as unknown as React.ReactElement;
+  },
   useLocation: () => ['/admin/pages', vi.fn()],
 }));
 

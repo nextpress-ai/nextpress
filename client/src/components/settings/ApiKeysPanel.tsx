@@ -316,7 +316,7 @@ export function ApiKeysPanel() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={expired ?? false}
+                    disabled={!!expired}
                     onClick={() => openEditDialog(key)}
                   >
                     <Pencil className="mr-2 h-4 w-4" />

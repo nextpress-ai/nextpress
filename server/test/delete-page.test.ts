@@ -3,6 +3,7 @@ import { testDb } from "./setup";
 import { createModel } from "@shared/create-models";
 import { createOptionModel } from "../storage";
 import { blogs, options, pages, posts, sites, users } from "@shared/schema";
+import type { Deps } from "../routes/shared/deps";
 import { deletePageWithDependencies, PageDeleteError } from "../lib/delete-page";
 
 const testIds = {
@@ -23,7 +24,7 @@ describe("deletePageWithDependencies", () => {
 	const blogModel = createModel(blogs, testDb);
 	const postModel = createModel(posts, testDb);
 	const optionModel = createOptionModel(testDb);
-	const hooks = { doAction: vi.fn() };
+const hooks = { doAction: vi.fn() };
 	const models = {
 		pages: pageModel,
 		blogs: blogModel,
@@ -72,7 +73,7 @@ describe("deletePageWithDependencies", () => {
 			pageId: testIds.page,
 		});
 
-		await deletePageWithDependencies({ models, hooks }, pageRecord);
+		await deletePageWithDependencies({ models, hooks } as unknown as { models: Deps["models"]; hooks: Deps["hooks"] }, pageRecord);
 
 		const page = await pageModel.findById(testIds.page);
 		const blog = await blogModel.findById(testIds.blog);
@@ -105,7 +106,7 @@ describe("deletePageWithDependencies", () => {
 
 		await expect(
 			deletePageWithDependencies(
-				{ models: { ...models, posts: postsWithCount }, hooks },
+				{ models: { ...models, posts: postsWithCount }, hooks } as unknown as { models: Deps["models"]; hooks: Deps["hooks"] },
 				pageRecord,
 			),
 		).rejects.toBeInstanceOf(PageDeleteError);
@@ -130,7 +131,7 @@ describe("deletePageWithDependencies", () => {
 
 		await expect(
 			deletePageWithDependencies(
-				{ models, hooks },
+				{ models, hooks } as unknown as { models: Deps["models"]; hooks: Deps["hooks"] },
 				{ id: testIds.page, slug: "home", siteId: testIds.site },
 			),
 		).rejects.toBeInstanceOf(PageDeleteError);

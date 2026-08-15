@@ -80,6 +80,7 @@ export const cafeLocalFixture: BlockConfig[] = [
 				parentId: "cafe-hours-row",
 				category: "basic",
 				content: {
+					kind: "list",
 					ordered: false,
 					values:
 						"<li>Mon–Fri: 7am – 6pm</li><li>Saturday: 8am – 5pm</li><li>Sunday: 8am – 2pm</li>",

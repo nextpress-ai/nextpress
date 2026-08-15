@@ -524,7 +524,7 @@ export default function PageSettingsModal({
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="iconDefaultSet">Default Icon Set</Label>
-                      <Select value={iconDefaultSet} onValueChange={setIconDefaultSet}>
+                      <Select value={iconDefaultSet} onValueChange={(v) => setIconDefaultSet(v as typeof iconDefaultSet)}>
                         <SelectTrigger id="iconDefaultSet">
                           <SelectValue />
                         </SelectTrigger>

@@ -60,6 +60,7 @@ export const blogArticleFixture: BlockConfig[] = [
 		parentId: null,
 		category: "basic",
 		content: {
+			kind: "list",
 			ordered: true,
 			values:
 				"<li>Default to public threads over DMs</li><li>Record decisions in the ticket</li><li>Batch questions into one update</li><li>Review async before scheduling sync time</li>",

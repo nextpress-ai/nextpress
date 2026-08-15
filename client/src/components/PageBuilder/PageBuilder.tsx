@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import type { BlockConfig, Page, Post, Template } from '@shared/schema-types';
+import type { BlockConfig, Page, PageOther, Post, Template } from '@shared/schema-types';
 import { DragDropContext } from '@/lib/dnd';
 import type { DropResult as DndDropResult } from '@/lib/dnd';
 import { generateBlockId } from './utils';
@@ -319,7 +319,7 @@ export default function PageBuilder({
         payload: {
           blocks,
           title: isTemplate ? (data as { name?: string }).name : (data as Page).title,
-          design: (data as Page)?.other?.design,
+          design: ((data as Page)?.other as PageOther)?.design,
           savedAt: Date.now(),
         },
       });

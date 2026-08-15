@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { PUBLISH_BLOCK_CSS } from "@shared/publish-block-css";
 
 /** Injects shared responsive publish CSS once per page (preview + public SPA). */

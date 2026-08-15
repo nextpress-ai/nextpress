@@ -58,6 +58,7 @@ export const portfolioStudioFixture: BlockConfig[] = [
 		parentId: null,
 		category: "basic",
 		content: {
+			kind: "text",
 			value:
 				"Meridian rebuilt our identity in six weeks. The site finally matches how we pitch in the room.",
 			citation: "Lena Ortiz, CEO at Harbor Labs",

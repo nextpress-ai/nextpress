@@ -103,7 +103,7 @@ export function hasBlockContainerPlacement(raw: CSSProperties | undefined): bool
  * Persisted clears use `null` (see `deepMerge` in treeUtils — `undefined` is skipped).
  */
 export function getBlockSiblingFlexItemStyles(
-	rawStyles: CSSProperties | undefined,
+	rawStyles: CSSProperties | Record<string, unknown> | undefined,
 	stackDirection: BlockStackDirection,
 ): CSSProperties {
 	const { h, v } = readPlacement(rawStyles);
@@ -301,7 +301,7 @@ export function getContainerChildrenStackStyle(
 	layout: ContainerLayoutRead,
 	options?: {
 		shellStyles?: CSSProperties;
-		children?: { styles?: CSSProperties }[];
+		children?: { styles?: CSSProperties | Record<string, unknown> }[];
 	},
 ): CSSProperties {
 	const parentDisplay = getContainerParentDisplayMode(layout);
@@ -364,7 +364,7 @@ export function getContainerChildrenStackStyle(
  */
 export function getContainerOuterShellStyle(
 	styles: CSSProperties | undefined,
-	options?: { children?: { styles?: CSSProperties }[] },
+	options?: { children?: { styles?: CSSProperties | Record<string, unknown> }[] },
 ): CSSProperties {
 	const stripped = stripContainerLayoutFromOuterStyles(styles);
 	const shellSizing = getContainerShellSizingStyles(styles);

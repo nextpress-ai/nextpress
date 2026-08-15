@@ -46,6 +46,6 @@ export function headingLevelFromTag(tag: unknown, fallback = 2): number {
 }
 
 /** Draft, preview, and publish can all open in the authenticated preview pane. */
-export function isPreviewableContentStatus(status: string | undefined): boolean {
+export function isPreviewableContentStatus(status: string | null | undefined): boolean {
 	return status === "publish" || status === "preview" || status === "draft";
 }

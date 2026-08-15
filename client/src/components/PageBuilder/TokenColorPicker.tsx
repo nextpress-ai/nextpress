@@ -10,7 +10,7 @@ interface TokenColorPickerProps {
   property: string               // CSS property: "backgroundColor" or "color"
   modifier?: string              // Optional state/responsive modifier: "hover", "focus", etc.
   currentEntry: TokenEntry | undefined
-  currentStyleValue: string | undefined  // Fallback from block.styles for legacy blocks
+  currentStyleValue?: string | undefined  // Fallback from block.styles for legacy blocks
   onChange: (entry: TokenEntry) => void
 }
 

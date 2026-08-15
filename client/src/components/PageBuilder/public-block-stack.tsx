@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
 import { PAGE_BLOCK_STACK_GAP } from "@shared/block-container-placement";
 import { resolveBlockTreeForSurface } from "@shared/resolve-block-for-surface";

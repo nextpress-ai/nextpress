@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import type { DeviceView } from "@shared/block-device-styles";
 
 type IframeDevicePreviewProps = {

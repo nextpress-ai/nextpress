@@ -19,8 +19,8 @@ interface ImageRendererProps {
 }
 
 const HANDLE_POSITIONS = {
-  'bottom-right': { bottom: -6, right: -6, cursor: 'nwse-resize' },
-  'bottom-left': { bottom: -6, left: -6, cursor: 'nesw-resize' },
+  'bottom-right': { bottom: -6, right: -6 },
+  'bottom-left': { bottom: -6, left: -6 },
 } as const;
 
 function ImageRenderer({
@@ -128,6 +128,7 @@ function ImageRenderer({
                 onMouseDown={createHandleMouseDown(corner)}
                 onKeyDown={(event) => handleResizeKeyDown(corner, event)}
                 className="npb-image-resize-handle"
+                data-corner={corner}
                 style={{
                   ...position,
                   bottom: caption ? 28 : position.bottom,
@@ -148,7 +149,7 @@ function ImageRenderer({
 type ImageBlockViewProps = {
   content: ImageContent;
   styles?: React.CSSProperties;
-  setStyles: (next: React.CSSProperties | ((prev: React.CSSProperties | undefined) => React.CSSProperties | undefined)) => void;
+  setStyles: (next: React.CSSProperties | undefined) => void;
   isPreview?: boolean;
   isSelected?: boolean;
   isEditing?: boolean;
@@ -164,9 +165,9 @@ function ImageBlockView({
 }: ImageBlockViewProps): JSX.Element | null {
   const handleStylesChange = useCallback(
     (updates: Partial<React.CSSProperties>) => {
-      setStyles((prev) => ({ ...prev, ...updates }));
+      setStyles({ ...styles, ...updates });
     },
-    [setStyles],
+    [setStyles, styles],
   );
 
   return (

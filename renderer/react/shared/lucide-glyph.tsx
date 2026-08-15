@@ -16,7 +16,7 @@ function resolveLucideComponent(name: string): React.ComponentType<{
 	style?: React.CSSProperties;
 }> | null {
 	const pascal = kebabToPascal(name);
-	const mod = LucideIcons as Record<string, React.ComponentType<Record<string, unknown>> | undefined>;
+	const mod = LucideIcons as unknown as Record<string, React.ComponentType<Record<string, unknown>> | undefined>;
 	return (mod[pascal] ?? mod[`${pascal}Icon`] ?? null) as React.ComponentType<{
 		size?: number | string;
 		color?: string;

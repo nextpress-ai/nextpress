@@ -4,6 +4,7 @@ import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
 import { coerceDates } from './shared/date-coerce';
 import { enrichPostForApi } from '@shared/posts/post-other';
+import type { Filter } from '@shared/create-models';
 import { attachPostAuthor } from '../lib/attach-post-author';
 import { loadAdjacentPosts } from '../lib/load-adjacent-posts';
 import { getSiteBlogIds } from './shared/site-content';
@@ -80,7 +81,7 @@ export function createPostsRoutes(deps: Deps): Router {
         // Handle 'any' status to show all posts (for admin interface)
         const actualStatus = parseStatusParam(status as string);
 
-        const filters: Array<{ where: string; equals?: unknown; in?: unknown[] }> = [];
+        const filters: Filter[] = [];
         if (actualStatus) {
           filters.push({ where: 'status', equals: actualStatus });
         }

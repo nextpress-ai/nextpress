@@ -292,7 +292,7 @@ describe("PageBuilder Integration", () => {
 		});
 		return render(
 			<QueryClientProvider client={queryClient}>
-				<ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+				<ThemeProvider>
 					<PageBuilder
 						blocks={blocks}
 						onBlocksChange={onBlocksChange}

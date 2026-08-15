@@ -20,7 +20,7 @@ type WpSiteIndex = {
 
 const mapPreview = (raw: WpPostRaw): WpPostPreview => ({
 	wpId: raw.id,
-	title: stripHtml(raw.title.rendered) || `Post ${raw.id}`,
+	title: stripHtml(raw.title?.rendered ?? '') || `Post ${raw.id}`,
 	slug: raw.slug,
 	status: raw.status,
 	date: raw.date,

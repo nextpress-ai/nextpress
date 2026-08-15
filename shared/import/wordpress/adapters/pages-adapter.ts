@@ -5,7 +5,7 @@ import type { WpListResult, WpPostPreview, WpPostRaw } from "../types";
 
 const mapPreview = (raw: WpPostRaw): WpPostPreview => ({
 	wpId: raw.id,
-	title: stripHtml(raw.title.rendered) || `Page ${raw.id}`,
+	title: stripHtml(raw.title?.rendered ?? '') || `Page ${raw.id}`,
 	slug: raw.slug,
 	status: raw.status,
 	date: raw.date,

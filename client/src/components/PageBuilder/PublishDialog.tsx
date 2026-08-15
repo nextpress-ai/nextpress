@@ -74,7 +74,7 @@ export default function PublishDialog({
       const isPage = contentType === 'page';
       toast({
         title: "Published!",
-        description: `${isPage ? 'Page' : 'Post'} is now live at /${updatedData.type || (isPage ? 'page' : 'post')}/${updatedData.slug}`,
+        description: `${isPage ? 'Page' : 'Post'} is now live at /${isPage ? 'page' : 'post'}/${updatedData.slug}`,
       });
       setOpen(false);
       onPublished?.(updatedData);

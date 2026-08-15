@@ -1,6 +1,13 @@
 import type { BlockConfig } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Video as VideoIcon, AlignCenter, Maximize, Settings } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";

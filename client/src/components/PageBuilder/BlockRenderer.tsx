@@ -24,6 +24,7 @@ import {
 } from "@shared/block-container-placement";
 import { resolveSpacingSides } from '@/lib/resolve-spacing-sides';
 import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
+import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
 import {
   Tooltip,
   TooltipContent,

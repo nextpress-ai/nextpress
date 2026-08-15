@@ -16,7 +16,7 @@ import { NEXTPRESS_CONFIG } from "../../../../config";
 import { WhatsNewHighlightItem } from "@/components/admin/WhatsNewHighlightItem";
 import type { ReleaseHighlight } from "@shared/release/release-highlight-meta";
 
-type ReleaseResponse = {
+export type ReleaseResponse = {
 	installedVersion: string;
 	latestVersion: string;
 	updateAvailable: boolean;

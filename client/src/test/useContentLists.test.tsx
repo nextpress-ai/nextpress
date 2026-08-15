@@ -10,7 +10,7 @@ vi.mock('@/hooks/useActiveSite', () => ({
 }));
 
 // Mock data
-const mockPages: Post[] = [
+const mockPages = [
   {
     id: 'page-1',
     title: 'Home Page',
@@ -53,7 +53,7 @@ const mockPages: Post[] = [
   },
 ];
 
-const mockPosts: Post[] = [
+const mockPosts = [
   {
     id: 'post-1',
     title: 'First Post',
@@ -116,7 +116,7 @@ const mockPosts: Post[] = [
   },
 ];
 
-const mockTemplates: Template[] = [
+const mockTemplates = [
   {
     id: 'template-1',
     name: 'Basic Template',
@@ -131,7 +131,7 @@ const mockTemplates: Template[] = [
   },
 ];
 
-const mockThemes: Theme[] = [
+const mockThemes = [
   {
     id: 'theme-1',
     name: 'Default Theme',

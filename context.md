@@ -173,6 +173,11 @@ Decision packets for each deferred item live in the plan dossiers; **`backup/fou
 - Full migration of Media, Comments, and Templates remains deferred after the Posts/Pages
   list pilot.
 
+> NOTE 2026-08-15: STALE — since superseded. Server-backed sort/reorder/list-mode/pagination
+> now exist on Posts/Pages (posts.routes.ts:109-128,172-189; pages.routes.ts:118+,183;
+> shared/content-list-query.ts) and Media (media.routes.ts:50-68). Media migrated to the
+> shared content-list primitives. Comments/Templates/Users still use legacy list markup.
+
 ### Safety
 
 - Deferred backups live under `backup/foundational-ux-qa/deferred-before-*`.
@@ -715,3 +720,74 @@ BlockConfig[] (single type)
 - **Public renderer** (`renderer/react/post/index.tsx`): bound-but-empty now shows "Author" placeholder instead of blank name.
 - **Tradeoff**: per-field merge (not all-or-nothing) so partial custom fields coexist with profile data. Public bind path (PublicPageView → PublicBlockStack → bindPostBlocks) injects real profile at render time; SSR placeholder renderer can't fetch, relies on binding.
 - Tests: `client/src/test/post-author-box.test.ts` (5, merge precedence), `shared/bind-post-blocks.test.ts` (+3 override preservation). Full suite 799, still 5 pre-existing failures.
+
+## 2026-08-15 — Media list parity + white flash fix
+
+- **Media.tsx migrated to shared content-list primitives** (Posts.tsx structure): `SortableHeader` (Name/Type/Size/Uploaded), `AdminListViewModeToggle` (table + grid views), `ContentListBulkBar` + `useBulkSelection` + `ConfirmBulkDeleteDialog` (contentKind extended to `media`), `ContentListToolbar` (header search), shared `ContentListPaginationFooter` (per_page 20). Grid view markup preserved (thumbnails can't be `ContentCardGrid` — title-only cards).
+- **Server sort for media**: `MEDIA_LIST_SORT_FIELDS` + `DEFAULT_MEDIA_LIST_SORT` (createdAt desc) in `shared/content-list-query.ts`; `server/routes/media.routes.ts` GET now parses sort/order via `parseContentListSort` + `toModelOrderBy` (posts.routes pattern). Search stays client-side on loaded page (existing behavior; model filters AND-only, no OR across originalName+alt).
+- **View-mode storage**: `AdminListResource` union extended to `'media'` (`lib/admin-list-view-mode.ts`, `use-admin-list-view-mode.ts`). Default view = table (shared hook default), grid via toggle, persisted per resource.
+- **White flash fix**: `client/index.html` — inline pre-paint script applies `.dark` to `<html>` from `localStorage.npb-theme` (fallback `prefers-color-scheme`), matching ThemeProvider resolution; dark bg selector switched from `@media` to `html.dark` so index.html bg (#f3f4f6/#18181b) matches `--npb-canvas-bg` tokens exactly before React mounts. Shell (`AppLoadingShell` bg-npb-canvas-bg) already matched loaded app (AdminChrome same token).
+- **Tradeoffs**: default list order changed (insertion → newest first); media default view now table (was grid-only); single delete switched from `window.confirm` to shared confirm dialog.
+- **Pre-existing failures** (not ours): HeadingBlock/SDK defaultStyles, content-list search (toolbar hint copy vs test expectation), strip-visual columns, useDragAndDropHandler legacy IDs. Full suite 800, 5 pre-existing.
+
+## 2026-08-15 — UX gap fixes round 2 (8 items, admin + editor)
+
+User reviewed admin against 19-point list; audit found 11 already done, 8 real gaps. All 8 fixed:
+
+- **Dashboard nesting** (bug): `<button>` inside `<Link>` at Dashboard.tsx:67-72,159-168 → `Button asChild` (Posts.tsx pattern). Dashboard.test.tsx updated to link assertions.
+- **Unsaved guard** (bug): PageBuilderEditor `writeDraft` extracted (`:385-434`, reuses savePageDraftWithHistory/savePostDraft + stampDraftTimestamp); `queueDraftSave` marks `hasUnsavedServerChangesRef`; beforeunload warns only when dirty (`:454-470`); unmount flushes pending draft synchronously (last-300ms edits no longer lost). Dirty cleared on server-confirmed saves + entity switch.
+- **MediaTextBlock overflow** (bug): img `maxWidth: 100%, height: auto` (MediaTextBlock.tsx:56); public renderer media-text OK (bg cover + sr-only img); parity rule `.wp-block-media-text__media img` added to shared/publish-block-css.ts:139-143.
+- **Padding controls**: labels ALREADY existed (BlockSettings.tsx:374-383 sideLabel map) — audit false negative, no change.
+- **Resize handles**: cursor moved to CSS (`nwse-resize`, `nesw-resize` per `data-corner`), `::after` inset -4px → 20px hit area, visual 12px. aria-label/title pre-existed.
+- **Ring persistence**: idle selection now `0 0 0 1px color-mix(accent 40%)` instead of none (index.css:796-799); full double-ring stays while toolbar open.
+- **Media list parity**: Media.tsx rewritten on shared content-list primitives (SortableHeader Name/Type/Size/Uploaded, AdminListViewModeToggle table+grid, ContentListToolbar search, ContentListBulkBar + useBulkSelection, ContentListPaginationFooter, shared Table). Server: `MEDIA_LIST_SORT_FIELDS` in shared/content-list-query.ts + sort/order in media.routes.ts:50-68 (posts.routes pattern). Default order changed to createdAt desc; default view now table. Single delete via shared ConfirmBulkDeleteDialog (contentKind "media") replacing window.confirm. Grid markup kept (cards not representable as ContentCardGrid).
+- **White flash**: index.html inline pre-paint script applies `.dark` from localStorage.npb-theme before React (mirrors ThemeProvider); dark bg selector `html.dark` instead of media query. Root cause was stored-dark + OS-light mismatch.
+
+### Gotchas
+- frontend-engineer agent returns empty results (2 attempts) — use `general` agent for implementation on this branch.
+- tsc ImageBlock error line shifted 205→206 from added `data-corner` attr (same pre-existing error).
+- Full suite still 799 tests / 5 pre-existing failures; no new tsc errors.
+- Backups: backup/ux-fixes-2026-08-15/.
+
+## 2026-08-16 — Zero-failure pass: fixed all 5 pre-existing test failures
+
+- **Heading margin (2 tests)**: SDK block-defaults.test.ts + HeadingBlock.test.tsx expected `margin: "1rem 0"`; e14776f deliberately changed heading default to `"0"` (both client + SDK registries). Tests were stale → updated to `"0"`.
+- **content-list hint**: toolbar hint text changed to "Search runs across all items on this site." in 464013d (server-backed search); test still asserted old "current page only" text → updated.
+- **strip-visual columns (real bug)**: `stripColumnsContent` used `writeColumnsData` which re-merges original data (`{...current, ...updates}`) → deleted `gap`/`direction` got restored. Rewrote to raw structured-data delete (mirrors stripStructuredDataKeys). Save + publish paths now actually strip columns visual keys.
+- **useDragAndDropHandler (real bug)**: same-columns-block cross-column drops hit `moveExistingBlock`'s `destIndex === sourceIndex + 1` no-op (plain-container heuristic) → false "Failed to move block" toast, no move. Fix: when source+dest are columns of the SAME columns block, skip moveExistingBlock — membership-only move (children array is shared storage; each column renders from its own blockIds in columnLayout). `moved === blocks` failure check only runs for non-columns reorder path.
+- **Result: 799/799 tests pass, 116/116 files. Zero failures.** tsc: only pre-existing errors (verified useDragAndDropHandler 252/271 exist at same lines in HEAD).
+
+## 2026-08-16 — Zero-tsc pass: eliminated all 145 pre-existing tsc errors
+
+Strategy: extend types to match real runtime shapes rather than cast at every call site; where the consumer is a narrow test mock, cast the mock.
+
+Key type fixes (shared/schema-types.ts BlockContent):
+- Added optional `overlayColor`, `poster`, `autoplay`, `loop`, `muted`, `controls`, `minHeight`, `width`, `height` to the `media` member — block code reads `content.overlayColor`/`content.autoplay` (CoverBlock, media renderer, AudioBlock).
+- Added `citation?` to `text` member (pullquote/quote blocks read `content.citation`).
+- Added a `list` member (`ordered?`, `values?`, `items?`, `start?`, `reversed?`, `anchor?`, `className?`) — ListBlock renders from these; demo fixtures lacked `kind: "list"`, added it.
+
+Union/return-type cast fixes (pattern: `x as unknown as T` when TS can't prove overlap):
+- `resolve-token-entry.ts`, `tailwind-scales.ts`, `lucide-glyph.tsx`, `page-other.ts`, `columns-model.ts` serialize.
+- `useBlockState.ts` `setStyles` narrowed to `(next: CSSProperties | undefined) => void`; ImageBlockView adapted `handleStylesChange` to merge from `styles` prop instead of functional update.
+
+RHF `field.value` (string | null | undefined) → `value={field.value ?? ""}` at spread sites in Register.tsx + Users.tsx; Select `defaultValue={field.value ?? ""}`.
+
+better-auth: `authClient.signUp.email` does not accept `firstName`/`lastName` → removed from Register call.
+
+`isPreviewableContentStatus` param widened to `string | null | undefined` (preview.routes passed `post.status`).
+
+Framer-motion: `Transition['ease']` indexing fails on the public union → typed `MOTION_EASE_OUT` as imported `Easing`.
+
+`tsconfig.json`: added `"target": "ES2022"` (default ES5 triggered TS2802/1378); stale tsbuildinfo cache required `--incremental false` to observe — cleared via moving tsbuildinfo files to backup/trash.
+
+Test mocks (cast at call site, no `any`):
+- `delete-page.test.ts`, `content-list-access.test.ts`: partial deps/hooks mocks cast `as unknown as Deps[...]`.
+- `BlockRenderer.test.tsx`: `mockActions` cast to `BlockActionsContextValue`.
+- `AdminSidebar.test.tsx`: mock `<a>`, `aria-current` typed to the ARIA literal union.
+- `client-post-blocks.tsx`: `load` param `Promise<{default: unknown}>`; lazy factory return explicitly typed.
+- `map-wp-page.test.ts`: result cast to access `blocks`/`other`.
+- `columnsBlock.test.ts`: removed duplicate local `ColumnLayout` interface, imported shared.
+- `useContentLists.test.tsx`: removed explicit `Post[]`/`Template[]`/`Theme[]` annotations (drizzle-loose `blocks: never[]`).
+- Demo fixtures: added `kind: "list"` (blog-article, cafe-local) and `kind: "text"` (portfolio-studio).
+
+**Result: `pnpm exec tsc --noEmit` 0 errors, `pnpm check` (tsconfig.server.json) 0 errors. Tests 799/799.**

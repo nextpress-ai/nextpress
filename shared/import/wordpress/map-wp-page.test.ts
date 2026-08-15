@@ -36,11 +36,18 @@ describe("mapWpPage", () => {
 			raw: walkablePage2315,
 			ctx: buildCtx(),
 		});
+		const result = mapped as unknown as {
+			siteId: string;
+			slug: string;
+			title: string;
+			blocks?: { length: number };
+			other?: { import?: { wpId?: number } };
+		};
 
-		expect(mapped.siteId).toBe("site-1");
-		expect(mapped.slug).toBe("sample-page");
-		expect(mapped.title).toBe("Sample Page");
-		expect(mapped.blocks?.length).toBeGreaterThan(0);
-		expect(mapped.other?.import?.wpId).toBe(2315);
+		expect(result.siteId).toBe("site-1");
+		expect(result.slug).toBe("sample-page");
+		expect(result.title).toBe("Sample Page");
+		expect(result.blocks?.length).toBeGreaterThan(0);
+		expect(result.other?.import?.wpId).toBe(2315);
 	});
 });

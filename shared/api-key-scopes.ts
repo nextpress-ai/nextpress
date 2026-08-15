@@ -15,11 +15,11 @@ export type ContentResourceId = (typeof CONTENT_RESOURCE_IDS)[number];
 /** Legacy broad scopes stored on older keys; expanded at check time. */
 export const LEGACY_API_KEY_SCOPE_IDS = ["content:read", "content:write"] as const;
 
-const contentResourceScopes = (): ApiKeyScopeId[] =>
+const contentResourceScopes = (): string[] =>
 	CONTENT_RESOURCE_IDS.flatMap((resource) => [
 		`${resource}:read`,
 		`${resource}:write`,
-	]) as ApiKeyScopeId[];
+	]);
 
 /** Canonical API key permission scopes for SDK and MCP integrations. */
 export const API_KEY_SCOPE_IDS = [

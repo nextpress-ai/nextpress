@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, within, act } from '@testing-library/react'
 import { DragDropContext } from '@/lib/dnd'
 import BlockRenderer, { ContainerChildren } from '../components/PageBuilder/BlockRenderer'
-import { BlockActionsProvider } from '../components/PageBuilder/BlockActionsContext'
+import { BlockActionsProvider, type BlockActionsContextValue } from '../components/PageBuilder/BlockActionsContext'
 import { CANVAS_BLOCK_TOOLBAR_IDLE_MS } from '../components/PageBuilder/use-canvas-block-toolbar'
 import type { BlockConfig, BlockContent } from '@shared/schema-types'
 
@@ -82,7 +82,7 @@ describe('BlockRenderer', () => {
   const renderWithProviders = (children: React.ReactNode) => {
     return render(
       <DragDropContext onDragEnd={() => {}}>
-        <BlockActionsProvider value={mockActions}>
+        <BlockActionsProvider value={mockActions as unknown as BlockActionsContextValue}>
           {children}
         </BlockActionsProvider>
       </DragDropContext>

@@ -26,6 +26,8 @@ import {
   toModelOrderBy,
 } from '@shared/content-list-query';
 import { buildTitleSearchFilters } from '../lib/content-list-filters';
+import { deletePageWithDependencies, PageDeleteError } from '../lib/delete-page';
+import type { Filter } from '@shared/create-models';
 import { z } from 'zod';
 
 /**
@@ -107,7 +109,7 @@ export function createPagesRoutes(deps: Deps): Router {
         // Handle 'any' status to show all pages (for admin interface)
         const actualStatus = parseStatusParam(status as string);
 
-        const filters: Array<{ where: string; equals?: unknown }> = [];
+        const filters: Filter[] = [];
         if (actualStatus) {
           filters.push({ where: 'status', equals: actualStatus });
         }
@@ -317,7 +319,7 @@ export function createPagesRoutes(deps: Deps): Router {
       const previousSnapshot = {
         version: existingPage.version ?? 0,
         updatedAt: existingPage.updatedAt
-          ? new Date(existingPage.updatedAt as string).toISOString()
+          ? new Date(existingPage.updatedAt).toISOString()
           : new Date().toISOString(),
         blocks: existingPage.blocks ?? [],
         authorId: (existingPage as { authorId?: string }).authorId,
@@ -432,6 +434,10 @@ export function createPagesRoutes(deps: Deps): Router {
         if (message.includes('not authenticated')) {
           return res.status(401).json({ message: 'You must be signed in to create pages.' });
         }
+        return res.status(500).json({ message: 'Failed to create page. Please try again.' });
+      }
+
+      if (!result) {
         return res.status(500).json({ message: 'Failed to create page. Please try again.' });
       }
 

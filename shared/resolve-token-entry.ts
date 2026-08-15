@@ -20,7 +20,7 @@ export function resolveThemeTokenEntry(entry: TokenEntry): string | null {
 	const { property, value, variant } = entry;
 
 	if (property === "backgroundColor" || property === "color" || property === "borderColor") {
-		const colorGroup = (fullConfig.theme.colors as Record<string, string | Record<string, string>>)[
+		const colorGroup = (fullConfig.theme.colors as unknown as Record<string, string | Record<string, string>>)[
 			value
 		];
 		if (typeof colorGroup === "string") return colorGroup;
@@ -33,7 +33,7 @@ export function resolveThemeTokenEntry(entry: TokenEntry): string | null {
 	}
 
 	if (property === "fontSize") {
-		const fs = (fullConfig.theme.fontSize as Record<string, string | [string, string]>)[value];
+		const fs = (fullConfig.theme.fontSize as unknown as Record<string, string | [string, string]>)[value];
 		if (typeof fs === "string") return fs;
 		if (Array.isArray(fs)) return fs[0];
 		return null;

@@ -160,8 +160,8 @@ export default function Users() {
 			firstName: user.firstName || "",
 			lastName: user.lastName || "",
 			password: "", // Password field is empty for editing
-			role: (user.role as any) || "subscriber",
-			status: (user.status as any) || "active",
+			role: (user as { role?: string }).role || "subscriber",
+			status: user.status || "active",
 		});
 		setIsDialogOpen(true);
 	};
@@ -282,7 +282,7 @@ export default function Users() {
 														{user.email}
 													</a>
 												</TableCell>
-												<TableCell>{getRoleBadge(user.role)}</TableCell>
+												<TableCell>{getRoleBadge(user.role ?? "subscriber")}</TableCell>
 												<TableCell>{getStatusBadge(user.status)}</TableCell>
 												<TableCell>
 													<div className="text-sm">
@@ -431,6 +431,7 @@ export default function Users() {
 												type="email"
 												placeholder="Enter email"
 												{...field}
+												value={field.value ?? ""}
 											/>
 										</FormControl>
 										<FormMessage />
@@ -446,7 +447,7 @@ export default function Users() {
 										<FormItem>
 											<FormLabel>First Name</FormLabel>
 											<FormControl>
-												<Input placeholder="First name" {...field} />
+												<Input placeholder="First name" {...field} value={field.value ?? ""} />
 											</FormControl>
 											<FormMessage />
 										</FormItem>
@@ -460,7 +461,7 @@ export default function Users() {
 										<FormItem>
 											<FormLabel>Last Name</FormLabel>
 											<FormControl>
-												<Input placeholder="Last name" {...field} />
+												<Input placeholder="Last name" {...field} value={field.value ?? ""} />
 											</FormControl>
 											<FormMessage />
 										</FormItem>
@@ -486,6 +487,7 @@ export default function Users() {
 														: "Enter password"
 												}
 												{...field}
+												value={field.value ?? ""}
 											/>
 										</FormControl>
 										<FormMessage />
@@ -501,7 +503,7 @@ export default function Users() {
 										<FormLabel>Role</FormLabel>
 										<Select
 											onValueChange={field.onChange}
-											defaultValue={field.value}
+											defaultValue={field.value ?? ""}
 										>
 											<FormControl>
 												<SelectTrigger>
@@ -531,7 +533,7 @@ export default function Users() {
 										<FormLabel>Status</FormLabel>
 										<Select
 											onValueChange={field.onChange}
-											defaultValue={field.value}
+											defaultValue={field.value ?? ""}
 										>
 											<FormControl>
 												<SelectTrigger>

@@ -49,7 +49,7 @@ describe("entry-animation-controller", () => {
 		const el = document.querySelector(".block-test") as HTMLElement;
 
 		intersectionCallback?.(
-			[{ isIntersecting: true, target: el } as IntersectionObserverEntry],
+			[{ isIntersecting: true, target: el } as unknown as IntersectionObserverEntry],
 			{} as IntersectionObserver,
 		);
 

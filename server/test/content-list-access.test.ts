@@ -29,7 +29,7 @@ const findByUser = vi.fn();
 const models = {
 	sites: { findByOwner, findById, findDefaultSite },
 	userRoles: { findByUser },
-} as Deps["models"];
+} as unknown as Deps["models"];
 
 const request = {} as Request;
 const sessionAuth = {

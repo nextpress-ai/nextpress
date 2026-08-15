@@ -60,8 +60,8 @@ const parseDesignSettings = (raw: unknown): PageDesignSettings | undefined => {
 	if (typeof raw.fontFamily === "string") design.fontFamily = raw.fontFamily;
 	if (typeof raw.containerWidth === "string") design.containerWidth = raw.containerWidth;
 	if (typeof raw.padding === "string") design.padding = raw.padding;
-	if (isRecord(raw.backgroundColor)) design.backgroundColor = raw.backgroundColor as PageDesignSettings["backgroundColor"];
-	if (isRecord(raw.textColor)) design.textColor = raw.textColor as PageDesignSettings["textColor"];
+if (isRecord(raw.backgroundColor)) design.backgroundColor = raw.backgroundColor as unknown as PageDesignSettings["backgroundColor"];
+			if (isRecord(raw.textColor)) design.textColor = raw.textColor as unknown as PageDesignSettings["textColor"];
 	return Object.keys(design).length > 0 ? design : undefined;
 };
 

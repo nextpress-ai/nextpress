@@ -1,7 +1,7 @@
-import type { Transition, Variants } from 'framer-motion';
+import type { Easing, Transition, Variants } from 'framer-motion';
 
 /** Shared easing aligned with `--npb-ease-out`. */
-export const MOTION_EASE_OUT: Transition['ease'] = [0.23, 1, 0.32, 1];
+export const MOTION_EASE_OUT: Easing = [0.23, 1, 0.32, 1];
 
 export const MOTION_PAGE: Transition = {
   duration: 0.28,

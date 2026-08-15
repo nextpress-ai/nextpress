@@ -1,21 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { WhatsNewDialog } from "@/components/admin/WhatsNewDialog";
+import { WhatsNewDialog, type ReleaseResponse } from "@/components/admin/WhatsNewDialog";
 import { NEXTPRESS_CONFIG } from "../../../../config";
 import { cn } from "@/lib/utils";
-
-type ReleaseResponse = {
-	installedVersion: string;
-	latestVersion: string;
-	updateAvailable: boolean;
-	releaseDate: string;
-	highlights: Array<{ title: string; description: string }>;
-	updateCheck?: {
-		source: string;
-		ok: boolean;
-		note: string;
-	};
-};
 
 /**
  * Sidebar notice with an orange beacon for updates and release notes.

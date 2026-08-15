@@ -12,7 +12,7 @@ export const buildTailwindScale = (): TailwindScaleStep[] => {
   const steps: TailwindScaleStep[] = [];
 
   for (const family of CONTRAST_SCALE_FAMILIES) {
-    const group = (tokenColors as Record<string, Record<string, string> | string>)[family];
+    const group = (tokenColors as unknown as Record<string, Record<string, string> | string>)[family];
     if (!group || typeof group === 'string') continue;
 
     for (const step of SCALE_STEPS) {

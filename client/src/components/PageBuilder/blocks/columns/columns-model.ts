@@ -122,10 +122,10 @@ export function removeColumnAndCleanup(
 export function parseColumnsContent(raw: BlockConfig["content"]): ColumnsContent {
   if (!raw || typeof raw !== "object") return DEFAULT_CONTENT;
   const r = raw as Record<string, unknown>;
-  if (r.kind === "structured") return raw as ColumnsContent;
-  return { kind: "structured", data: r as ColumnsContent["data"] };
+  if (r.kind === "structured") return raw as unknown as ColumnsContent;
+  return { kind: "structured", data: r } as unknown as ColumnsContent;
 }
 
 export function serializeColumnsContent(content: ColumnsContent): BlockContent {
-  return content as BlockContent;
+  return content as unknown as BlockContent;
 }

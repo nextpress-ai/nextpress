@@ -131,15 +131,7 @@ export function createApiKeysRoutes(deps: Deps): Router {
 					scopes,
 					expiresAt,
 				})
-				.returning({
-					id: apiKeys.id,
-					name: apiKeys.name,
-					keyPrefix: apiKeys.keyPrefix,
-					siteId: apiKeys.siteId,
-					scopes: apiKeys.scopes,
-					expiresAt: apiKeys.expiresAt,
-					createdAt: apiKeys.createdAt,
-				});
+				.returning();
 
 			res.status(201).json({
 				key,
@@ -177,17 +169,8 @@ export function createApiKeysRoutes(deps: Deps): Router {
 						eq(apiKeys.userId, userId),
 						isNull(apiKeys.revokedAt),
 					),
-				)
-				.returning({
-					id: apiKeys.id,
-					name: apiKeys.name,
-					keyPrefix: apiKeys.keyPrefix,
-					siteId: apiKeys.siteId,
-					scopes: apiKeys.scopes,
-					expiresAt: apiKeys.expiresAt,
-					lastUsedAt: apiKeys.lastUsedAt,
-					createdAt: apiKeys.createdAt,
-				});
+)
+				.returning();
 
 			if (!updated) {
 				return res.status(404).json({ message: "API key not found" });
@@ -213,7 +196,7 @@ export function createApiKeysRoutes(deps: Deps): Router {
 				.update(apiKeys)
 				.set({ revokedAt: new Date() })
 				.where(and(eq(apiKeys.id, req.params.id), eq(apiKeys.userId, userId), isNull(apiKeys.revokedAt)))
-				.returning({ id: apiKeys.id });
+				.returning();
 
 			if (!updated) {
 				return res.status(404).json({ message: "API key not found" });

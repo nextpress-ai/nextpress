@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { AnimatePresence, motion, type HTMLMotionProps } from 'framer-motion';
 import {
   bulkBarVariants,

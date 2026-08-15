@@ -11,6 +11,7 @@ const headingBlock: BlockConfig = {
   category: 'basic',
   content: { kind: 'text', value: 'Hello world', level: 2 },
   settings: {},
+  parentId: null,
 };
 
 describe('BuilderInspectorPanel', () => {

@@ -105,6 +105,8 @@ export type BlockContent =
 			value: string;
 			textAlign?: string;
 			dropCap?: boolean;
+			/** Attribution line for quote blocks. */
+			citation?: string;
 			/** When "html", `value` holds sanitized inline HTML (e.g. links/bold from imports) and should be rendered as HTML, not escaped. */
 			format?: "html";
 			/** Heading level (1-6) for core/heading; ignored by other text blocks. */
@@ -112,11 +114,30 @@ export type BlockContent =
 	  }
 	| { kind: "markdown"; value: string; textAlign?: string }
 	| {
+			kind: "list";
+			ordered?: boolean;
+			values?: string;
+			items?: string[];
+			start?: number;
+			reversed?: boolean;
+			anchor?: string;
+			className?: string;
+	  }
+	| {
 			kind: "media";
 			url: string;
 			alt?: string;
 			caption?: string;
 			mediaType: "image" | "video" | "audio";
+			overlayColor?: string;
+			poster?: string;
+			autoplay?: boolean;
+			loop?: boolean;
+			muted?: boolean;
+			controls?: boolean;
+			minHeight?: string;
+			width?: string;
+			height?: string;
 	}
 	| { kind: "html"; value: string; sanitized: boolean }
 	| { kind: "structured"; data: Record<string, unknown> }
