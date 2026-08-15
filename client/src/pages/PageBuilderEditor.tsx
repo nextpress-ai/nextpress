@@ -194,6 +194,8 @@ export default function PageBuilderEditor({
   const draftSaveRef = useRef<NodeJS.Timeout | null>(null);
   const parentSaveInFlightRef = useRef(false);
   const latestPageStateRef = useRef<PageState>(initialPageState);
+  const hasUnsavedServerChangesRef = useRef(false);
+  const writeDraftRef = useRef<((next: PageState) => void) | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -254,6 +256,7 @@ export default function PageBuilderEditor({
     if (draftSaveRef.current) {
       clearTimeout(draftSaveRef.current);
     }
+    hasUnsavedServerChangesRef.current = false;
     dispatchPageState({ type: 'RESET' });
     latestPageStateRef.current = initialPageState;
   }
@@ -381,21 +384,10 @@ export default function PageBuilderEditor({
     }
   });
 
-  const queueDraftSave = (
-    override?: Partial<typeof latestPageStateRef.current>,
-  ) => {
-    if (!data?.id) return;
-    const next = {
-      ...latestPageStateRef.current,
-      ...override,
-    };
-    latestPageStateRef.current = next;
+  const writeDraft = useCallback(
+    (next: PageState) => {
+      if (!data?.id || isTemplate) return;
 
-    // Skip draft saves for templates — they save directly
-    if (isTemplate) return;
-
-    if (draftSaveRef.current) clearTimeout(draftSaveRef.current);
-    draftSaveRef.current = setTimeout(() => {
       // When inline-editing a post, save draft to post storage
       if (inlinePostId && inlinePostData) {
         savePostDraft(
@@ -436,14 +428,47 @@ export default function PageBuilderEditor({
           3,
         );
       }
+    },
+    [data, inlinePostId, inlinePostData, isPost, isTemplate],
+  );
+
+  writeDraftRef.current = writeDraft;
+
+  const queueDraftSave = (
+    override?: Partial<typeof latestPageStateRef.current>,
+  ) => {
+    if (!data?.id) return;
+    const next = {
+      ...latestPageStateRef.current,
+      ...override,
+    };
+    latestPageStateRef.current = next;
+    hasUnsavedServerChangesRef.current = true;
+
+    // Skip draft saves for templates — they save directly
+    if (isTemplate) return;
+
+    if (draftSaveRef.current) clearTimeout(draftSaveRef.current);
+    draftSaveRef.current = setTimeout(() => {
+      draftSaveRef.current = null;
+      writeDraftRef.current?.(latestPageStateRef.current);
     }, 300);
   };
 
-  // Clear timeout on unmount
+  // Flush pending draft on unmount and warn before leaving with unsaved changes
   useMountEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!hasUnsavedServerChangesRef.current) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       if (draftSaveRef.current) {
         clearTimeout(draftSaveRef.current);
+        draftSaveRef.current = null;
+        writeDraftRef.current?.(latestPageStateRef.current);
       }
     };
   });
@@ -487,6 +512,7 @@ export default function PageBuilderEditor({
           title: post.title || 'Untitled Post',
           slug: post.slug || '',
           status: post.status || 'draft',
+          version: post.version ?? 0,
           isInitialized: true,
         };
       } catch (err) {
@@ -520,13 +546,14 @@ export default function PageBuilderEditor({
         status: stored.status,
       },
     });
-    latestPageStateRef.current = {
-      blocks: stored.blocks,
-      title: stored.title,
-      slug: stored.slug,
-      status: stored.status,
-      isInitialized: true,
-    };
+latestPageStateRef.current = {
+        blocks: stored.blocks,
+        title: stored.title,
+        slug: stored.slug,
+        status: stored.status,
+        version: stored.version,
+        isInitialized: true,
+      };
     storedBlogPageStateRef.current = null;
 
     // Re-fetch the blog page to pick up any server-side changes
@@ -590,6 +617,7 @@ export default function PageBuilderEditor({
         ...latestPageStateRef.current,
         ...meta,
       };
+      hasUnsavedServerChangesRef.current = false;
 
       if (
         !isTemplate &&
@@ -681,6 +709,7 @@ export default function PageBuilderEditor({
         title: 'Success',
         description: 'Post saved successfully',
       });
+      hasUnsavedServerChangesRef.current = false;
       clearPersistedDraft();
       queryClient.invalidateQueries({
         queryKey: [`/api/posts/${inlinePostId}`],
@@ -694,6 +723,8 @@ export default function PageBuilderEditor({
       title: 'Success',
       description: `${label} saved successfully`,
     });
+
+    hasUnsavedServerChangesRef.current = false;
 
     if (!isTemplate) {
       clearPersistedDraft();
@@ -898,7 +929,10 @@ export default function PageBuilderEditor({
               onClick={() => {
                 runParentOwnedSave({
                   inFlight: parentSaveInFlightRef,
-                  request: () => handlePageBuilderSave(),
+                  request: async () => {
+                  await handlePageBuilderSave();
+                  return true;
+                },
                 });
               }}
               disabled={isSaving}

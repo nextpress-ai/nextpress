@@ -3,10 +3,11 @@ import {
   readAdminListViewMode,
   writeAdminListViewMode,
   type AdminListViewMode,
+  type AdminListResource,
 } from '@/lib/admin-list-view-mode';
 
 /** Keeps table/card view preference in local storage per admin resource. */
-export function useAdminListViewMode(resource: 'pages' | 'posts'): {
+export function useAdminListViewMode(resource: AdminListResource): {
   viewMode: AdminListViewMode;
   setViewMode: (mode: AdminListViewMode) => void;
 } {

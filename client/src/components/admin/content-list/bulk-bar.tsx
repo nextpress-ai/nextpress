@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { MotionBulkBar } from '@/components/motion/motion-primitives';
 import { cn } from '@/lib/utils';

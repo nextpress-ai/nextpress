@@ -10,13 +10,22 @@
         background: #f3f4f6;
         color: #111827;
       }
-      @media (prefers-color-scheme: dark) {
-        html, body, #root {
-          background: #18181b;
-          color: #f9fafb;
-        }
+      html.dark, html.dark body, html.dark #root {
+        background: #18181b;
+        color: #f9fafb;
       }
     </style>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('npb-theme');
+          var dark = stored !== null
+            ? stored === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -75,7 +75,7 @@ describe('Dashboard recent posts', () => {
     const titleLink = await screen.findByRole('link', { name: 'Hello World' });
     expect(titleLink).toHaveAttribute('href', '/admin/page-builder/post/post-abc');
 
-    const editButton = screen.getByRole('button', { name: 'Edit Hello World' });
-    expect(editButton.closest('a')).toHaveAttribute('href', '/admin/page-builder/post/post-abc');
+    const editLink = screen.getByRole('link', { name: 'Edit Hello World' });
+    expect(editLink).toHaveAttribute('href', '/admin/page-builder/post/post-abc');
   });
 });

@@ -9,11 +9,12 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type ContentKind = "page" | "post";
+type ContentKind = "page" | "post" | "media";
 
 const labels: Record<ContentKind, { one: string; many: string }> = {
 	page: { one: "page", many: "pages" },
 	post: { one: "post", many: "posts" },
+	media: { one: "media file", many: "media files" },
 };
 
 type ConfirmBulkDeleteDialogProps = {

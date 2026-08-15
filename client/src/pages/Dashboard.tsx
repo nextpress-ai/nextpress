@@ -64,12 +64,12 @@ export default function Dashboard() {
 
   const headerActions = (
     <>
-      <Link href="/admin/posts?create=true">
-        <Button size="sm" className="npb-btn-accent">
+      <Button size="sm" asChild className="npb-btn-accent">
+        <Link href="/admin/posts?create=true">
           <Plus className="mr-2 h-4 w-4" />
           New Post
-        </Button>
-      </Link>
+        </Link>
+      </Button>
       <Button variant="outline" size="sm" asChild>
         <a href="/" target="_blank" rel="noopener noreferrer">
           <ExternalLink className="mr-2 h-4 w-4" />
@@ -156,16 +156,17 @@ export default function Dashboard() {
                         </span>
                       </div>
                     </div>
-                    <Link href={postEditorPath(post.id)}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label={`Edit ${post.title}`}
-                        title="Edit in page builder"
-                      >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      asChild
+                      aria-label={`Edit ${post.title}`}
+                      title="Edit in page builder"
+                    >
+                      <Link href={postEditorPath(post.id)}>
                         <Pencil className="h-4 w-4" />
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </div>
                 ))}
               </div>

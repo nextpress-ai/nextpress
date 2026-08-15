@@ -5,6 +5,12 @@ import { safeTryAsync } from '../utils';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { readRequestSiteId, resolveRequestSite } from './shared/resolve-request-site';
+import {
+  DEFAULT_MEDIA_LIST_SORT,
+  MEDIA_LIST_SORT_FIELDS,
+  parseContentListSort,
+  toModelOrderBy,
+} from '@shared/content-list-query';
 
 /**
  * Creates media routes for file upload and management.
@@ -52,10 +58,25 @@ export function createMediaRoutes(deps: Deps): Router {
           ...(siteId ? [{ where: 'siteId', equals: siteId }] : []),
         ];
 
+        const listSort = parseContentListSort({
+          sort: req.query.sort,
+          order: req.query.order,
+          allowedFields: MEDIA_LIST_SORT_FIELDS,
+          defaults: DEFAULT_MEDIA_LIST_SORT,
+        });
+
         const mediaItems =
           filters.length > 0
-            ? await models.media.findManyWhere(filters, { limit, offset })
-            : await models.media.findMany({ limit, offset });
+            ? await models.media.findManyWhere(filters, {
+                limit,
+                offset,
+                orderBy: toModelOrderBy(listSort),
+              })
+            : await models.media.findMany({
+                limit,
+                offset,
+                orderBy: toModelOrderBy(listSort),
+              });
 
         const total = await models.media.count({
           where: filters.length > 0 ? filters : undefined,

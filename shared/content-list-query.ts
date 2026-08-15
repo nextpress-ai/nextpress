@@ -21,6 +21,16 @@ export const POST_LIST_SORT_FIELDS = [
 export type PageListSortField = (typeof PAGE_LIST_SORT_FIELDS)[number];
 export type PostListSortField = (typeof POST_LIST_SORT_FIELDS)[number];
 
+export const MEDIA_LIST_SORT_FIELDS = [
+  'originalName',
+  'mimeType',
+  'size',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+export type MediaListSortField = (typeof MEDIA_LIST_SORT_FIELDS)[number];
+
 export type ContentListSortParams = {
   sort: string;
   order: ContentListSortOrder;
@@ -37,6 +47,13 @@ export const DEFAULT_POST_LIST_SORT: ContentListSortParams & {
   sort: PostListSortField;
 } = {
   sort: 'updatedAt',
+  order: 'desc',
+};
+
+export const DEFAULT_MEDIA_LIST_SORT: ContentListSortParams & {
+  sort: MediaListSortField;
+} = {
+  sort: 'createdAt',
   order: 'desc',
 };
 

@@ -135,6 +135,11 @@ figure.wp-block-embed {
 .wp-block-media-text.is-stacked-on-mobile.has-media-on-the-right .wp-block-media-text__media {
   order: -1;
 }
+.wp-block-media-text__media img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
 
 /* Cover */
 .wp-block-cover {

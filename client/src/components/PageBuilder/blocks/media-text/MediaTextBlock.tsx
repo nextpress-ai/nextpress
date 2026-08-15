@@ -53,7 +53,7 @@ function MediaTextRenderer({ content, styles }: MediaTextRendererProps) {
     : {};
 
   const mediaInner = imageFill ? null : (
-    mediaUrl ? <img src={mediaUrl} alt={mediaAlt || ''} /> : null
+    mediaUrl ? <img src={mediaUrl} alt={mediaAlt || ''} style={{ maxWidth: '100%', height: 'auto' }} /> : null
   );
 
   const mediaContent = href ? (

@@ -1,11 +1,13 @@
 export type AdminListViewMode = 'table' | 'cards';
 
-const readStorageKey = (resource: 'pages' | 'posts'): string =>
+export type AdminListResource = 'pages' | 'posts' | 'media';
+
+const readStorageKey = (resource: AdminListResource): string =>
   `npb:admin:${resource}:view-mode`;
 
 /** Reads persisted list/card preference for an admin resource. */
 export const readAdminListViewMode = (
-  resource: 'pages' | 'posts',
+  resource: AdminListResource,
 ): AdminListViewMode => {
   if (typeof window === 'undefined') return 'table';
   const stored = window.localStorage.getItem(readStorageKey(resource));
@@ -17,7 +19,7 @@ export const writeAdminListViewMode = ({
   resource,
   mode,
 }: {
-  resource: 'pages' | 'posts';
+  resource: AdminListResource;
   mode: AdminListViewMode;
 }): void => {
   window.localStorage.setItem(readStorageKey(resource), mode);

@@ -792,9 +792,9 @@
   to { opacity: 1; }
 }
 
-/* Selection ring fades with the toolbar after idle. Block stays selected. */
+/* Selection ring fades to a faint outline with the toolbar after idle. Block stays selected. */
 .npb-canvas-block-selected {
-  box-shadow: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--npb-accent, #3b82f6) 40%, transparent);
   transition: box-shadow var(--npb-duration-normal) var(--npb-ease-out);
 }
 
@@ -812,6 +812,17 @@
   border-radius: 2px;
   z-index: 10;
   box-shadow: var(--npb-shadow-surface, 0 1px 3px rgba(0, 0, 0, 0.3));
+  cursor: nwse-resize;
+}
+
+.npb-image-resize-handle[data-corner="bottom-left"] {
+  cursor: nesw-resize;
+}
+
+.npb-image-resize-handle::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
 }
 
 /* Admin shell — top bar always dark; main area follows global theme */
