@@ -1,36 +1,52 @@
 import { Router } from "express";
+import type { Request, Response } from "express";
 import type { Deps } from "./shared/deps";
 import { asyncHandler } from "./shared/async-handler";
 import { safeTryAsync } from "../utils";
 import path from "path";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
-import { enrichPostForApi } from "@shared/posts/post-other";
 import { resolveSiteRenderContext } from "./shared/resolve-site-render-context";
 import { getSiteBlogIds } from "./shared/site-content";
-import { buildPublishedPageHtml } from "./shared/build-published-page-html";
+import { renderStatusHtml } from "../../renderer/templates/status-page";
+import { isPubliclyReadable } from "../lib/is-publicly-readable";
+import { sendPublishedHtml } from "../lib/send-published-html";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function sendStatusPage({
+	req,
+	res,
+	status,
+}: {
+	req: Request;
+	res: Response;
+	status: 404 | 500;
+}): void {
+	const title = status === 404 ? "Page not found" : "Something went wrong";
+	const message =
+		status === 404
+			? "This page is not available."
+			: "The page could not be loaded.";
+	const html = renderStatusHtml({
+		status,
+		title,
+		message,
+		canonicalUrl: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+	});
+	res.status(status);
+	res.setHeader("Content-Type", "text/html");
+	res.send(html);
+}
+
 /**
  * Creates HTML rendering routes for posts, pages, and home.
- * These routes serve server-rendered HTML content using the active theme.
- *
- * Endpoints:
- * - GET /posts/:id - Render single post by ID as HTML
- * - GET /pages/:id - Render single page by ID as HTML
- * - GET /home - Render homepage with recent published posts
- *
- * All routes use themeManager to render content with the active theme.
- * Returns 404 page if content not found or rendering fails.
- *
- * @param deps - Injected dependencies (models, themeManager, getSiteSettings)
- * @returns Express router with mounted render routes
+ * Published HTML uses `buildPublishedPageHtml` (page-builder blocks).
  */
 export function createRenderRoutes(deps: Deps): Router {
 	const router = Router();
-	const { models, themeManager } = deps;
+	const { models } = deps;
 
 	/**
 	 * GET /renderer/scripts/hydrate.js - Serve hydration script
@@ -92,8 +108,7 @@ export function createRenderRoutes(deps: Deps): Router {
 	}));
 
 	/**
-	 * GET /posts/:id - Render single post as HTML
-	 * Uses 'single-post' template from active theme
+	 * GET /posts/:id - Render a post with the same block pipeline as published pages.
 	 */
 	router.get(
 		"/posts/:id",
@@ -101,45 +116,38 @@ export function createRenderRoutes(deps: Deps): Router {
 			const { err } = await safeTryAsync(async () => {
 				const context = await resolveSiteRenderContext({ models, req });
 				if (!context) {
-					const html = themeManager.render404();
-					return res.status(404).send(html);
+					return sendStatusPage({ req, res, status: 404 });
 				}
 
 				const postId = req.params.id;
 				const post = await models.posts.findById(postId);
 
-				if (!post) {
-					const html = themeManager.render404();
-					return res.status(404).send(html);
+				if (!post || !isPubliclyReadable(post)) {
+					return sendStatusPage({ req, res, status: 404 });
 				}
 
 				const blogIds = await getSiteBlogIds({ models, siteId: context.site.id });
 				if (!post.blogId || !blogIds.includes(post.blogId)) {
-					const html = themeManager.render404();
-					return res.status(404).send(html);
+					return sendStatusPage({ req, res, status: 404 });
 				}
 
-				const html = await themeManager.renderContent("single-post", {
-					post: enrichPostForApi(post),
-					site: context.settings,
+				await sendPublishedHtml({
+					res,
+					models,
+					document: post,
+					canonicalUrl: `${req.protocol}://${req.get("host")}/posts/${post.id}`,
 				});
-
-				res.setHeader("Content-Type", "text/html");
-				res.send(html);
 			});
 
 			if (err) {
 				console.error("Error rendering post:", err);
-				const html = themeManager.render404();
-				res.status(500).send(html);
+				sendStatusPage({ req, res, status: 500 });
 			}
 		}),
 	);
 
 	/**
-	 * GET /pages/:id - Render single page as HTML
-	 * Uses 'page' template from active theme
-	 * Pages use same storage as posts
+	 * GET /pages/:id - Render a page with the same block pipeline as published pages.
 	 */
 	router.get(
 		"/pages/:id",
@@ -147,39 +155,50 @@ export function createRenderRoutes(deps: Deps): Router {
 			const { err } = await safeTryAsync(async () => {
 				const context = await resolveSiteRenderContext({ models, req });
 				if (!context) {
-					const html = themeManager.render404();
-					return res.status(404).send(html);
+					return sendStatusPage({ req, res, status: 404 });
 				}
 
 				const pageId = req.params.id;
 				const page = await models.pages.findById(pageId);
 
-				if (!page || page.siteId !== context.site.id) {
-					const html = themeManager.render404();
-					return res.status(404).send(html);
+				if (page && page.siteId === context.site.id) {
+					if (!isPubliclyReadable(page)) {
+						return sendStatusPage({ req, res, status: 404 });
+					}
+					await sendPublishedHtml({
+						res,
+						models,
+						document: page,
+						canonicalUrl: `${req.protocol}://${req.get("host")}/pages/${page.id}`,
+					});
+					return;
 				}
 
-				const html = buildPublishedPageHtml({
-					page,
-					canonicalUrl: `${req.protocol}://${req.get("host")}/pages/${page.id}`,
+				const post = await models.posts.findById(pageId);
+				if (!post || !isPubliclyReadable(post)) {
+					return sendStatusPage({ req, res, status: 404 });
+				}
+				const blogIds = await getSiteBlogIds({ models, siteId: context.site.id });
+				if (!post.blogId || !blogIds.includes(post.blogId)) {
+					return sendStatusPage({ req, res, status: 404 });
+				}
+				await sendPublishedHtml({
+					res,
+					models,
+					document: post,
+					canonicalUrl: `${req.protocol}://${req.get("host")}/pages/${post.id}`,
 				});
-
-				res.setHeader("Content-Type", "text/html");
-				res.send(html);
 			});
 
 			if (err) {
 				console.error("Error rendering page:", err);
-				const html = themeManager.render404();
-				res.status(500).send(html);
+				sendStatusPage({ req, res, status: 500 });
 			}
 		}),
 	);
 
 	/**
-	 * GET /home - Render homepage with recent published posts
-	 * Uses 'home' template from active theme
-	 * Fetches up to 10 most recent published posts
+	 * GET /home - Render the site homepage page (same document as `/api/public/homepage`).
 	 */
 	router.get(
 		"/home",
@@ -187,35 +206,30 @@ export function createRenderRoutes(deps: Deps): Router {
 			const { err } = await safeTryAsync(async () => {
 				const context = await resolveSiteRenderContext({ models, req });
 				if (!context) {
-					const html = themeManager.render404();
-					return res.status(404).send(html);
+					return sendStatusPage({ req, res, status: 404 });
 				}
 
-				const blogIds = await getSiteBlogIds({ models, siteId: context.site.id });
-				const posts =
-					blogIds.length > 0
-						? await models.posts.findManyWhere(
-								[
-									{ where: "status", equals: "publish" },
-									{ where: "blogId", in: blogIds },
-								],
-								{ limit: 10 },
-							)
-						: [];
+				const homepage = await models.options.getOption("homepage_page_slug", context.site.id);
+				if (!homepage?.value) {
+					return sendStatusPage({ req, res, status: 404 });
+				}
 
-				const html = await themeManager.renderContent("home", {
-					posts: posts.map(enrichPostForApi),
-					site: context.settings,
+				const page = await models.pages.findBySiteAndSlug(context.site.id, homepage.value);
+				if (!page || !isPubliclyReadable(page)) {
+					return sendStatusPage({ req, res, status: 404 });
+				}
+
+				await sendPublishedHtml({
+					res,
+					models,
+					document: page,
+					canonicalUrl: `${req.protocol}://${req.get("host")}/`,
 				});
-
-				res.setHeader("Content-Type", "text/html");
-				res.send(html);
 			});
 
 			if (err) {
 				console.error("Error rendering home:", err);
-				const html = themeManager.render404();
-				res.status(500).send(html);
+				sendStatusPage({ req, res, status: 500 });
 			}
 		}),
 	);
@@ -285,24 +299,17 @@ export function createRenderRoutes(deps: Deps): Router {
 
 				// 3. Find page by siteId and slug
 				const page = await models.pages.findBySiteAndSlug(siteId, pageSlug);
-				if (!page) {
+				if (!page || !isPubliclyReadable(page)) {
 					res.status(404).json({ message: "Page not found" });
 					return;
 				}
 
-				// 4. Only allow published pages for public access
-				if (page.status !== "publish") {
-					res.status(404).json({ message: "Page not found" });
-					return;
-				}
-
-				const html = buildPublishedPageHtml({
-					page,
+				await sendPublishedHtml({
+					res,
+					models,
+					document: page,
 					canonicalUrl: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
 				});
-
-				res.setHeader("Content-Type", "text/html");
-				res.send(html);
 			});
 
 			if (err) {

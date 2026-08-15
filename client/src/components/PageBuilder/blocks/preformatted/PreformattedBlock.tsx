@@ -7,6 +7,7 @@ import { SettingsLabel } from '../../shared';
 import { FileText as PreformattedIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
+import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
 
 // ============================================================================
@@ -30,29 +31,63 @@ const DEFAULT_CONTENT: PreformattedContent = {
 interface PreformattedRendererProps {
   content: PreformattedContent;
   styles?: React.CSSProperties;
+  isEditing?: boolean;
+  onUpdateContent?: (updates: Partial<PreformattedContent>) => void;
 }
 
-function PreformattedRenderer({ content, styles }: PreformattedRendererProps) {
+function PreformattedRenderer({
+  content,
+  styles,
+  isEditing,
+  onUpdateContent,
+}: PreformattedRendererProps) {
   const textContent = content?.content || '';
-  
+
+  const preStyle: React.CSSProperties = {
+    fontFamily: 'Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace',
+    fontSize: '14px',
+    lineHeight: '1.6',
+    whiteSpace: 'pre-wrap',
+    overflow: 'auto',
+    backgroundColor: '#f8f9fa',
+    padding: '1em',
+    border: '1px solid #e9ecef',
+    borderRadius: '4px',
+    margin: '1em 0',
+    ...styles,
+  };
+
+  if (isEditing) {
+    return (
+      <BlockShell
+        as="pre"
+        blockClass="wp-block-preformatted"
+        className={content?.className}
+        style={preStyle}
+      >
+        <InlineTextEditor
+          value={textContent}
+          onChange={(value) => onUpdateContent?.({ content: value })}
+          style={{
+            fontFamily: preStyle.fontFamily,
+            fontSize: '14px',
+            lineHeight: '1.6',
+            color: 'inherit',
+          }}
+          multiline
+          minHeight={80}
+          placeholder="Enter your preformatted text here..."
+        />
+      </BlockShell>
+    );
+  }
+
   return (
     <BlockShell
       as="pre"
       blockClass="wp-block-preformatted"
       className={content?.className}
-      style={{
-        fontFamily: 'Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace',
-        fontSize: '14px',
-        lineHeight: '1.6',
-        whiteSpace: 'pre-wrap',
-        overflow: 'auto',
-        backgroundColor: '#f8f9fa',
-        padding: '1em',
-        border: '1px solid #e9ecef',
-        borderRadius: '4px',
-        margin: '1em 0',
-        ...styles,
-      }}
+      style={preStyle}
     >
       {textContent}
     </BlockShell>
@@ -180,7 +215,14 @@ const PreformattedBlock = createBlockDefinition<PreformattedContent>({
   },
   settings: PreformattedSettings,
   hasSettings: true,
-  render: ({ content, styles }) => <PreformattedRenderer content={content} styles={styles} />,
+  render: ({ content, styles, isEditing, setContent }) => (
+    <PreformattedRenderer
+      content={content}
+      styles={styles}
+      isEditing={isEditing}
+      onUpdateContent={(updates) => setContent((prev) => ({ ...prev, ...updates }))}
+    />
+  ),
 });
 
 export default PreformattedBlock;

@@ -345,12 +345,15 @@ if ! wait_for_postgres 60; then
   exit 1
 fi
 
-if ! docker compose run --rm --no-deps app pnpm drizzle-kit migrate; then
+if docker compose run --rm --no-deps app node dist/migrate.js; then
+  print_success "Database migrations applied"
+elif docker compose run --rm --no-deps app pnpm drizzle-kit migrate; then
+  print_success "Database migrations applied (drizzle-kit fallback)"
+else
   print_error "Database migration failed"
   docker compose logs postgres --tail 30 2>/dev/null || true
   exit 1
 fi
-print_success "Database migrations applied"
 
 if ! docker compose up -d app caddy; then
   print_error "App start failed"

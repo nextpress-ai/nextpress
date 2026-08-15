@@ -23,6 +23,9 @@ export type TableData = {
   head?: TableRow[];
   foot?: TableRow[];
   hasFixedLayout?: boolean;
+  striped?: boolean;
+  bordered?: boolean;
+  compact?: boolean;
   caption?: string;
   className?: string;
 };
@@ -36,6 +39,9 @@ export const DEFAULT_DATA: TableData = {
   head: [],
   foot: [],
   hasFixedLayout: false,
+  striped: false,
+  bordered: true,
+  compact: false,
   caption: '',
   className: '',
 };
@@ -44,3 +50,4 @@ export const DEFAULT_CONTENT: TableContent = {
   kind: 'structured',
   data: DEFAULT_DATA,
 };
+

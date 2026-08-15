@@ -6,8 +6,7 @@ import {
   type VideoContent,
   DEFAULT_CONTENT,
   isYouTubeUrl,
-  extractYouTubeId,
-  parseStartSeconds,
+  buildYouTubeEmbedUrl,
 } from "./video-model";
 import { VideoSettings } from "./video-settings";
 
@@ -45,22 +44,10 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
     className || '',
   ].filter(Boolean).join(' ');
 
-  const youTubeId = isYouTubeUrl(url) ? extractYouTubeId(url) : null;
-  if (youTubeId) {
-    const params = new URLSearchParams();
-    if (autoplay) params.set('autoplay', '1');
-    if (controls === false) params.set('controls', '0');
-    if (loop) {
-      params.set('loop', '1');
-      params.set('playlist', youTubeId);
-    }
-    if (muted || autoplay) params.set('mute', '1');
-    const start = parseStartSeconds(url);
-    if (start && start > 0) params.set('start', String(start));
-    params.set('rel', '0');
-    params.set('modestbranding', '1');
-
-    const embedUrl = `https://www.youtube.com/embed/${youTubeId}?${params.toString()}`;
+  const youTubeEmbedUrl = isYouTubeUrl(url)
+    ? buildYouTubeEmbedUrl(url, { autoplay, controls, loop, muted })
+    : null;
+  if (youTubeEmbedUrl) {
     const embedClasses = [
       'is-type-video',
       'is-provider-youtube',
@@ -91,7 +78,7 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
           }}
         >
           <iframe
-            src={embedUrl}
+            src={youTubeEmbedUrl}
             title={caption || 'YouTube video player'}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen

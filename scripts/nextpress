@@ -850,6 +850,10 @@ run_schema_migrations() {
 	local image="${1:-$(app_image)}"
 
 	info "Applying database migrations from $image..."
+	if compose run --rm --no-deps app node dist/migrate.js; then
+		return 0
+	fi
+	warn "node dist/migrate.js failed; trying pnpm drizzle-kit migrate for older images."
 	compose run --rm --no-deps app pnpm drizzle-kit migrate
 }
 

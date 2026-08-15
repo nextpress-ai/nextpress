@@ -326,8 +326,8 @@ describe('BlockRenderer', () => {
       const paragraphElement = document.querySelector('.wp-block-paragraph')
       const wrapper = paragraphElement?.closest('.relative.group')!
       fireEvent.mouseEnter(wrapper)
-      const buttons = within(wrapper as HTMLElement).getAllByRole('button')
-      fireEvent.click(buttons[0])
+      const duplicateButton = within(wrapper as HTMLElement).getByRole('button', { name: /duplicate/i })
+      fireEvent.click(duplicateButton)
       
       expect(onDuplicate).toHaveBeenCalled()
     })
@@ -349,8 +349,8 @@ describe('BlockRenderer', () => {
       const paragraphElement = document.querySelector('.wp-block-paragraph')
       const wrapper = paragraphElement?.closest('.relative.group')!
       fireEvent.mouseEnter(wrapper)
-      const buttons = within(wrapper as HTMLElement).getAllByRole('button')
-      fireEvent.click(buttons[1])
+      const deleteButton = within(wrapper as HTMLElement).getByRole('button', { name: /delete/i })
+      fireEvent.click(deleteButton)
       
       expect(onDelete).toHaveBeenCalled()
     })

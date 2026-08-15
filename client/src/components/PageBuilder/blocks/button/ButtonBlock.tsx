@@ -6,6 +6,7 @@ import { SettingsLabel } from '../../shared';
 import { MousePointer, Type, Link, Smile, X } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
+import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
 import { LinkTargetChips } from "../shared/link-settings";
 import { IconRenderer } from "../shared/IconRenderer";
@@ -56,10 +57,19 @@ interface ButtonRendererProps {
   content: ButtonContent;
   styles?: React.CSSProperties;
   isPreview?: boolean;
+  isEditing?: boolean;
+  onUpdateContent?: (updates: Partial<ButtonContent>) => void;
   blockId?: string;
 }
 
-function ButtonRenderer({ content, styles, isPreview, blockId }: ButtonRendererProps) {
+function ButtonRenderer({
+  content,
+  styles,
+  isPreview,
+  isEditing,
+  onUpdateContent,
+  blockId,
+}: ButtonRendererProps) {
   const textContent = content?.kind === 'text' ? content.value : '';
   const url = content?.url as string | undefined;
   const linkTarget = (content?.linkTarget as string | undefined) || (content?.target as string | undefined);
@@ -129,7 +139,18 @@ function ButtonRenderer({ content, styles, isPreview, blockId }: ButtonRendererP
         className={anchorClass}
       >
         {iconElement && iconPosition === 'left' && iconElement}
-        {!iconOnly && textContent}
+        {isEditing ? (
+          <InlineTextEditor
+            value={textContent}
+            onChange={(value) =>
+              onUpdateContent?.({ kind: 'text', value } as Partial<ButtonContent>)
+            }
+            style={{ color: 'inherit', fontSize: 'inherit', fontWeight: 'inherit' }}
+            placeholder="Button text"
+          />
+        ) : (
+          !iconOnly && textContent
+        )}
         {iconElement && iconPosition === 'right' && iconElement}
       </a>
     </BlockShell>
@@ -332,11 +353,13 @@ const ButtonBlock = createBlockDefinition<ButtonContent>({
   },
   settings: ButtonSettings,
   hasSettings: true,
-  render: ({ content, styles, isPreview, value }) => (
+  render: ({ content, styles, isPreview, isEditing, setContent, value }) => (
     <ButtonRenderer
       content={content}
       styles={styles}
       isPreview={isPreview}
+      isEditing={isEditing}
+      onUpdateContent={(updates) => setContent((prev) => ({ ...prev, ...updates }) as ButtonContent)}
       blockId={value.id}
     />
   ),

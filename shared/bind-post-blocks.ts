@@ -1,7 +1,22 @@
 import type { BlockConfig, BlockContent } from "./schema-types";
-import type { AuthorDisplay } from "./author-display";
+import { mergeAuthorDisplay, type AuthorDisplay } from "./author-display";
 import { parsePostOther } from "./posts/post-other";
 import { headingLevelFromTag, readBlockContentData } from "./read-block-content";
+
+export type BoundComment = {
+	id: string;
+	author: string;
+	date: string;
+	content: string;
+	replies: BoundComment[];
+};
+
+export type BoundAdjacentPost = {
+	id: string;
+	title: string;
+	slug: string;
+	featuredImage?: string | null;
+};
 
 export type BindablePostDocument = {
 	id?: string;
@@ -15,6 +30,11 @@ export type BindablePostDocument = {
 	tags?: string[] | null;
 	author?: AuthorDisplay | null;
 	other?: unknown;
+	comments?: BoundComment[];
+	adjacent?: {
+		prev?: BoundAdjacentPost | null;
+		next?: BoundAdjacentPost | null;
+	};
 };
 
 const toIso = (value: string | Date | null | undefined): string => {
@@ -125,11 +145,23 @@ function bindOneBlock({
 					{
 						...data,
 						...(post.author
-							? {
-									name: post.author.name,
-									avatar: post.author.avatar,
-									bio: post.author.bio,
-								}
+							? mergeAuthorDisplay({
+									override: {
+										name:
+											typeof data.name === "string"
+												? data.name
+												: undefined,
+										avatar:
+											typeof data.avatar === "string"
+												? data.avatar
+												: undefined,
+										bio:
+											typeof data.bio === "string"
+												? data.bio
+												: undefined,
+									},
+									live: post.author,
+								})
 							: {}),
 						...(post.authorId && !data.authorId
 							? { authorId: post.authorId }
@@ -162,13 +194,86 @@ function bindOneBlock({
 		};
 	}
 
-	if (block.name === "post/comments" || block.name === "post/navigation") {
+	if (block.name === "post/comments") {
 		return {
 			...block,
 			children,
-			content: asStructured(withPostId(data, post)),
+			content: asStructured(
+				withPostId(
+					{
+						...data,
+						comments: post.comments ?? [],
+					},
+					post,
+				),
+			),
+		};
+	}
+
+	if (block.name === "post/navigation") {
+		return {
+			...block,
+			children,
+			content: asStructured(
+				withPostId(
+					{
+						...data,
+						prev: post.adjacent?.prev ?? null,
+						next: post.adjacent?.next ?? null,
+					},
+					post,
+				),
+			),
 		};
 	}
 
 	return children === block.children ? block : { ...block, children };
+}
+
+/** True when the tree contains a block with this name (nested children included). */
+export function documentHasBlockName({
+	blocks,
+	name,
+}: {
+	blocks: BlockConfig[];
+	name: string;
+}): boolean {
+	for (const block of blocks) {
+		if (block.name === name) return true;
+		if (Array.isArray(block.children) && documentHasBlockName({ blocks: block.children, name })) {
+			return true;
+		}
+	}
+	return false;
+}
+
+type FlatCommentRow = {
+	id: string;
+	parentId?: string | null;
+	authorName?: string | null;
+	content: string;
+	createdAt?: string | Date | null;
+};
+
+/** Nest approved comment rows for SSR (and tests) without a second renderer. */
+export function nestBoundComments(rows: FlatCommentRow[]): BoundComment[] {
+	const byId = new Map<string, BoundComment>();
+	for (const row of rows) {
+		byId.set(row.id, {
+			id: row.id,
+			author: row.authorName?.trim() || "Anonymous",
+			date: toIso(row.createdAt),
+			content: row.content,
+			replies: [],
+		});
+	}
+	const roots: BoundComment[] = [];
+	for (const row of rows) {
+		const node = byId.get(row.id);
+		if (!node) continue;
+		const parent = row.parentId ? byId.get(row.parentId) : undefined;
+		if (parent) parent.replies.push(node);
+		else roots.push(node);
+	}
+	return roots;
 }

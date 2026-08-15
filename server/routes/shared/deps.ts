@@ -1,6 +1,5 @@
 import { models } from '../../storage';
 import hooks from '../../hooks';
-import themeManager from '../../themes';
 import { authService, requireAuth } from '../../auth';
 import {
   CONFIG,
@@ -33,7 +32,6 @@ export type Schemas = {
 export interface Deps {
   models: typeof models;
   hooks: typeof hooks;
-  themeManager: typeof themeManager;
   authService: typeof authService;
   requireAuth: typeof requireAuth;
   CONFIG: Readonly<typeof CONFIG>;
@@ -103,7 +101,6 @@ export async function buildDeps(): Promise<Deps> {
   return {
     models,
     hooks,
-    themeManager,
     authService,
     requireAuth,
     CONFIG,

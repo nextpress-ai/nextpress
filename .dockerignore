@@ -11,3 +11,11 @@ backup
 .opencode
 plans
 attached_assets
+.cursor
+trash
+data
+coverage
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx

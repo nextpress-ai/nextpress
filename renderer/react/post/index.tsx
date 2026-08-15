@@ -2,6 +2,8 @@ import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { getRenderProps, parseStructuredContent } from "../render-helpers";
 
+export { PostCommentsBlock } from "./comments";
+
 /**
  * Post Author Box — SSR placeholder.
  * Shows avatar circle, name, and bio when configured.
@@ -14,11 +16,13 @@ export function PostAuthorBoxBlock(block: BlockConfig) {
 	const showBio = data.showBio !== false;
 	const isVertical = (data.layout as string) === "vertical";
 	const avatarSize = (data.avatarSize as number) || 48;
-	const name = (data.name as string) || "Author Name";
-	const bio = (data.bio as string) || "Author bio placeholder.";
+	const name = typeof data.name === "string" ? data.name : "";
+	const bio = typeof data.bio === "string" ? data.bio : "";
 	const avatar = typeof data.avatar === "string" ? data.avatar : "";
 
 	const mergedClassName = ["wp-block-post-author-box", className].filter(Boolean).join(" ");
+	const displayName = name || "Author";
+	const displayBio = bio || "Author bio placeholder.";
 
 	return (
 		<div className={mergedClassName || undefined} style={{ display: "flex", flexDirection: isVertical ? "column" : "row", alignItems: isVertical ? "center" : "flex-start", gap: "12px", ...style }} {...attributes}>
@@ -27,7 +31,7 @@ export function PostAuthorBoxBlock(block: BlockConfig) {
 					<img
 						className="wp-block-post-author-box__avatar"
 						src={avatar}
-						alt={name}
+						alt={displayName || "Author"}
 						style={{ width: avatarSize, height: avatarSize, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
 					/>
 				) : (
@@ -35,47 +39,13 @@ export function PostAuthorBoxBlock(block: BlockConfig) {
 				)
 			)}
 			<div className="wp-block-post-author-box__info">
-				{showName && <strong className="wp-block-post-author-box__name">{name}</strong>}
-				{showBio && <p className="wp-block-post-author-box__bio" style={{ margin: "4px 0 0", color: "var(--npb-text-secondary)", fontSize: "0.875rem" }}>{bio}</p>}
+				{showName && displayName ? (
+					<strong className="wp-block-post-author-box__name">{displayName}</strong>
+				) : null}
+				{showBio && displayBio ? (
+					<p className="wp-block-post-author-box__bio" style={{ margin: "4px 0 0", color: "var(--npb-text-secondary)", fontSize: "0.875rem" }}>{displayBio}</p>
+				) : null}
 			</div>
-		</div>
-	);
-}
-
-/**
- * Post Comments — SSR placeholder.
- * Shows heading and placeholder comment list.
- */
-export function PostCommentsBlock(block: BlockConfig) {
-	const { style, className, attributes } = getRenderProps(block);
-	const data = parseStructuredContent(block.content);
-	const showCount = data.showCount !== false;
-	const showForm = data.showForm !== false;
-
-	const mergedClassName = ["wp-block-post-comments", className]
-		.filter(Boolean)
-		.join(" ");
-
-	return (
-		<div className={mergedClassName || undefined} style={style} {...attributes}>
-			<h3 className="wp-block-post-comments__title">
-				Comments{showCount ? " (3)" : ""}
-			</h3>
-			<div className="wp-block-post-comments__list" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-				{["Jane Doe", "John Smith"].map((author, i) => (
-					<div key={i} className="wp-block-post-comments__comment" style={{ padding: "8px 0", borderBottom: "1px solid var(--npb-border-default)" }}>
-						<strong>{author}</strong>
-						<p style={{ margin: "4px 0 0", color: "var(--npb-text-secondary)", fontSize: "0.875rem" }}>
-							Comment placeholder text.
-						</p>
-					</div>
-				))}
-			</div>
-			{showForm && (
-				<p className="wp-block-post-comments__form-note" style={{ marginTop: "16px", fontSize: "0.875rem", color: "var(--npb-text-muted)" }}>
-					Leave a reply
-				</p>
-			)}
 		</div>
 	);
 }
@@ -161,8 +131,7 @@ export function PostInfoBlock(block: BlockConfig) {
 }
 
 /**
- * Post Navigation — SSR placeholder.
- * Shows prev/next navigation links.
+ * Post Navigation — bound prev/next from SSR, empty when the blog has no siblings.
  */
 export function PostNavigationBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
@@ -170,10 +139,32 @@ export function PostNavigationBlock(block: BlockConfig) {
 	const showLabel = data.showLabel !== false;
 	const prevLabel = (data.prevLabel as string) || "Previous Post";
 	const nextLabel = (data.nextLabel as string) || "Next Post";
+	const isBound = Boolean(data.postId) || "prev" in data || "next" in data;
+	const prev = isBound && data.prev && typeof data.prev === "object"
+		? (data.prev as Record<string, unknown>)
+		: null;
+	const next = isBound && data.next && typeof data.next === "object"
+		? (data.next as Record<string, unknown>)
+		: null;
 
 	const mergedClassName = ["wp-block-post-navigation", className]
 		.filter(Boolean)
 		.join(" ");
+
+	if (isBound && !prev && !next) {
+		return (
+			<nav className={mergedClassName || undefined} style={style} {...attributes}>
+				<p style={{ margin: 0, color: "var(--npb-text-muted)", fontSize: "0.875rem", textAlign: "center" }}>
+					Previous and next posts appear here when more posts in this blog are published.
+				</p>
+			</nav>
+		);
+	}
+
+	const prevHref = typeof prev?.slug === "string" ? `/post/${prev.slug}` : "#";
+	const nextHref = typeof next?.slug === "string" ? `/post/${next.slug}` : "#";
+	const prevTitle = typeof prev?.title === "string" ? prev.title : "Previous Post Title";
+	const nextTitle = typeof next?.title === "string" ? next.title : "Next Post Title";
 
 	return (
 		<nav
@@ -186,22 +177,26 @@ export function PostNavigationBlock(block: BlockConfig) {
 			}}
 			{...attributes}
 		>
-			<a
-				className="wp-block-post-navigation__link wp-block-post-navigation__link--prev"
-				href="#"
-				style={{ textDecoration: "none", color: "var(--npb-accent)" }}
-			>
-				{showLabel && <small style={{ display: "block", color: "var(--npb-text-secondary)" }}>{prevLabel}</small>}
-				<span>Previous Post Title</span>
-			</a>
-			<a
-				className="wp-block-post-navigation__link wp-block-post-navigation__link--next"
-				href="#"
-				style={{ textDecoration: "none", color: "var(--npb-accent)", textAlign: "right" }}
-			>
-				{showLabel && <small style={{ display: "block", color: "var(--npb-text-secondary)" }}>{nextLabel}</small>}
-				<span>Next Post Title</span>
-			</a>
+			{(!isBound || prev) ? (
+				<a
+					className="wp-block-post-navigation__link wp-block-post-navigation__link--prev"
+					href={prevHref}
+					style={{ textDecoration: "none", color: "var(--npb-accent)" }}
+				>
+					{showLabel && <small style={{ display: "block", color: "var(--npb-text-secondary)" }}>{prevLabel}</small>}
+					<span>{prevTitle}</span>
+				</a>
+			) : <span />}
+			{(!isBound || next) ? (
+				<a
+					className="wp-block-post-navigation__link wp-block-post-navigation__link--next"
+					href={nextHref}
+					style={{ textDecoration: "none", color: "var(--npb-accent)", textAlign: "right" }}
+				>
+					{showLabel && <small style={{ display: "block", color: "var(--npb-text-secondary)" }}>{nextLabel}</small>}
+					<span>{nextTitle}</span>
+				</a>
+			) : <span />}
 		</nav>
 	);
 }

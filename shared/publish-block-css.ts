@@ -8,6 +8,58 @@ import { FLUID_HEADING_CSS } from "./responsive-scales.js";
 export const PUBLISH_BLOCK_CSS = `
 ${FLUID_HEADING_CSS}
 
+.wp-block-markdown p {
+  margin: 0 0 1rem;
+}
+.wp-block-markdown h1,
+.wp-block-markdown h2,
+.wp-block-markdown h3,
+.wp-block-markdown h4,
+.wp-block-markdown h5,
+.wp-block-markdown h6 {
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  line-height: 1.25;
+}
+.wp-block-markdown h1 { font-size: 2.25rem; }
+.wp-block-markdown h2 { font-size: 1.875rem; }
+.wp-block-markdown h3 { font-size: 1.5rem; }
+.wp-block-markdown ul,
+.wp-block-markdown ol {
+  margin: 0 0 1rem;
+  padding-left: 1.5rem;
+}
+.wp-block-markdown li { margin-bottom: 0.25rem; }
+.wp-block-markdown blockquote {
+  margin: 0 0 1rem;
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-left: 4px solid #d1d5db;
+  font-style: italic;
+}
+.wp-block-markdown a { color: var(--npb-accent, #007cba); }
+.wp-block-markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+}
+.wp-block-markdown pre {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  overflow-x: auto;
+  background: #f3f4f6;
+  border-radius: 0.375rem;
+}
+.wp-block-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1rem;
+}
+.wp-block-markdown th,
+.wp-block-markdown td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 1rem;
+  text-align: left;
+}
+
 /* Prose readability */
 .wp-block-paragraph {
   max-width: 65ch;

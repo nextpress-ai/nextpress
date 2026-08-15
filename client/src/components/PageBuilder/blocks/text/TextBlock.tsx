@@ -8,6 +8,7 @@ import { SettingsLabel } from '../../shared';
 import { Type } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
+import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "@shared/sanitize-html";
 
@@ -39,9 +40,16 @@ const DEFAULT_CONTENT: TextBlockContent = {
 interface TextRendererProps {
   content: TextBlockContent;
   styles?: React.CSSProperties;
+  isEditing?: boolean;
+  onUpdateContent?: (updates: Partial<TextBlockContent>) => void;
 }
 
-function TextRenderer({ content, styles }: TextRendererProps) {
+function TextRenderer({
+  content,
+  styles,
+  isEditing,
+  onUpdateContent,
+}: TextRendererProps) {
   const textContent = content?.kind === "text" ? content.value : "";
   // Prefer block-level style controls from the sidebar.
   // `content.textAlign` exists for legacy/compat, but it should not override user styles.
@@ -69,7 +77,29 @@ function TextRenderer({ content, styles }: TextRendererProps) {
 
   // `format: "html"` carries sanitized inline markup (e.g. imported paragraphs with links/bold).
   if ((content as { format?: string })?.format === "html") {
+if (isEditing) {
     return (
+      <BlockShell
+        as="p"
+        blockClass="wp-block-paragraph"
+        className={sharedClassName}
+        style={mergedStyles}
+        id={anchor}
+      >
+        <InlineTextEditor
+          value={textContent}
+          onChange={(value) =>
+            onUpdateContent?.({ kind: "text", value } as Partial<TextBlockContent>)
+          }
+          style={mergedStyles}
+          multiline
+          placeholder="Enter your text content"
+        />
+      </BlockShell>
+    );
+  }
+
+  return (
       <BlockShell
         as="p"
         blockClass="wp-block-paragraph"
@@ -163,7 +193,14 @@ const TextBlock = createBlockDefinition<TextBlockContent>({
   },
   settings: TextSettings,
   hasSettings: true,
-  render: ({ content, styles }) => <TextRenderer content={content} styles={styles} />,
+  render: ({ content, styles, isEditing, setContent }) => (
+    <TextRenderer
+      content={content}
+      styles={styles}
+      isEditing={isEditing}
+      onUpdateContent={(updates) => setContent((prev) => ({ ...prev, ...updates }) as TextBlockContent)}
+    />
+  ),
 });
 
 export default TextBlock;

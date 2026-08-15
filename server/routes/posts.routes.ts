@@ -5,6 +5,7 @@ import { safeTryAsync } from '../utils';
 import { coerceDates } from './shared/date-coerce';
 import { enrichPostForApi } from '@shared/posts/post-other';
 import { attachPostAuthor } from '../lib/attach-post-author';
+import { loadAdjacentPosts } from '../lib/load-adjacent-posts';
 import { getSiteBlogIds } from './shared/site-content';
 import {
   assertAuthenticatedSiteAccess,
@@ -232,31 +233,15 @@ export function createPostsRoutes(deps: Deps): Router {
         return res.json({ prev: null, next: null });
       }
 
-      const siblings = (await models.posts.findManyWhere(
-        [{ where: 'blogId', equals: post.blogId }],
-        {
-          limit: 200,
-          orderBy: { property: 'createdAt', order: 'ascending' },
-        },
-      )).filter((item) => item.status === 'publish' || item.id === post.id);
-      const index = siblings.findIndex((item) => item.id === post.id);
-      const toAdjacent = (item: (typeof siblings)[number] | undefined) =>
-        item
-          ? {
-              id: item.id,
-              title: item.title,
-              slug: item.slug,
-              featuredImage: item.featuredImage,
-            }
-          : null;
-
-      res.json({
-        prev: index > 0 ? toAdjacent(siblings[index - 1]) : null,
-        next:
-          index >= 0 && index < siblings.length - 1
-            ? toAdjacent(siblings[index + 1])
-            : null,
+      const adjacent = await loadAdjacentPosts({
+        post,
+        findSiblings: (blogId) =>
+          models.posts.findManyWhere([{ where: 'blogId', equals: blogId }], {
+            limit: 200,
+            orderBy: { property: 'createdAt', order: 'ascending' },
+          }),
       });
+      res.json(adjacent);
     }),
   );
 

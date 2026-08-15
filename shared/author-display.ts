@@ -52,3 +52,36 @@ export function userOtherWithBio({
 	current.bio = bio;
 	return current;
 }
+
+/** The three author fields an author box block can display. */
+export type AuthorFields = {
+	name?: string;
+	avatar?: string;
+	bio?: string;
+};
+
+export type AuthorSource = {
+	/** Author fields explicitly set on the block content. */
+	override?: AuthorFields | null;
+	/** Live profile fetched from the API. */
+	live?: AuthorFields | null;
+	/** Author record attached to the post document. */
+	postAuthor?: AuthorFields | null;
+};
+
+/**
+ * Merge author data for the author box display.
+ * Custom block fields fill gaps, then the live profile, then the post author record.
+ */
+export function mergeAuthorDisplay({
+	override,
+	live,
+	postAuthor,
+}: AuthorSource): AuthorFields {
+	const base: AuthorFields = live ?? postAuthor ?? {};
+	return {
+		name: override?.name?.trim() ? override.name : base.name,
+		avatar: override?.avatar?.trim() ? override.avatar : base.avatar,
+		bio: override?.bio?.trim() ? override.bio : base.bio,
+	};
+}

@@ -1,5 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { authorDisplayFromUser } from '@shared/author-display';
+import {
+  authorDisplayFromUser,
+  mergeAuthorDisplay,
+  type AuthorFields,
+} from '@shared/author-display';
+
+export { mergeAuthorDisplay } from '@shared/author-display';
+export type { AuthorFields } from '@shared/author-display';
 
 export type PostAuthorBoxContent = {
   authorId?: string;
@@ -41,6 +48,15 @@ export const LAYOUT_OPTIONS = [
   { value: 'horizontal' as const, label: 'Horizontal' },
   { value: 'vertical' as const, label: 'Vertical' },
 ] as const;
+
+/** True when the block carries explicit custom author fields that override the profile. */
+export function hasAuthorOverride(content: PostAuthorBoxContent): boolean {
+  return Boolean(
+    (content?.name && content.name.trim()) ||
+      (content?.avatar && content.avatar.trim()) ||
+      (content?.bio && content.bio.trim()),
+  );
+}
 
 /** Build extra className modifiers for the author box wrapper. */
 export function buildAuthorBoxClassName(

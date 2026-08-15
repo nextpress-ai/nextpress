@@ -1,29 +1,53 @@
+import type { BlockConfig } from "@shared/schema-types";
+import {
+	bindPostBlocks,
+	type BindablePostDocument,
+} from "@shared/bind-post-blocks";
+import {
+	collectBlockCustomCss,
+	collectBlockJsScripts,
+} from "@shared/collect-block-scripts";
+import {
+	generateBlockAnimationCSS,
+	getEntryAnimationBaseCSS,
+} from "@shared/animation-utils";
 import { collectBlockModifierCSS } from "@shared/token-resolution";
 import { collectDeviceStylesCSS } from "@shared/collect-device-styles-css";
 import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
 import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
-import { renderBlocksToHtml, getHydrationScript } from "../../../renderer/to-html";
-import { PageTemplate } from "../../../renderer/templates/page";
-import type { PageRenderOptions } from "../../../renderer/templates/page";
-import type { BlockConfig, Page } from "@shared/schema-types";
-import { generateBlockAnimationCSS, getEntryAnimationBaseCSS } from "@shared/animation-utils";
-import { collectBlockCustomCss, collectBlockJsScripts } from "@shared/collect-block-scripts";
-import { BUNDLED_FONTS_STYLESHEET } from "@shared/font-catalog";
+import {
+	PageTemplate,
+	type PageRenderOptions,
+} from "../../../renderer/templates/page";
+import {
+	renderBlocksToHtml,
+	getHydrationScript,
+	blocksHaveReactiveFlag,
+} from "../../../renderer/to-html";
+
+type PublishedDocument = {
+	id: string;
+	title: string;
+	blocks?: unknown;
+	other?: unknown;
+};
 
 type BuildPublishedPageHtmlParams = {
-	page: Page;
+	page: PublishedDocument;
 	canonicalUrl: string;
+	post?: BindablePostDocument;
 };
 
 /**
- * SSR HTML for a published page — same pipeline as `/sites/:siteId/:pageSlug`.
- * Blocks → renderBlocksToHtml + publish CSS + deviceStyles @media rules.
+ * SSR HTML for published pages and posts — same renderer as the public SPA stack.
  */
 export function buildPublishedPageHtml({
 	page,
 	canonicalUrl,
+	post,
 }: BuildPublishedPageHtmlParams): string {
-	const blocks = (Array.isArray(page.blocks) ? page.blocks : []) as BlockConfig[];
+	const rawBlocks = (Array.isArray(page.blocks) ? page.blocks : []) as BlockConfig[];
+	const blocks = post ? bindPostBlocks({ blocks: rawBlocks, post }) : rawBlocks;
 	const blockContentHtml = renderBlocksToHtml(blocks);
 
 	const allCustomCss = collectBlockCustomCss(blocks);
@@ -53,9 +77,7 @@ export function buildPublishedPageHtml({
 			: {};
 	const design = (pageOther.design as Record<string, unknown> | undefined) ?? {};
 
-	const headParts: string[] = [
-		`<link rel="stylesheet" href="${BUNDLED_FONTS_STYLESHEET}">`,
-	];
+	const headParts: string[] = [];
 	if (allCustomCss) headParts.push(`<style>${allCustomCss}</style>`);
 	if (animationCssRules) headParts.push(`<style>${animationCssRules}</style>`);
 	if (modifierCssRules) headParts.push(`<style>${modifierCssRules}</style>`);
@@ -77,7 +99,7 @@ export function buildPublishedPageHtml({
 	}
 	const bodyScripts = bodyParts.join("\n");
 
-	const hydrateScript = getHydrationScript();
+	const hydrateScript = blocksHaveReactiveFlag(blocks) ? getHydrationScript() : "";
 	const seo = (pageOther.seo as Record<string, unknown> | undefined) ?? {};
 	const pageDescription = typeof seo.metaDescription === "string" ? seo.metaDescription : "";
 

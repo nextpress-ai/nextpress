@@ -1,6 +1,6 @@
 import React, { isValidElement, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Copy, Trash2, GripVertical } from 'lucide-react';
+import { Copy, Trash2, GripVertical, Pencil, Check } from 'lucide-react';
 import type { BlockConfig } from '@shared/schema-types';
 import { blockRegistry } from './blocks';
 import { Droppable, Draggable, DropPlaceholder } from '@/lib/dnd';
@@ -234,6 +234,9 @@ function BlockEditorToolbarPanel({
   label,
   labelTooltip,
   dragHandleProps,
+  isEditing,
+  onStartEditing,
+  onStopEditing,
   onDuplicate,
   onDelete,
   className,
@@ -244,6 +247,9 @@ function BlockEditorToolbarPanel({
   /** Full toolbar string when `label` is JS-truncated (block name, icon ref, etc.). */
   labelTooltip?: string;
   dragHandleProps?: BlockRendererProps["dragHandleProps"];
+  isEditing?: boolean;
+  onStartEditing?: () => void;
+  onStopEditing?: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
   className?: string;
@@ -281,17 +287,59 @@ function BlockEditorToolbarPanel({
             {label}
           </span>
         )}
-        {dragHandleProps && (
-          <Button
-            {...dragHandleProps}
-            type="button"
-            variant="ghost"
-            size="sm"
-            title="Drag to reorder block"
-            aria-label="Drag to reorder block"
-            className="h-6 w-6 p-0 cursor-grab active:cursor-grabbing">
-            <GripVertical className="w-3 h-3" />
-          </Button>
+        {isEditing ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                title="Done editing (Esc)"
+                aria-label="Done editing"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStopEditing?.();
+                }}
+                className="h-6 px-1.5 text-xs text-emerald-600 hover:text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 flex items-center gap-1 font-medium">
+                <Check className="w-3.5 h-3.5" />
+                Done
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Finish editing (Esc)</TooltipContent>
+          </Tooltip>
+        ) : (
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  title="Edit block (Enter or double-click)"
+                  aria-label="Edit block"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStartEditing?.();
+                  }}
+                  className="h-6 w-6 p-0 text-npb-text-secondary hover:text-npb-text-primary">
+                  <Pencil className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Edit block (Enter or double-click)</TooltipContent>
+            </Tooltip>
+            {dragHandleProps && (
+              <Button
+                {...dragHandleProps}
+                type="button"
+                variant="ghost"
+                size="sm"
+                title="Drag to reorder block"
+                aria-label="Drag to reorder block"
+                className="h-6 w-6 p-0 cursor-grab active:cursor-grabbing">
+                <GripVertical className="w-3 h-3" />
+              </Button>
+            )}
+          </>
         )}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -344,6 +392,7 @@ export default function BlockRenderer({
 }: BlockRendererProps) {
   const actions = useBlockActions();
   const effectiveSelected = isSelected || actions?.selectedBlockId === block.id;
+  const isEditing = !isPreview && actions?.editingBlockId === block.id;
   const {
     toolbarOpen,
     paintToolbar,
@@ -429,6 +478,7 @@ export default function BlockRenderer({
           onNestedBlockChange={onBlockChange}
           isPreview={isPreview}
           isSelected={effectiveSelected}
+          isEditing={isEditing}
         />
       );
     }
@@ -501,12 +551,21 @@ export default function BlockRenderer({
           onBlockInteract();
           actions?.onSelect(block.id);
         }
+      }}
+      onDoubleClick={(e) => {
+        if (!isPreview) {
+          e.stopPropagation();
+          actions?.onStartEditing?.(block.id);
+        }
       }}>
       {!isPreview && !useTopToolbarHoverStrip && paintToolbar && (
         <BlockEditorToolbarPanel
           label={blockToolbarLabel}
           labelTooltip={blockToolbarLabelTooltip}
           dragHandleProps={dragHandleProps}
+          isEditing={isEditing}
+          onStartEditing={() => actions?.onStartEditing?.(block.id)}
+          onStopEditing={() => actions?.onStopEditing?.()}
           onDuplicate={onDuplicate}
           onDelete={onDelete}
           open={toolbarOpen}
@@ -525,6 +584,9 @@ export default function BlockRenderer({
               label={blockToolbarLabel}
               labelTooltip={blockToolbarLabelTooltip}
               dragHandleProps={dragHandleProps}
+              isEditing={isEditing}
+              onStartEditing={() => actions?.onStartEditing?.(block.id)}
+              onStopEditing={() => actions?.onStopEditing?.()}
               onDuplicate={onDuplicate}
               onDelete={onDelete}
               open={toolbarOpen}
@@ -542,7 +604,7 @@ export default function BlockRenderer({
           <div
             data-block-id={block.id}
             data-chrome={!isPreview && toolbarOpen ? 'true' : 'false'}
-            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'npb-canvas-block-selected' : ''} ${!isPreview && toolbarOpen && !effectiveSelected ? 'npb-canvas-block-hover' : ''} relative`}
+            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'npb-canvas-block-selected' : ''} ${!isPreview && isEditing ? 'npb-canvas-block-editing ring-2 ring-primary ring-offset-2' : ''} ${!isPreview && toolbarOpen && !effectiveSelected ? 'npb-canvas-block-hover' : ''} relative`}
             style={{
               width: '100%',
               minWidth: 0,

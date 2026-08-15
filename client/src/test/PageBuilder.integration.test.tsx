@@ -2,11 +2,19 @@ import React, { useState } from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import PageBuilder from "../components/PageBuilder/PageBuilder";
 import type { BlockConfig } from "@shared/schema-types";
 
 // Mock dependencies
 vi.mock("../hooks/usePageSave", () => ({
+	usePageSave: () => ({
+		mutate: vi.fn(),
+		isPending: false,
+	}),
+}));
+
+vi.mock("@/hooks/usePageSave", () => ({
 	usePageSave: () => ({
 		mutate: vi.fn(),
 		isPending: false,
@@ -21,6 +29,24 @@ vi.mock("@/hooks/useContentLists", () => ({
 		pagesLoading: false,
 		templatesLoading: false,
 		postsLoading: false,
+	}),
+}));
+
+vi.mock("@/hooks/useActiveSite", () => ({
+	useActiveSite: () => ({
+		activeSiteId: "site-1",
+		activeSite: { id: "site-1", name: "Test Site" },
+		setActiveSite: vi.fn(),
+		sites: [],
+	}),
+}));
+
+vi.mock("../hooks/useActiveSite", () => ({
+	useActiveSite: () => ({
+		activeSiteId: "site-1",
+		activeSite: { id: "site-1", name: "Test Site" },
+		setActiveSite: vi.fn(),
+		sites: [],
 	}),
 }));
 
@@ -256,13 +282,23 @@ describe("PageBuilder Integration", () => {
 		},
 	];
 
-	const renderPageBuilder = (blocks = initialBlocks) => {
+	const renderPageBuilder = (
+		blocks = initialBlocks,
+		onBlocksChange = vi.fn(),
+		onSave = vi.fn(),
+	) => {
 		const queryClient = new QueryClient({
 			defaultOptions: { queries: { retry: false } },
 		});
 		return render(
 			<QueryClientProvider client={queryClient}>
-				<PageBuilder blocks={blocks} onBlocksChange={vi.fn()} onSave={vi.fn()} />
+				<ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+					<PageBuilder
+						blocks={blocks}
+						onBlocksChange={onBlocksChange}
+						onSave={onSave}
+					/>
+				</ThemeProvider>
 			</QueryClientProvider>,
 		);
 	};
@@ -313,13 +349,7 @@ describe("PageBuilder Integration", () => {
 
 		it("should update block content through settings", () => {
 			const onBlocksChange = vi.fn();
-			const { container } = render(
-				<PageBuilder
-					blocks={initialBlocks}
-					onBlocksChange={onBlocksChange}
-					onSave={vi.fn()}
-				/>,
-			);
+			const { container } = renderPageBuilder(initialBlocks, onBlocksChange);
 
 			// Select block by clicking its content
 			const paragraphBlock = screen.getByText("Initial paragraph");
@@ -350,13 +380,7 @@ describe("PageBuilder Integration", () => {
 	describe("Block Operations", () => {
 		it("should duplicate block when duplicate button clicked", () => {
 			const onBlocksChange = vi.fn();
-			const { container } = render(
-				<PageBuilder
-					blocks={initialBlocks}
-					onBlocksChange={onBlocksChange}
-					onSave={vi.fn()}
-				/>,
-			);
+			const { container } = renderPageBuilder(initialBlocks, onBlocksChange);
 
 			// Select block by clicking its content
 			const paragraphBlock = screen.getByText("Initial paragraph");
@@ -378,13 +402,7 @@ describe("PageBuilder Integration", () => {
 
 		it("should delete block when delete button clicked", () => {
 			const onBlocksChange = vi.fn();
-			const { container } = render(
-				<PageBuilder
-					blocks={initialBlocks}
-					onBlocksChange={onBlocksChange}
-					onSave={vi.fn()}
-				/>,
-			);
+			const { container } = renderPageBuilder(initialBlocks, onBlocksChange);
 
 			// Select block by clicking its content
 			const paragraphBlock = screen.getByText("Initial paragraph");
@@ -454,9 +472,7 @@ describe("PageBuilder Integration", () => {
 
 	describe("Empty State", () => {
 		it("should show empty state when no blocks", () => {
-			render(
-				<PageBuilder blocks={[]} onBlocksChange={vi.fn()} onSave={vi.fn()} />,
-			);
+			renderPageBuilder([]);
 
 			expect(
 				screen.getByText(
@@ -469,13 +485,7 @@ describe("PageBuilder Integration", () => {
 	describe("Save Functionality", () => {
 		it("should trigger save when save button clicked", () => {
 			const onSave = vi.fn();
-			render(
-				<PageBuilder
-					blocks={initialBlocks}
-					onBlocksChange={vi.fn()}
-					onSave={onSave}
-				/>,
-			);
+			renderPageBuilder(initialBlocks, vi.fn(), onSave);
 
 			const saveButton = screen.getByText(/save|publish/i);
 			fireEvent.click(saveButton);
@@ -521,13 +531,7 @@ describe("PageBuilder Integration", () => {
 				},
 			];
 
-			const { container } = render(
-				<PageBuilder
-					blocks={deeplyNestedBlocks}
-					onBlocksChange={vi.fn()}
-					onSave={vi.fn()}
-				/>,
-			);
+			const { container } = renderPageBuilder(deeplyNestedBlocks);
 
 			expect(screen.getByText("Deep nested text")).toBeInTheDocument();
 
@@ -542,13 +546,7 @@ describe("PageBuilder Integration", () => {
 
 		it("should maintain block hierarchy during operations", () => {
 			const onBlocksChange = vi.fn();
-			const { container } = render(
-				<PageBuilder
-					blocks={initialBlocks}
-					onBlocksChange={onBlocksChange}
-					onSave={vi.fn()}
-				/>,
-			);
+			const { container } = renderPageBuilder(initialBlocks, onBlocksChange);
 
 			// Perform operations on nested blocks
 			const nestedBlock = screen.getByText("Nested paragraph");

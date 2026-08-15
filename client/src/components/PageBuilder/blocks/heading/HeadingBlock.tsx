@@ -9,6 +9,7 @@ import * as React from "react";
 import type { JSX } from "react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
+import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "@shared/sanitize-html";
 
@@ -81,9 +82,16 @@ function getTextContent(content: HeadingContent): string {
 interface HeadingRendererProps {
   content: HeadingContent;
   styles?: React.CSSProperties;
+  isEditing?: boolean;
+  onUpdateContent?: (updates: Partial<HeadingContent>) => void;
 }
 
-function HeadingRenderer({ content, styles }: HeadingRendererProps) {
+function HeadingRenderer({
+  content,
+  styles,
+  isEditing,
+  onUpdateContent,
+}: HeadingRendererProps) {
   const textContent = getTextContent(content);
   const level = content.level || 2;
   const Tag = `h${level}` as keyof JSX.IntrinsicElements;
@@ -113,6 +121,26 @@ function HeadingRenderer({ content, styles }: HeadingRendererProps) {
         id={content.anchor}
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(textContent) }}
       />
+    );
+  }
+
+  if (isEditing) {
+    return (
+      <BlockShell
+        as={Tag}
+        blockClass="wp-block-heading"
+        className={sharedClassName}
+        style={mergedStyles}
+        id={content.anchor}
+      >
+        <InlineTextEditor
+          value={textContent}
+          onChange={(value) => onUpdateContent?.({ kind: "text", value })}
+          style={mergedStyles}
+          placeholder="Enter heading text"
+          className="text-left"
+        />
+      </BlockShell>
     );
   }
 
@@ -223,7 +251,14 @@ export const HeadingBlock = createBlockDefinition<HeadingContent>({
   },
   settings: LegacyHeadingSettings,
   hasSettings: true,
-  render: ({ content, styles }) => <HeadingRenderer content={content} styles={styles} />,
+  render: ({ content, styles, isEditing, setContent }) => (
+    <HeadingRenderer
+      content={content}
+      styles={styles}
+      isEditing={isEditing}
+      onUpdateContent={(updates) => setContent((prev) => ({ ...prev, ...updates }) as HeadingContent)}
+    />
+  ),
 });
 
 export default HeadingBlock;

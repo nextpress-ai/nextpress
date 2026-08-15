@@ -8,6 +8,7 @@ import { headingLevelFromTag, readBlockContentData } from "@shared/read-block-co
 export { collectBlockModifierCSS } from "@shared/token-resolution";
 
 let clientBlockComponents: Record<string, React.FC<BlockConfig>> = {};
+let ssrBlockComponents: Record<string, React.FC<BlockConfig>> = {};
 
 /**
  * Preview/SPA can register fetch-capable post blocks so nested column children
@@ -19,11 +20,25 @@ export function registerClientBlockComponents(
 	clientBlockComponents = components;
 }
 
+/**
+ * SSR-only overrides (sync markdown). Must not be imported from the SPA entry
+ * or react-markdown lands in the visitor chunk.
+ */
+export function registerSsrBlockComponents(
+	components: Record<string, React.FC<BlockConfig>>,
+): void {
+	ssrBlockComponents = { ...ssrBlockComponents, ...components };
+}
+
 /** Resolve a block renderer, preferring client overrides when registered. */
 export function getBlockComponent(
 	name: string,
 ): React.FC<BlockConfig> | undefined {
-	return clientBlockComponents[name] || BLOCK_COMPONENTS[name];
+	return (
+		clientBlockComponents[name] ||
+		ssrBlockComponents[name] ||
+		BLOCK_COMPONENTS[name]
+	);
 }
 
 // ─── Content Parsers ─────────────────────────────────────────────────────────

@@ -26,6 +26,7 @@ import {
   LAYOUT_OPTIONS,
   AVATAR_SIZE_MIN,
   AVATAR_SIZE_MAX,
+  hasAuthorOverride,
   useAuthorData,
 } from './post-author-box-model';
 
@@ -145,6 +146,75 @@ export function PostAuthorBoxSettings({
               />
             </div>
           ) : null}
+
+          <div className="pt-1 border-t border-npb-border-default space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <SettingsLabel>Custom content</SettingsLabel>
+                <p className="text-xs text-npb-text-muted mt-0.5">
+                  Set your own text and photo here.
+                </p>
+              </div>
+              {hasAuthorOverride(content) ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 h-7 text-xs"
+                  onClick={() =>
+                    updateContent({ name: '', avatar: '', bio: '' })
+                  }>
+                  Clear custom content
+                </Button>
+              ) : null}
+            </div>
+            {hasAuthorOverride(content) ? (
+              <p className="text-xs text-npb-text-secondary">
+                Custom fields replace matching profile details.
+              </p>
+            ) : null}
+            <div>
+              <SettingsLabel htmlFor="author-custom-name">Name</SettingsLabel>
+              <Input
+                id="author-custom-name"
+                key={`author-custom-name-${content?.name ?? ''}`}
+                defaultValue={content?.name || ''}
+                onBlur={(e) => {
+                  updateContent({ name: e.target.value });
+                }}
+                placeholder="Author name"
+                className="mt-1 h-9 text-sm"
+              />
+            </div>
+            <div>
+              <SettingsLabel htmlFor="author-custom-bio">Bio</SettingsLabel>
+              <Textarea
+                id="author-custom-bio"
+                key={`author-custom-bio-${content?.bio ?? ''}`}
+                defaultValue={content?.bio || ''}
+                onBlur={(e) => {
+                  updateContent({ bio: e.target.value });
+                }}
+                placeholder="A short bio"
+                rows={3}
+                className="mt-1 text-sm resize-y"
+              />
+            </div>
+            <MediaUrlField
+              id="author-custom-photo"
+              label="Photo"
+              value={content?.avatar || ''}
+              kind="image"
+              placeholder="Profile photo URL"
+              libraryButtonLabel="Choose from library"
+              onChange={({ url }) => {
+                updateContent({ avatar: url });
+              }}
+              onLibrarySelect={({ item }) => {
+                updateContent({ avatar: item.url });
+              }}
+            />
+          </div>
 
           <div>
             <SettingsLabel>Layout</SettingsLabel>

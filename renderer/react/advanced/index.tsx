@@ -169,18 +169,80 @@ export function CodeBlock(block: BlockConfig) {
 	const data = parseStructuredContent(block.content);
 	const codeContent = (data.content as string) || "";
 	const language = data.language as string | undefined;
+	const showLineNumbers = Boolean(data.showLineNumbers);
+	const wrapLines = data.wrapLines !== false;
+	const showCopyButton = Boolean(data.showCopyButton);
+	const [copied, setCopied] = React.useState(false);
 
 	const mergedClassName = [
 		"wp-block-code",
 		language ? `language-${language}` : "",
+		showLineNumbers ? "has-line-numbers" : "",
 		className,
 	]
 		.filter(Boolean)
 		.join(" ");
 
+	const lines = codeContent.split("\n");
+
+	const preStyle: React.CSSProperties = {
+		backgroundColor: "#1e293b",
+		color: "#f8fafc",
+		padding: "1rem",
+		borderRadius: "6px",
+		overflowX: "auto",
+		fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+		fontSize: "0.875rem",
+		lineHeight: "1.6",
+		...style,
+	};
+
 	return (
-		<pre className={mergedClassName || undefined} style={style} {...attributes}>
-			<code>{codeContent}</code>
+		<pre className={mergedClassName || undefined} style={preStyle} {...attributes}>
+			{language ? (
+				<div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.5rem", gap: "0.75rem", alignItems: "center" }}>
+					{showCopyButton ? (
+						<button
+							type="button"
+							onClick={() => {
+								navigator.clipboard
+									?.writeText(codeContent)
+									.then(() => {
+										setCopied(true);
+										window.setTimeout(() => setCopied(false), 1500);
+									})
+									.catch(() => undefined);
+							}}
+							style={{
+								background: "none",
+								border: "none",
+								padding: 0,
+								cursor: "pointer",
+								fontSize: "0.75rem",
+								color: copied ? "#34d399" : "#94a3b8",
+								fontFamily: "sans-serif",
+							}}
+						>
+							{copied ? "Copied" : "Copy"}
+						</button>
+					) : null}
+					<span style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.05em", fontFamily: "sans-serif" }}>
+						{language}
+					</span>
+				</div>
+			) : null}
+			<code style={{ display: "block", whiteSpace: wrapLines ? "pre-wrap" : "pre", wordBreak: wrapLines ? "break-word" : "normal" }}>
+				{showLineNumbers
+					? lines.map((line, idx) => (
+							<div key={idx} style={{ display: "flex", gap: "1rem" }}>
+								<span style={{ color: "#64748b", userSelect: "none", textAlign: "right", minWidth: "1.5rem" }}>
+									{idx + 1}
+								</span>
+								<span style={{ flex: 1 }}>{line || " "}</span>
+							</div>
+						))
+					: codeContent}
+			</code>
 		</pre>
 	);
 }
@@ -275,27 +337,91 @@ export function PreformattedBlock(block: BlockConfig) {
 
 /**
  * Table Block Component
- * Renders an HTML table with headers and rows
+ * Renders an HTML table with headers, body, footers, caption, and styling.
  */
 export function TableBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
-	const data = parseStructuredContent(block.content);
-	const headers = data.headers as string[] | undefined;
-	const rows = data.rows as string[][] | undefined;
-	const hasFixedLayout = (data.hasFixedLayout as boolean) || false;
+	const rawData = parseStructuredContent(block.content) as Record<string, unknown>;
+	const data = (rawData?.data && typeof rawData.data === "object" ? rawData.data : rawData) as Record<string, unknown>;
+
+	type NormalizedCell = { content: string; tag: "th" | "td" };
+	type NormalizedRow = { cells: NormalizedCell[] };
+
+	let headRows: NormalizedRow[] = [];
+	let bodyRows: NormalizedRow[] = [];
+	let footRows: NormalizedRow[] = [];
+
+	// 1. Check for modern structured format: { head, body, foot }
+	if (Array.isArray(data?.body) || Array.isArray(data?.head) || Array.isArray(data?.foot)) {
+		const parseSection = (sec: unknown, defaultTag: "th" | "td"): NormalizedRow[] => {
+			if (!Array.isArray(sec)) return [];
+			return sec.map((row: any) => {
+				if (!row || !Array.isArray(row.cells)) return { cells: [] };
+				return {
+					cells: row.cells.map((c: any) => ({
+						content: typeof c === "string" ? c : (c?.content ?? ""),
+						tag: c?.tag === "th" || c?.tag === "td" ? c.tag : defaultTag,
+					})),
+				};
+			});
+		};
+
+		headRows = parseSection(data.head, "th");
+		bodyRows = parseSection(data.body, "td");
+		footRows = parseSection(data.foot, "td");
+	}
+	// 2. Fallback to legacy format: { headers: string[], rows: string[][] }
+	else if (Array.isArray(data?.headers) || Array.isArray(data?.rows)) {
+		if (Array.isArray(data.headers) && data.headers.length > 0) {
+			headRows = [
+				{
+					cells: (data.headers as string[]).map((h) => ({ content: String(h ?? ""), tag: "th" })),
+				},
+			];
+		}
+		if (Array.isArray(data.rows)) {
+			bodyRows = (data.rows as string[][]).map((row) => ({
+				cells: Array.isArray(row)
+					? row.map((cell) => ({ content: String(cell ?? ""), tag: "td" }))
+					: [],
+			}));
+		}
+	}
+
+	const hasFixedLayout = Boolean(data?.hasFixedLayout);
+	const isStriped = Boolean(data?.striped);
+	const isBordered = data?.bordered !== false;
+	const isCompact = Boolean(data?.compact);
+	const caption = typeof data?.caption === "string" ? data.caption : "";
+	const customClass = typeof data?.className === "string" ? data.className : "";
 
 	const mergedClassName = [
 		"wp-block-table",
-		hasFixedLayout ? "is-style-fixed" : "",
+		hasFixedLayout ? "has-fixed-layout" : "",
+		isStriped ? "is-style-stripes" : "",
+		customClass,
 		className,
 	]
 		.filter(Boolean)
 		.join(" ");
 
 	const tableStyle: React.CSSProperties = {
-		...style,
-		...(hasFixedLayout ? { tableLayout: "fixed" } : {}),
+		borderCollapse: "collapse",
+		width: "100%",
+		tableLayout: hasFixedLayout ? "fixed" : "auto",
 	};
+
+	const cellStyle = (isHeader: boolean, rowIndex?: number): React.CSSProperties => ({
+		border: isBordered ? "1px solid #e5e7eb" : "none",
+		borderBottom: "1px solid #e5e7eb",
+		padding: isCompact ? "4px 8px" : "8px 12px",
+		backgroundColor: isHeader
+			? "#f8f9fa"
+			: isStriped && rowIndex !== undefined && rowIndex % 2 === 1
+			? "#f9fafb"
+			: "transparent",
+		fontWeight: isHeader ? "600" : "normal",
+	});
 
 	return (
 		<figure
@@ -304,35 +430,64 @@ export function TableBlock(block: BlockConfig) {
 			{...attributes}
 		>
 			<table style={tableStyle}>
-				{headers && headers.length > 0 && (
+				{caption ? <caption>{caption}</caption> : null}
+				{headRows.length > 0 && (
 					<thead>
-						<tr>
-							{headers.map((header, index) => {
-								const headerKey = `${header}-${index}`;
-								return <th key={headerKey}>{header}</th>;
-							})}
-						</tr>
+						{headRows.map((row, rowIndex) => (
+							<tr key={`head-${rowIndex}`}>
+								{row.cells.map((cell, cellIndex) => (
+									<th
+										key={`head-cell-${cellIndex}`}
+										style={cellStyle(true)}
+										dangerouslySetInnerHTML={{ __html: sanitizeHtml(cell.content) }}
+									/>
+								))}
+							</tr>
+						))}
 					</thead>
 				)}
 				<tbody>
-					{rows && rows.length > 0 ? (
-						rows.map((row, rowIndex) => {
-							const rowKey = `${row.join("-")}-${rowIndex}`;
-							return (
-								<tr key={rowKey}>
-									{row.map((cell, cellIndex) => {
-										const cellKey = `${cell}-${cellIndex}`;
-										return <td key={cellKey}>{cell}</td>;
-									})}
-								</tr>
-							);
-						})
+					{bodyRows.length > 0 ? (
+						bodyRows.map((row, rowIndex) => (
+							<tr key={`body-${rowIndex}`}>
+								{row.cells.map((cell, cellIndex) => {
+									const CellTag = cell.tag === "th" ? "th" : "td";
+									return (
+										<CellTag
+											key={`body-cell-${cellIndex}`}
+											style={cellStyle(cell.tag === "th", rowIndex)}
+											dangerouslySetInnerHTML={{ __html: sanitizeHtml(cell.content) }}
+										/>
+									);
+								})}
+							</tr>
+						))
 					) : (
 						<tr>
-							<td colSpan={headers?.length || 1}>No data</td>
+							<td colSpan={headRows[0]?.cells.length || 1} style={{ padding: "8px", textAlign: "center", color: "#666" }}>
+								No data
+							</td>
 						</tr>
 					)}
 				</tbody>
+				{footRows.length > 0 && (
+					<tfoot>
+						{footRows.map((row, rowIndex) => (
+							<tr key={`foot-${rowIndex}`}>
+								{row.cells.map((cell, cellIndex) => {
+									const CellTag = cell.tag === "th" ? "th" : "td";
+									return (
+										<CellTag
+											key={`foot-cell-${cellIndex}`}
+											style={cellStyle(cell.tag === "th")}
+											dangerouslySetInnerHTML={{ __html: sanitizeHtml(cell.content) }}
+										/>
+									);
+								})}
+							</tr>
+						))}
+					</tfoot>
+				)}
 			</table>
 		</figure>
 	);

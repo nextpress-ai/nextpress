@@ -19,6 +19,7 @@ export type BlockRenderArgs<TContent> = {
   setSettings: (next: Record<string, unknown> | undefined) => void;
   isPreview?: boolean;
   isSelected?: boolean;
+  isEditing?: boolean;
   onNestedBlockChange?: (updated: BlockConfig) => void;
 };
 
@@ -99,6 +100,7 @@ export function createBlockDefinition<TContent>(
 		onNestedBlockChange,
 		isPreview,
 		isSelected,
+		isEditing,
 	}: BlockComponentProps) {
 		const { content, styles, settings: st, setContent, setStyles, setSettings } =
 			useBlockState<TContent>({
@@ -121,6 +123,7 @@ export function createBlockDefinition<TContent>(
 					setSettings: setSettings as BlockRenderArgs<TContent>["setSettings"],
 					isPreview,
 					isSelected,
+					isEditing,
 					onNestedBlockChange,
 				})}
 			</>

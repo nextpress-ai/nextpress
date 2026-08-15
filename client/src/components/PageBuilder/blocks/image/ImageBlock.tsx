@@ -151,6 +151,7 @@ type ImageBlockViewProps = {
   setStyles: (next: React.CSSProperties | ((prev: React.CSSProperties | undefined) => React.CSSProperties | undefined)) => void;
   isPreview?: boolean;
   isSelected?: boolean;
+  isEditing?: boolean;
 };
 
 function ImageBlockView({
@@ -159,6 +160,7 @@ function ImageBlockView({
   setStyles,
   isPreview,
   isSelected,
+  isEditing,
 }: ImageBlockViewProps): JSX.Element | null {
   const handleStylesChange = useCallback(
     (updates: Partial<React.CSSProperties>) => {
@@ -171,7 +173,7 @@ function ImageBlockView({
     <ImageRenderer
       content={content}
       styles={styles}
-      isEditing={!isPreview}
+      isEditing={Boolean(isEditing && !isPreview)}
       isSelected={isSelected}
       onStylesChange={handleStylesChange}
     />
@@ -196,13 +198,14 @@ const ImageBlock = createBlockDefinition<ImageContent>({
   },
   settings: ImageSettings,
   hasSettings: true,
-  render: ({ content, styles, setStyles, isPreview, isSelected }) => (
+  render: ({ content, styles, setStyles, isPreview, isSelected, isEditing }) => (
     <ImageBlockView
       content={content}
       styles={styles}
       setStyles={setStyles}
       isPreview={isPreview}
       isSelected={isSelected}
+      isEditing={isEditing}
     />
   ),
 });

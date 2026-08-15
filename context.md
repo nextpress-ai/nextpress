@@ -690,3 +690,28 @@ BlockConfig[] (single type)
 - **Dashboard**: quick-action chips (New post/page, Media, ⌘K hint); staggered stat cards; compact recent posts (no excerpt block).
 - **Editor**: sidebar slide-in via `MotionSidebarPanel`; softer empty-canvas hint with motion.
 - **Command palette**: Create actions listed before Navigation for fewer steps to new content.
+
+---
+
+## 2026-08-15 — Explicit in-canvas editing + parity fixes
+
+- **Editing framework existed** (BlockActionsContext editingBlockId, BlockRenderer Pencil/Done/dbl-click/ring, PageBuilder Enter/Esc) but only Table + Code consumed `isEditing`; ImageBlock hardcoded `isEditing={!isPreview}` (resize handles always on).
+- **New shared `InlineTextEditor`** (`blocks/shared/inline-text-editor.tsx`): input/textarea swap-in, mirrors text styles, dashed accent outline, stopPropagation wrapper. Used by heading, paragraph, quote, list, button, pullquote, preformatted — all gated on `isEditing`.
+- **Esc exits editing from inputs**: PageBuilder keydown handler moves Escape BEFORE the editable-target guard (was swallowed while typing in table cell / code textarea / inline editors).
+- **HTML-content blocks** (quote/list/pullquote) convert plain text ↔ HTML in inline editor using same conversion as settings panels; keep `value: html` shape so publish parity unchanged.
+- **Video parity**: public `renderer/react/media` now passes `muted` to `buildYouTubeEmbedUrl`; editor `VideoBlock` refactored off hand-rolled URL builder onto shared helper (single source of truth).
+- **Code copy button**: `showCopyButton` field + settings switch + copy button in editor header and public renderer (navigator.clipboard, transient "Copied").
+- **Image resize handles** now appear only in real edit mode (`isEditing && !isPreview`).
+- **Tradeoff**: `setContent((prev) => ({...prev, ...updates}))` breaks typecheck for `BlockContent`-extending union types (heading/text/button) — needs `as TContent` cast. Plain-object content types (quote/list/pullquote/preformatted) compile clean.
+- **Pre-existing failures** (not ours): HeadingBlock/ SDK defaultStyles expect `margin: '1rem 0'` vs code `'0'`; content-list search; strip-visual columns; useDragAndDropHandler duplicate legacy IDs. Full suite 784 tests, 5 pre-existing failures.
+- **Run tests with `pnpm vitest`** — npx vitest uses broken cached install (no jsdom).
+
+## 2026-08-15 — Author box: override support + publish parity
+
+- **Feature existed but incomplete**: editor settings already had "Use my profile" (binds authorId) and inline profile editor (name/bio/photo → PUT /api/users/:id, bio persisted via `userOtherWithBio` onto user.other). Model had content name/avatar/bio override fields, but NO UI to set them, and live profile beat override in precedence. Publish renderer overwrote custom fields entirely.
+- **`mergeAuthorDisplay`** now lives in `shared/author-display.ts` (single source of truth): per-field fill — custom block fields replace matching profile details, gaps filled from live profile, then post author. `AuthorFields { name?, avatar?, bio? }` + `AuthorSource` types there too. Client model re-exports it; `bindPostBlocks` uses it for post/author-box instead of unconditional overwrite (was destroying custom fields on publish).
+- **Editor precedence**: `mergeAuthorDisplay({ override, live, postAuthor })` → PLACEHOLDER_AUTHOR if fully empty. Live fetch stays enabled even with override (fills gaps).
+- **Settings**: new "Custom content" card (name/bio/photo + "Clear custom content"), works for any author, independent of profile editor.
+- **Public renderer** (`renderer/react/post/index.tsx`): bound-but-empty now shows "Author" placeholder instead of blank name.
+- **Tradeoff**: per-field merge (not all-or-nothing) so partial custom fields coexist with profile data. Public bind path (PublicPageView → PublicBlockStack → bindPostBlocks) injects real profile at render time; SSR placeholder renderer can't fetch, relies on binding.
+- Tests: `client/src/test/post-author-box.test.ts` (5, merge precedence), `shared/bind-post-blocks.test.ts` (+3 override preservation). Full suite 799, still 5 pre-existing failures.

@@ -10,6 +10,7 @@ import { SettingsLabel } from '../../shared';
 import { Settings, List as ListIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
+import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -45,9 +46,16 @@ const DEFAULT_CONTENT: ListContent = {
 interface ListRendererProps {
   content: ListContent;
   styles?: React.CSSProperties;
+  isEditing?: boolean;
+  onUpdateContent?: (updates: Partial<ListContent>) => void;
 }
 
-function ListRenderer({ content, styles }: ListRendererProps) {
+function ListRenderer({
+  content,
+  styles,
+  isEditing,
+  onUpdateContent,
+}: ListRendererProps) {
   const isOrdered = !!content?.ordered;
   const ListTag = (isOrdered ? 'ol' : 'ul') as keyof JSX.IntrinsicElements;
   // Back-compat: if legacy `items` array exists and no `values`, build HTML from it
@@ -83,6 +91,36 @@ function ListRenderer({ content, styles }: ListRendererProps) {
     ...(anchor ? { id: anchor } : {}),
     dangerouslySetInnerHTML: { __html: sanitizeHtml(valuesHtml) },
   };
+
+  if (isEditing) {
+    const itemsText: string = valuesHtml
+      ? valuesHtml
+          .split(/<\/li>/i)
+          .map((chunk) => chunk.replace(/<li>/i, '').trim())
+          .filter((line) => line.length > 0)
+          .join('\n')
+      : '';
+    return (
+      <BlockShell
+        as={ListTag}
+        blockClass="wp-block-list"
+        className={className}
+        style={style}
+      >
+        <InlineTextEditor
+          value={itemsText}
+          onChange={(text) => {
+            const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+            const html = lines.map((l) => `<li>${sanitizeHtml(l)}</li>`).join('');
+            onUpdateContent?.({ values: html, items: undefined });
+          }}
+          style={{ color: 'inherit', fontSize: 'inherit', lineHeight: 'inherit' }}
+          multiline
+          placeholder={'List item 1\nList item 2\nList item 3'}
+        />
+      </BlockShell>
+    );
+  }
 
   // For ordered lists, support HTML attributes reversed/start and type
   if (isOrdered) {
@@ -253,7 +291,14 @@ const ListBlock = createBlockDefinition<ListContent>({
   defaultStyles: { margin: '1em 0' },
   settings: ListSettings,
   hasSettings: true,
-  render: ({ content, styles }) => <ListRenderer content={content} styles={styles} />,
+  render: ({ content, styles, isEditing, setContent }) => (
+    <ListRenderer
+      content={content}
+      styles={styles}
+      isEditing={isEditing}
+      onUpdateContent={(updates) => setContent((prev) => ({ ...prev, ...updates }))}
+    />
+  ),
 });
 
 export default ListBlock;

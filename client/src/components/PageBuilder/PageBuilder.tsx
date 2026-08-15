@@ -133,6 +133,7 @@ export default function PageBuilder({
     useUndoRedo<BlockConfig[]>(initialBlocks);
   const blocks = currentState; // Direct derivation - no separate state
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [showCreatePageModal, setShowCreatePageModal] = useState(false);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const postRecord = data as {
@@ -180,6 +181,8 @@ export default function PageBuilder({
   const lastEmittedRef = useRef<BlockConfig[] | null>(null);
   const selectedBlockIdRef = useRef<string | null>(selectedBlockId);
   selectedBlockIdRef.current = selectedBlockId;
+  const editingBlockIdRef = useRef<string | null>(editingBlockId);
+  editingBlockIdRef.current = editingBlockId;
 
   const [prevPropBlocks, setPrevPropBlocks] = useState<BlockConfig[] | undefined>(propBlocks);
   if (propBlocks !== prevPropBlocks) {
@@ -191,6 +194,7 @@ export default function PageBuilder({
       const currentSelectedId = selectedBlockIdRef.current;
       if (currentSelectedId && !findBlock(propBlocks, currentSelectedId)) {
         setSelectedBlockId(null);
+        setEditingBlockId(null);
       }
     }
   }
@@ -442,6 +446,21 @@ export default function PageBuilder({
         return;
       }
 
+      const selectedId = selectedBlockIdRef.current;
+      const currentEditingId = editingBlockIdRef.current;
+
+      // Escape must exit editing even while focus is inside an inline editor
+      // (input/textarea), so it is handled before the editable-target guard.
+      if (key === 'escape') {
+        e.preventDefault();
+        if (currentEditingId) {
+          setEditingBlockId(null);
+        } else {
+          setSelectedBlockId(null);
+        }
+        return;
+      }
+
       // Block-level shortcuts must never hijack keys while the user is typing
       // in a field or editing inline block text (contentEditable).
       const target = e.target as HTMLElement | null;
@@ -453,13 +472,20 @@ export default function PageBuilder({
           target.isContentEditable);
       if (isEditable) return;
 
-      const selectedId = selectedBlockIdRef.current;
+      if (key === 'enter' && !isMod && !e.shiftKey) {
+        if (selectedId && !currentEditingId) {
+          e.preventDefault();
+          setEditingBlockId(selectedId);
+          return;
+        }
+      }
+
       if (!selectedId) return;
 
-      if (key === 'escape') {
-        e.preventDefault();
-        setSelectedBlockId(null);
-      } else if (key === 'delete' || key === 'backspace') {
+      // If currently in active edit mode, do not trigger destructive or layout shortcuts
+      if (currentEditingId) return;
+
+      if (key === 'delete' || key === 'backspace') {
         e.preventDefault();
         handleDeleteRef.current(selectedId);
       } else if (isMod && key === 'd') {
@@ -578,7 +604,10 @@ export default function PageBuilder({
 
       if (shouldClearSelection) {
         setSelectedBlockId(null);
+        setEditingBlockId(null);
         setActiveTab('blocks');
+      } else if (editingBlockId === id || (editingBlockId != null && isDescendant(blocks, id, editingBlockId))) {
+        setEditingBlockId(null);
       }
 
       const undoGeneration = historyMutationRef.current;
@@ -687,11 +716,22 @@ export default function PageBuilder({
         <BlockActionsProvider
         value={{
           selectedBlockId,
+          editingBlockId,
           onSelect: (id) => {
             setSelectedBlockId(id);
+            if (id !== editingBlockIdRef.current) {
+              setEditingBlockId(null);
+            }
             if (id && !isWideLayout) {
               setActiveTab('settings');
             }
+          },
+          onStartEditing: (id) => {
+            setSelectedBlockId(id);
+            setEditingBlockId(id);
+          },
+          onStopEditing: () => {
+            setEditingBlockId(null);
           },
           onDuplicate: handleDuplicate,
           onDelete: handleDelete,

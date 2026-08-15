@@ -42,7 +42,6 @@ export const PageTemplate = (
       ${(options.customMeta || []).filter(m => m.name && m.content).map(m => `<meta name="${m.name}" content="${m.content}">`).join('\n      ')}
       
       ${bundledFontsLink}
-      <link rel="stylesheet" href="/assets/css/main.css">
   
       <style>
         /* Default page styles */

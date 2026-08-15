@@ -1,10 +1,15 @@
 // React is required for JSX transformation when using ReactDOMServer
 import * as React from "react";
 import * as ReactDOMServer from "react-dom/server";
-import { BLOCK_COMPONENTS } from "./react/block-components";
 import type { BlockConfig } from "@shared/schema-types";
-import { collectBlockModifierCSS } from "@shared/token-resolution";
 import { sanitizeHtml } from "@shared/sanitize-html";
+import {
+	getBlockComponent,
+	registerSsrBlockComponents,
+} from "./react/render-helpers";
+import { MarkdownSsrBlock } from "./react/advanced/MarkdownSsrBlock";
+
+registerSsrBlockComponents({ "core/markdown": MarkdownSsrBlock });
 
 const HYDRATION_CONTAINER_ID = "react-island-";
 
@@ -64,7 +69,7 @@ export function renderBlocksToHtml(blocks: BlockConfig[]): string {
     }
 
     // 1. Look up the component in the registry
-    const BlockComponent = BLOCK_COMPONENTS[blockName];
+    const BlockComponent = getBlockComponent(blockName);
 
     if (!BlockComponent) {
       console.warn(`Unknown block: ${blockName}. Skipping render.`);
@@ -122,7 +127,18 @@ export function renderBlocksToHtml(blocks: BlockConfig[]): string {
     }
   }
 
-  return fullHtml;
+	return fullHtml;
+}
+
+/** True when any block in the tree asked for a hydration island. */
+export function blocksHaveReactiveFlag(blocks: BlockConfig[]): boolean {
+  for (const block of blocks) {
+    if (block.isReactive === true) return true;
+    if (Array.isArray(block.children) && blocksHaveReactiveFlag(block.children)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

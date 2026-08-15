@@ -15,6 +15,7 @@ export interface BlockComponentProps {
   onNestedBlockChange?: (updated: BlockConfig) => void;
   isPreview?: boolean;
   isSelected?: boolean;
+  isEditing?: boolean;
 }
 
 export interface BlockDefinition {

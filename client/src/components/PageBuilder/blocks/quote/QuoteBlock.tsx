@@ -8,6 +8,7 @@ import { SettingsLabel } from '../../shared';
 import { Quote as QuoteIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
+import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -42,9 +43,16 @@ const DEFAULT_CONTENT: QuoteContent = {
 interface QuoteRendererProps {
   content: QuoteContent;
   styles?: React.CSSProperties;
+  isEditing?: boolean;
+  onUpdateContent?: (updates: Partial<QuoteContent>) => void;
 }
 
-function QuoteRenderer({ content, styles }: QuoteRendererProps) {
+function QuoteRenderer({
+  content,
+  styles,
+  isEditing,
+  onUpdateContent,
+}: QuoteRendererProps) {
   const valueHtmlRaw: string | undefined = content?.value;
   const legacyText: string | undefined = content?.text;
   const citation: string | undefined = content?.citation ?? content?.author;
@@ -56,6 +64,26 @@ function QuoteRenderer({ content, styles }: QuoteRendererProps) {
   const valueHtml = (valueHtmlRaw && valueHtmlRaw.trim().length > 0)
     ? valueHtmlRaw
     : (legacyText ? `<p>${legacyText}</p>` : '<p>Add a quote</p>');
+
+  const plainText = (() => {
+    const v: string | undefined = valueHtml;
+    if (v && v.includes('<p')) {
+      return v
+        .split(/<\/p>/i)
+        .map((chunk) => chunk.replace(/<p[^>]*>/i, ''))
+        .filter((line) => line !== '')
+        .join('\n');
+    }
+    return content?.text || '';
+  })();
+
+  const editorStyle: React.CSSProperties = {
+    fontStyle: 'italic',
+    fontFamily: 'Georgia, Cambria, "Times New Roman", Times, serif',
+    fontSize: '1.125rem',
+    lineHeight: 1.7,
+    color: 'inherit',
+  };
 
   return (
     <BlockShell
@@ -81,11 +109,35 @@ function QuoteRenderer({ content, styles }: QuoteRendererProps) {
         ...styles,
       }}
     >
-      <div style={{ whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(valueHtml) }} />
-      {citation && (
-        <cite style={{ display: 'block', marginTop: '10px', fontSize: '0.95rem', color: '#64748b' }}>
-          — {citation}
-        </cite>
+      {isEditing ? (
+        <div className="space-y-2">
+          <InlineTextEditor
+            value={plainText}
+            onChange={(text) => {
+              const lines = text.split('\n');
+              const html = lines.map((l) => `<p>${sanitizeHtml(l)}</p>`).join('');
+              onUpdateContent?.({ value: html, text: undefined });
+            }}
+            style={editorStyle}
+            multiline
+            placeholder="Add a quote"
+          />
+          <InlineTextEditor
+            value={citation ?? ''}
+            onChange={(value) => onUpdateContent?.({ citation: value })}
+            style={{ fontSize: '0.95rem', color: '#64748b' }}
+            placeholder="Who said this (optional)"
+          />
+        </div>
+      ) : (
+        <>
+          <div style={{ whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(valueHtml) }} />
+          {citation && (
+            <cite style={{ display: 'block', marginTop: '10px', fontSize: '0.95rem', color: '#64748b' }}>
+              — {citation}
+            </cite>
+          )}
+        </>
       )}
     </BlockShell>
   );
@@ -209,7 +261,14 @@ const QuoteBlock = createBlockDefinition<QuoteContent>({
   defaultStyles: { margin: '1em 0' },
   settings: QuoteSettings,
   hasSettings: true,
-  render: ({ content, styles }) => <QuoteRenderer content={content} styles={styles} />,
+  render: ({ content, styles, isEditing, setContent }) => (
+    <QuoteRenderer
+      content={content}
+      styles={styles}
+      isEditing={isEditing}
+      onUpdateContent={(updates) => setContent((prev) => ({ ...prev, ...updates }))}
+    />
+  ),
 });
 
 export default QuoteBlock;

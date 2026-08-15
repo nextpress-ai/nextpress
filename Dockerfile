@@ -23,17 +23,19 @@ FROM node:24-alpine
 
 WORKDIR /app
 
-# Install pnpm for running drizzle-kit
+ENV NODE_ENV=production
+
+# Install pnpm for running drizzle-kit (fallback until all CLIs use dist/migrate.js)
 RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 
 # Copy package files (workspace config authorizes native build scripts for pnpm 11)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install production dependencies only
-RUN pnpm install --prod
+# Install production dependencies only (lockfile; drizzle-kit is added next at a pinned version)
+RUN pnpm install --frozen-lockfile --prod
 
-# Install drizzle-kit for migrations (needed at runtime)
-RUN pnpm add drizzle-kit
+# drizzle-kit is a devDependency; pin the lockfile version for the CLI fallback
+RUN pnpm add drizzle-kit@0.31.10
 
 # Copy built output from builder stage
 COPY --from=builder /app/dist ./dist

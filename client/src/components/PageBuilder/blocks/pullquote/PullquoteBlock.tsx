@@ -7,6 +7,7 @@ import { SettingsLabel } from '../../shared';
 import { Quote as QuoteIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
+import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "../../utils";
 
@@ -46,9 +47,16 @@ const DEFAULT_CONTENT: PullquoteContent = {
 interface PullquoteRendererProps {
   content: PullquoteContent;
   styles?: React.CSSProperties;
+  isEditing?: boolean;
+  onUpdateContent?: (updates: Partial<PullquoteContent>) => void;
 }
 
-function PullquoteRenderer({ content, styles }: PullquoteRendererProps) {
+function PullquoteRenderer({
+  content,
+  styles,
+  isEditing,
+  onUpdateContent,
+}: PullquoteRendererProps) {
   const value = content?.value || '';
   const citation = content?.citation || '';
   const textAlign =
@@ -74,28 +82,58 @@ function PullquoteRenderer({ content, styles }: PullquoteRendererProps) {
         ...styles,
       }}
     >
-      <blockquote
-        style={{
-          fontSize: '1.5em',
-          lineHeight: '1.6',
-          fontStyle: 'italic',
-          margin: 0,
-          padding: 0,
-        }}
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
-      />
-      {citation && (
-        <cite
-          style={{
-            display: 'block',
-            marginTop: '1em',
-            fontSize: '0.9em',
-            fontStyle: 'normal',
-            opacity: 0.8,
-          }}
-        >
-          {citation}
-        </cite>
+      {isEditing ? (
+        <div className="space-y-2">
+          <blockquote
+            style={{
+              fontSize: '1.5em',
+              lineHeight: '1.6',
+              fontStyle: 'italic',
+              margin: 0,
+              padding: 0,
+            }}
+          >
+            <InlineTextEditor
+              value={quotePlainText(value)}
+              onChange={(text) => onUpdateContent?.({ value: quoteHtmlFromPlain(text) })}
+              style={{ fontSize: '1.5em', lineHeight: '1.6', fontStyle: 'italic', color: 'inherit' }}
+              multiline
+              placeholder="Enter your quote here..."
+            />
+          </blockquote>
+          <InlineTextEditor
+            value={citation}
+            onChange={(text) => onUpdateContent?.({ citation: text })}
+            style={{ fontSize: '0.9em', fontStyle: 'normal', opacity: 0.8 }}
+            placeholder="Quote author or source"
+          />
+        </div>
+      ) : (
+        <>
+          <blockquote
+            style={{
+              fontSize: '1.5em',
+              lineHeight: '1.6',
+              fontStyle: 'italic',
+              margin: 0,
+              padding: 0,
+            }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
+          />
+          {citation && (
+            <cite
+              style={{
+                display: 'block',
+                marginTop: '1em',
+                fontSize: '0.9em',
+                fontStyle: 'normal',
+                opacity: 0.8,
+              }}
+            >
+              {citation}
+            </cite>
+          )}
+        </>
       )}
     </BlockShell>
   );
@@ -217,7 +255,14 @@ const PullquoteBlock = createBlockDefinition<PullquoteContent>({
   },
   settings: PullquoteSettings,
   hasSettings: true,
-  render: ({ content, styles }) => <PullquoteRenderer content={content} styles={styles} />,
+  render: ({ content, styles, isEditing, setContent }) => (
+    <PullquoteRenderer
+      content={content}
+      styles={styles}
+      isEditing={isEditing}
+      onUpdateContent={(updates) => setContent((prev) => ({ ...prev, ...updates }))}
+    />
+  ),
 });
 
 export default PullquoteBlock;

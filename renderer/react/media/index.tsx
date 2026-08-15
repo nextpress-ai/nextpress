@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { buildGalleryRenderModel } from "@shared/gallery-render";
+import { isYouTubeUrl, buildYouTubeEmbedUrl } from "@shared/video-embed";
 import { getRenderProps, parseMediaContent, parseStructuredContent, renderChildBlocks } from "../render-helpers";
 
 /**
@@ -96,7 +97,7 @@ export function ImageBlock(block: BlockConfig) {
 
 /**
  * Video Block Component
- * Renders a video element with optional controls, autoplay, loop, and poster
+ * Renders a responsive video element or YouTube iframe with optional controls, autoplay, loop, and poster
  */
 export function VideoBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
@@ -108,10 +109,70 @@ export function VideoBlock(block: BlockConfig) {
 	const autoplay = content.autoplay as boolean | undefined;
 	const loop = content.loop as boolean | undefined;
 	const controls = content.controls as boolean | undefined;
+	const muted = content.muted as boolean | undefined;
 	const poster = content.poster as string | undefined;
 
 	if (!url) {
 		return null;
+	}
+
+	if (isYouTubeUrl(url)) {
+		const embedUrl = buildYouTubeEmbedUrl(url, {
+			autoplay,
+			controls,
+			loop,
+			muted,
+		}) || url;
+
+		const embedClasses = [
+			"wp-block-embed",
+			"wp-block-embed-youtube",
+			"is-type-video",
+			"is-provider-youtube",
+			className,
+		]
+			.filter(Boolean)
+			.join(" ");
+
+		const aspectWidth = 16;
+		const aspectHeight = 9;
+		const paddingBottom = `${(aspectHeight / aspectWidth) * 100}%`;
+		const hasExplicitHeight = typeof style?.height === "string" && style.height !== "";
+
+		const iframeEmbed = (
+			<div
+				className="wp-block-embed__wrapper"
+				style={{
+					position: "relative",
+					width: "100%",
+					height: hasExplicitHeight ? "100%" : 0,
+					paddingBottom: hasExplicitHeight ? undefined : paddingBottom,
+				}}
+			>
+				<iframe
+					src={embedUrl}
+					title={caption || "YouTube video player"}
+					allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+					allowFullScreen
+					style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
+				/>
+			</div>
+		);
+
+		if (caption) {
+			return (
+				<figure className={embedClasses || undefined} style={style} {...attributes}>
+					{iframeEmbed}
+					<figcaption className="wp-element-caption">{caption}</figcaption>
+				</figure>
+			);
+		}
+
+		return (
+			<figure className={embedClasses || undefined} style={style} {...attributes}>
+				{iframeEmbed}
+			</figure>
+		);
 	}
 
 	const mergedClassName = ["wp-block-video", className]
@@ -136,7 +197,7 @@ export function VideoBlock(block: BlockConfig) {
 		return (
 			<figure className={mergedClassName || undefined}>
 				{video}
-				<figcaption>{caption}</figcaption>
+				<figcaption className="wp-element-caption">{caption}</figcaption>
 			</figure>
 		);
 	}

@@ -10,6 +10,7 @@ import {
   DEFAULT_CONTENT,
   PLACEHOLDER_AUTHOR,
   buildAuthorBoxClassName,
+  mergeAuthorDisplay,
   useAuthorData,
 } from './post-author-box-model';
 
@@ -24,7 +25,7 @@ function boundAuthorFromContent(content: PostAuthorBoxContent): AuthorData | nul
 
 /**
  * Pure presentational renderer for the author box.
- * Prefers a live profile fetch, then bound post author fields, then a placeholder.
+ * Custom fields fill gaps, then the live profile, then the post author, then a placeholder.
  */
 function PostAuthorBoxRenderer({
   content,
@@ -41,12 +42,14 @@ function PostAuthorBoxRenderer({
   const showBio = content?.showBio ?? true;
   const className = buildAuthorBoxClassName(content, layout);
   const authorId = content?.authorId || postDocument?.authorId;
-  const author = useAuthorData(authorId);
+  const liveAuthor = useAuthorData(authorId);
+  const merged = mergeAuthorDisplay({
+    override: boundAuthorFromContent(content),
+    live: liveAuthor,
+    postAuthor: postDocument?.author ?? null,
+  });
   const displayData: AuthorData =
-    author ??
-    boundAuthorFromContent(content) ??
-    postDocument?.author ??
-    PLACEHOLDER_AUTHOR;
+    merged.name || merged.avatar || merged.bio ? merged : PLACEHOLDER_AUTHOR;
 
   const isVertical = layout === 'vertical';
 
