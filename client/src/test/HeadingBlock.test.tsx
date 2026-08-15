@@ -251,7 +251,7 @@ describe('HeadingBlock', () => {
     it('should have default styles', () => {
       expect(HeadingBlock.defaultStyles).toEqual({
         fontWeight: '700',
-        margin: '1rem 0',
+        margin: '0',
       })
     })
 

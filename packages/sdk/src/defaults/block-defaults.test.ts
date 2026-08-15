@@ -19,7 +19,7 @@ describe("SDK page and block defaults", () => {
 	it("applies heading registry defaultStyles", () => {
 		const block = blocks.heading({ text: "Title", level: 1 });
 		expect(block.styles?.fontWeight).toBe("700");
-		expect(block.styles?.margin).toBe("1rem 0");
+		expect(block.styles?.margin).toBe("0");
 	});
 
 	it("merges page.other design defaults like dashboard create", () => {

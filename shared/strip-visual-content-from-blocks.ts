@@ -1,5 +1,4 @@
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
-import { readColumnsData, writeColumnsData } from "@shared/columns-layout";
 
 /** Layout CSS keys that must not persist on group `content.data`. */
 export const GROUP_LAYOUT_CONTENT_KEYS = [
@@ -52,15 +51,21 @@ const stripGroupContent = (block: BlockConfig): BlockConfig => {
 const stripColumnsContent = (block: BlockConfig): BlockConfig => {
 	if (block.name !== "core/columns") return block;
 	if (!block.content) return block;
-	const data = readColumnsData(block.content);
-	const nextData = { ...data };
-	for (const key of COLUMNS_VISUAL_CONTENT_KEYS) {
-		delete nextData[key as keyof typeof nextData];
+	const content = block.content;
+	if (
+		typeof content !== "object" ||
+		!("kind" in content) ||
+		content.kind !== "structured" ||
+		!content.data ||
+		typeof content.data !== "object"
+	) {
+		return block;
 	}
-	return {
-		...block,
-		content: writeColumnsData(block.content, nextData),
-	};
+	const data = { ...(content.data as Record<string, unknown>) };
+	for (const key of COLUMNS_VISUAL_CONTENT_KEYS) {
+		delete data[key];
+	}
+	return { ...block, content: { ...content, data } };
 };
 
 const stripPullquoteContent = (block: BlockConfig): BlockConfig => {

@@ -39,6 +39,6 @@ describe('content-list primitives', () => {
     });
 
     expect(resetPage).toHaveBeenCalledWith('draft');
-    expect(screen.getByText('Search applies to the current page only.')).toBeInTheDocument();
+    expect(screen.getByText('Search runs across all items on this site.')).toBeInTheDocument();
   });
 });

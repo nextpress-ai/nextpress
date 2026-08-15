@@ -249,7 +249,7 @@ export function useDragAndDropHandler(
                   if (c?.kind === 'structured' && typeof c.data === 'object' && c.data !== null) {
                     (c.data as Record<string, unknown>).postId = currentPostId;
                   } else {
-                    b.content = { ...c, postId: currentPostId } as BlockConfig['content'];
+                    b.content = { ...c, postId: currentPostId } as unknown as BlockConfig['content'];
                   }
                   break;
                 }
@@ -259,8 +259,9 @@ export function useDragAndDropHandler(
           }
 
           // If dropped into a Columns column, register assignment in columnLayout
+          const insertedNewId = inserted.newId;
           const withAssignment =
-            destColCtx && inserted.newId
+            destColCtx && insertedNewId
               ? updateColumnAssignments(
                   blocksWithPostId,
                   destColCtx.columnsBlock.id,
@@ -268,7 +269,7 @@ export function useDragAndDropHandler(
                     addToColumnAssignment({
                       layout,
                       columnIndex: destColCtx.columnIndex,
-                      blockId: inserted.newId,
+                      blockId: insertedNewId,
                       position: destination.index,
                     }),
                 )
@@ -304,7 +305,14 @@ export function useDragAndDropHandler(
           return;
         }
 
-        // Move existing
+        // Move existing. Column membership lives in columnLayout while the
+        // children array is shared storage, so same-columns-block moves only
+        // reassign membership instead of reordering shared children.
+        const sameColumnsBlock =
+          sourceColCtx &&
+          destColCtx &&
+          sourceColCtx.columnsBlock.id === destColCtx.columnsBlock.id;
+
         if (sourceIndexGlobal == null) {
           toast({
             title: 'Failed to move block',
@@ -314,20 +322,23 @@ export function useDragAndDropHandler(
           return;
         }
 
-        const moved = moveExistingBlock(
-          blocks,
-          sourceParentId,
-          sourceIndexGlobal,
-          destParentId,
-          destIndexGlobal,
-        );
-        if (moved === blocks) {
-          toast({
-            title: 'Failed to move block',
-            description: 'Could not move block to the specified location',
-            variant: 'destructive',
-          });
-          return;
+        let moved = blocks;
+        if (!sameColumnsBlock) {
+          moved = moveExistingBlock(
+            blocks,
+            sourceParentId,
+            sourceIndexGlobal,
+            destParentId,
+            destIndexGlobal,
+          );
+          if (moved === blocks) {
+            toast({
+              title: 'Failed to move block',
+              description: 'Could not move block to the specified location',
+              variant: 'destructive',
+            });
+            return;
+          }
         }
 
         // Remove source membership, then add destination membership. Separate
