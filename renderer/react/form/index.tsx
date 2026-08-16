@@ -1,3 +1,4 @@
+import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { getRenderProps } from "../render-helpers";
 import {

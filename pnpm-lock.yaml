@@ -38,6 +38,9 @@ importers:
       dotenv:
         specifier: ^17.2.1
         version: 17.2.2
+      drizzle-kit:
+        specifier: ^0.31.10
+        version: 0.31.10
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@electric-sql/pglite@0.3.11)(@libsql/client@0.15.15(bufferutil@4.0.9))(@neondatabase/serverless@0.10.4)(@types/pg@8.16.0)(kysely@0.29.2)(pg@8.16.3)(postgres@3.4.7)
@@ -98,6 +101,9 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1(supports-color@7.2.0)
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.17
       ws:
         specifier: ^8.18.0
         version: 8.18.3(bufferutil@4.0.9)
@@ -333,9 +339,6 @@ importers:
       cmdk:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      drizzle-kit:
-        specifier: ^0.31.10
-        version: 0.31.10
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.2.4)
@@ -381,9 +384,6 @@ importers:
       tailwind-merge:
         specifier: ^2.6.0
         version: 2.6.0
-      tailwindcss:
-        specifier: ^3.4.17
-        version: 3.4.17
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.17)

@@ -2,7 +2,12 @@ import { defineConfig } from 'tsup';
 import { TsconfigPathsPlugin } from '@esbuild-plugins/tsconfig-paths';
 
 export default defineConfig({
-  entry: ['server/index.ts', 'server/seed-default-content.ts', 'server/migrate.ts'],
+  entry: [
+    'server/index.ts',
+    'server/seed-default-content.ts',
+    'server/migrate.ts',
+    'server/setup-vite.ts',
+  ],
   outDir: 'dist',
   format: ['esm'],
   platform: 'node',
@@ -12,6 +17,11 @@ export default defineConfig({
   splitting: false,
   skipNodeModulesBundle: true,
   tsconfig: 'tsconfig.server.json',
+  esbuildOptions(options) {
+    // Server tsconfig inherits jsx: preserve; without this, tsup emits
+    // React.createElement and MarkdownSsrBlock throws in production.
+    options.jsx = 'automatic';
+  },
   esbuildPlugins: [
     TsconfigPathsPlugin({
       tsconfig: 'tsconfig.server.json',

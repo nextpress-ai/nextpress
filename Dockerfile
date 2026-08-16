@@ -31,11 +31,10 @@ RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 # Copy package files (workspace config authorizes native build scripts for pnpm 11)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install production dependencies only (lockfile; drizzle-kit is added next at a pinned version)
+# Production lockfile only. Do not `pnpm add` here — that reinstalls the full
+# tree (PGlite, Fontsource, Radix). drizzle-kit and tailwindcss are dependencies
+# so the CLI migrate fallback and SSR token resolve stay available.
 RUN pnpm install --frozen-lockfile --prod
-
-# drizzle-kit is a devDependency; pin the lockfile version for the CLI fallback
-RUN pnpm add drizzle-kit@0.31.10
 
 # Copy built output from builder stage
 COPY --from=builder /app/dist ./dist

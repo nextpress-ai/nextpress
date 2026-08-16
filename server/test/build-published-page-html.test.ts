@@ -74,6 +74,7 @@ describe("buildPublishedPageHtml", () => {
 		expect(html).toContain("No comments yet.");
 		expect(html).not.toContain("Jane Doe");
 		expect(html).not.toContain("hydrate.js");
+		expect(html).not.toContain("Error rendering block");
 	});
 
 	it("renders nested markdown through the sync SSR path", () => {
@@ -107,6 +108,7 @@ describe("buildPublishedPageHtml", () => {
 		expect(html).toContain("Nested");
 		expect(html).toContain("<strong>bold</strong>");
 		expect(html).not.toContain("Loading core/markdown");
+		expect(html).not.toContain("Error rendering block");
 	});
 
 	it("renders layout and typography golden fixtures without stub HTML", () => {

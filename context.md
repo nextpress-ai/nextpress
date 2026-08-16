@@ -791,3 +791,16 @@ Test mocks (cast at call site, no `any`):
 - Demo fixtures: added `kind: "list"` (blog-article, cafe-local) and `kind: "text"` (portfolio-studio).
 
 **Result: `pnpm exec tsc --noEmit` 0 errors, `pnpm check` (tsconfig.server.json) 0 errors. Tests 799/799.**
+
+---
+
+## 2026-08-16 — Verify SSR ship blockers
+
+Four no-gos from `docs/internal/verify-image-ssr-report.md`:
+
+1. **Image:** Dockerfile `pnpm add drizzle-kit` reinstalled the full tree (PGlite, Fontsource, Radix). Fix: drop that line; move `drizzle-kit` + `tailwindcss` to `dependencies` so `--prod` has CLI fallback + SSR tokens only.
+2. **Boot:** Node ESM cannot load `tailwindcss/resolveConfig`. Import `resolveConfig.js`.
+3. **Migrate:** `_journal.json` skipped both `0006_*` files (duplicate prefix). SQL was already on disk. Journal now lists `0006_posts_version` (idx 6) and `0006_api_keys_site_required` (idx 8). `ADD COLUMN IF NOT EXISTS` is safe on existing DBs.
+4. **Markdown SSR:** tsup inherited `jsx: preserve` and emitted `React.createElement` without importing React. tsup now `jsx: 'automatic'`; `MarkdownSsrBlock` + form blocks import React. Vitest already passed because Vite uses automatic JSX — the failure was Docker `dist/index.js` only.
+
+Do not `pnpm add` in the runtime image. Drizzle applies **journal tags**, not every `migrations/*.sql` file.

@@ -1,4 +1,4 @@
-import resolveConfig from 'tailwindcss/resolveConfig'
+import resolveConfig from 'tailwindcss/resolveConfig.js'
 import { tailwindThemeExtend } from '@shared/tailwind-theme'
 import { camelToKebab, STATE_MODIFIER_MAP } from '@shared/token-resolution'
 import {

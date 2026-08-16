@@ -5,7 +5,7 @@ import express, {
   type NextFunction,
 } from 'express';
 import { registerRoutes } from './routes';
-import { setupVite, serveStatic, log } from './vite';
+import { serveStatic, log } from './vite';
 import { initDevDatabase } from './db';
 
 // Load environment variables
@@ -63,6 +63,10 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get('env') === 'development') {
+    // Non-literal import so tsup does not inline vite into the prod bundle.
+    const { setupVite } = await import(
+      new URL('./setup-vite.js', import.meta.url).href
+    );
     await setupVite(app, server);
   } else {
     serveStatic(app);
