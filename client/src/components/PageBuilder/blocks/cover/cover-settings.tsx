@@ -1,5 +1,5 @@
 import React from "react";
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import type { BlockConfig } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -10,7 +10,7 @@ import { Square as CoverIcon, Settings } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 import { MediaUrlField } from "../shared/media-url-field";
-import { type CoverContent, type CoverData, DEFAULT_CONTENT, DEFAULT_DATA } from './cover-model';
+import { type CoverData, DEFAULT_DATA } from './cover-model';
 
 interface CoverSettingsProps {
   block: BlockConfig;
@@ -18,46 +18,11 @@ interface CoverSettingsProps {
 }
 
 export function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
-  const { accessor, rerender } = useSettingsState({ block, onUpdate });
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as CoverContent)
-    : (block.content as CoverContent) || DEFAULT_CONTENT;
-
-  const blockData = content?.kind === 'structured'
-    ? (content.data as CoverData)
-    : DEFAULT_DATA;
-
-  // Update handlers
-  const updateContent = (updates: Partial<CoverData>) => {
-    if (accessor) {
-      const current = accessor.getContent() as CoverContent;
-      const currentData = current?.kind === 'structured' ? (current.data as CoverData) : DEFAULT_DATA;
-      accessor.setContent({
-        ...current,
-        kind: 'structured',
-        data: {
-          ...currentData,
-          ...updates,
-        },
-      } as CoverContent);
-      rerender();
-    } else if (onUpdate) {
-      const currentData = block.content?.kind === 'structured'
-        ? (block.content.data as CoverData)
-        : DEFAULT_DATA;
-      onUpdate({
-        content: {
-          kind: 'structured',
-          data: {
-            ...currentData,
-            ...updates,
-          },
-        } as BlockContent,
-      });
-    }
-  };
+  const { content: blockData, updateContent } = useSettingsState<CoverData>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_DATA,
+  });
 
   return (
     <div className="space-y-4">

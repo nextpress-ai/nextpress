@@ -98,6 +98,13 @@ export function BuilderCanvas({
                       actions?.onSelect(block.id);
                     }}
                     onKeyDown={(event) => {
+                      const target = event.target as HTMLElement;
+                      const isEditable =
+                        target.tagName === 'INPUT' ||
+                        target.tagName === 'TEXTAREA' ||
+                        target.tagName === 'SELECT' ||
+                        target.isContentEditable;
+                      if (isEditable) return;
                       if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         actions?.onSelect(block.id);

@@ -1,15 +1,15 @@
 import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
-import type { BlockComponentProps } from "./blocks/types";
+import type { BlockComponentProps, BlockDefinition } from "./blocks/types";
 
 const noopChange = () => undefined;
 
 function wrapEditorPostBlock(
-	load: () => Promise<{ default: unknown }>,
+	load: () => Promise<{ default: BlockDefinition }>,
 ): React.FC<BlockConfig> {
 	const LazyComponent = React.lazy(async (): Promise<{ default: React.ComponentType<BlockComponentProps> }> => {
 		const mod = await load();
-		const Component = mod.default as React.ComponentType<BlockComponentProps> | undefined;
+		const Component = mod.default?.component;
 		if (!Component) {
 			return {
 				default: function MissingPostBlock() {

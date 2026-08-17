@@ -1,5 +1,6 @@
 import React from "react";
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import type { BlockConfig } from "@shared/schema-types";
+import { readStructuredBlockData } from "@shared/read-block-content";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
@@ -70,9 +71,7 @@ interface FileRendererProps {
 }
 
 function FileRenderer({ content, styles }: FileRendererProps) {
-  const blockData = content?.kind === 'structured' 
-    ? (content.data as FileData) 
-    : DEFAULT_DATA;
+  const blockData = readStructuredBlockData(content, DEFAULT_DATA);
     
   const url = blockData?.href || '';
   const fileName = blockData?.fileName || '';
@@ -165,46 +164,11 @@ interface FileSettingsProps {
 }
 
 function FileSettings({ block, onUpdate }: FileSettingsProps) {
-  const { accessor, rerender } = useSettingsState({ block, onUpdate });
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as FileContent)
-    : (block.content as FileContent) || DEFAULT_CONTENT;
-
-  const blockData = content?.kind === 'structured' 
-    ? (content.data as FileData) 
-    : DEFAULT_DATA;
-
-  // Update handlers
-  const updateContent = (updates: Partial<FileData>) => {
-    if (accessor) {
-      const current = accessor.getContent() as FileContent;
-      const currentData = current?.kind === 'structured' ? (current.data as FileData) : DEFAULT_DATA;
-      accessor.setContent({
-        ...current,
-        kind: 'structured',
-        data: {
-          ...currentData,
-          ...updates,
-        },
-      } as FileContent);
-      rerender();
-    } else if (onUpdate) {
-      const currentData = block.content?.kind === 'structured' 
-        ? (block.content.data as FileData) 
-        : DEFAULT_DATA;
-      onUpdate({
-        content: {
-          kind: 'structured',
-          data: {
-            ...currentData,
-            ...updates,
-          },
-        } as BlockContent,
-      });
-    }
-  };
+  const { content: blockData, updateContent } = useSettingsState<FileData>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_DATA,
+  });
 
   return (
     <div className="space-y-4">

@@ -1,4 +1,4 @@
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import type { BlockConfig } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +9,7 @@ import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 import { MediaUrlField } from "../shared/media-url-field";
 import { LinkUrlField, LinkTargetSelect } from "../shared/link-settings";
-import { type MediaTextContent, type MediaTextData, DEFAULT_CONTENT, DEFAULT_DATA } from './media-text-model';
+import { type MediaTextData, DEFAULT_DATA } from './media-text-model';
 
 interface MediaTextSettingsProps {
   block: BlockConfig;
@@ -17,45 +17,11 @@ interface MediaTextSettingsProps {
 }
 
 export function MediaTextSettings({ block, onUpdate }: MediaTextSettingsProps) {
-  const { accessor, rerender } = useSettingsState({ block, onUpdate });
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as MediaTextContent)
-    : (block.content as MediaTextContent) || DEFAULT_CONTENT;
-  const blockData = content?.kind === 'structured'
-    ? (content.data as MediaTextData)
-    : DEFAULT_DATA;
-
-  // Update handlers
-  const updateContent = (updates: Partial<MediaTextData>) => {
-    if (accessor) {
-      const current = accessor.getContent() as MediaTextContent;
-      const currentData = current?.kind === 'structured' ? (current.data as MediaTextData) : DEFAULT_DATA;
-      accessor.setContent({
-        ...current,
-        kind: 'structured',
-        data: {
-          ...currentData,
-          ...updates,
-        },
-      } as MediaTextContent);
-      rerender();
-    } else if (onUpdate) {
-      const currentData = block.content?.kind === 'structured'
-        ? (block.content.data as MediaTextData)
-        : DEFAULT_DATA;
-      onUpdate({
-        content: {
-          kind: 'structured',
-          data: {
-            ...currentData,
-            ...updates,
-          },
-        } as BlockContent,
-      });
-    }
-  };
+  const { content: blockData, updateContent } = useSettingsState<MediaTextData>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_DATA,
+  });
 
   return (
     <div className="space-y-4">

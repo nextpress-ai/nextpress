@@ -1,5 +1,6 @@
 import React from "react";
 import { Square as CoverIcon } from "lucide-react";
+import { readStructuredBlockData } from "@shared/read-block-content";
 import { sanitizeHtml } from "../../utils";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
@@ -16,9 +17,7 @@ interface CoverRendererProps {
 }
 
 function CoverRenderer({ content, styles }: CoverRendererProps) {
-  const blockData = content?.kind === 'structured'
-    ? (content.data as CoverData)
-    : DEFAULT_DATA;
+  const blockData = readStructuredBlockData(content, DEFAULT_DATA);
 
   const url = blockData?.url || '';
   const alt = blockData?.alt || '';

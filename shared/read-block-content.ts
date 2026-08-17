@@ -35,6 +35,18 @@ export function readBlockContentData(
 	return record;
 }
 
+/**
+ * Merges parsed block payload with defaults. Editor `parseContent` unwraps
+ * `{ kind: "structured", data }`, so renderers and settings must not rely on
+ * `content.kind === "structured"` after that step.
+ */
+export function readStructuredBlockData<T extends Record<string, unknown>>(
+	content: unknown,
+	defaults: T,
+): T {
+	return { ...defaults, ...readBlockContentData(content) } as T;
+}
+
 /** Map heading tag strings (`h1`) to a numeric level for publish headings. */
 export function headingLevelFromTag(tag: unknown, fallback = 2): number {
 	if (typeof tag === "number" && tag >= 1 && tag <= 6) return tag;

@@ -1,5 +1,6 @@
 import React from 'react';
-import type { BlockConfig, BlockContent } from '@shared/schema-types';
+import type { BlockConfig } from '@shared/schema-types';
+import { readStructuredBlockData } from '@shared/read-block-content';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -73,7 +74,7 @@ interface ButtonsRendererProps {
 }
 
 function ButtonsRenderer({ content, styles }: ButtonsRendererProps) {
-  const buttonsData = content?.kind === 'structured' ? (content.data as ButtonsData) : DEFAULT_DATA;
+  const buttonsData = readStructuredBlockData(content, DEFAULT_DATA);
   
   const buttons: ButtonItem[] = Array.isArray(buttonsData?.buttons)
     ? buttonsData.buttons
@@ -151,47 +152,15 @@ interface ButtonsSettingsProps {
 }
 
 function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
-  const { accessor, rerender } = useSettingsState({ block, onUpdate });
+  const { content: buttonsData, updateContent } = useSettingsState<ButtonsData>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_DATA,
+  });
 
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as ButtonsContent)
-    : (block.content as ButtonsContent) || DEFAULT_CONTENT;
-  const buttonsData = content?.kind === 'structured' ? (content.data as ButtonsData) : DEFAULT_DATA;
-  
   const buttons: ButtonItem[] = Array.isArray(buttonsData?.buttons)
     ? buttonsData.buttons
     : [];
-
-  // Update handlers
-  const updateContent = (updates: Partial<ButtonsData>) => {
-    if (accessor) {
-      const current = accessor.getContent() as ButtonsContent;
-      const currentData = current?.kind === 'structured' ? (current.data as ButtonsData) : DEFAULT_DATA;
-      accessor.setContent({
-        ...current,
-        kind: 'structured',
-        data: {
-          ...currentData,
-          ...updates,
-        },
-      } as ButtonsContent);
-      rerender();
-    } else if (onUpdate) {
-      const currentData = block.content?.kind === 'structured' 
-        ? (block.content.data as ButtonsData) 
-        : DEFAULT_DATA;
-      onUpdate({
-        content: {
-          kind: 'structured',
-          data: {
-            ...currentData,
-            ...updates,
-          },
-        } as BlockContent,
-      });
-    }
-  };
 
   const updateButtons = (newButtons: ButtonItem[]) => {
     updateContent({ buttons: newButtons });

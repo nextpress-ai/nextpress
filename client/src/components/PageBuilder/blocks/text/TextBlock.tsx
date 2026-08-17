@@ -76,8 +76,7 @@ function TextRenderer({
       .join(" ") || undefined;
 
   // `format: "html"` carries sanitized inline markup (e.g. imported paragraphs with links/bold).
-  if ((content as { format?: string })?.format === "html") {
-if (isEditing) {
+  if (isEditing) {
     return (
       <BlockShell
         as="p"
@@ -99,7 +98,8 @@ if (isEditing) {
     );
   }
 
-  return (
+  if ((content as { format?: string })?.format === "html") {
+    return (
       <BlockShell
         as="p"
         blockClass="wp-block-paragraph"

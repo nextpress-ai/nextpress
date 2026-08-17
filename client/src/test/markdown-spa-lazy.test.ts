@@ -10,10 +10,9 @@ const markdownBlockPath = resolve(
 );
 
 describe("SPA MarkdownBlock", () => {
-	it("keeps react-markdown behind React.lazy", () => {
+	it("imports react-markdown directly for reliable preview rendering", () => {
 		const source = readFileSync(markdownBlockPath, "utf8");
-		expect(source).toContain('React.lazy(() => import("react-markdown"))');
-		expect(source).not.toMatch(/import\s+ReactMarkdown\s+from\s+["']react-markdown["']/);
-		expect(source).not.toMatch(/import\s+["']react-markdown["']/);
+		expect(source).toContain('import ReactMarkdown from "react-markdown"');
+		expect(source).not.toContain("React.lazy");
 	});
 });

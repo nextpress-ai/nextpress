@@ -1,4 +1,4 @@
-import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import type { BlockConfig } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -7,11 +7,9 @@ import { SettingsLabel } from "../../shared";
 import { Plus, Trash2, Table as TableIcon, Settings, Sparkles } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import {
-  type TableContent,
   type TableData,
   type TableRow,
   DEFAULT_DATA,
-  DEFAULT_CONTENT,
 } from "./table-model";
 
 interface TableSettingsProps {
@@ -20,49 +18,15 @@ interface TableSettingsProps {
 }
 
 export function TableSettings({ block, onUpdate }: TableSettingsProps) {
-  const { accessor, rerender } = useSettingsState({ block, onUpdate });
-
-  // Get current state
-  const content = accessor
-    ? (accessor.getContent() as TableContent)
-    : (block.content as TableContent) || DEFAULT_CONTENT;
-
-  const tableData =
-    content?.kind === "structured" ? (content.data as TableData) : DEFAULT_DATA;
+  const { content: tableData, updateContent } = useSettingsState<TableData>({
+    block,
+    onUpdate,
+    defaultContent: DEFAULT_DATA,
+  });
 
   const body: TableRow[] = tableData?.body || [];
   const head: TableRow[] = tableData?.head || [];
   const foot: TableRow[] = tableData?.foot || [];
-
-  // Update handlers
-  const updateContent = (updates: Partial<TableData>) => {
-    if (accessor) {
-      const current = accessor.getContent() as TableContent;
-      const currentData =
-        current?.kind === "structured"
-          ? (current.data as TableData)
-          : DEFAULT_DATA;
-      accessor.setContent({
-        ...current,
-        kind: "structured",
-        data: {
-          ...currentData,
-          ...updates,
-        },
-      } as TableContent);
-      rerender();
-    } else if (onUpdate) {
-      onUpdate({
-        content: {
-          kind: "structured",
-          data: {
-            ...tableData,
-            ...updates,
-          },
-        } as BlockContent,
-      });
-    }
-  };
 
   const updateTableData = (
     section: "body" | "head" | "foot",

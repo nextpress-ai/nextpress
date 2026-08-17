@@ -10,6 +10,7 @@ import {
   type TableData,
   type TableRow,
   DEFAULT_DATA,
+  resolveTableData,
 } from "./table-model";
 import { TableSettings } from "./table-settings";
 
@@ -30,8 +31,7 @@ function TableRenderer({
   isEditing,
   onUpdateContent,
 }: TableRendererProps) {
-  const tableData =
-    content?.kind === "structured" ? (content.data as TableData) : DEFAULT_DATA;
+  const tableData = resolveTableData(content);
 
   const body: TableRow[] = tableData?.body || [];
   const head: TableRow[] = tableData?.head || [];
@@ -483,14 +483,10 @@ const TableBlock = createBlockDefinition<TableContent>({
       styles={styles}
       isEditing={isEditing}
       onUpdateContent={(updates) => {
-        const currentData =
-          content?.kind === "structured" ? (content.data as TableData) : DEFAULT_DATA;
+        const currentData = resolveTableData(content);
         setContent({
-          kind: "structured",
-          data: {
-            ...currentData,
-            ...updates,
-          },
+          ...currentData,
+          ...updates,
         });
       }}
     />

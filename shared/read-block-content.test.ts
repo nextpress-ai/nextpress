@@ -3,6 +3,7 @@ import {
 	headingLevelFromTag,
 	isPreviewableContentStatus,
 	readBlockContentData,
+	readStructuredBlockData,
 } from "./read-block-content.js";
 
 describe("readBlockContentData", () => {
@@ -20,6 +21,22 @@ describe("readBlockContentData", () => {
 		expect(
 			readBlockContentData({ kind: "media", url: "/a.jpg", alt: "Hero" }),
 		).toEqual({ url: "/a.jpg", alt: "Hero" });
+	});
+});
+
+describe("readStructuredBlockData", () => {
+	it("merges structured and unwrapped editor models with defaults", () => {
+		const defaults = { text: "Default", count: 0 };
+		expect(
+			readStructuredBlockData(
+				{ kind: "structured", data: { text: "Hello" } },
+				defaults,
+			),
+		).toEqual({ text: "Hello", count: 0 });
+		expect(readStructuredBlockData({ text: "Saved" }, defaults)).toEqual({
+			text: "Saved",
+			count: 0,
+		});
 	});
 });
 

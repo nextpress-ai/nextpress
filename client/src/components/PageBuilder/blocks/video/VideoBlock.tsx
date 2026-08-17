@@ -47,6 +47,15 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
   const youTubeEmbedUrl = isYouTubeUrl(url)
     ? buildYouTubeEmbedUrl(url, { autoplay, controls, loop, muted })
     : null;
+
+  if (!url) {
+    return (
+      <div className="rounded-[var(--npb-radius-surface)] border border-dashed border-npb-border-strong p-4 text-npb-text-muted">
+        Add a video source URL to preview the player.
+      </div>
+    );
+  }
+
   if (youTubeEmbedUrl) {
     const embedClasses = [
       'is-type-video',

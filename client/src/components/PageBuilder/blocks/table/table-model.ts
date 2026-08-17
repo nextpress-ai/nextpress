@@ -4,6 +4,7 @@
  */
 
 import type { BlockContent } from "@shared/schema-types";
+import { readStructuredBlockData } from "@shared/read-block-content";
 
 // ============================================================================
 // TYPES
@@ -50,4 +51,9 @@ export const DEFAULT_CONTENT: TableContent = {
   kind: 'structured',
   data: DEFAULT_DATA,
 };
+
+/** Resolves table rows after `defaultParseContent` unwraps structured storage. */
+export function resolveTableData(content: TableContent | TableData | undefined): TableData {
+  return readStructuredBlockData(content, DEFAULT_DATA);
+}
 

@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { buildGalleryRenderModel } from "@shared/gallery-render";
+import { sanitizeHtml } from "@shared/sanitize-html";
 import { isYouTubeUrl, buildYouTubeEmbedUrl } from "@shared/video-embed";
 import { getRenderProps, parseMediaContent, parseStructuredContent, renderChildBlocks } from "../render-helpers";
 
@@ -326,30 +327,67 @@ export function GalleryBlock(block: BlockConfig) {
  */
 export function CoverBlock(block: BlockConfig) {
 	const { style, className, attributes, children } = getRenderProps(block);
-	const content = parseMediaContent(block.content);
+	const data = parseStructuredContent(block.content);
 
-	const url = content.url as string;
-	const alt = (content.alt as string) || "";
-	const caption = content.caption as string | undefined;
-	const overlayColor = content.overlayColor as string | undefined;
-	const overlayOpacity = content.overlayOpacity as number | undefined;
-	const minHeight = content.minHeight as string | undefined;
+	const url = (data.url as string) || "";
+	const alt = (data.alt as string) || "";
+	const innerContent = (data.innerContent as string) || "";
+	const customOverlayColor = (data.customOverlayColor as string) || "";
+	const overlayColor = (data.overlayColor as string) || "rgba(0,0,0,0.5)";
+	const dimRatio = typeof data.dimRatio === "number" ? data.dimRatio : 50;
+	const minHeightValue =
+		typeof data.minHeight === "number"
+			? data.minHeight
+			: typeof data.minHeight === "string" && data.minHeight
+				? Number.parseInt(data.minHeight, 10) || 400
+				: 400;
+	const contentPosition = (data.contentPosition as string) || "center center";
+	const backgroundType = (data.backgroundType as string) || "image";
+	const hasParallax = Boolean(data.hasParallax);
+	const focalPoint = data.focalPoint as { x?: number; y?: number } | undefined;
 
 	if (!url) {
 		return null;
 	}
 
-	const mergedClassName = ["wp-block-cover", className]
+	const mergedClassName = [
+		"wp-block-cover",
+		hasParallax ? "has-parallax" : "",
+		backgroundType === "video" ? "has-background-video" : "",
+		className,
+	]
 		.filter(Boolean)
 		.join(" ");
 
+	const [vertical, horizontal] = contentPosition.split(" ");
+	const contentAlignment: React.CSSProperties = {
+		display: "flex",
+		alignItems:
+			vertical === "top" ? "flex-start" : vertical === "bottom" ? "flex-end" : "center",
+		justifyContent:
+			horizontal === "left"
+				? "flex-start"
+				: horizontal === "right"
+					? "flex-end"
+					: "center",
+	};
+
 	const coverStyle: React.CSSProperties = {
 		...style,
-		...(minHeight ? { minHeight } : {}),
-		backgroundImage: `url(${url})`,
-		backgroundSize: "cover",
-		backgroundPosition: "center",
 		position: "relative",
+		minHeight: `${minHeightValue}px`,
+		overflow: "hidden",
+		...(backgroundType === "image"
+			? {
+					backgroundImage: `url(${url})`,
+					backgroundSize: "cover",
+					backgroundPosition: focalPoint
+						? `${(focalPoint.x ?? 0.5) * 100}% ${(focalPoint.y ?? 0.5) * 100}%`
+						: "center",
+					backgroundRepeat: "no-repeat",
+					backgroundAttachment: hasParallax ? "fixed" : "scroll",
+				}
+			: {}),
 	};
 
 	const overlayStyle: React.CSSProperties = {
@@ -358,23 +396,54 @@ export function CoverBlock(block: BlockConfig) {
 		left: 0,
 		right: 0,
 		bottom: 0,
-		backgroundColor: overlayColor || "rgba(0, 0, 0, 0.5)",
-		opacity: overlayOpacity !== undefined ? overlayOpacity : 0.5,
+		backgroundColor: customOverlayColor || overlayColor,
+		opacity: dimRatio / 100,
 	};
 
 	return (
-		<div
-			className={mergedClassName || undefined}
-			style={coverStyle}
-			{...attributes}
-		>
-			<div style={overlayStyle} />
-			<div style={{ position: "relative", zIndex: 1 }}>
+		<div className={mergedClassName || undefined} style={coverStyle} {...attributes}>
+			{backgroundType === "video" && url ? (
+				<video
+					autoPlay
+					muted
+					loop
+					playsInline
+					style={{
+						position: "absolute",
+						top: 0,
+						left: 0,
+						width: "100%",
+						height: "100%",
+						objectFit: "cover",
+						zIndex: 1,
+					}}
+				>
+					<source src={url} type="video/mp4" />
+				</video>
+			) : null}
+			<div className="wp-block-cover__background" style={{ ...overlayStyle, zIndex: 2 }} />
+			<div
+				className="wp-block-cover__inner-container"
+				style={{
+					position: "relative",
+					zIndex: 3,
+					width: "100%",
+					height: "100%",
+					padding: "1.25em 2.375em",
+					color: "white",
+					...contentAlignment,
+				}}
+			>
 				{block.children && block.children.length > 0 ? (
 					children
-				) : (
-					<div>{caption || alt || ""}</div>
-				)}
+				) : innerContent ? (
+					<div
+						className="cover-content"
+						dangerouslySetInnerHTML={{ __html: sanitizeHtml(innerContent) }}
+					/>
+				) : alt ? (
+					<div>{alt}</div>
+				) : null}
 			</div>
 		</div>
 	);
@@ -488,23 +557,21 @@ export function FileBlock(block: BlockConfig) {
  */
 export function MediaTextBlock(block: BlockConfig) {
 	const { style, className, attributes, children } = getRenderProps(block);
-	const structured = parseStructuredContent(block.content);
-	const data =
-		structured && typeof structured === "object" && "data" in structured
-			? (structured.data as Record<string, unknown>)
-			: structured;
+	const data = parseStructuredContent(block.content);
 
-	const url = (data?.mediaUrl as string) || (parseMediaContent(block.content).url as string);
-	const alt = ((data?.mediaAlt as string) || "").trim();
-	const mediaPosition = (data?.mediaPosition as string) || "left";
-	const verticalAlignment = data?.verticalAlignment as string | undefined;
+	const url = (data.mediaUrl as string) || (data.url as string) || "";
+	const alt = ((data.mediaAlt as string) || "").trim();
+	const mediaPosition = (data.mediaPosition as string) || "left";
+	const verticalAlignment = data.verticalAlignment as string | undefined;
 	const isStackedOnMobile = data?.isStackedOnMobile !== false;
 	const href = data?.href as string | undefined;
 	const linkTarget = (data?.linkTarget as string) || undefined;
 	const rel = data?.rel as string | undefined;
 	const title = data?.title as string | undefined;
+	const textContent = (data.content as string) || "";
+	const hasChildren = Boolean(block.children && block.children.length > 0);
 
-	if (!url) {
+	if (!url && !textContent && !hasChildren) {
 		return null;
 	}
 
@@ -518,49 +585,62 @@ export function MediaTextBlock(block: BlockConfig) {
 		.filter(Boolean)
 		.join(" ");
 
-	const mediaStyle: React.CSSProperties = {
-		backgroundImage: `url(${url})`,
-		backgroundSize: "cover",
-		backgroundPosition: "center",
-	};
+	const mediaStyle: React.CSSProperties = url
+		? {
+				backgroundImage: `url(${url})`,
+				backgroundSize: "cover",
+				backgroundPosition: "center",
+			}
+		: {};
 
-	const mediaContent = (
+	const mediaContent = url ? (
 		<img
 			src={url}
 			alt={alt}
 			className="sr-only"
 			aria-hidden={alt ? undefined : true}
 		/>
-	);
+	) : null;
 
-	// Wrap media in <a> if there's a link, otherwise use <figure>
-	const mediaElement = href ? (
-		<a
-			href={href}
-			target={linkTarget}
-			rel={linkTarget === "_blank" ? rel || "noopener noreferrer" : rel}
-			title={title}
-			className="wp-block-media-text__media"
-			style={mediaStyle}
-		>
-			{mediaContent}
-		</a>
-	) : (
-		<figure className="wp-block-media-text__media" style={mediaStyle}>
-			{mediaContent}
-		</figure>
-	);
+	const mediaElement =
+		url &&
+		(href ? (
+			<a
+				href={href}
+				target={linkTarget}
+				rel={linkTarget === "_blank" ? rel || "noopener noreferrer" : rel}
+				title={title}
+				className="wp-block-media-text__media"
+				style={mediaStyle}
+			>
+				{mediaContent}
+			</a>
+		) : (
+			<figure className="wp-block-media-text__media" style={mediaStyle}>
+				{mediaContent}
+			</figure>
+		));
+
+	const textElement =
+		hasChildren ? (
+			children
+		) : textContent ? (
+			<div dangerouslySetInnerHTML={{ __html: sanitizeHtml(textContent) }} />
+		) : null;
 
 	return (
 		<div className={mergedClassName || undefined} style={style} {...attributes}>
-			{mediaElement}
-			<div className="wp-block-media-text__content">
-				{block.children && block.children.length > 0 ? (
-					children
-				) : (
-					<div>{/* Text content */}</div>
-				)}
-			</div>
+			{mediaPosition === "right" ? (
+				<>
+					<div className="wp-block-media-text__content">{textElement}</div>
+					{mediaElement}
+				</>
+			) : (
+				<>
+					{mediaElement}
+					<div className="wp-block-media-text__content">{textElement}</div>
+				</>
+			)}
 		</div>
 	);
 }

@@ -1,5 +1,6 @@
 import React from "react";
 import { Image as ImageIcon } from "lucide-react";
+import { readStructuredBlockData } from "@shared/read-block-content";
 import { sanitizeHtml } from "../../utils";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
@@ -16,9 +17,7 @@ interface MediaTextRendererProps {
 }
 
 function MediaTextRenderer({ content, styles }: MediaTextRendererProps) {
-  const blockData = content?.kind === 'structured'
-    ? (content.data as MediaTextData)
-    : DEFAULT_DATA;
+  const blockData = readStructuredBlockData(content, DEFAULT_DATA);
 
   const {
     mediaUrl,
