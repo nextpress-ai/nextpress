@@ -145,7 +145,7 @@ function buildWhereClause<TTable extends Table>(
 				throw new Error(`Column '${where}' does not exist on table`);
 			}
 
-			// Object lookup for operators (following AGENTS.md rule)
+			// Object lookup for operators (project convention)
 			const operatorMap = {
 				equals: () => (equals ? eq(column, equals) : null),
 				notEquals: () => (notEquals ? not(eq(column, notEquals)) : null),
@@ -274,7 +274,7 @@ export function createModel<TTable extends Table>(
 					throw new Error(`Column '${where}' does not exist on table`);
 				}
 
-				// Object lookup for operators (following AGENTS.md rule)
+				// Object lookup for operators (project convention)
 				const operatorMap = {
 					equals: () => (equals ? query.where(eq(column, equals)) : null),
 					notEquals: () =>
@@ -364,7 +364,7 @@ export function createModel<TTable extends Table>(
 					throw new Error(`Column '${where}' does not exist on table`);
 				}
 
-				// Object lookup for operators (following AGENTS.md rule)
+				// Object lookup for operators (project convention)
 				const operatorMap = {
 					equals: () => (equals ? query.where(eq(column, equals)) : null),
 					notEquals: () =>

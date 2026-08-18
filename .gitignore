@@ -48,10 +48,9 @@ uploads
 env
 .npmrc
 
-# Agent / AI workspace (AGENTS.md + context.md stay tracked)
-intent.md
-task.md
+# Agent / AI workspace (local only — not part of the repo)
+docs/
 opencode.json
 .opencode/
 .claude/
-docs/
+backup/opencode.json.bak

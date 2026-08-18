@@ -1,6 +1,6 @@
 /**
  * Safe execution utility for handling errors gracefully
- * Follows the safeTry pattern specified in AGENTS.md
+ * Follows the safeTry pattern used across the server layer.
  */
 
 export interface SafeTryResult<T> {
