@@ -4,40 +4,84 @@ import type { ReleaseHighlight } from "./release-highlight-meta";
 /** In-app release notes. Consumer-facing copy only. Keep in sync with package.json on release. */
 export const RELEASE_MANIFEST = {
 	version: NEXTPRESS_CONFIG.version,
-	releaseDate: "2026-07-12",
+	releaseDate: "2026-08-19",
 	highlights: [
 		{
 			kind: "update",
-			title: "Delete multiple pages or posts at once",
+			title: "Edit text right on the page",
 			description:
-				"Select items in the Pages or Posts list, then delete them together. A confirmation step runs before anything is removed.",
+				"Change headings, paragraphs, quotes, and tables in the canvas without opening the sidebar for every edit.",
+		},
+		{
+			kind: "update",
+			title: "Site theme editor",
+			description:
+				"Set colors, typography, buttons, and icon defaults. Start from presets, or import and export themes as files.",
+		},
+		{
+			kind: "update",
+			title: "Quick actions with Cmd+K",
+			description:
+				"Jump to pages, posts, media, and settings from anywhere in the admin.",
+		},
+		{
+			kind: "update",
+			title: "Draft preview while you edit",
+			description:
+				"Open a live preview of work in progress, including drafts.",
+		},
+		{
+			kind: "fix",
+			title: "Lists work the way you expect",
+			description:
+				"Post titles link to the editor, sorting and pagination are visible, and status can be changed from the list.",
+		},
+		{
+			kind: "fix",
+			title: "Preview matches your live site",
+			description:
+				"The page builder, preview, and published pages use the same layout and block rendering.",
+		},
+		{
+			kind: "fix",
+			title: "Post blocks show real content",
+			description:
+				"Title, excerpt, image, and author blocks reflect your actual post data when published.",
+		},
+		{
+			kind: "fix",
+			title: "Block selection is clearer",
+			description:
+				"Hover and selection outlines no longer stack on nested blocks.",
+		},
+		{
+			kind: "fix",
+			title: "No more white flash when you navigate",
+			description: "Theme loads before the page paints.",
 		},
 		{
 			kind: "improvement",
-			title: "Protected homepage and blog pages",
-			description:
-				"Your site homepage and blog index pages cannot be deleted by mistake. If a page is tied to a blog with posts, the dashboard explains what to do first.",
+			title: "Table or card view for content lists",
+			description: "Switch how Posts, Pages, and Media appear.",
 		},
 		{
 			kind: "improvement",
-			title: "Fonts load from your site",
-			description:
-				"Catalog fonts are served from your NextPress install, so published pages stay consistent without relying on an external font service.",
+			title: "Reorder posts and pages by drag",
+			description: "Sort by menu order, then drag to set the order you want.",
 		},
 		{
 			kind: "improvement",
-			title: "Galleries and forms match on publish",
+			title: "Mobile layout check",
 			description:
-				"Galleries and form fields look the same in the page builder, in preview, and on your live site.",
+				"See overflow warnings in the builder and apply responsive fixes in one click.",
 		},
 		{
 			kind: "improvement",
-			title: "Browse icons before you search",
-			description:
-				"The icon picker shows one page of icons at a time so you can explore sets before typing a search term.",
+			title: "Undo when you delete a block",
+			description: "A notification appears with an Undo button.",
 		},
 	] satisfies ReleaseHighlight[],
-	supportedUpgradeFrom: ["1.0.12", "1.3.2", "1.3.3"],
+	supportedUpgradeFrom: ["1.0.12", "1.3.2", "1.3.3", "1.3.4"],
 } as const;
 
 export type { ReleaseHighlight, ReleaseHighlightKind } from "./release-highlight-meta";

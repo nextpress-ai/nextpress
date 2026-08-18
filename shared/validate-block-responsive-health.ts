@@ -62,7 +62,7 @@ export function validateBlockResponsiveHealth(blocks: BlockConfig[]): Responsive
 		if (block.name === "core/table") {
 			issues.push({
 				code: "TABLE_CHECK_OVERFLOW",
-				message: "Wide tables scroll horizontally on mobile — verify content fits.",
+				message: "Wide tables scroll horizontally on mobile. Check that content fits.",
 				blockId: block.id,
 				severity: "warning",
 			});

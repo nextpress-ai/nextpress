@@ -220,7 +220,7 @@ export default function Users() {
 				</Button>
 			}
 		>
-					<Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)]">
+					<Card className="admin-surface">
 						<CardHeader>
 							<CardTitle>All Users</CardTitle>
 						</CardHeader>

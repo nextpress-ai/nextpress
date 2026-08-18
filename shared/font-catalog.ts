@@ -71,6 +71,35 @@ export const findFontCatalogEntry = (
 	return BY_VALUE.get(fontFamily);
 };
 
+/**
+ * Resolves stored CSS `font-family` to a catalog `value` so pickers show the right selection.
+ * Handles legacy values like `system-ui, sans-serif` that differ from catalog strings.
+ */
+export const resolveFontCatalogValue = (fontFamily: string | undefined): string => {
+	if (!fontFamily?.trim()) {
+		return PAGE_FONT_CATALOG[0]?.value ?? "system-ui";
+	}
+
+	const exact = findFontCatalogEntry(fontFamily);
+	if (exact) return exact.value;
+
+	const primary = parsePrimaryFontName(fontFamily).toLowerCase();
+	for (const entry of PAGE_FONT_CATALOG) {
+		if (parsePrimaryFontName(entry.value).toLowerCase() === primary) {
+			return entry.value;
+		}
+	}
+
+	return fontFamily;
+};
+
+/** Human label for a stored font-family value (falls back to parsed face name). */
+export const resolveFontCatalogLabel = (fontFamily: string | undefined): string => {
+	if (!fontFamily?.trim()) return "System Default";
+	const resolved = resolveFontCatalogValue(fontFamily);
+	return findFontCatalogEntry(resolved)?.label ?? parsePrimaryFontName(fontFamily);
+};
+
 /** True when the family is bundled via Fontsource (not system-only). */
 export const isBundledFontFamily = (fontFamily: string | undefined): boolean =>
 	findFontCatalogEntry(fontFamily)?.source === "bundled";

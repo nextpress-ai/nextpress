@@ -73,7 +73,12 @@ vi.mock('@/lib/dnd', () => ({
 describe('BlockRenderer', () => {
   const mockActions = {
     selectedBlockId: null,
+    editingBlockId: null,
+    hoveredBlockId: null,
     onSelect: vi.fn(),
+    onStartEditing: vi.fn(),
+    onStopEditing: vi.fn(),
+    onHoverBlock: vi.fn(),
     onDuplicate: vi.fn(),
     onDelete: vi.fn(),
     hoverHighlight: null as any

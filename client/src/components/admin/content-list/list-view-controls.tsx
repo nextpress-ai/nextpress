@@ -49,13 +49,18 @@ export function AdminListViewModeToggle({
   viewMode,
   onViewModeChange,
 }: AdminListViewModeToggleProps): JSX.Element {
+  const segmentClass = (active: boolean): string =>
+    active
+      ? 'bg-npb-surface-base text-npb-text-primary shadow-sm'
+      : 'text-npb-text-secondary hover:text-npb-text-primary';
+
   return (
-    <div className="inline-flex rounded-md border border-npb-border-strong p-0.5">
+    <div className="inline-flex shrink-0 rounded-md border border-npb-border-strong bg-npb-surface-inset p-0.5">
       <Button
         type="button"
         size="sm"
-        variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-        className="h-7 px-2 text-xs"
+        variant="ghost"
+        className={`h-8 px-3 text-xs font-semibold ${segmentClass(viewMode === 'table')}`}
         onClick={() => onViewModeChange('table')}
         aria-pressed={viewMode === 'table'}>
         List
@@ -63,8 +68,8 @@ export function AdminListViewModeToggle({
       <Button
         type="button"
         size="sm"
-        variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
-        className="h-7 px-2 text-xs"
+        variant="ghost"
+        className={`h-8 px-3 text-xs font-semibold ${segmentClass(viewMode === 'cards')}`}
         onClick={() => onViewModeChange('cards')}
         aria-pressed={viewMode === 'cards'}>
         Cards

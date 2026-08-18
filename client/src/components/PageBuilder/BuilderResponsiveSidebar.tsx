@@ -24,6 +24,7 @@ export function BuilderResponsiveSidebar(
         onInsertTemplate={props.onInsertTemplate}
         blocks={props.blocks}
         onApplyResponsiveDefaults={props.onApplyResponsiveDefaults}
+        responsiveHealthBannerDismissed={props.responsiveHealthBannerDismissed}
       />
     );
   }

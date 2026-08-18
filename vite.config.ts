@@ -24,6 +24,15 @@ export default defineConfig({
       "@": path.resolve(clientRoot, "src"),
       "@shared": path.resolve(projectRoot, "shared"),
       "@assets": path.resolve(projectRoot, "attached_assets"),
+      // Fallback if anything still imports the Node-only subpath in the client.
+      "tailwindcss/resolveConfig.js": path.resolve(
+        projectRoot,
+        "shared/tailwind-resolve-config.browser.ts",
+      ),
+      "@shared/tailwind-resolve-config.browser": path.resolve(
+        projectRoot,
+        "shared/tailwind-resolve-config.browser.ts",
+      ),
     },
     dedupe: ["react", "react-dom", "@tanstack/react-query"],
   },

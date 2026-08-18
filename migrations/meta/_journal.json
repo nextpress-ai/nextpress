@@ -64,6 +64,13 @@
       "when": 1783300000000,
       "tag": "0006_api_keys_site_required",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783400000000,
+      "tag": "0008_rename_legacy_default_theme",
+      "breakpoints": true
     }
   ]
 }

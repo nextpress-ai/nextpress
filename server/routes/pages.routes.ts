@@ -11,6 +11,8 @@ import {
 } from '../lib/content-access';
 import { validateContentForSave } from '@shared/validate-content-save';
 import { enrichPageForApi } from '@shared/page-other';
+import { mergePageOtherWithThemeDefaults } from '@shared/theme-to-page-design';
+import { resolveSiteThemeSettings } from './shared/resolve-site-theme-settings';
 import {
   VERSION_REQUIRED,
   VERSION_STALE,
@@ -371,9 +373,15 @@ export function createPagesRoutes(deps: Deps): Router {
         // Include authorId and siteId in the data before validation
         const parsedData = pageSchemas.insert.parse(dataToValidate) as any;
 
+        const themeResolved = await resolveSiteThemeSettings({ models, siteId });
+        const otherWithTheme = mergePageOtherWithThemeDefaults({
+          themeSettings: themeResolved.themeId ? themeResolved.settings : null,
+          other: parsedData.other ?? req.body?.other,
+        });
+
         const contentValidation = validateContentForSave({
           blocks: parsedData.blocks,
-          other: parsedData.other,
+          other: otherWithTheme,
           contentType: 'page',
         });
         if (!contentValidation.ok) {

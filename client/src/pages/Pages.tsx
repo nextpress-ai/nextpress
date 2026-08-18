@@ -6,26 +6,26 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Eye, Pencil, Home, GripVertical } from "lucide-react";
+import { Plus, Trash2, Eye, Pencil, Home, ListTree } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
 import {
   ContentListBulkBar,
   ContentListPaginationFooter,
-  ContentListToolbar,
+  ContentListFiltersBar,
   SortableHeader,
-  AdminListViewModeToggle,
   ContentCardGrid,
 } from "@/components/admin/content-list";
 import { ContentStatusSelect } from "@/components/admin/content-status-select";
 import { CreatePageModal } from "@/components/Pages/CreatePageModal";
+import { PageSiteMenuDialog } from "@/components/Pages/PageSiteMenuDialog";
 import { apiRequest } from "@/lib/queryClient";
 import { pageEditorPath } from "@/lib/admin-content-routes";
+import { formatMenuPosition } from "@/lib/page-menu-order";
 import { appendSiteIdToUrl, buildSiteOptionUrl } from "@/lib/site-api";
 import { useActiveSite } from "@/hooks/useActiveSite";
 import { useAdminListPagination } from "@/hooks/use-admin-list-pagination";
 import { useAdminListViewMode } from "@/hooks/use-admin-list-view-mode";
-import { useReorderList } from "@/hooks/use-reorder-list";
 import type { ContentListSortOrder } from "@shared/content-list-query";
 import { DEFAULT_PAGE_LIST_SORT } from "@shared/content-list-query";
 import { useBulkSelection } from "@/hooks/use-bulk-selection";
@@ -81,6 +81,7 @@ function PagesList({
   const [location, setLocation] = useLocation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [idsToDelete, setIdsToDelete] = useState<string[]>([]);
+  const [siteMenuOpen, setSiteMenuOpen] = useState(false);
   const pagesQueryKey = [
     '/api/pages',
     {
@@ -145,31 +146,6 @@ function PagesList({
   const deletablePages = pages.filter((page) => !isHomepage(page));
 
   const selection = useBulkSelection(deletablePages);
-
-  const reorderEnabled = sort === 'menuOrder' && order === 'asc';
-  const reorderMutation = useMutation({
-    mutationFn: async (items: Array<{ id: string; menuOrder: number }>) => {
-      await apiRequest('PATCH', '/api/pages/reorder', {
-        siteId: activeSiteId,
-        items,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
-    },
-    onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Could not update page order',
-        variant: 'destructive',
-      });
-    },
-  });
-  const reorder = useReorderList({
-    items: pages,
-    enabled: reorderEnabled,
-    onReorder: reorderMutation.mutateAsync,
-  });
 
   useEffect(() => {
     selection.clear();
@@ -303,23 +279,27 @@ function PagesList({
     <AdminLayout
       title="Pages"
       actions={
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <ContentListToolbar
-            compact
-            value={search}
-            placeholder="Search pages..."
-            onSearchChange={handleSearchChange}
-          />
-          <AdminListViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+        <>
+          <Button variant="outline" size="sm" onClick={() => setSiteMenuOpen(true)}>
+            <ListTree className="mr-2 h-4 w-4" />
+            Site menu
+          </Button>
           <Button className="npb-btn-accent" onClick={handleNewPage}>
             <Plus className="w-4 h-4 mr-2" />
             Add New Page
           </Button>
-        </div>
+        </>
       }
     >
-          <Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)]">
-            <CardContent className="pt-4">
+      <Card className="admin-surface">
+        <CardContent className="pt-4">
+          <ContentListFiltersBar
+            searchValue={search}
+            searchPlaceholder="Search pages..."
+            onSearchChange={handleSearchChange}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
               <ContentListBulkBar
                 visible={selection.selectedCount > 0}
                 selectedCount={selection.selectedCount}
@@ -357,7 +337,10 @@ function PagesList({
                   items={pages}
                   hrefForItem={(item) => pageEditorPath(item.id)}
                   renderMeta={(item) => (
-                    <span>{item.status || 'draft'} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}</span>
+                    <span>
+                      Menu {formatMenuPosition(item.menuOrder)} · {item.status || 'draft'} ·{' '}
+                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}
+                    </span>
                   )}
                   renderActions={(item) => (
                     <>
@@ -374,9 +357,6 @@ function PagesList({
                 <Table className="admin-list-table">
                   <TableHeader>
                     <TableRow>
-                      {reorderEnabled ? (
-                        <TableHead className="w-8" aria-label="Drag to reorder" />
-                      ) : null}
                       <TableHead className="w-10">
                         <Checkbox
                           checked={
@@ -393,6 +373,9 @@ function PagesList({
                       <TableHead>
                         <SortableHeader label="Title" field="title" activeField={sort} order={order} onSortChange={handleSortChange} />
                       </TableHead>
+                      <TableHead className="w-16 text-center">
+                        <SortableHeader label="Menu" field="menuOrder" activeField={sort} order={order} onSortChange={handleSortChange} />
+                      </TableHead>
                       <TableHead>
                         <SortableHeader label="Status" field="status" activeField={sort} order={order} onSortChange={handleSortChange} />
                       </TableHead>
@@ -407,17 +390,7 @@ function PagesList({
                       <TableRow
                         key={page.id}
                         data-state={selection.selectedIds.has(page.id) ? "selected" : undefined}
-                        className={reorder.dragOverId === page.id ? 'bg-npb-accent/5' : undefined}
-                        draggable={reorderEnabled}
-                        onDragStart={reorder.onDragStart(page.id)}
-                        onDragOver={reorder.onDragOver(page.id)}
-                        onDrop={reorder.onDrop(page.id)}
-                        onDragEnd={reorder.onDragEnd}>
-                        {reorderEnabled ? (
-                          <TableCell className="w-8 cursor-grab text-npb-text-muted">
-                            <GripVertical className="h-4 w-4" aria-hidden />
-                          </TableCell>
-                        ) : null}
+                      >
                         <TableCell>
                           <Checkbox
                             checked={selection.selectedIds.has(page.id)}
@@ -444,6 +417,9 @@ function PagesList({
                               )}
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-center text-sm font-semibold tabular-nums text-npb-text-secondary">
+                          {formatMenuPosition(page.menuOrder)}
                         </TableCell>
                         <TableCell>
                           <ContentStatusSelect
@@ -544,6 +520,11 @@ function PagesList({
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
         initialTitle={new URLSearchParams(window.location.search).get('title') || ''}
+      />
+      <PageSiteMenuDialog
+        open={siteMenuOpen}
+        onOpenChange={setSiteMenuOpen}
+        siteId={activeSiteId}
       />
 
       <ConfirmBulkDeleteDialog

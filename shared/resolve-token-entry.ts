@@ -1,4 +1,4 @@
-import resolveConfig from "tailwindcss/resolveConfig.js";
+import resolveConfig from "./tailwind-resolve-config.browser.js";
 import type { TokenEntry } from "./schema-types.js";
 import { tailwindThemeExtend } from "./tailwind-theme.js";
 

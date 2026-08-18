@@ -5,6 +5,26 @@ import { buildPublishedPageHtml } from "../routes/shared/build-published-page-ht
 import { responsiveGoldenFixtures } from "@shared/test/fixtures/responsive/fixtures";
 
 describe("buildPublishedPageHtml", () => {
+	it("includes site theme CSS when theme settings are provided", () => {
+		const settings = {
+			colors: { accent: "#112233", foreground: "#fefefe", background: "#101010" },
+		};
+		const html = buildPublishedPageHtml({
+			page: {
+				id: "page-themed",
+				title: "Themed",
+				blocks: [],
+				other: { seo: {}, design: {} },
+			} as Parameters<typeof buildPublishedPageHtml>[0]["page"],
+			canonicalUrl: "http://localhost:5000/pages/page-themed",
+			themeSettings: settings as Parameters<typeof buildPublishedPageHtml>[0]["themeSettings"],
+			themeRawSettings: settings,
+		});
+
+		expect(html).toContain(".np-visitor-document");
+		expect(html).toContain("--npb-accent: #112233");
+	});
+
 	it("renders full HTML with publish CSS and block content, not theme stub", () => {
 		const html = buildPublishedPageHtml({
 			page: {

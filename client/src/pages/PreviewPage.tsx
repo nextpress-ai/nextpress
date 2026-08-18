@@ -9,6 +9,10 @@ import type { AuthorDisplay } from "@shared/author-display";
 import type { BindablePostDocument } from "@shared/bind-post-blocks";
 import { PublicBlockStack } from "@/components/PageBuilder/public-block-stack";
 import { readPreviewSession } from "@shared/preview-session";
+import { useActiveSite } from "@/hooks/useActiveSite";
+import { useSiteThemeSettings } from "@/hooks/use-site-theme-settings";
+import { buildVisitorDocumentStyle } from "@/lib/visitor-theme-style";
+import { resolveVisitorDesign } from "@shared/theme-to-page-design";
 
 interface PreviewPageProps {
   postId?: string;
@@ -31,6 +35,8 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
   
   const contentId = postId || templateId || params.id;
   const contentType = type || params.type || (templateId ? 'template' : 'post');
+  const { activeSiteId } = useActiveSite();
+  const { cssVars: themeCssVars, settings: themeSettings } = useSiteThemeSettings(activeSiteId);
 
   const shareToken = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -158,16 +164,16 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
   }
 
   const pageOther = (data as { other?: PageOther } | undefined)?.other;
-  const design = liveSession?.design ?? pageOther?.design;
+  const design = resolveVisitorDesign({
+    design: liveSession?.design ?? pageOther?.design,
+    themeSettings,
+  });
+  const visitorStyle = buildVisitorDocumentStyle({ themeCssVars, design });
 
   return (
     <div
       className={`np-visitor-document ${isEmbedPreview ? 'min-h-full' : 'min-h-screen'}`}
-      style={{
-        backgroundColor: design?.backgroundColor?.style || '#ffffff',
-        color: design?.textColor?.style || '#18181b',
-        fontFamily: design?.fontFamily || undefined,
-      }}
+      style={visitorStyle}
     >
       {!isEmbedPreview ? <title>{title}</title> : null}
       
@@ -188,6 +194,7 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
           <PublicBlockStack
             blocks={blocks}
             design={design}
+            themeCssVars={themeCssVars}
             animationContentKey={`${contentType}-${contentId}-${blocks.length}`}
             testId="preview-page-builder-content"
             post={bindablePost}

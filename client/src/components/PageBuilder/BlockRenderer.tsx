@@ -22,7 +22,7 @@ import {
   hasContainerShellSizing,
   stackNeedsVerticalPlacementRoom,
 } from "@shared/block-container-placement";
-import { resolveSpacingSides } from '@/lib/resolve-spacing-sides';
+import { resolveSpacingSides, spacingOverlayLength, hasNonZeroSpacing } from '@/lib/resolve-spacing-sides';
 import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
 import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
 import {
@@ -412,7 +412,9 @@ export default function BlockRenderer({
   const paddingSides = resolveSpacingSides({ styles: block.styles as Record<string, unknown> | undefined, prefix: 'padding' });
   const marginSides = resolveSpacingSides({ styles: block.styles as Record<string, unknown> | undefined, prefix: 'margin' });
   const { top: pTop, right: pRight, bottom: pBottom, left: pLeft } = paddingSides;
-  const { top: mTop, right: mRight, bottom: mBottom, left: mLeft } = marginSides;
+  const showPaddingHighlight =
+    effectiveHoverHighlight === 'padding' && hasNonZeroSpacing(paddingSides);
+  const showMarginHighlight = effectiveHoverHighlight === 'margin';
 
   // Resolve tokenMap to inline styles + modifier CSS
   const tokenResolution = block.other?.tokenMap
@@ -536,16 +538,54 @@ export default function BlockRenderer({
   const toolbarPanelClass =
     'npb-canvas-toolbar flex min-w-0 max-w-full items-center gap-1 p-1';
 
+  const registerBlockHover = () => {
+    actions?.onHoverBlock?.(block.id);
+  };
+
+  const clearBlockHover = () => {
+    if (actions?.hoveredBlockId === block.id) {
+      actions?.onHoverBlock?.(null);
+    }
+  };
+
+  const pointerHoverHandlers = {
+    onMouseEnter: (event: React.MouseEvent) => {
+      event.stopPropagation();
+      registerBlockHover();
+      blockHoverHandlers.onMouseEnter();
+    },
+    onMouseLeave: (event: React.MouseEvent) => {
+      event.stopPropagation();
+      clearBlockHover();
+      blockHoverHandlers.onMouseLeave();
+    },
+    onPointerMove: blockHoverHandlers.onPointerMove,
+  };
+
+  const showEditingChrome = !isPreview && isEditing;
+  const showSelectedChrome = !isPreview && effectiveSelected && !showEditingChrome;
+  const showHoverChrome =
+    !isPreview &&
+    toolbarOpen &&
+    !effectiveSelected &&
+    (actions?.hoveredBlockId === undefined || actions.hoveredBlockId === block.id);
+
+  const blockChromeClasses = [
+    `block-${block.id}`,
+    showSelectedChrome ? 'npb-canvas-block-selected' : '',
+    showEditingChrome ? 'npb-canvas-block-editing' : '',
+    showHoverChrome ? 'npb-canvas-block-hover' : '',
+    'relative',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div
       className="relative group"
       {...(isPreview || useTopToolbarHoverStrip
         ? {}
-        : {
-            onMouseEnter: blockHoverHandlers.onMouseEnter,
-            onMouseLeave: blockHoverHandlers.onMouseLeave,
-            onPointerMove: blockHoverHandlers.onPointerMove,
-          })}
+        : pointerHoverHandlers)}
       onClick={(e) => {
         if (!isPreview) {
           e.stopPropagation();
@@ -577,9 +617,7 @@ export default function BlockRenderer({
       {!isPreview && useTopToolbarHoverStrip && (
         <div
           className="absolute top-0 left-0 right-0 z-30 flex flex-col"
-          onMouseEnter={blockHoverHandlers.onMouseEnter}
-          onMouseLeave={blockHoverHandlers.onMouseLeave}
-          onPointerMove={blockHoverHandlers.onPointerMove}>
+          {...pointerHoverHandlers}>
           {paintToolbar ? (
             <BlockEditorToolbarPanel
               label={blockToolbarLabel}
@@ -600,12 +638,11 @@ export default function BlockRenderer({
         </div>
       )}
 
-        <div
-          className={`${!isPreview ? 'cursor-pointer' : ''} transition-all duration-200`}>
+        <div className={!isPreview ? 'cursor-pointer' : ''}>
           <div
             data-block-id={block.id}
-            data-chrome={!isPreview && toolbarOpen ? 'true' : 'false'}
-            className={`block-${block.id} ${!isPreview && effectiveSelected ? 'npb-canvas-block-selected' : ''} ${!isPreview && isEditing ? 'npb-canvas-block-editing ring-2 ring-primary ring-offset-2' : ''} ${!isPreview && toolbarOpen && !effectiveSelected ? 'npb-canvas-block-hover' : ''} relative`}
+            data-chrome={!isPreview && showSelectedChrome && toolbarOpen ? 'true' : 'false'}
+            className={blockChromeClasses}
             style={{
               width: '100%',
               minWidth: 0,
@@ -613,57 +650,51 @@ export default function BlockRenderer({
             }}
             {...entryAnimationAttributes}
           >
-          {!isPreview && effectiveHoverHighlight === 'padding' && (
+          {showPaddingHighlight ? (
             <>
               <div
-                className="absolute left-0 right-0 pointer-events-none"
+                className="absolute left-0 right-0 pointer-events-none z-20"
                 style={{
                   top: 0,
-                  height: pTop,
+                  height: spacingOverlayLength(pTop),
                   background: 'rgba(34,197,94,0.15)',
                 }}
               />
               <div
-                className="absolute left-0 right-0 pointer-events-none"
+                className="absolute left-0 right-0 pointer-events-none z-20"
                 style={{
                   bottom: 0,
-                  height: pBottom,
+                  height: spacingOverlayLength(pBottom),
                   background: 'rgba(34,197,94,0.15)',
                 }}
               />
               <div
-                className="absolute top-0 bottom-0 pointer-events-none"
+                className="absolute top-0 bottom-0 pointer-events-none z-20"
                 style={{
                   left: 0,
-                  width: pLeft,
+                  width: spacingOverlayLength(pLeft),
                   background: 'rgba(34,197,94,0.15)',
                 }}
               />
               <div
-                className="absolute top-0 bottom-0 pointer-events-none"
+                className="absolute top-0 bottom-0 pointer-events-none z-20"
                 style={{
                   right: 0,
-                  width: pRight,
+                  width: spacingOverlayLength(pRight),
                   background: 'rgba(34,197,94,0.15)',
                 }}
               />
             </>
-          )}
-          {!isPreview && effectiveHoverHighlight === 'margin' && (
+          ) : null}
+          {showMarginHighlight ? (
             <div
-              className="pointer-events-none"
+              className="pointer-events-none absolute inset-0 z-20"
               style={{
-                position: 'absolute',
-                top: `calc(-1 * ${mTop})`,
-                left: `calc(-1 * ${mLeft})`,
-                right: `calc(-1 * ${mRight})`,
-                bottom: `calc(-1 * ${mBottom})`,
                 outline: '2px dashed rgba(59,130,246,0.6)',
                 outlineOffset: 0,
-                borderRadius: '6px',
               }}
             />
-          )}
+          ) : null}
           <div
             className={entryPreviewClassName || undefined}
             style={{

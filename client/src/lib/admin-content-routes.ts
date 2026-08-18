@@ -6,3 +6,6 @@ export const postEditorPath = (id: string): string =>
 
 export const pageEditorPath = (id: string): string =>
   `/admin/page-builder/page/${id}`;
+
+/** Opens the site theme design editor. */
+export const themeEditorPath = (id: string): string => `/admin/themes/${id}`;

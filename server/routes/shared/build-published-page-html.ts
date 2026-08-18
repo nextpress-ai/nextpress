@@ -24,6 +24,10 @@ import {
 	getHydrationScript,
 	blocksHaveReactiveFlag,
 } from "../../../renderer/to-html";
+import type { ThemeSettings } from "@shared/theme-settings";
+import { themeSettingsToStyleBlock } from "@shared/theme-to-css-vars";
+import type { PageDesignSettings } from "@shared/schema-types";
+import { resolveVisitorDesign } from "@shared/theme-to-page-design";
 
 type PublishedDocument = {
 	id: string;
@@ -36,6 +40,8 @@ type BuildPublishedPageHtmlParams = {
 	page: PublishedDocument;
 	canonicalUrl: string;
 	post?: BindablePostDocument;
+	themeSettings?: ThemeSettings;
+	themeRawSettings?: unknown;
 };
 
 /**
@@ -45,6 +51,8 @@ export function buildPublishedPageHtml({
 	page,
 	canonicalUrl,
 	post,
+	themeSettings,
+	themeRawSettings,
 }: BuildPublishedPageHtmlParams): string {
 	const rawBlocks = (Array.isArray(page.blocks) ? page.blocks : []) as BlockConfig[];
 	const blocks = post ? bindPostBlocks({ blocks: rawBlocks, post }) : rawBlocks;
@@ -75,9 +83,14 @@ export function buildPublishedPageHtml({
 		page.other && typeof page.other === "object"
 			? (page.other as Record<string, unknown>)
 			: {};
-	const design = (pageOther.design as Record<string, unknown> | undefined) ?? {};
+	const rawDesign = pageOther.design as PageDesignSettings | undefined;
+	const design = resolveVisitorDesign({ design: rawDesign, themeSettings });
 
 	const headParts: string[] = [];
+	if (themeSettings) {
+		const themeCss = themeSettingsToStyleBlock(themeSettings, themeRawSettings);
+		if (themeCss) headParts.push(`<style>${themeCss}</style>`);
+	}
 	if (allCustomCss) headParts.push(`<style>${allCustomCss}</style>`);
 	if (animationCssRules) headParts.push(`<style>${animationCssRules}</style>`);
 	if (modifierCssRules) headParts.push(`<style>${modifierCssRules}</style>`);
@@ -104,23 +117,11 @@ export function buildPublishedPageHtml({
 	const pageDescription = typeof seo.metaDescription === "string" ? seo.metaDescription : "";
 
 	const renderOptions: PageRenderOptions = {
-		fontFamily: typeof design.fontFamily === "string" ? design.fontFamily : undefined,
-		containerWidth: typeof design.containerWidth === "string" ? design.containerWidth : undefined,
-		padding: typeof design.padding === "string" ? design.padding : undefined,
-		backgroundColor:
-			design.backgroundColor &&
-			typeof design.backgroundColor === "object" &&
-			"style" in design.backgroundColor &&
-			typeof (design.backgroundColor as { style?: unknown }).style === "string"
-				? (design.backgroundColor as { style: string }).style
-				: undefined,
-		textColor:
-			design.textColor &&
-			typeof design.textColor === "object" &&
-			"style" in design.textColor &&
-			typeof (design.textColor as { style?: unknown }).style === "string"
-				? (design.textColor as { style: string }).style
-				: undefined,
+		fontFamily: design.fontFamily,
+		containerWidth: design.containerWidth,
+		padding: design.padding,
+		backgroundColor: design.backgroundColor?.style,
+		textColor: design.textColor?.style,
 		noIndex: seo.noIndex === true,
 		customMeta: Array.isArray(seo.customMeta)
 			? (seo.customMeta as Array<{ name: string; content: string }>)

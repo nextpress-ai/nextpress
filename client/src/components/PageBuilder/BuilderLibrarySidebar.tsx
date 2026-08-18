@@ -17,7 +17,8 @@ export type BuilderLibrarySidebarProps = {
   onToggleSidebar: () => void;
   onInsertTemplate?: (blocks: BlockConfig[]) => void;
   blocks?: BlockConfig[];
-  onApplyResponsiveDefaults?: () => void;
+  onApplyResponsiveDefaults?: () => boolean | void;
+  responsiveHealthBannerDismissed?: boolean;
 };
 
 const rootClass =
@@ -37,6 +38,7 @@ export function BuilderLibrarySidebar({
   onInsertTemplate,
   blocks = [],
   onApplyResponsiveDefaults,
+  responsiveHealthBannerDismissed = false,
 }: BuilderLibrarySidebarProps): ReactElement {
   const {
     categories,
@@ -98,6 +100,7 @@ export function BuilderLibrarySidebar({
         <ResponsiveHealthBanner
           blocks={blocks}
           onApplyDefaults={onApplyResponsiveDefaults}
+          dismissed={responsiveHealthBannerDismissed}
         />
         <div className="min-h-0 flex-1 p-3 sm:p-4">
           <BuilderLibraryPanel

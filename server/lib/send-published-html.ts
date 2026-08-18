@@ -1,5 +1,6 @@
 import type { Response } from "express";
 import { buildPublishedPageHtml } from "../routes/shared/build-published-page-html";
+import { resolveSiteThemeSettings } from "../routes/shared/resolve-site-theme-settings";
 import {
 	preparePublishedPost,
 	type PublishedContentRow,
@@ -14,13 +15,28 @@ export async function sendPublishedHtml({
 	models,
 	document,
 	canonicalUrl,
+	siteId: siteIdHint,
 }: {
 	res: Response;
-	models: Parameters<typeof preparePublishedPost>[0]["models"];
-	document: PublishedContentRow;
+	models: Parameters<typeof preparePublishedPost>[0]["models"] & {
+		blogs?: { findById: (id: string) => Promise<{ siteId?: string | null } | null> };
+	};
+	document: PublishedContentRow & { siteId?: string | null; blogId?: string | null };
 	canonicalUrl: string;
+	siteId?: string;
 }): Promise<void> {
 	const prepared = await preparePublishedPost({ models, post: document });
+
+	let siteId = siteIdHint ?? document.siteId ?? undefined;
+	if (!siteId && document.blogId && models.blogs?.findById) {
+		const blog = await models.blogs.findById(document.blogId);
+		siteId = blog?.siteId ?? undefined;
+	}
+
+	const theme = siteId
+		? await resolveSiteThemeSettings({ models, siteId })
+		: null;
+
 	const html = buildPublishedPageHtml({
 		page: {
 			id: document.id,
@@ -30,6 +46,8 @@ export async function sendPublishedHtml({
 		},
 		canonicalUrl,
 		post: prepared.post,
+		themeSettings: theme?.settings,
+		themeRawSettings: theme?.rawSettings,
 	});
 	res.setHeader("Content-Type", "text/html");
 	res.send(html);

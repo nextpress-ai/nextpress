@@ -6,6 +6,9 @@ import { PublicBlockStack } from "@/components/PageBuilder/public-block-stack";
 import Landing from "@/pages/Landing";
 import { appendSiteIdToUrl } from "@/lib/site-api";
 import { SkipLink } from "@/components/a11y/skip-link";
+import { useSiteThemeSettings } from "@/hooks/use-site-theme-settings";
+import { buildVisitorDocumentStyle } from "@/lib/visitor-theme-style";
+import { resolveVisitorDesign } from "@shared/theme-to-page-design";
 import type { Post } from "@shared/schema-types";
 import type { BlockConfig } from "@shared/schema-types";
 import type { PageOther } from "@shared/schema-types";
@@ -46,6 +49,8 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
   const { slug: routeSlug } = useParams();
   const [location] = useLocation();
   const slug = propSlug || routeSlug;
+  const siteIdHint = getPublicSiteIdHint(location);
+  const { cssVars: themeCssVars, settings: themeSettings } = useSiteThemeSettings(siteIdHint);
   
   // Determine the API endpoint based on type
   const getApiEndpoint = () => {
@@ -122,7 +127,11 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
   // Extract page other settings
   const pageOther = (data as { other?: PageOther })?.other;
   const seo = pageOther?.seo;
-  const design = pageOther?.design;
+  const design = resolveVisitorDesign({
+    design: pageOther?.design,
+    themeSettings,
+  });
+  const visitorStyle = buildVisitorDocumentStyle({ themeCssVars, design });
 
   // SEO meta information
   const metaTitle = seo?.metaTitle || `${data.title} | Your Site`;
@@ -137,11 +146,7 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
     <div 
       className="np-visitor-document min-h-screen" 
       data-testid={`public-${type}-view`}
-      style={{
-        backgroundColor: design?.backgroundColor?.style || '#ffffff',
-        color: design?.textColor?.style || '#18181b',
-        fontFamily: design?.fontFamily || undefined,
-      }}
+      style={visitorStyle}
     >
       <SkipLink href="#main-content">Skip to content</SkipLink>
       {/* SEO Meta Tags */}
@@ -229,6 +234,7 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
               <PublicBlockStack
                 blocks={blocks}
                 design={design}
+                themeCssVars={themeCssVars}
                 pageTitle={data.title}
                 animationContentKey={`${type}-${data.id}-${blocks.length}`}
                 testId="page-builder-content"

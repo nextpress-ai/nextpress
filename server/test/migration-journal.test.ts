@@ -37,4 +37,21 @@ describe("migration journal", () => {
 		expect(idxs).toEqual([...idxs].sort((a, b) => a - b));
 		expect(new Set(idxs).size).toBe(idxs.length);
 	});
+
+	it("splits multi-statement SQL so PGlite can apply each command", () => {
+		for (const tag of tags) {
+			const sql = readFileSync(join(migrationsDir, `${tag}.sql`), "utf8");
+			const statements = sql
+				.split(/-->\s*statement-breakpoint/)
+				.map((part) => part.replace(/--[^\n]*/g, "").trim())
+				.filter(Boolean);
+			for (const statement of statements) {
+				const commands = statement.split(";").filter((part) => part.trim());
+				expect(
+					commands.length,
+					`${tag}.sql has multiple commands without a breakpoint`,
+				).toBe(1);
+			}
+		}
+	});
 });

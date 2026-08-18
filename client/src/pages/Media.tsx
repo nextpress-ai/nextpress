@@ -14,10 +14,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Upload, Edit, Trash2, Download, Image, FileText, Film, Music, File } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import {
-  AdminListViewModeToggle,
   ContentListBulkBar,
+  ContentListFiltersBar,
   ContentListPaginationFooter,
-  ContentListToolbar,
   SortableHeader,
 } from "@/components/admin/content-list";
 import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
@@ -527,40 +526,35 @@ function MediaList({
     <AdminLayout
       title="Media Library"
       actions={
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <ContentListToolbar
-            compact
-            value={search}
-            placeholder="Search media..."
-            onSearchChange={handleSearchChange}
-          />
-          <AdminListViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-          <Button
-            onClick={() => setIsUploadOpen(true)}
-            className="npb-btn-accent"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Add New Media
-          </Button>
-        </div>
+        <Button onClick={() => setIsUploadOpen(true)} className="npb-btn-accent">
+          <Upload className="w-4 h-4 mr-2" />
+          Add New Media
+        </Button>
       }
     >
-      <Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)]">
+      <Card className="admin-surface">
         <CardContent className="pt-4">
-          <div className="mb-4 flex items-center gap-4">
-            <Select value={selectedFilter} onValueChange={handleFilterChange}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Media</SelectItem>
-                <SelectItem value="image/jpeg">Images</SelectItem>
-                <SelectItem value="video/mp4">Videos</SelectItem>
-                <SelectItem value="audio/mp3">Audio</SelectItem>
-                <SelectItem value="application/pdf">Documents</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <ContentListFiltersBar
+            searchValue={search}
+            searchPlaceholder="Search media..."
+            onSearchChange={handleSearchChange}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            leadingExtras={
+              <Select value={selectedFilter} onValueChange={handleFilterChange}>
+                <SelectTrigger className="h-9 w-full sm:w-48">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Media</SelectItem>
+                  <SelectItem value="image/jpeg">Images</SelectItem>
+                  <SelectItem value="video/mp4">Videos</SelectItem>
+                  <SelectItem value="audio/mp3">Audio</SelectItem>
+                  <SelectItem value="application/pdf">Documents</SelectItem>
+                </SelectContent>
+              </Select>
+            }
+          />
 
           <ContentListBulkBar
             visible={selection.selectedCount > 0}

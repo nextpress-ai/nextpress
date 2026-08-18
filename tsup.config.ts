@@ -1,5 +1,12 @@
 import { defineConfig } from 'tsup';
+import path from 'path';
 import { TsconfigPathsPlugin } from '@esbuild-plugins/tsconfig-paths';
+
+const projectRoot = import.meta.dirname;
+const nodeResolveConfigShim = path.join(
+  projectRoot,
+  'shared/tailwind-resolve-config.node.ts',
+);
 
 export default defineConfig({
   entry: [
@@ -26,6 +33,14 @@ export default defineConfig({
     TsconfigPathsPlugin({
       tsconfig: 'tsconfig.server.json',
     }),
+    {
+      name: 'node-tailwind-resolve-config',
+      setup(build) {
+        build.onResolve({ filter: /tailwind-resolve-config\.browser/ }, () => ({
+          path: nodeResolveConfigShim,
+        }));
+      },
+    },
   ],
   // Externalize packages that should not be bundled
   external: [

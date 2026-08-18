@@ -8,6 +8,10 @@ vi.mock('@/hooks/useActiveSite', () => ({
   useActiveSite: () => ({ activeSiteId: 'site-1' }),
 }));
 
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ user: { firstName: 'Test', username: 'testuser' } }),
+}));
+
 vi.mock('@/components/AdminLayout', () => ({
   AdminLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
@@ -38,6 +42,12 @@ describe('Dashboard recent posts', () => {
               },
             ],
           }),
+        } as Response);
+      }
+      if (url.includes('/api/pages')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ pages: [] }),
         } as Response);
       }
       if (url.includes('/api/site')) {

@@ -32,6 +32,7 @@ import {
 } from './block-clipboard';
 import { reIdTemplateBlocks } from '@/lib/re-id-template-blocks';
 import { persistResponsiveDefaultsToBlocks } from '@shared/persist-responsive-defaults';
+import { validateBlockResponsiveHealth } from '@shared/validate-block-responsive-health';
 import { writePreviewSession } from '@shared/preview-session';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -134,6 +135,7 @@ export default function PageBuilder({
   const blocks = currentState; // Direct derivation - no separate state
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
   const [showCreatePageModal, setShowCreatePageModal] = useState(false);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const postRecord = data as {
@@ -328,11 +330,25 @@ export default function PageBuilder({
     return () => clearTimeout(timer);
   }, [isPreviewMode, blocks, data, isTemplate, previewContentType]);
 
-  const handleApplyResponsiveDefaults = useCallback(() => {
+  const responsiveHealthIssueKey = useMemo(
+    () =>
+      validateBlockResponsiveHealth(blocks)
+        .issues.map((issue) => `${issue.blockId}:${issue.code}`)
+        .sort()
+        .join('|'),
+    [blocks],
+  );
+  const [dismissedResponsiveHealthKey, setDismissedResponsiveHealthKey] = useState<string | null>(
+    null,
+  );
+  const responsiveHealthBannerDismissed =
+    dismissedResponsiveHealthKey === responsiveHealthIssueKey;
+
+  const handleApplyResponsiveDefaults = useCallback((): boolean => {
     const confirmed = window.confirm(
       'Apply mobile-friendly defaults to blocks that are missing them? Existing styles you set will not be changed.',
     );
-    if (!confirmed) return;
+    if (!confirmed) return false;
 
     const { blocks: nextBlocks, changedCount } = persistResponsiveDefaultsToBlocks({ blocks });
     if (changedCount === 0) {
@@ -340,15 +356,18 @@ export default function PageBuilder({
         title: 'Nothing to update',
         description: 'All blocks already use responsive defaults.',
       });
-      return;
+      setDismissedResponsiveHealthKey(responsiveHealthIssueKey);
+      return true;
     }
 
     commitBlocks(nextBlocks);
+    setDismissedResponsiveHealthKey(responsiveHealthIssueKey);
     toast({
       title: 'Defaults applied',
       description: `Updated ${changedCount} block${changedCount === 1 ? '' : 's'} for better mobile layout.`,
     });
-  }, [blocks, commitBlocks, toast]);
+    return true;
+  }, [blocks, commitBlocks, responsiveHealthIssueKey, toast]);
 
   const handleTogglePreviewMode = useCallback(() => {
     setIsPreviewMode((prev) => !prev);
@@ -717,6 +736,7 @@ export default function PageBuilder({
         value={{
           selectedBlockId,
           editingBlockId,
+          hoveredBlockId,
           onSelect: (id) => {
             setSelectedBlockId(id);
             if (id !== editingBlockIdRef.current) {
@@ -733,6 +753,7 @@ export default function PageBuilder({
           onStopEditing: () => {
             setEditingBlockId(null);
           },
+          onHoverBlock: setHoveredBlockId,
           onDuplicate: handleDuplicate,
           onDelete: handleDelete,
           hoverHighlight,
@@ -784,6 +805,7 @@ export default function PageBuilder({
                   onInsertTemplate={handleInsertTemplate}
                   blocks={blocks}
                   onApplyResponsiveDefaults={handleApplyResponsiveDefaults}
+                  responsiveHealthBannerDismissed={responsiveHealthBannerDismissed}
                 />
               </MotionSidebarPanel>
             ) : null}

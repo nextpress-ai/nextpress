@@ -39,8 +39,8 @@ export type ContentListSortParams = {
 export const DEFAULT_PAGE_LIST_SORT: ContentListSortParams & {
   sort: PageListSortField;
 } = {
-  sort: 'menuOrder',
-  order: 'asc',
+  sort: 'updatedAt',
+  order: 'desc',
 };
 
 export const DEFAULT_POST_LIST_SORT: ContentListSortParams & {

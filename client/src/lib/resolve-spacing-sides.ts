@@ -71,3 +71,17 @@ export const resolveSpacingSides = ({
   const expanded = expandSpacingShorthand(resolved[prefix]);
   return overlayLonghands({ styles: resolved, expanded, prefix });
 };
+
+/** Valid CSS length for canvas spacing overlays — empty/zero becomes `0px`. */
+export const spacingOverlayLength = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "0") return "0px";
+  return trimmed;
+};
+
+/** True when at least one side has a non-zero spacing value. */
+export const hasNonZeroSpacing = (sides: SpacingSideQuad): boolean =>
+  (["top", "right", "bottom", "left"] as const).some((side) => {
+    const normalized = spacingOverlayLength(sides[side]);
+    return normalized !== "0px";
+  });

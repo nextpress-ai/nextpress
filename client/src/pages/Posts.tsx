@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -12,16 +12,16 @@ import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-
 import {
   ContentListBulkBar,
   ContentListPaginationFooter,
-  ContentListToolbar,
+  ContentListFiltersBar,
   SortableHeader,
-  AdminListViewModeToggle,
   ContentCardGrid,
 } from "@/components/admin/content-list";
 import { ContentStatusSelect } from "@/components/admin/content-status-select";
 import { CreatePostDialog } from "@/components/posts/CreatePostDialog";
 import { WordPressImportDialog } from "@/components/import/WordPressImportDialog";
 import { apiRequest } from "@/lib/queryClient";
-import { postEditorPath } from "@/lib/admin-content-routes";
+import { postEditorPath, pageEditorPath } from "@/lib/admin-content-routes";
+import { buildPostBlogLookup, resolvePostBlogDisplay, type PostBlogLookup } from "@/lib/post-blog-display";
 import { useActiveSite } from "@/hooks/useActiveSite";
 import { useAdminListPagination } from "@/hooks/use-admin-list-pagination";
 import { useAdminListViewMode } from "@/hooks/use-admin-list-view-mode";
@@ -31,7 +31,40 @@ import { DEFAULT_POST_LIST_SORT } from "@shared/content-list-query";
 import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { useToast } from "@/hooks/use-toast";
 import type { EnrichedPost } from "@shared/posts/post-other";
+import type { Blog } from "@shared/schema-types";
 import { Badge } from "@/components/ui/badge";
+
+type BlogsResponse = {
+  blogs: Blog[];
+  total: number;
+};
+
+function PostBlogLabel({
+  blogId,
+  lookup,
+}: {
+  blogId: string | null | undefined;
+  lookup: PostBlogLookup;
+}) {
+  const blog = resolvePostBlogDisplay({ blogId, lookup });
+
+  if (!blog.missing && blog.pageId) {
+    return (
+      <Link
+        href={pageEditorPath(blog.pageId)}
+        className="text-sm font-medium text-npb-text-secondary hover:text-npb-accent"
+      >
+        {blog.name}
+      </Link>
+    );
+  }
+
+  return (
+    <span className={`text-sm ${blog.missing ? "text-npb-text-muted" : "text-npb-text-secondary"}`}>
+      {blog.name}
+    </span>
+  );
+}
 
 type PostsResponse = {
   posts: EnrichedPost[];
@@ -116,6 +149,16 @@ function PostsList({
     queryKey: postsQueryKey,
     enabled: !!activeSiteId,
   });
+
+  const { data: blogsData } = useQuery<BlogsResponse>({
+    queryKey: ['/api/blogs', { status: 'any', siteId: activeSiteId }],
+    enabled: !!activeSiteId,
+  });
+
+  const blogLookup = useMemo(
+    () => buildPostBlogLookup(blogsData?.blogs ?? []),
+    [blogsData?.blogs],
+  );
   const visiblePage = useAdminListPagination({
     activeSiteId,
     page,
@@ -228,14 +271,7 @@ function PostsList({
     <AdminLayout
       title="Posts"
       actions={
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <ContentListToolbar
-            compact
-            value={search}
-            placeholder="Search posts..."
-            onSearchChange={handleSearchChange}
-          />
-          <AdminListViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+        <>
           <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
             <Download className="w-4 h-4 mr-2" />
             Import
@@ -244,11 +280,18 @@ function PostsList({
             <Plus className="w-4 h-4 mr-2" />
             Add New Post
           </Button>
-        </div>
+        </>
       }
     >
-      <Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)]">
+      <Card className="admin-surface">
         <CardContent className="pt-4">
+          <ContentListFiltersBar
+            searchValue={search}
+            searchPlaceholder="Search posts..."
+            onSearchChange={handleSearchChange}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
           <ContentListBulkBar
             visible={selection.selectedCount > 0}
             selectedCount={selection.selectedCount}
@@ -286,7 +329,13 @@ function PostsList({
               items={posts}
               hrefForItem={(item) => postEditorPath(item.id)}
               renderMeta={(item) => (
-                <span>{item.status || 'draft'} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}</span>
+                <span className="inline-flex flex-wrap items-center gap-x-1">
+                  <PostBlogLabel blogId={item.blogId} lookup={blogLookup} />
+                  <span aria-hidden>·</span>
+                  <span>{item.status || 'draft'}</span>
+                  <span aria-hidden>·</span>
+                  <span>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}</span>
+                </span>
               )}
               renderActions={(item) => (
                 <>
@@ -334,6 +383,7 @@ function PostsList({
                   <TableHead>
                     <SortableHeader label="Title" field="title" activeField={sort} order={order} onSortChange={handleSortChange} />
                   </TableHead>
+                  <TableHead>Blog</TableHead>
                   <TableHead>
                     <SortableHeader label="Status" field="status" activeField={sort} order={order} onSortChange={handleSortChange} />
                   </TableHead>
@@ -378,12 +428,15 @@ function PostsList({
                             </Badge>
                           )}
                         </div>
-                        {post.excerpt && (
-                          <div className="text-sm text-npb-text-muted mt-1">
+                        {post.excerpt ? (
+                          <div className="mt-1 line-clamp-2 text-sm text-npb-text-secondary">
                             {post.excerpt.substring(0, 100)}...
                           </div>
-                        )}
+                        ) : null}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <PostBlogLabel blogId={post.blogId} lookup={blogLookup} />
                     </TableCell>
                     <TableCell>
                       <ContentStatusSelect

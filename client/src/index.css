@@ -140,7 +140,122 @@
   --npb-accent: #3b82f6;
   --npb-accent-hover: #2563eb;
   --npb-accent-foreground: #ffffff;
-  color: var(--npb-text-primary);
+  --npb-radius-surface: 0.5rem;
+  --npb-shadow-surface: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+  /* Site design system tokens (overridden by active theme inline styles) */
+  --np-site-background: var(--npb-surface-base);
+  --np-site-foreground: var(--npb-text-primary);
+  --np-site-muted: var(--npb-surface-raised);
+  --np-site-muted-foreground: var(--npb-text-muted);
+  --np-site-accent: var(--npb-accent);
+  --np-site-accent-hover: var(--npb-accent-hover);
+  --np-site-accent-foreground: var(--npb-accent-foreground);
+  --np-site-primary: var(--npb-accent);
+  --np-site-primary-foreground: var(--npb-accent-foreground);
+  --np-site-secondary: var(--npb-surface-inset);
+  --np-site-border: var(--npb-border-default);
+  --np-site-destructive: #ef4444;
+  --np-site-radius: var(--npb-radius-surface);
+  --np-site-shadow-sm: var(--npb-shadow-surface);
+  --np-site-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --np-site-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --np-site-font-title-family: system-ui, sans-serif;
+  --np-site-font-title-size: 2.25rem;
+  --np-site-font-title-weight: 700;
+  --np-site-font-title-line-height: 1.2;
+  --np-site-font-subheading-family: system-ui, sans-serif;
+  --np-site-font-subheading-size: 1.5rem;
+  --np-site-font-subheading-weight: 600;
+  --np-site-font-subheading-line-height: 1.3;
+  --np-site-font-body-family: system-ui, sans-serif;
+  --np-site-font-body-size: 1rem;
+  --np-site-font-body-weight: 400;
+  --np-site-font-body-line-height: 1.5;
+  --np-site-font-small-family: system-ui, sans-serif;
+  --np-site-font-small-size: 0.875rem;
+  --np-site-font-small-weight: 400;
+  --np-site-font-small-line-height: 1.4;
+  --np-site-button-font-family: system-ui, sans-serif;
+  --np-site-button-sm-font-size: 0.875rem;
+  --np-site-button-sm-padding-x: 0.75rem;
+  --np-site-button-sm-padding-y: 0.375rem;
+  --np-site-button-sm-min-height: 2rem;
+  --np-site-button-md-font-size: 1rem;
+  --np-site-button-md-padding-x: 1rem;
+  --np-site-button-md-padding-y: 0.5rem;
+  --np-site-button-md-min-height: 2.25rem;
+  --np-site-button-lg-font-size: 1.125rem;
+  --np-site-button-lg-padding-x: 1.25rem;
+  --np-site-button-lg-padding-y: 0.625rem;
+  --np-site-button-lg-min-height: 2.75rem;
+
+  color: var(--np-site-foreground);
+  background-color: var(--np-site-background);
+  font-family: var(--np-site-font-body-family);
+  font-size: var(--np-site-font-body-size);
+  font-weight: var(--np-site-font-body-weight);
+  line-height: var(--np-site-font-body-line-height);
+}
+
+.np-visitor-document h1,
+.np-visitor-document .wp-block-heading h1 {
+  font-family: var(--np-site-font-title-family);
+  font-size: var(--np-site-font-title-size);
+  font-weight: var(--np-site-font-title-weight);
+  line-height: var(--np-site-font-title-line-height);
+}
+
+.np-visitor-document h2,
+.np-visitor-document h3,
+.np-visitor-document .wp-block-heading h2,
+.np-visitor-document .wp-block-heading h3 {
+  font-family: var(--np-site-font-subheading-family);
+  font-size: var(--np-site-font-subheading-size);
+  font-weight: var(--np-site-font-subheading-weight);
+  line-height: var(--np-site-font-subheading-line-height);
+}
+
+.np-visitor-document h4,
+.np-visitor-document h5,
+.np-visitor-document h6,
+.np-visitor-document .wp-block-heading h4,
+.np-visitor-document .wp-block-heading h5,
+.np-visitor-document .wp-block-heading h6 {
+  font-family: var(--np-site-font-subheading-family);
+  font-size: var(--np-site-font-small-size);
+  font-weight: var(--np-site-font-subheading-weight);
+  line-height: var(--np-site-font-subheading-line-height);
+}
+
+.np-visitor-document small,
+.np-visitor-document .wp-block-post-date,
+.np-visitor-document .wp-block-post-author {
+  font-family: var(--np-site-font-small-family);
+  font-size: var(--np-site-font-small-size);
+  font-weight: var(--np-site-font-small-weight);
+  line-height: var(--np-site-font-small-line-height);
+}
+
+.np-visitor-document .wp-block-button__link,
+.np-visitor-document .wp-element-button {
+  font-family: var(--np-site-button-font-family);
+  font-size: var(--np-site-button-md-font-size);
+  padding: var(--np-site-button-md-padding-y) var(--np-site-button-md-padding-x);
+  min-height: var(--np-site-button-md-min-height);
+  border-radius: var(--np-site-radius);
+}
+
+.np-visitor-document .wp-block-button.is-style-small .wp-block-button__link {
+  font-size: var(--np-site-button-sm-font-size);
+  padding: var(--np-site-button-sm-padding-y) var(--np-site-button-sm-padding-x);
+  min-height: var(--np-site-button-sm-min-height);
+}
+
+.np-visitor-document .wp-block-button.is-style-large .wp-block-button__link {
+  font-size: var(--np-site-button-lg-font-size);
+  padding: var(--np-site-button-lg-padding-y) var(--np-site-button-lg-padding-x);
+  min-height: var(--np-site-button-lg-min-height);
 }
 
 :root {
@@ -785,6 +900,39 @@
   .npb-editor-sidebar .npb-settings-select-trigger [data-placeholder] {
     color: var(--npb-sidebar-field-placeholder) !important;
   }
+
+  /**
+   * Portaled Radix select menus — match builder sidebar field ergonomics (light + dark via npb tokens).
+   */
+  .npb-settings-select-content {
+    border-radius: var(--npb-radius-input) !important;
+    border: 1px solid var(--npb-border-strong) !important;
+    background-color: var(--npb-surface-overlay) !important;
+    color: var(--npb-text-primary) !important;
+    box-shadow: var(--npb-shadow-surface) !important;
+  }
+
+  .npb-settings-select-item {
+    color: var(--npb-text-primary) !important;
+  }
+
+  .npb-settings-select-item[data-highlighted] {
+    background-color: var(--npb-interactive-bg-hover) !important;
+    color: var(--npb-text-primary) !important;
+  }
+
+  .npb-settings-select-item[data-state='checked'] {
+    background-color: var(--npb-interactive-bg-active) !important;
+    color: var(--npb-interactive-text-active) !important;
+  }
+
+  .npb-settings-popover-surface {
+    border-radius: var(--npb-radius-input);
+    border: 1px solid var(--npb-border-strong);
+    background-color: var(--npb-surface-overlay);
+    color: var(--npb-text-primary);
+    box-shadow: var(--npb-shadow-surface);
+  }
 }
 
 @keyframes fadeIn {
@@ -792,15 +940,29 @@
   to { opacity: 1; }
 }
 
-/* Selection ring fades to a faint outline with the toolbar after idle. Block stays selected. */
-.npb-canvas-block-selected {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--npb-accent, #3b82f6) 40%, transparent);
-  transition: box-shadow var(--npb-duration-normal) var(--npb-ease-out);
+/* Selection ring — fixed 2px outline so hover/select/edit never resize the block. */
+.npb-canvas-block-selected,
+.npb-canvas-block-hover,
+.npb-canvas-block-editing {
+  outline: 2px solid transparent;
+  outline-offset: 0;
 }
 
-.npb-canvas-block-selected[data-chrome="true"] {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--npb-accent, #3b82f6);
-  transition: none;
+.npb-canvas-block-hover {
+  outline-color: color-mix(in srgb, var(--npb-accent, #3b82f6) 45%, transparent);
+}
+
+.npb-canvas-block-selected {
+  outline-color: color-mix(in srgb, var(--npb-accent, #3b82f6) 40%, transparent);
+}
+
+.npb-canvas-block-selected[data-chrome="true"],
+.npb-canvas-block-editing {
+  outline-color: var(--npb-accent, #3b82f6);
+}
+
+.npb-canvas-block-editing {
+  outline-width: 2px;
 }
 
 .npb-image-resize-handle {
@@ -976,21 +1138,58 @@
 }
 
 .admin-surface {
-  border: 0;
-  background-color: var(--npb-surface-raised);
+  border: 1px solid var(--npb-border-strong);
+  background-color: var(--npb-surface-base);
   box-shadow: var(--npb-shadow-surface);
 }
 
+/**
+ * Admin workspace — stronger plane separation than builder chrome (context.md contrast pass).
+ * Scoped to list pages and dashboard so editor tokens stay unchanged.
+ */
+.admin-page-content {
+  --npb-border-default: rgb(0 0 0 / 0.1);
+  --npb-border-strong: rgb(0 0 0 / 0.16);
+  --npb-divider: rgb(0 0 0 / 0.09);
+  --npb-shadow-surface: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+}
+
+.dark .admin-page-content {
+  --npb-border-default: rgb(255 255 255 / 0.12);
+  --npb-border-strong: rgb(255 255 255 / 0.2);
+  --npb-divider: rgb(255 255 255 / 0.1);
+  --npb-shadow-surface: 0 1px 3px 0 rgb(0 0 0 / 0.35), 0 1px 2px -1px rgb(0 0 0 / 0.28);
+}
+
 .admin-page-header {
-  box-shadow: 0 1px 0 var(--npb-divider);
+  background-color: var(--npb-surface-base);
 }
 
 .admin-list-table thead th {
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: var(--npb-surface-raised);
-  box-shadow: 0 1px 0 var(--npb-divider);
+  background-color: var(--npb-surface-inset);
+  box-shadow: inset 0 -1px 0 var(--npb-border-strong);
+  color: var(--npb-text-secondary);
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.admin-page-content .admin-list-table tbody tr {
+  border-bottom: 1px solid var(--npb-divider);
+}
+
+.admin-page-content .admin-list-table tbody tr:hover {
+  background-color: var(--npb-interactive-bg-hover);
+}
+
+.admin-page-content .admin-list-table tbody tr[data-state='selected'] {
+  background-color: rgb(59 130 246 / 0.08);
+}
+
+.dark .admin-page-content .admin-list-table tbody tr[data-state='selected'] {
+  background-color: rgb(96 165 250 / 0.12);
 }
 
 .admin-list-table tbody td {
@@ -1017,6 +1216,11 @@
 .admin-page-content textarea,
 .admin-page-content select {
   background-color: var(--npb-surface-base);
+  border-color: var(--npb-border-strong);
+}
+
+.admin-page-content [data-radix-select-trigger] {
+  border-color: var(--npb-border-strong);
 }
 
 .admin-page-content [role="tab"][data-state="inactive"] {
@@ -1127,11 +1331,6 @@
 /* Canvas is the page document. Body copy uses page text, not admin muted chrome. */
 .npb-canvas-page {
   color: var(--npb-text-primary);
-}
-
-/* Canvas block hover + toolbar — accent outline, solid toolbar surface */
-.npb-canvas-block-hover {
-  box-shadow: inset 0 0 0 2px var(--npb-canvas-block-hover-outline);
 }
 
 .npb-canvas-toolbar {

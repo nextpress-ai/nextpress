@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
+import { DEFAULT_PAGE_DESIGN } from "@shared/page-other";
 import { PAGE_BLOCK_STACK_GAP } from "@shared/block-container-placement";
 import { resolveBlockTreeForSurface } from "@shared/resolve-block-for-surface";
 import {
@@ -22,6 +23,7 @@ type PublicBlockStackProps = {
   testId?: string;
   deviceView?: "desktop" | "tablet" | "mobile";
   post?: BindablePostDocument;
+  themeCssVars?: Record<string, string>;
 };
 
 const toIsoOrNull = (value: string | Date | null | undefined): string | null => {
@@ -43,6 +45,7 @@ export function PublicBlockStack({
   testId,
   deviceView,
   post,
+  themeCssVars,
 }: PublicBlockStackProps): JSX.Element | null {
   if (blocks.length === 0) {
     return null;
@@ -79,11 +82,12 @@ export function PublicBlockStack({
   return (
     <PageProvider postDocument={postDocument}>
       <div
-        className="np-visitor-document np-public-block-stack mx-auto flex w-full min-w-0 flex-col items-stretch overflow-x-clip"
+        className="np-public-block-stack mx-auto flex w-full min-w-0 flex-col items-stretch overflow-x-clip"
         data-testid={testId}
         style={{
-          maxWidth: design?.containerWidth || undefined,
-          padding: design?.padding || undefined,
+          ...themeCssVars,
+          maxWidth: design?.containerWidth ?? DEFAULT_PAGE_DESIGN.containerWidth,
+          padding: design?.padding ?? DEFAULT_PAGE_DESIGN.padding,
           gap: PAGE_BLOCK_STACK_GAP,
         }}
       >

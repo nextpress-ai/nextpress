@@ -4,6 +4,8 @@ import { asyncHandler } from './shared/async-handler';
 import { safeTryAsync } from '../utils';
 import { generateSlug } from './shared/slug';
 import { readRequestSiteId, resolveRequestSite } from './shared/resolve-request-site';
+import { resolveSiteThemeSettings } from './shared/resolve-site-theme-settings';
+import { mergePageOtherWithThemeDefaults } from '@shared/theme-to-page-design';
 
 /**
  * Builds a PostList block config pre-configured for a specific blog.
@@ -170,6 +172,12 @@ export function createBlogsRoutes(deps: Deps): Router {
 
         const siteId = String(site.id);
 
+        const themeResolved = await resolveSiteThemeSettings({ models, siteId });
+        const pageOther = mergePageOtherWithThemeDefaults({
+          themeSettings: themeResolved.themeId ? themeResolved.settings : null,
+          other: { isBlogPage: true, blogId: blog.id },
+        });
+
         // Auto-create the blog's index page with a PostList block
         const blogPage = await models.pages.create({
           title: String(blog.name),
@@ -178,7 +186,7 @@ export function createBlogsRoutes(deps: Deps): Router {
           authorId: String(userId),
           status: 'draft',
           blocks: [buildBlogPostListBlock(blog.id)],
-          other: { isBlogPage: true, blogId: blog.id },
+          other: pageOther,
         } as any);
 
         // Link the page back to the blog

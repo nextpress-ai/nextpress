@@ -1,6 +1,7 @@
 export { ContentListBulkBar } from './bulk-bar';
 export { ContentListPaginationFooter } from './pagination-footer';
 export { ContentListToolbar } from './toolbar';
+export { ContentListFiltersBar } from './filters-bar';
 export {
   AdminListViewModeToggle,
   ContentCardGrid,

@@ -23,8 +23,5 @@ export type ContentListToolbarProps = {
   value: string;
   placeholder: string;
   onSearchChange: (value: string) => void;
-  hint?: string;
   className?: string;
-  /** Hides helper line and tightens width for page header placement. */
-  compact?: boolean;
 };

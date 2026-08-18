@@ -31,7 +31,8 @@ export type BuilderSidebarProps = {
   onToggleSidebar: () => void;
   onInsertTemplate?: (blocks: BlockConfig[]) => void;
   blocks?: BlockConfig[];
-  onApplyResponsiveDefaults?: () => void;
+  onApplyResponsiveDefaults?: () => boolean | void;
+  responsiveHealthBannerDismissed?: boolean;
 };
 
 /**
@@ -48,6 +49,7 @@ export function BuilderSidebar({
   onInsertTemplate,
   blocks = [],
   onApplyResponsiveDefaults,
+  responsiveHealthBannerDismissed = false,
 }: BuilderSidebarProps): ReactElement {
   const {
     categories: libraryCategories,
@@ -124,7 +126,11 @@ export function BuilderSidebar({
             </Tooltip>
           </div>
         </div>
-        <ResponsiveHealthBanner blocks={blocks} onApplyDefaults={onApplyResponsiveDefaults} />
+        <ResponsiveHealthBanner
+          blocks={blocks}
+          onApplyDefaults={onApplyResponsiveDefaults}
+          dismissed={responsiveHealthBannerDismissed}
+        />
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as 'blocks' | 'settings')}

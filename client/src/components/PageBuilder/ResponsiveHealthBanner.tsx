@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 
 type ResponsiveHealthBannerProps = {
   blocks: BlockConfig[];
-  onApplyDefaults?: () => void;
+  onApplyDefaults?: () => boolean | void;
+  /** Hide after the user applies defaults for the current issue set. */
+  dismissed?: boolean;
 };
 
 /**
@@ -15,10 +17,11 @@ type ResponsiveHealthBannerProps = {
 export function ResponsiveHealthBanner({
   blocks,
   onApplyDefaults,
+  dismissed = false,
 }: ResponsiveHealthBannerProps): JSX.Element | null {
   const issues = useMemo(() => validateBlockResponsiveHealth(blocks).issues, [blocks]);
 
-  if (issues.length === 0) {
+  if (issues.length === 0 || dismissed) {
     return null;
   }
 
@@ -44,7 +47,9 @@ export function ResponsiveHealthBanner({
           size="sm"
           variant="outline"
           className="mt-2 h-7 border-amber-700/40 bg-amber-50/80 text-amber-950 hover:bg-amber-100 dark:border-amber-400/50 dark:bg-transparent dark:text-amber-50 dark:hover:bg-amber-500/20"
-          onClick={onApplyDefaults}
+          onClick={() => {
+            if (onApplyDefaults?.() === false) return;
+          }}
         >
           Apply mobile-friendly defaults
         </Button>

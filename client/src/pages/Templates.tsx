@@ -183,7 +183,7 @@ export default function Templates() {
         </Button>
       }
     >
-          <Card className="border-0 bg-npb-surface-raised shadow-[var(--npb-shadow-surface)]">
+          <Card className="admin-surface">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>All Templates</CardTitle>

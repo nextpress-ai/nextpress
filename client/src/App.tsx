@@ -20,6 +20,7 @@ const Pages = lazy(() => import('@/pages/Pages'));
 const Media = lazy(() => import('@/pages/Media'));
 const Comments = lazy(() => import('@/pages/Comments'));
 const Themes = lazy(() => import('@/pages/Themes'));
+const ThemeEdit = lazy(() => import('@/pages/ThemeEdit'));
 const Users = lazy(() => import('@/pages/Users'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const Sites = lazy(() => import('@/pages/Sites'));
@@ -124,6 +125,12 @@ function Router() {
             <Route path="/admin/pages" component={Pages} />
             <Route path="/admin/media" component={Media} />
             <Route path="/admin/comments" component={Comments} />
+            <Route
+              path="/admin/themes/:id"
+              component={({ params }: { params: { id: string } }) => (
+                <ThemeEdit key={params.id} />
+              )}
+            />
             <Route path="/admin/themes" component={Themes} />
             <Route path="/admin/templates" component={Templates} />
             <Route path="/admin/plugins" component={Plugins} />
