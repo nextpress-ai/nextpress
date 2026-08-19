@@ -54,3 +54,5 @@ opencode.json
 .opencode/
 .claude/
 backup/opencode.json.bak
+# Release demo video renders (large binaries, regenerate with scripts/)
+release-assets/
