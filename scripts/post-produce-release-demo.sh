@@ -21,35 +21,44 @@ TRANS_DIR="$OUT_DIR/transitions"
 FINAL_MP4="$OUT_DIR/nextpress-${VERSION}-demo.mp4"
 MUSIC_MP3="$OUT_DIR/background-music.mp3"
 ATTRIBUTION="$OUT_DIR/MUSIC-ATTRIBUTION.txt"
-LOGO_MARK="$TRANS_DIR/_build/logo-mark.png"
 WORK="$OUT_DIR/_work"
-
-FONT_BOLD="${DEMO_FONT:-/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf}"
-FONT_REG="${DEMO_FONT_REG:-/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf}"
 
 W=1280
 H=720
 FPS=30
-INTRO_SEC=3.2
-OUTRO_SEC=3.4
 
 BRAND="3b82f6"
 INK="0f172a"
 BG="f8fafc"
 
-# A frame counts as blank when its 10th/90th luma percentiles are this close.
-# Uniform dark canvas and "white page + spinner" both collapse to ~0 spread;
-# any real UI frame reads 150+.
-BLANK_SPREAD=25
+# A frame counts as blank when the greyscale standard deviation of its CONTENT
+# AREA is this low. Two earlier attempts were both wrong:
+#
+#   * Luma percentiles (10th/90th spread): a legitimately near-white page --
+#     the search showcase -- has almost no spread and got flagged blank end to
+#     end.
+#   * Whole-frame stddev: misses the worst artifact of the lot. When the editor
+#     swaps preview viewports the canvas goes empty for ~1.5s but the toolbars
+#     and side panels stay put, so the frame as a whole still looks busy.
+#
+# Cropping to the middle of the frame drops the app chrome and leaves only what
+# the viewer is actually looking at. Measured over the raw segments:
+#
+#   boot canvas (uniform dark)       0.002
+#   white page + spinner             0.012
+#   preview viewport swap (empty)    0.005 - 0.012
+#   search showcase (real page)      0.101
+#   theme editor (quietest real UI)  0.089
+#   editor / admin                   0.27 - 0.44
+#
+# 0.04 sits ~3x above the loading states and ~2x below the quietest real frame.
+BLANK_STDDEV=0.04
+BLANK_CROP="crop=iw*0.6:ih*0.72:iw*0.2:ih*0.16"
+SAMPLE_FPS=10        # blank-run detection resolution, in frames per second
 MIN_BLANK_RUN=0.35   # shorter flickers are not worth a cut
 MIN_KEEP_RUN=0.40    # drop slivers left between two blank runs
 
 mkdir -p "$WORK"
-
-if [[ ! -f "$FONT_BOLD" ]]; then
-  FONT_BOLD="/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
-  FONT_REG="/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
-fi
 
 if [[ ! -d "$SEG_DIR" ]] || ! compgen -G "$SEG_DIR/*.webm" >/dev/null; then
   echo "[post] No segments in $SEG_DIR — run ./scripts/record-release-demo-${VERSION}.sh" >&2
@@ -79,21 +88,24 @@ clip_dur() { ffprobe -v error -show_entries format=duration -of csv=p=0 "$1"; }
 # Emit "start end" keep-intervals for a clip, with blank runs removed.
 keep_intervals() {
   local file="$1"
-  local dur
+  local dur frames
   dur=$(clip_dur "$file")
+  frames="$WORK/frames"
 
-  ffmpeg -hide_banner -loglevel verbose -i "$file" \
-    -vf "signalstats,metadata=print" -f null - 2>&1 \
-  | awk -v dur="$dur" -v spread="$BLANK_SPREAD" \
+  rm -rf "$frames"; mkdir -p "$frames"
+  ffmpeg -y -hide_banner -loglevel error -i "$file" \
+    -vf "fps=${SAMPLE_FPS},${BLANK_CROP},scale=160:-1,format=gray" "$frames/%05d.png"
+
+  # One identify process for the whole clip; per-file convert calls are ~50x slower.
+  identify -format "%[fx:standard_deviation]\n" "$frames"/*.png \
+  | awk -v dur="$dur" -v thresh="$BLANK_STDDEV" -v fps="$SAMPLE_FPS" \
         -v minblank="$MIN_BLANK_RUN" -v minkeep="$MIN_KEEP_RUN" '
       # n must start as a number: awk subscripts are strings, and an
       # uninitialised n indexes bs[""] rather than bs[0].
-      BEGIN { n = 0 }
-      /pts_time:/       { split($0, a, "pts_time:"); t = a[2] + 0 }
-      /signalstats.YLOW=/  { split($0, b, "="); ylow  = b[2] + 0 }
-      /signalstats.YHIGH=/ {
-        split($0, b, "="); yhigh = b[2] + 0
-        blank = (yhigh - ylow <= spread)
+      BEGIN { n = 0; i = 0 }
+      {
+        t = i / fps; i++
+        blank = ($1 + 0 <= thresh)
         if (blank && !inrun) { inrun = 1; rs = t }
         if (!blank && inrun) {
           inrun = 0
@@ -103,12 +115,14 @@ keep_intervals() {
       END {
         if (inrun) { bs[n] = rs; be[n] = dur; n++ }
         cur = 0
-        for (i = 0; i < n; i++) {
-          if (bs[i] - cur >= minkeep) printf "%.2f %.2f\n", cur, bs[i]
-          cur = be[i]
+        for (j = 0; j < n; j++) {
+          if (bs[j] - cur >= minkeep) printf "%.2f %.2f\n", cur, bs[j]
+          cur = be[j]
         }
         if (dur - cur >= minkeep) printf "%.2f %.2f\n", cur, dur
       }'
+
+  rm -rf "$frames"
 }
 
 # Normalise a raw segment to the delivery format, cutting every blank run out.
@@ -152,28 +166,6 @@ normalize_segment() {
     "$((n - 1))" "$([[ $n -eq 2 ]] && echo '' || echo 's')"
 }
 
-# Branded bookend card, same visual language as the transitions.
-make_title_card() {
-  local out="$1" line1="$2" line2="$3" dur="$4"
-
-  ffmpeg -y -hide_banner -loglevel error \
-    -f lavfi -i "color=c=0x${BG}:s=${W}x${H}:d=${dur}:r=${FPS}" \
-    -loop 1 -t "$dur" -i "$LOGO_MARK" \
-    -filter_complex "
-      [0:v]
-        drawtext=fontfile=${FONT_BOLD}:text='${line1}':fontsize=62:fontcolor=0x${INK}:
-          x=(w-text_w)/2:y=372:
-          alpha='if(lt(t,0.3),0,if(lt(t,0.9),(t-0.3)/0.6,1))',
-        drawtext=fontfile=${FONT_REG}:text='${line2}':fontsize=34:fontcolor=0x${BRAND}:
-          x=(w-text_w)/2:y=452:
-          alpha='if(lt(t,0.6),0,if(lt(t,1.2),(t-0.6)/0.6,1))'
-      [bg];
-      [1:v] format=rgba, scale=-1:76, fade=t=in:st=0:d=0.5:alpha=1 [logo];
-      [bg][logo] overlay=(W-w)/2:246
-    " \
-    -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -an "$out"
-}
-
 # --- build -----------------------------------------------------------------
 # Feature segments first, pretty public examples only at the end.
 declare -a ORDER=(
@@ -190,19 +182,20 @@ declare -a ORDER=(
   "t:undo"
   "s:06-undo"
   "t:showcase"
-  "s:07a-showcase-nimbus"
-  "s:07b-showcase-cafe"
-  "s:07c-showcase-studio"
+  "s:07a-showcase-search"
+  "s:07b-showcase-ngo"
+  "s:07c-showcase-blog"
 )
 
 echo "[post] De-blanking segments..."
 CONCAT_LIST="$WORK/concat.txt"
 : > "$CONCAT_LIST"
 
-INTRO="$WORK/intro.mp4"
-OUTRO="$WORK/outro.mp4"
-make_title_card "$INTRO" "NextPress" "${VERSION}" "$INTRO_SEC"
-make_title_card "$OUTRO" "Available now" "${VERSION}" "$OUTRO_SEC"
+INTRO="$TRANS_DIR/intro.mp4"
+OUTRO="$TRANS_DIR/outro.mp4"
+for card in "$INTRO" "$OUTRO"; do
+	[[ -f "$card" ]] || { echo "[post] Missing bookend $card" >&2; exit 1; }
+done
 
 printf "file '%s'\n" "$INTRO" >> "$CONCAT_LIST"
 

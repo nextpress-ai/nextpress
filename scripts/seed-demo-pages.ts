@@ -166,16 +166,39 @@ function cookieHeader(cookieJar: Map<string, string>): string {
 	return [...cookieJar.entries()].map(([k, v]) => `${k}=${v}`).join("; ");
 }
 
-async function listApiPages({
+async function resolveApiSiteId({
 	baseUrl,
 	cookieJar,
 }: {
 	baseUrl: string;
 	cookieJar: Map<string, string>;
-}): Promise<ApiPage[]> {
-	const response = await fetch(`${baseUrl}/api/pages?limit=100&status=any`, {
+}): Promise<string> {
+	const response = await fetch(`${baseUrl}/api/sites`, {
 		headers: { Cookie: cookieHeader(cookieJar), Origin: baseUrl },
 	});
+	if (!response.ok) {
+		throw new Error(`Failed to list sites (${response.status})`);
+	}
+	const body = (await response.json()) as { sites?: Array<{ id: string }> } | Array<{ id: string }>;
+	const sites = Array.isArray(body) ? body : (body.sites ?? []);
+	const siteId = process.env.DEMO_SITE_ID ?? sites[0]?.id;
+	if (!siteId) throw new Error("No site found to seed into.");
+	return siteId;
+}
+
+async function listApiPages({
+	baseUrl,
+	cookieJar,
+	siteId,
+}: {
+	baseUrl: string;
+	cookieJar: Map<string, string>;
+	siteId: string;
+}): Promise<ApiPage[]> {
+	const response = await fetch(
+		`${baseUrl}/api/pages?limit=100&status=any&siteId=${encodeURIComponent(siteId)}`,
+		{ headers: { Cookie: cookieHeader(cookieJar), Origin: baseUrl } },
+	);
 	if (!response.ok) {
 		throw new Error(`Failed to list pages (${response.status})`);
 	}
@@ -188,11 +211,13 @@ async function upsertDemoPageApi({
 	baseUrl,
 	cookieJar,
 	existingBySlug,
+	siteId,
 }: {
 	def: DemoPageDefinition;
 	baseUrl: string;
 	cookieJar: Map<string, string>;
 	existingBySlug: Map<string, ApiPage>;
+	siteId: string;
 }): Promise<SeedResult> {
 	const blocks = validatedBlocks(def.blocks);
 	const existing = existingBySlug.get(def.slug);
@@ -205,6 +230,7 @@ async function upsertDemoPageApi({
 	const payload = {
 		title: def.title,
 		slug: def.slug,
+		siteId,
 		status: "publish",
 		blocks,
 		other: { seo: { metaDescription: def.description } },
@@ -257,12 +283,13 @@ export async function seedDemoPages({
 		}
 		const cookieJar = new Map<string, string>();
 		await ensureApiSession({ baseUrl, cookieJar });
+		const siteId = await resolveApiSiteId({ baseUrl, cookieJar });
 		const existingBySlug = new Map(
-			(await listApiPages({ baseUrl, cookieJar })).map((page) => [page.slug, page]),
+			(await listApiPages({ baseUrl, cookieJar, siteId })).map((page) => [page.slug, page]),
 		);
 		const results: SeedResult[] = [];
 		for (const def of demoPageDefinitions) {
-			results.push(await upsertDemoPageApi({ def, baseUrl, cookieJar, existingBySlug }));
+			results.push(await upsertDemoPageApi({ def, baseUrl, cookieJar, existingBySlug, siteId }));
 		}
 		return results;
 	}

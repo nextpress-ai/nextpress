@@ -253,21 +253,26 @@ if want 06-undo; then
 fi
 
 # --- 7. Showcase -----------------------------------------------------------
-# Three pretty public pages, one recording each so no clip carries a navigation.
+# Three replicated site designs -- a search home, a conservation nonprofit and a
+# personal blog. One recording each so no clip carries a navigation.
+# showcase <segment> <slug> <scroll-px>
+# Scroll distance is per page: the search home is barely taller than the
+# viewport, so paging it the way a long marketing page gets paged just parks
+# on the footer.
 showcase() {
-  local name="$1" slug="$2"
+  local name="$1" slug="$2" step="$3"
   want "$name" || return 0
-  record_start "$name" "$(pub "$slug")" 'h1' 2600
-  ab scroll down 430 >/dev/null
+  record_start "$name" "$(pub "$slug")" 'h1' 3000
+  ab scroll down "$step" >/dev/null
+  ab wait 2800 >/dev/null
+  ab scroll down "$step" >/dev/null
   ab wait 2600 >/dev/null
-  ab scroll down 430 >/dev/null
-  ab wait 2400 >/dev/null
   record_stop
 }
 
-showcase 07a-showcase-nimbus  demo-nimbus-saas
-showcase 07b-showcase-cafe    demo-oak-ember-cafe
-showcase 07c-showcase-studio  demo-studio-meridian
+showcase 07a-showcase-search demo-northstar-search 200
+showcase 07b-showcase-ngo    demo-rivermouth-ngo   440
+showcase 07c-showcase-blog   demo-field-notes-blog 440
 
 ab close --all >/dev/null 2>&1 || true
 

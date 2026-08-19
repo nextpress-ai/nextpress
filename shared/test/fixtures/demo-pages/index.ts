@@ -4,8 +4,19 @@ import { cafeLocalFixture } from "./cafe-local.js";
 import { portfolioStudioFixture } from "./portfolio-studio.js";
 import { blogArticleFixture } from "./blog-article.js";
 import { newsletterLandingFixture } from "./newsletter-landing.js";
+import { searchEngineFixture } from "./search-engine.js";
+import { ngoConservationFixture } from "./ngo-conservation.js";
+import { personalBlogFixture } from "./personal-blog.js";
 
-export type DemoPageKey = "saas" | "cafe" | "portfolio" | "blog" | "newsletter";
+export type DemoPageKey =
+	| "saas"
+	| "cafe"
+	| "portfolio"
+	| "blog"
+	| "newsletter"
+	| "search"
+	| "ngo"
+	| "personalBlog";
 
 export type DemoPageDefinition = {
 	key: DemoPageKey;
@@ -58,6 +69,30 @@ export const demoPageDefinitions: DemoPageDefinition[] = [
 		inspiredBy: "Substack subscribe page",
 		blocks: newsletterLandingFixture,
 	},
+	{
+		key: "search",
+		title: "Northstar — Search",
+		slug: "demo-northstar-search",
+		description: "Whitespace-first search home with pill field and footer links.",
+		inspiredBy: "Search engine home pages (fictional brand)",
+		blocks: searchEngineFixture,
+	},
+	{
+		key: "ngo",
+		title: "Rivermouth Trust",
+		slug: "demo-rivermouth-ngo",
+		description: "Conservation nonprofit with photo hero, impact stats, programmes, donate CTA.",
+		inspiredBy: "WWF / river trust campaign sites",
+		blocks: ngoConservationFixture,
+	},
+	{
+		key: "personalBlog",
+		title: "Field Notes — The quiet hours before a launch",
+		slug: "demo-field-notes-blog",
+		description: "Editorial personal blog with masthead, hero photo, pullquote, and archive.",
+		inspiredBy: "Personal essay blogs / Ghost editorial themes",
+		blocks: personalBlogFixture,
+	},
 ];
 
 export const demoPagesByKey: Record<DemoPageKey, BlockConfig[]> = {
@@ -66,4 +101,7 @@ export const demoPagesByKey: Record<DemoPageKey, BlockConfig[]> = {
 	portfolio: portfolioStudioFixture,
 	blog: blogArticleFixture,
 	newsletter: newsletterLandingFixture,
+	search: searchEngineFixture,
+	ngo: ngoConservationFixture,
+	personalBlog: personalBlogFixture,
 };
