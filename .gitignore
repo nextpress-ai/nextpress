@@ -49,8 +49,12 @@ env
 .npmrc
 
 # Agent / AI workspace (local only — not part of the repo)
+AGENTS.md
 docs/
 opencode.json
 .opencode/
 .claude/
 backup/opencode.json.bak
+
+# Release media assets (binaries — not committed to source)
+release-assets/
