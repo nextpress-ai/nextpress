@@ -481,7 +481,7 @@ else
     exit 1
   fi
   print_success "Published GitHub release v${VERSION}"
-  print_info "Release: https://github.com/pabloh3/nextpress1/releases/tag/v${VERSION}"
+  print_info "Release: https://github.com/nextpress-ai/nextpress/releases/tag/v${VERSION}"
 fi
 
 # ============================================

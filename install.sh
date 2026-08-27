@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly NEXTPRESS_RAW_BASE="${NEXTPRESS_RAW_BASE:-https://raw.githubusercontent.com/pabloh3/nextpress1/main}"
+readonly NEXTPRESS_RAW_BASE="${NEXTPRESS_RAW_BASE:-https://raw.githubusercontent.com/nextpress-ai/nextpress/main}"
 readonly NEXTPRESS_BIN_PATH="${NEXTPRESS_BIN_PATH:-/usr/local/bin/nextpress}"
 readonly NEXTPRESS_COMMAND_URL="${NEXTPRESS_COMMAND_URL:-$NEXTPRESS_RAW_BASE/scripts/nextpress}"
 
@@ -35,7 +35,7 @@ require_sudo() {
 		return
 	fi
 
-	fail "Root permissions are required. Re-run as root, or run: curl -fsSL https://raw.githubusercontent.com/pabloh3/nextpress1/main/install.sh | sudo bash"
+	fail "Root permissions are required. Re-run as root, or run: curl -fsSL https://raw.githubusercontent.com/nextpress-ai/nextpress/main/install.sh | sudo bash"
 }
 
 as_root() {

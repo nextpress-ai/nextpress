@@ -7,8 +7,8 @@ readonly DEFAULT_VERSION="latest"
 readonly COMPOSE_FILE="docker-compose.prod.yml"
 readonly RELEASE_CONFIG_FILE="nextpress.config.json"
 readonly BACKUP_DIR="backups"
-readonly DEFAULT_COMPOSE_SPEC_URL="https://raw.githubusercontent.com/pabloh3/nextpress1/main/docker-compose.prod.yml"
-readonly DEFAULT_COMMAND_URL="${NEXTPRESS_COMMAND_URL:-${NEXTPRESS_RAW_BASE:-https://raw.githubusercontent.com/pabloh3/nextpress1/main}/scripts/nextpress}"
+readonly DEFAULT_COMPOSE_SPEC_URL="https://raw.githubusercontent.com/nextpress-ai/nextpress/main/docker-compose.prod.yml"
+readonly DEFAULT_COMMAND_URL="${NEXTPRESS_COMMAND_URL:-${NEXTPRESS_RAW_BASE:-https://raw.githubusercontent.com/nextpress-ai/nextpress/main}/scripts/nextpress}"
 readonly MIN_FREE_MB_INSTALL=1024
 readonly MIN_FREE_MB_DOCKER=2048
 readonly BACKUP_KEEP_COUNT=3
@@ -51,7 +51,7 @@ print_help() {
 nextpress - self-host and manage a NextPress server
 
 Install NextPress:
-  curl -fsSL https://raw.githubusercontent.com/pabloh3/nextpress1/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/nextpress-ai/nextpress/main/install.sh | bash
 
 Options:
   -d, --install-dir <path>   Install location (default: $DEFAULT_INSTALL_DIR)

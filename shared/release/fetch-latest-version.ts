@@ -9,7 +9,7 @@ export type LatestVersionLookup = {
 };
 
 const GITHUB_LATEST_RELEASE_URL =
-	"https://api.github.com/repos/pabloh3/nextpress1/releases/latest";
+	"https://api.github.com/repos/nextpress-ai/nextpress/releases/latest";
 
 /** Normalizes release tags like `v1.0.13` or `1.0.13` to semver. */
 export const normalizeReleaseTag = (tag: string): string | null => {

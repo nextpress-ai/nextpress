@@ -266,7 +266,7 @@ We welcome contributions from the community. Here is how to help:
 
 - **Reach out**: [info@nextpress.ai](mailto:info@nextpress.ai)
 - **Experimental features**: Check the `docs/` directory before contributing to experimental areas, as APIs may change
-- **Issue reporting**: Use the GitHub issue tracker at github.com/pabloh3/nextpress1
+- **Issue reporting**: Use the GitHub issue tracker at github.com/nextpress-ai/nextpress
 - **Pull requests**: All contributions must pass `pnpm check` and the test suite
 
 Nextpress is released under the GPL v3 license. See the LICENSE file for full details.
