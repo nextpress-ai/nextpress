@@ -29,8 +29,6 @@
     "audit:demo-pages": "bash scripts/demo-pages-audit.sh",
     "import:users": "tsx scripts/import-users.ts",
     "verify:users": "tsx scripts/verify-users.ts",
-    "cli:build": "pnpm --filter @nextpress-org/cli build",
-    "cli:dev": "pnpm --filter @nextpress-org/cli dev",
     "sdk:install": "pnpm --filter @nextpress-org/sdk install",
     "sdk:build": "pnpm --filter @nextpress-org/sdk build",
     "sdk:test": "pnpm --filter @nextpress-org/sdk test",

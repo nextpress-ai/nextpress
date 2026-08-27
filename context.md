@@ -1,0 +1,56 @@
+# Nextpress — Project Context
+
+> Curated project-wide knowledge for agents. Read this first before exploring.
+> Owner: Solutions Architect. Last updated: 2026-08-27.
+
+## What this is
+
+Nextpress: self-hostable WordPress-compatible CMS. TypeScript monorepo (pnpm workspaces).
+Dev DB = PGlite (embedded postgres, `data/pglite`). Prod = Postgres in Docker.
+
+## Repo map
+
+- `server/` — Express + Hono API, entry `server/index.ts`. Routes in `server/routes/*.routes.ts`, mounted in `server/routes/index.ts` under `/api/*`.
+- `client/` — React 19 dashboard (wouter, react-query, shadcn/radix, tailwind). Pages in `client/src/pages/`.
+- `shared/` — Drizzle schema (`shared/schema.ts`), shared logic (`shared/import/wordpress/`), base model factory (`shared/create-models.ts`).
+- `packages/sdk` — `@nextpress-org/sdk`, TS client covering users/media/posts/pages/etc.
+- `packages/mcp` — MCP server over the SDK.
+- `scripts/nextpress` — **the real shipped CLI** (bash, installed to `/usr/local/bin` by `install.sh`). Has DB access via `compose exec -T postgres psql/pg_dump`, app health via `compose exec app node -e fetch(...)`.
+
+## Key architecture facts
+
+- **One CLI.** The bash `scripts/nextpress` is the shipped command (install/upgrade/status/logs/restart/reload/uninstall/version/help). The legacy npm package `@nextpress-org/cli` was removed 2026-08-27.
+- **Auth**: `requireAuth` = better-auth session cookie OR Bearer API key (`npk_live_…`). `requireSessionAuth` = cookie only. Scope enforcement in `server/middleware/api-key-scope-enforcer.ts` using `shared/api-key-scopes.ts` SCOPE_RULES. **Unmapped `/api/*` routes fail closed (require ALL scopes)** — new routes must add a scope rule.
+- **Multi-site**: most content tables are `siteId`-scoped. `users`, `templates`, `themes`, `plugins`, `sessions` are global. Categories/tags live inside `posts.other` jsonb, not separate tables.
+- **Media is binary on disk** in `uploads/` (multer diskStorage, served at `/uploads`), `media` table holds metadata + relative `url`. Export/import handles files separately from DB rows.
+- **Transfer module** (`server/transfer/` + `server/transfer-cli.ts` → `dist/transfer-cli.js`): data export/import engine. Factories `createTransferExporter`/`createTransferImporter` (DI over models — reusable by future `/api/transfer` routes). Format: JSON `{manifest, data}`; `.tar.gz` with `media/` binaries when `--with-media-files`. Upsert by UUID, modes overwrite (default)/skip. FK import order: users→sites→roles→userRoles→templates→pages→blogs→posts→comments→media→options; parent chains topo-sorted. `--site` matches site NAME or hostname (sites table has no slug column). Bash CLI `nextpress export|import` runs it via `compose exec -T app node dist/transfer-cli.js`, payload over stdout/stdin. `server/db.ts` logs go to **stderr** — stdout is payload-only, keep it that way. Runner must `await pool.end()` before exit (pg-pool holds sockets ~10s otherwise).
+- **WP import** (`server/routes/import.wordpress.routes.ts` + `shared/import/wordpress/`): dedup via `other.import = {source, domain, wpId}` map (`build-imported-wp-map.ts`); re-import updates instead of duplicates; `sideloadRemoteImage` (`server/utils/sideload-remote-image.ts`) writes remote images to `uploads/` + creates media rows. Rate limit 5/min, batch max 50.
+- **DB backup** (distinct from transfer export): bash CLI `create_db_backup()` (pg_dump to `$INSTALL_DIR/backups/`) used pre-upgrade only.
+- Base model (`shared/create-models.ts`): `findMany`, `findManyWhere`, `findById`, `count`, `create`, `update`, `delete`.
+
+## Data model (main tables)
+
+sites(root), users(global), roles+userRoles(site), pages(site, unique siteId+slug), posts(via blogId, other.categories/tags), blogs(site), comments(via post), media(site), templates(global), themes, plugins, options(site, unique siteId+name), apiKeys(site), sessions, authSessions/accounts/verifications(better-auth), previewTokens(site).
+UUID PKs everywhere except sessions.sid.
+
+## Conventions
+
+- See `AGENTS.md` (source of truth): factories not classes, `safeTry`, named params `{ name, email }`, plain words over jargon, domain folders with barrel `index.ts`, no cross-domain barrel re-exports.
+- UI work: read `docs/internal/design-system-v2.md` first (if present).
+- Boundaries: never start servers, no DB commands, no git, no `.env` — ask owner. Backups to `/backup` before >10-line changes; deletes go to `/trash`.
+
+## Decision records
+
+### 2026-08-27 — Export/import feature SHIPPED (CLI) + npm CLI removed
+- Built: `nextpress export [--users] [--sites] [--pages] [--blogs] [--posts] [--comments] [--media] [--templates] [--options] [--site <name>] [--with-media-files] [--out f] [--force]` and `nextpress import <file> [--entities...] [--mode overwrite|skip]`. No entity flags = all.
+- Architecture: one engine in server codebase (`server/transfer/`), in-container runner (`dist/transfer-cli.js`) invoked by bash CLI via `compose exec`. Chosen over API-key HTTP for CLI (docker access already implies full trust) and over bash-side SQL (logic stays in TS, reusable).
+- `packages/cli` (legacy npm `@nextpress-org/cli`) REMOVED → `trash/packages-cli-2026-08-27/`. pnpm-workspace glob needed no edit; lockfile already regenerated during session.
+- Users export includes password hashes (approved — export file is sensitive like a DB backup). Sessions/apiKeys/authSessions/accounts/verifications/previewTokens excluded. OAuth users must relogin after migration (known v1 limit).
+- `--site` = site name or hostname (no slug column exists).
+- Phase 2 (not built): `/api/transfer` routes (JSON only, needs scope rule in `shared/api-key-scopes.ts`) + dashboard settings UI mirroring `components/import/*`. Engine is DI-ready for this.
+- **Lessons (QA round)**: parallel builds fail at seams — QA caught 5: (1) module-scope `console.log` in db.ts corrupted piped exports → logs must be stderr in any CLI-entry chain; (2/3) bash `(cd dir && cmd < "$f")` resolves relative paths after cd → absolutize before subshell; (4) `process.exit` after `stdout.write` truncates large payloads → await write, use exitCode; (5) `> file` truncates before command runs → temp file + mv. Then pool-drain hang after removing process.exit → always close pg pool in CLI runners.
+- Pre-existing (NOT this change, still open): `pnpm check` errors in `server/routes/render.routes.ts` (5), `server/lib/send-published-html.ts` (1), `shared/theme-settings.ts` (2). PGlite WASM teardown noise in vitest output is pre-existing.
+
+## Operator scripts gate
+
+Per AGENTS.md: never commit new/changed operator scripts (`scripts/*` money-touching) without audit + unit tests + dry-run.

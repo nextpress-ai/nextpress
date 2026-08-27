@@ -1,4 +1,5 @@
 import type { Response } from "express";
+import type { Deps } from "../routes/shared/deps";
 import { buildPublishedPageHtml } from "../routes/shared/build-published-page-html";
 import { resolveSiteThemeSettings } from "../routes/shared/resolve-site-theme-settings";
 import {
@@ -18,9 +19,7 @@ export async function sendPublishedHtml({
 	siteId: siteIdHint,
 }: {
 	res: Response;
-	models: Parameters<typeof preparePublishedPost>[0]["models"] & {
-		blogs?: { findById: (id: string) => Promise<{ siteId?: string | null } | null> };
-	};
+	models: Deps["models"];
 	document: PublishedContentRow & { siteId?: string | null; blogId?: string | null };
 	canonicalUrl: string;
 	siteId?: string;

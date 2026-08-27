@@ -14,6 +14,7 @@ export default defineConfig({
     'server/seed-default-content.ts',
     'server/migrate.ts',
     'server/setup-vite.ts',
+    'server/transfer-cli.ts',
   ],
   outDir: 'dist',
   format: ['esm'],

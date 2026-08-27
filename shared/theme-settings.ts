@@ -157,15 +157,15 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
 
 const deepMerge = <T extends Record<string, unknown>>(base: T, patch: Record<string, unknown>): T => {
-	const result = { ...base };
+	const result: Record<string, unknown> = { ...base };
 	for (const [key, value] of Object.entries(patch)) {
 		if (isRecord(value) && isRecord(result[key])) {
-			result[key] = deepMerge(result[key] as Record<string, unknown>, value) as T[Extract<keyof T, string>];
+			result[key] = deepMerge(result[key] as Record<string, unknown>, value);
 		} else if (value !== undefined) {
-			result[key] = value as T[Extract<keyof T, string>];
+			result[key] = value;
 		}
 	}
-	return result;
+	return result as T;
 };
 
 /** Maps legacy seed color keys onto the typed design token shape. */

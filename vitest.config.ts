@@ -29,6 +29,8 @@ export default defineConfig({
 					include: [
 						"server/test/**/*.test.{ts,tsx}",
 						"server/test/**/*.spec.{ts,tsx}",
+						"server/transfer/**/*.test.{ts,tsx}",
+						"server/transfer/**/*.spec.{ts,tsx}",
 					],
 					exclude: ["node_modules", "dist", "build", "**/*.e2e.{ts,tsx}"],
 					hookTimeout: 60_000,

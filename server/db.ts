@@ -20,7 +20,7 @@ async function createDevDatabase(): Promise<{
 	const pgliteDataDir = "./data/pglite";
 	const client = new PGlite(pgliteDataDir);
 	const db = drizzlePglite(client, { schema });
-	console.log(`[DB] Using PGlite for development (data: ${pgliteDataDir})`);
+	console.error(`[DB] Using PGlite for development (data: ${pgliteDataDir})`);
 	return { db, pool: null };
 }
 
@@ -33,7 +33,7 @@ async function createDatabase(): Promise<{ db: AppDb; pool: Pool | null }> {
 		}
 		const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 		const db = drizzlePg(process.env.DATABASE_URL, { schema });
-		console.log("[DB] Connected to PostgreSQL (production)");
+		console.error("[DB] Connected to PostgreSQL (production)");
 		return { db, pool };
 	}
 	return createDevDatabase();

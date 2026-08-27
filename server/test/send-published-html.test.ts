@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Response } from "express";
+import type { Deps } from "../routes/shared/deps";
 import { sendPublishedHtml } from "../lib/send-published-html";
 
 const commentsBlock = {
@@ -28,30 +29,31 @@ function captureResponse(): Response & { body: string } {
 describe("sendPublishedHtml", () => {
 	it("binds comments on a page document so placeholders never leak", async () => {
 		const res = captureResponse();
+		const models = {
+			users: { findById: async () => null },
+			comments: {
+				findManyWhere: async () => [
+					{
+						id: "a",
+						parentId: null,
+						authorName: "Ada",
+						content: "Hi from the page",
+						status: "approved",
+					},
+					{
+						id: "b",
+						parentId: "a",
+						authorName: "Bob",
+						content: "Reply on the page",
+						status: "approved",
+					},
+				],
+			},
+			posts: { findManyWhere: async () => [] },
+		} as unknown as Deps["models"];
 		await sendPublishedHtml({
 			res,
-			models: {
-				users: { findById: async () => null },
-				comments: {
-					findManyWhere: async () => [
-						{
-							id: "a",
-							parentId: null,
-							authorName: "Ada",
-							content: "Hi from the page",
-							status: "approved",
-						},
-						{
-							id: "b",
-							parentId: "a",
-							authorName: "Bob",
-							content: "Reply on the page",
-							status: "approved",
-						},
-					],
-				},
-				posts: { findManyWhere: async () => [] },
-			},
+			models,
 			document: {
 				id: "page-1",
 				title: "About",

@@ -152,6 +152,5 @@ Local MCP config without npm:
 | Package | Role |
 |---------|------|
 | [`@nextpress-org/sdk`](https://www.npmjs.com/package/@nextpress-org/sdk) | TypeScript client this MCP wraps |
-| [`@nextpress-org/cli`](https://www.npmjs.com/package/@nextpress-org/cli) | Self-host installer and Docker helper |
 
 Questions or early access: **[info@nextpress.ai](mailto:info@nextpress.ai)**

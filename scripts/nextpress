@@ -13,6 +13,7 @@ readonly MIN_FREE_MB_INSTALL=1024
 readonly MIN_FREE_MB_DOCKER=2048
 readonly BACKUP_KEEP_COUNT=3
 readonly SETUP_URL="http://nextpress.localhost"
+readonly TRANSFER_RUNNER="dist/transfer-cli.js"
 
 INSTALL_DIR="${NEXTPRESS_INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
 INSTALL_VERSION="$DEFAULT_VERSION"
@@ -67,8 +68,32 @@ Commands:
   restart                    Restart NextPress services.
   status                     Show service status.
   logs [service...]          Follow service logs.
+  export                     Export site data to a file.
+  import <file>              Import data from an export file.
   uninstall --yes            Stop services and remove this install.
   version, -v, --version     Print command version.
+
+Export:
+  nextpress export [--users] [--sites] [--pages] [--blogs] [--posts]
+                   [--comments] [--media] [--templates] [--options]
+                   [--site <name>] [--with-media-files] [--out <path>] [--force]
+
+  Writes nextpress-export-YYYYMMDD-HHMMSS.json in the current directory
+  (.tar.gz when --with-media-files is given). No entity flags export
+  everything. --site <name> limits the export to one site (site name or
+  hostname). --out <path> picks the output file; existing files are refused
+  unless --force is given.
+
+Import:
+  nextpress import <file> [--users] [--sites] [--pages] [--blogs] [--posts]
+                   [--comments] [--media] [--templates] [--options]
+                   [--mode overwrite|skip]
+
+  Restores data from an export file. No entity flags import everything.
+  --mode overwrite (default) refreshes existing rows; --mode skip leaves
+  existing rows untouched.
+
+Entities: users, sites, pages, blogs, posts, comments, media, templates, options
 
 Examples:
   nextpress install
@@ -77,6 +102,11 @@ Examples:
   nextpress upgrade
   nextpress upgrade --version beta-v1.0.2
   nextpress upgrade --override --yes
+  nextpress export
+  nextpress export --users --posts --site example.com
+  nextpress export --with-media-files --out ~/nextpress-export.tar.gz
+  nextpress import nextpress-export-20260827-120000.json
+  nextpress import nextpress-export.tar.gz --mode skip
   nextpress logs
 EOF
 }
@@ -953,6 +983,210 @@ Useful commands:
 EOF
 }
 
+add_entity_flag() {
+	local entity="$1"
+	if [[ ",$TRANSFER_ENTITIES_SELECTED," != *",$entity,"* ]]; then
+		TRANSFER_ENTITIES_SELECTED="${TRANSFER_ENTITIES_SELECTED:+$TRANSFER_ENTITIES_SELECTED,}$entity"
+	fi
+}
+
+parse_export_args() {
+	TRANSFER_ENTITIES_SELECTED=""
+	TRANSFER_SITE=""
+	TRANSFER_WITH_MEDIA="false"
+	TRANSFER_OUT=""
+	TRANSFER_FORCE="false"
+
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+			--users) add_entity_flag users; shift ;;
+			--sites) add_entity_flag sites; shift ;;
+			--pages) add_entity_flag pages; shift ;;
+			--blogs) add_entity_flag blogs; shift ;;
+			--posts) add_entity_flag posts; shift ;;
+			--comments) add_entity_flag comments; shift ;;
+			--media) add_entity_flag media; shift ;;
+			--templates) add_entity_flag templates; shift ;;
+			--options) add_entity_flag options; shift ;;
+			--site)
+				if [ "${2:-}" = "" ] || [[ "${2:-}" == -* ]]; then
+					fail "Missing value for $1. Use $1 <slug>."
+				fi
+				TRANSFER_SITE="$2"
+				shift 2
+				;;
+			--with-media-files)
+				TRANSFER_WITH_MEDIA="true"
+				shift
+				;;
+			--out)
+				if [ "${2:-}" = "" ] || [[ "${2:-}" == -* ]]; then
+					fail "Missing value for $1. Use $1 <path>."
+				fi
+				TRANSFER_OUT="$2"
+				shift 2
+				;;
+			--force)
+				TRANSFER_FORCE="true"
+				shift
+				;;
+			-*)
+				fail "Unknown export option: $1"
+				;;
+			*)
+				fail "Unexpected export argument: $1"
+				;;
+		esac
+	done
+}
+
+parse_import_args() {
+	TRANSFER_ENTITIES_SELECTED=""
+	TRANSFER_MODE="overwrite"
+	TRANSFER_FILE=""
+
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+			--users) add_entity_flag users; shift ;;
+			--sites) add_entity_flag sites; shift ;;
+			--pages) add_entity_flag pages; shift ;;
+			--blogs) add_entity_flag blogs; shift ;;
+			--posts) add_entity_flag posts; shift ;;
+			--comments) add_entity_flag comments; shift ;;
+			--media) add_entity_flag media; shift ;;
+			--templates) add_entity_flag templates; shift ;;
+			--options) add_entity_flag options; shift ;;
+			--mode)
+				if [ "${2:-}" = "" ] || [[ "${2:-}" == -* ]]; then
+					fail "Missing value for $1. Use $1 overwrite|skip."
+				fi
+				if [ "$2" != "overwrite" ] && [ "$2" != "skip" ]; then
+					fail "Invalid --mode value: $2. Use overwrite or skip."
+				fi
+				TRANSFER_MODE="$2"
+				shift 2
+				;;
+			-*)
+				fail "Unknown import option: $1"
+				;;
+			*)
+				if [ "$TRANSFER_FILE" != "" ]; then
+					fail "Unexpected import argument: $1"
+				fi
+				TRANSFER_FILE="$1"
+				shift
+				;;
+		esac
+	done
+
+	if [ "$TRANSFER_FILE" = "" ]; then
+		fail "Missing import file. Use: nextpress import <file> [options]"
+	fi
+}
+
+assert_transfer_ready() {
+	assert_install_dir_exists
+	assert_docker_available
+
+	if [ ! -f "$INSTALL_DIR/$COMPOSE_FILE" ]; then
+		fail "No compose file found in $INSTALL_DIR. Install first: nextpress install"
+	fi
+
+	if ! (cd "$INSTALL_DIR" && compose ps --status running -q app 2>/dev/null | grep -q .); then
+		fail "NextPress is not running. Start it first: nextpress restart"
+	fi
+
+	if ! (cd "$INSTALL_DIR" && compose exec -T app test -f "$TRANSFER_RUNNER") >/dev/null 2>&1; then
+		fail "This NextPress version predates export/import. Run: nextpress upgrade"
+	fi
+}
+
+run_export() {
+	parse_export_args "$@"
+	assert_transfer_ready
+
+	local out="$TRANSFER_OUT"
+	local ext="json"
+	local entities_args=()
+	local site_args=()
+	local media_args=()
+
+	if [ "$TRANSFER_WITH_MEDIA" = "true" ]; then
+		ext="tar.gz"
+	fi
+
+	if [ "$out" = "" ]; then
+		out="$(pwd)/nextpress-export-$(date +%Y%m%d-%H%M%S).$ext"
+	fi
+
+	# Absolutize so the redirect inside the subshell (which cds to INSTALL_DIR)
+	# does not resolve a relative --out against the wrong directory.
+	case "$out" in
+		/*) ;;
+		*) out="$(pwd)/$out" ;;
+	esac
+
+	if [ -e "$out" ] && [ "$TRANSFER_FORCE" != "true" ]; then
+		fail "Output file already exists: $out. Use --force to overwrite it."
+	fi
+
+	if [ "$TRANSFER_ENTITIES_SELECTED" != "" ]; then
+		entities_args=(--entities "$TRANSFER_ENTITIES_SELECTED")
+	fi
+	if [ "$TRANSFER_SITE" != "" ]; then
+		site_args=(--site "$TRANSFER_SITE")
+	fi
+	if [ "$TRANSFER_WITH_MEDIA" = "true" ]; then
+		media_args=(--with-media-files)
+	fi
+
+	# Write to a temp file first so a failed export never clobbers an existing
+	# file; only a successful export is moved into place.
+	local tmp_out="${out}.tmp.$$"
+	info "Exporting NextPress data to: $out"
+	if ! (cd "$INSTALL_DIR" && compose exec -T app node "$TRANSFER_RUNNER" export "${entities_args[@]}" "${site_args[@]}" "${media_args[@]}" > "$tmp_out"); then
+		rm -f "$tmp_out"
+		fail "Export failed. See messages above for details."
+	fi
+	mv "$tmp_out" "$out"
+	info "Export complete: $out"
+}
+
+run_import() {
+	parse_import_args "$@"
+	assert_transfer_ready
+
+	local file="$TRANSFER_FILE"
+	local entities_args=()
+
+	# Absolutize so the redirect inside the subshell (which cds to INSTALL_DIR)
+	# does not resolve a relative path against the wrong directory.
+	case "$file" in
+		/*) ;;
+		*) file="$(pwd)/$file" ;;
+	esac
+
+	if [ ! -f "$file" ]; then
+		fail "Import file not found: $file"
+	fi
+	if [ ! -r "$file" ]; then
+		fail "Import file is not readable: $file"
+	fi
+	if [ ! -s "$file" ]; then
+		fail "Import file is empty: $file"
+	fi
+
+	if [ "$TRANSFER_ENTITIES_SELECTED" != "" ]; then
+		entities_args=(--entities "$TRANSFER_ENTITIES_SELECTED")
+	fi
+
+	info "Importing NextPress data from: $file"
+	if ! (cd "$INSTALL_DIR" && compose exec -T app node "$TRANSFER_RUNNER" import "${entities_args[@]}" --mode "$TRANSFER_MODE" < "$file"); then
+		fail "Import failed. See messages above for details."
+	fi
+	info "Import complete."
+}
+
 run_install() {
 	parse_install_args "$@"
 	local target_config
@@ -1176,6 +1410,12 @@ main() {
 			;;
 		logs)
 			run_logs "${sub_args[@]}"
+			;;
+		export)
+			run_export "${sub_args[@]}"
+			;;
+		import)
+			run_import "${sub_args[@]}"
 			;;
 		uninstall)
 			run_uninstall "${sub_args[@]}"
