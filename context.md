@@ -60,6 +60,12 @@ UUID PKs everywhere except sessions.sid.
 - **Schema drift on `/tmp` stack**: missing columns `posts.version`, `posts.menu_order`, `options.site_id`, `media.site_id`, `users.name`, `users.email_verified`, `users.display_username`. drizzle-kit `migrate` failed (`CREATE TABLE "blogs"` — journal mismatch). Reconciled manually with idempotent `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` (varchar / boolean DEFAULT false NOT NULL as per migrations). After that, export/import ran clean. Owner should run `nextpress upgrade` on a healthy journal for a permanent fix.
 - **Uncommitted improvement**: `server/transfer-cli.ts` top-level `.catch` now also logs the failing SQL (`[transfer] Failing query: ...`) on error — better diagnostics, complies with AGENTS.md log-resolving-context rule. Built into local `dist/transfer-cli.js`; not yet committed.
 
+### 2026-08-27 — Installer/CLI now resolve from nextpress-ai/nextpress (repo ownership)
+- Root cause: `scripts/nextpress` + `install.sh` (and `deploy.sh` release link, `shared/release/fetch-latest-version.ts` version check, `config.ts` UI links, docs) pointed at the stale fork `pabloh3/nextpress1`. So a fresh `curl …/install.sh | bash` and every `nextpress upgrade` self-update pulled the OLD CLI (v1.0.11, no export/import/reset) and the old compose.
+- Fix (commit `3d0263f`): replaced `pabloh3/nextpress1` → `nextpress-ai/nextpress` in all live files. Raw URLs verified to resolve on `nextpress-ai/nextpress/main`. `docker-compose.prod.yml` already references `husseinkizz/nextpress:${NEXTPRESS_VERSION:-latest}`, so the compose fetch is safe.
+- **Prod action required (one-time)**: the already-installed prod CLI still self-updates from pabloh3. Until replaced, `nextpress upgrade` re-fetches the stale CLI. Fix = re-run `curl -fsSL https://raw.githubusercontent.com/nextpress-ai/nextpress/main/install.sh | sudo bash` (overwrites /usr/local/bin/nextpress with 1.3.6) OR copy `scripts/nextpress` to /usr/local/bin/nextpress. After that one replacement, self-update keeps it on nextpress-ai and `nextpress upgrade` pulls the fixed image (beta-v1.3.6) + applies migration 0002 backfill.
+- Note: `try_self_update_for_upgrade` (scripts/nextpress) re-execs the freshly downloaded CLI, so the FIRST upgrade after replacement also refreshes compose from nextpress-ai.
+
 ## Operator scripts gate
 
 Per AGENTS.md: never commit new/changed operator scripts (`scripts/*` money-touching) without audit + unit tests + dry-run.
