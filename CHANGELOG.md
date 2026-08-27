@@ -12,6 +12,7 @@ All notable changes to Nextpress are documented here.
   - `nextpress import --mode overwrite` (default) updates existing rows by UUID; `--mode skip` leaves them untouched.
   - The engine lives in `server/transfer/`; the in-container runner (`dist/transfer-cli.js`) is invoked by the bash CLI via `docker compose exec`, so the database never leaves the server.
   - Removed the legacy npm `@nextpress-org/cli` package — the bash CLI (`scripts/nextpress`) is the only shipped command.
+  - **`nextpress reset`** — wipes the instance back to a fresh install (drops all data, clears uploaded media, re-applies migrations, seeds default content). Auto-backs up the database first and prompts for confirmation unless `--yes` is given. Enables `export` → `reset` → `import` workflows.
 
 ### Changed
 - Export/import now logs the failing SQL on error, making schema-drift failures (an install whose database predates recent migrations) diagnosable instead of a bare `column "X" does not exist`.

@@ -70,6 +70,7 @@ Commands:
   logs [service...]          Follow service logs.
   export                     Export site data to a file.
   import <file>              Import data from an export file.
+  reset [--yes]              Reset the instance to a fresh install (backs up first).
   uninstall --yes            Stop services and remove this install.
   version, -v, --version     Print command version.
 
@@ -92,6 +93,15 @@ Import:
   Restores data from an export file. No entity flags import everything.
   --mode overwrite (default) refreshes existing rows; --mode skip leaves
   existing rows untouched.
+
+Reset:
+  nextpress reset [--yes]
+
+  Erases all data and uploaded media, then re-applies migrations and seeds
+  default content — leaving the instance in a fresh-install state. A database
+  backup is written to backups/ automatically. Use --yes to skip the prompt.
+  Typical flow: nextpress export --out ~/data.json, then nextpress reset,
+  then nextpress import ~/data.json.
 
 Entities: users, sites, pages, blogs, posts, comments, media, templates, options
 
@@ -679,6 +689,66 @@ confirm_override() {
 	fi
 }
 
+confirm_reset() {
+	if [ "$RESET_YES" = "true" ]; then
+		return
+	fi
+
+	if [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
+		fail "Refusing to reset without an interactive terminal. Re-run with --yes if you accept data loss."
+	fi
+
+	local answer=""
+	printf '%s' "This erases ALL data in $INSTALL_DIR (a backup is made first). Continue? Type yes: " >/dev/tty
+	IFS= read -r answer </dev/tty || fail "Could not read reset confirmation."
+	if [ "$answer" != "yes" ]; then
+		fail "Reset cancelled."
+	fi
+}
+
+run_reset() {
+	parse_reset_args "$@"
+	assert_install_dir_exists
+	assert_docker_available
+	load_install_env
+
+	info "Preparing to reset NextPress in $INSTALL_DIR to a fresh install..."
+
+	# Bring postgres up so we can back up and wipe it.
+	ensure_postgres_running
+
+	confirm_reset
+
+	# Auto-backup before wiping (reversible).
+	create_db_backup
+
+	# Stop the app so no connections hold the schema open.
+	info "Stopping app service..."
+	compose stop app || true
+
+	# Wipe the database schema; migrations recreate it from scratch.
+	info "Dropping all data (DROP SCHEMA public CASCADE)..."
+	if ! compose exec -T postgres psql -U postgres -d nextpress -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"; then
+		fail "Could not reset the database. The backup is intact; nothing else was changed."
+	fi
+
+	# Re-apply migrations + seed default content (fresh-install parity).
+	run_schema_migrations "$(app_image)"
+	run_default_content_seed
+
+	# Clear uploaded media (volume-backed at /app/uploads).
+	info "Clearing uploaded media..."
+	compose run --rm --no-deps app rm -rf /app/uploads/* || warn "Could not clear uploads; remove them manually if needed."
+
+	# Bring everything back up.
+	info "Restarting services..."
+	compose up -d
+	wait_for_app_health
+
+	info "Reset complete. The instance is fresh (default content seeded)."
+	info "Your pre-reset backup is in $INSTALL_DIR/$BACKUP_DIR/"
+}
+
 reset_database_volume() {
 	local container_id
 	local volume_name
@@ -1033,9 +1103,20 @@ parse_export_args() {
 			-*)
 				fail "Unknown export option: $1"
 				;;
-			*)
-				fail "Unexpected export argument: $1"
-				;;
+		*)
+			fail "Unexpected export argument: $1"
+			;;
+		esac
+	done
+}
+
+parse_reset_args() {
+	RESET_YES="false"
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+			--yes) RESET_YES="true"; shift ;;
+			-*) fail "Unknown reset option: $1" ;;
+			*) fail "Unexpected reset argument: $1" ;;
 		esac
 	done
 }
@@ -1416,6 +1497,9 @@ main() {
 			;;
 		import)
 			run_import "${sub_args[@]}"
+			;;
+		reset)
+			run_reset "${sub_args[@]}"
 			;;
 		uninstall)
 			run_uninstall "${sub_args[@]}"
