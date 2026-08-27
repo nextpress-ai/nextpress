@@ -257,7 +257,14 @@ if (isTransferCliEntry()) {
 			const message = error instanceof Error ? error.message : String(error);
 			const cause = error && typeof error === "object" && "cause" in error ? (error as { cause: unknown }).cause : undefined;
 			const causeMsg = cause instanceof Error ? cause.message : cause ? String(cause) : undefined;
+			const query =
+				error && typeof error === "object" && "query" in error
+					? (error as { query: unknown }).query
+					: cause && typeof cause === "object" && "query" in cause
+						? (cause as { query: unknown }).query
+						: undefined;
 			console.error(`[transfer] Export or import failed: ${causeMsg ?? message}`);
+			if (query) console.error(`[transfer] Failing query: ${String(query)}`);
 			process.exitCode = 1;
 			await closeDbPool();
 		});

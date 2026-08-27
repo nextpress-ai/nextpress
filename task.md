@@ -16,8 +16,15 @@ Date: 2026-08-27. Spec: see `intent.md` (approved).
 ## Phase 3 — owner steps
 
 - [x] ~~Owner runs `pnpm install`~~ — lockfile already regenerated during session (verified zero cli refs)
-- [ ] Owner smoke-tests `nextpress export` / `nextpress import` on a real install
+- [x] Owner smoke-tests `nextpress export` / `nextpress import` on a real install — DONE 2026-08-27 (architect ran it with owner permission; see context.md verification note). Verified: /opt bash CLI export(JSON+tar.gz), import(JSON create/skip/overwrite + tar.gz), --site no-match error; /tmp real-data export+round-trip. All green.
 - [x] Update context.md decision record; mark task complete
+
+## Smoke-test findings (2026-08-27)
+
+- Feature works on real Postgres (not just PGlite unit tests). Canonical `/opt/nextpress` + stray `/tmp` stack both exercised.
+- **Schema drift blocker on old installs**: export fails `column "X" does not exist` if migrations 0006–0008 not applied. `/tmp` stack had broken drizzle journal → manual idempotent ALTERs applied (posts.version, posts.menu_order, options.site_id, media.site_id, users.name/email_verified/display_username). Permanent fix = `nextpress upgrade` on healthy journal.
+- `sites` entity bundles roles+userRoles (SiteEntityData) — import summary labels them under "sites"; correct by design.
+- Uncommitted: transfer-cli.ts now logs failing SQL on error (better diagnostics).
 
 ## Contracts (fixed, so phases parallelize)
 
