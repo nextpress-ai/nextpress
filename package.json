@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "mkdir -p data/pglite && CHOKIDAR_USEPOLLING=true VITE_POLLING=true VITE_POLL_INTERVAL=500 NODE_ENV=development tsx server/index.ts",
+    "prepare": "git config core.hooksPath scripts/git-hooks || true",
     "build": "pnpm build:fonts && vite build && pnpm build:server",
     "build:fonts": "vite build --config vite.fonts.config.ts",
     "build:server": "tsup",

@@ -1,0 +1,10 @@
+#!/bin/sh
+# Guardrail: never commit an AI/tool co-author trailer (Claude, Cursor, ...).
+# Strips the trailer line (must start at column 0) so it can never reach the
+# repo. A body sentence that merely mentions the phrase is left untouched.
+# Portable sed (works on both GNU and BSD/macOS).
+if grep -qiE "^Co-Authored-By: (Claude|Cursor)" "$1"; then
+	sed -i.bak -E "/^Co-Authored-By: (Claude|Cursor)/d" "$1" && rm -f "$1.bak"
+	echo "NOTE: removed an AI/tool co-author trailer from commit message." >&2
+fi
+exit 0
