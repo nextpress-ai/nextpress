@@ -5,7 +5,6 @@ import {
   LayoutList,
   Calendar,
   User,
-  Image as ImageIcon,
   Pencil,
 } from 'lucide-react';
 import {
@@ -16,6 +15,7 @@ import {
   formatDate,
 } from './post-list-model';
 import { PostListSettings } from './post-list-settings';
+import { openOverlayHash, PostListOverlay } from './post-list-overlay';
 
 // ============================================================================
 // RENDERER
@@ -48,14 +48,13 @@ function PostListRenderer({
   const shouldFetchReal = isPreview || !!cfg.blogId;
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['posts', cfg.blogId, cfg.postsPerPage, cfg.orderBy, cfg.order],
+    queryKey: ['posts', isPreview ? 'public' : 'admin', cfg.blogId, cfg.postsPerPage, cfg.orderBy, cfg.order],
     queryFn: async () => {
-      const statusParam = isPreview ? 'publish' : 'any';
       const params = new URLSearchParams({
         per_page: String(cfg.postsPerPage),
-        status: statusParam,
       });
-      if (cfg.blogId) params.set('blog_id', cfg.blogId);
+      if (!isPreview) params.set('status', 'any');
+      if (cfg.blogId) params.set(isPreview ? 'blogId' : 'blog_id', cfg.blogId);
       if (cfg.orderBy) {
         const sortField =
           cfg.orderBy === 'date'
@@ -67,9 +66,23 @@ function PostListRenderer({
       }
       if (cfg.order) params.set('order', cfg.order);
 
-      const res = await fetch(`/api/posts?${params.toString()}`, {
-        credentials: 'include',
-      });
+      let res = isPreview
+        ? await fetch(`/api/public/posts?${params.toString()}`, {
+            credentials: 'same-origin',
+          })
+        : await fetch(`/api/posts?${params.toString()}`, { credentials: 'include' });
+      if (isPreview && !res.ok) {
+        const fallback = new URLSearchParams({
+          per_page: String(cfg.postsPerPage),
+          status: 'publish',
+        });
+        if (cfg.blogId) fallback.set('blog_id', cfg.blogId);
+        if (params.get('sort')) fallback.set('sort', params.get('sort') ?? '');
+        if (cfg.order) fallback.set('order', cfg.order);
+        res = await fetch(`/api/posts?${fallback.toString()}`, {
+          credentials: 'same-origin',
+        });
+      }
       if (!res.ok) throw new Error(`Failed to fetch posts (${res.status})`);
       const json = await res.json();
       const items: PostItem[] = (
@@ -91,13 +104,7 @@ function PostListRenderer({
 
   const posts: PostItem[] = data ?? buildPlaceholderPosts(cfg.postsPerPage);
 
-  const wrapperClass = [
-    'np-post-list',
-    `np-post-list--${cfg.layout}`,
-    cfg.className,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const wrapperClass = ['np-post-list', cfg.className].filter(Boolean).join(' ');
 
   if (isLoading)
     return (
@@ -125,23 +132,15 @@ function PostListRenderer({
     );
   }
 
-  const layoutMap: Record<string, React.CSSProperties> = {
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: '1.25rem',
-    },
-    list: { display: 'flex', flexDirection: 'column', gap: '1rem' },
-    cards: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: '1.5rem',
-    },
+  const layoutMap: Record<string, string> = {
+    grid: 'np-post-list__items np-post-list__items--grid',
+    list: 'np-post-list__items np-post-list__items--list',
+    cards: 'np-post-list__items np-post-list__items--cards',
   };
 
   return (
     <div className={wrapperClass} style={styles}>
-      <div style={layoutMap[cfg.layout]}>
+      <div className={layoutMap[cfg.layout] ?? layoutMap.grid}>
         {posts.map((post) => (
           <PostCard
             key={post.id}
@@ -152,6 +151,7 @@ function PostListRenderer({
           />
         ))}
       </div>
+      {isPreview && cfg.openIn !== 'page' ? <PostListOverlay enabled /> : null}
     </div>
   );
 }
@@ -181,8 +181,17 @@ function PostCard({
     dispatchEditPost(String(post.id));
   };
 
+  const useOverlay = Boolean(isPreview && cfg.openIn !== 'page');
+  const handleVisitorClick = (e: React.MouseEvent) => {
+    if (!useOverlay || !post.slug) return;
+    e.preventDefault();
+    openOverlayHash(String(post.slug));
+  };
+
   const Wrapper = isPreview ? 'a' : 'div';
-  const wrapperProps = isPreview ? { href: `/post/${post.slug}` } : {};
+  const wrapperProps = isPreview
+    ? { href: `/post/${post.slug}`, onClick: handleVisitorClick }
+    : {};
 
   /** Overlay shown in editor mode on real posts — indicates they are clickable for inline editing */
   const editOverlay = isEditorWithRealPosts ? (
@@ -196,20 +205,17 @@ function PostCard({
     </div>
   ) : null;
 
-  const imagePlaceholder = (size: string) => (
-    <div
-      className={`${size} flex-shrink-0 rounded bg-npb-surface-inset overflow-hidden flex items-center justify-center`}>
-      {post.featuredImage ? (
+  const featuredImage = (size: string) =>
+    post.featuredImage ? (
+      <div
+        className={`${size} flex-shrink-0 rounded bg-npb-surface-inset overflow-hidden flex items-center justify-center`}>
         <img
           src={post.featuredImage}
           alt={post.title}
           className="w-full h-full object-cover"
         />
-      ) : (
-        <ImageIcon className="w-6 h-6 text-npb-text-muted" />
-      )}
-    </div>
-  );
+      </div>
+    ) : null;
 
   if (layout === 'list') {
     return (
@@ -219,7 +225,7 @@ function PostCard({
           {...wrapperProps}
           className="flex items-start gap-4 p-3 rounded-lg border border-npb-border-default hover:border-npb-border-strong transition-colors"
           style={{ textDecoration: 'none', color: 'inherit' }}>
-          {cfg.showFeaturedImage && imagePlaceholder('w-24 h-24')}
+          {cfg.showFeaturedImage && featuredImage('w-24 h-24')}
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-base leading-tight mb-1 truncate">
               {post.title}
@@ -243,21 +249,17 @@ function PostCard({
         {...wrapperProps}
         className="flex flex-col rounded-lg border border-npb-border-default overflow-hidden hover:border-npb-border-strong transition-colors"
         style={{ textDecoration: 'none', color: 'inherit' }}>
-        {cfg.showFeaturedImage && (
+        {cfg.showFeaturedImage && post.featuredImage ? (
           <div
             className="w-full bg-npb-surface-inset flex items-center justify-center"
             style={{ height: layout === 'cards' ? 180 : 140 }}>
-            {post.featuredImage ? (
-              <img
-                src={post.featuredImage}
-                alt={post.title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <ImageIcon className="w-8 h-8 text-npb-text-muted" />
-            )}
+            <img
+              src={post.featuredImage}
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
           </div>
-        )}
+        ) : null}
         <div className="p-4 flex flex-col flex-1">
           <h3 className="font-semibold text-base leading-tight mb-1">
             {post.title}

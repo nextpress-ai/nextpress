@@ -432,7 +432,7 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 		category: "post",
 		defaultContent: () =>
 			structured({
-				layout: "cards",
+				layout: "grid",
 				postsPerPage: 6,
 				showExcerpt: true,
 				showFeaturedImage: true,
@@ -441,6 +441,7 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 				blogId: "",
 				orderBy: "date",
 				order: "desc",
+				openIn: "overlay",
 			}),
 	},
 	"post/toc": {

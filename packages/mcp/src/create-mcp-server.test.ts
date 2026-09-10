@@ -25,6 +25,7 @@ describe("createMcpServer", () => {
 				patchBlocks: vi.fn(),
 			},
 			templates: { list: vi.fn(), get: vi.fn() },
+			blogs: { list: vi.fn(), get: vi.fn(), create: vi.fn() },
 			media: { list: vi.fn(), upload: vi.fn() },
 			preview: {
 				createShareToken: vi.fn(),

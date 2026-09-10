@@ -183,7 +183,7 @@ nextpress.on("page-created", async ({ page }) => {
 | `nextpress.hooks` | `list` | content |
 | `nextpress.dashboard` | `stats` | content |
 | `nextpress.preview` | `post`, `page`, `template` | content (read); share tokens need preview:write |
-| `nextpress.public` | `page`, `post`, `homepage` | none |
+| `nextpress.public` | `page`, `post`, `posts`, `homepage` | none |
 | `nextpress.import` | WordPress import helpers | system |
 | `nextpress.system` | `release`, `checkUpgrade`, `runUpgrade` | system |
 | `nextpress.health` | `check`, `setupStatus`, `verifyDomain`, `setup` | none |

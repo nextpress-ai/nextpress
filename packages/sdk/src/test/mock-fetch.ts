@@ -242,6 +242,18 @@ export function createDefaultMockApi() {
 		},
 		{
 			method: "GET",
+			path: "/api/public/posts",
+			handler: () =>
+				Response.json({
+					posts: [],
+					total: 0,
+					page: 1,
+					per_page: 12,
+					total_pages: 0,
+				}),
+		},
+		{
+			method: "GET",
 			path: "/api/public/homepage",
 			handler: () =>
 				Response.json({

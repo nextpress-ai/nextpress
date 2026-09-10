@@ -64,11 +64,13 @@ function CoverRenderer({ content, styles }: CoverRendererProps) {
       blockClass="wp-block-cover"
       className={extraClassName || undefined}
       style={{
+        ...styles,
+        ...backgroundImageStyle,
         position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
         minHeight: `${minHeight}px`,
         overflow: 'hidden',
-        ...backgroundImageStyle,
-        ...styles,
       }}
     >
       {backgroundType === 'video' && url && (
@@ -108,8 +110,10 @@ function CoverRenderer({ content, styles }: CoverRendererProps) {
         style={{
           position: 'relative',
           zIndex: 3,
+          display: 'flex',
+          flex: 1,
           width: '100%',
-          height: '100%',
+          minHeight: 0,
           padding: '1.25em 2.375em',
           color: 'white',
           ...contentAlignment,

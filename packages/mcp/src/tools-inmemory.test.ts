@@ -68,12 +68,15 @@ describe("MCP tools via InMemoryTransport", () => {
 		expect(names).toEqual(
 			[
 				"build_blocks",
+				"create_blog",
 				"create_page",
 				"create_post",
+				"get_blog",
 				"get_page",
 				"get_post",
 				"get_site_context",
 				"get_template",
+				"list_blogs",
 				"list_block_types",
 				"list_media",
 				"list_pages",
@@ -82,7 +85,9 @@ describe("MCP tools via InMemoryTransport", () => {
 				"patch_page_blocks",
 				"patch_post_blocks",
 				"preview_page",
+				"preview_post",
 				"publish_page",
+				"publish_post",
 				"update_page",
 				"update_post",
 				"upload_media",
@@ -138,6 +143,7 @@ describe("MCP tools via InMemoryTransport", () => {
 				update: vi.fn(),
 			},
 			templates: { list: vi.fn(), get: vi.fn() },
+			blogs: { list: vi.fn(), get: vi.fn(), create: vi.fn() },
 			media: { list: vi.fn(), upload: vi.fn() },
 			preview: {
 				createShareToken: vi.fn(),
@@ -191,6 +197,7 @@ describe("MCP tools via InMemoryTransport", () => {
 				update: vi.fn(),
 			},
 			templates: { list: vi.fn(), get: vi.fn() },
+			blogs: { list: vi.fn(), get: vi.fn(), create: vi.fn() },
 			media: { list: vi.fn(), upload: vi.fn() },
 			preview: {
 				createShareToken: vi.fn(),

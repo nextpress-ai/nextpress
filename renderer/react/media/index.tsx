@@ -346,7 +346,10 @@ export function CoverBlock(block: BlockConfig) {
 	const hasParallax = Boolean(data.hasParallax);
 	const focalPoint = data.focalPoint as { x?: number; y?: number } | undefined;
 
-	if (!url) {
+	const hasInner =
+		(Array.isArray(block.children) && block.children.length > 0) || Boolean(innerContent);
+	const hasFill = Boolean(url) || Boolean(style.backgroundColor) || hasInner;
+	if (!hasFill) {
 		return null;
 	}
 
@@ -375,6 +378,8 @@ export function CoverBlock(block: BlockConfig) {
 	const coverStyle: React.CSSProperties = {
 		...style,
 		position: "relative",
+		display: "flex",
+		flexDirection: "column",
 		minHeight: `${minHeightValue}px`,
 		overflow: "hidden",
 		...(backgroundType === "image"
@@ -427,8 +432,10 @@ export function CoverBlock(block: BlockConfig) {
 				style={{
 					position: "relative",
 					zIndex: 3,
+					display: "flex",
+					flex: 1,
 					width: "100%",
-					height: "100%",
+					minHeight: 0,
 					padding: "1.25em 2.375em",
 					color: "white",
 					...contentAlignment,

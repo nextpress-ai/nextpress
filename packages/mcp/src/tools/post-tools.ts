@@ -101,4 +101,26 @@ export function registerPostTools({ server, client }: ToolDeps): void {
 				return formatSdkResult(result);
 			}),
 	);
+
+	server.registerTool(
+		"publish_post",
+		{
+			title: "Publish post",
+			description:
+				"Set post status to published. Requires expectedVersion from get_post.",
+			inputSchema: {
+				id: z.string().min(1),
+				expectedVersion: z.number().int().min(0),
+			},
+		},
+		async ({ id, expectedVersion }) =>
+			runTool(async () => {
+				const result = await client.posts.update({
+					id,
+					expectedVersion,
+					status: "publish",
+				});
+				return formatSdkResult(result);
+			}),
+	);
 }

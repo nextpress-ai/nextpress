@@ -40,9 +40,25 @@ export function PostListSettings({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="grid">Grid (3 columns)</SelectItem>
+                <SelectItem value="grid">Grid</SelectItem>
                 <SelectItem value="list">List</SelectItem>
-                <SelectItem value="cards">Cards (2 columns)</SelectItem>
+                <SelectItem value="cards">Cards</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <SettingsLabel htmlFor="pl-open">Open posts</SettingsLabel>
+            <Select
+              value={content.openIn ?? 'overlay'}
+              onValueChange={(v) =>
+                updateContent({ openIn: v as 'overlay' | 'page' })
+              }>
+              <SelectTrigger id="pl-open" className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="overlay">Overlay</SelectItem>
+                <SelectItem value="page">Full page</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -13,6 +13,7 @@ export type PostListContent = {
   blogId?: string;
   orderBy?: 'date' | 'title';
   order?: 'asc' | 'desc';
+  openIn?: 'overlay' | 'page';
   className?: string;
 };
 
@@ -27,7 +28,7 @@ export type PostItem = {
 };
 
 export const DEFAULT_CONTENT: PostListContent = {
-  layout: 'cards',
+  layout: 'grid',
   postsPerPage: 6,
   showExcerpt: true,
   showFeaturedImage: true,
@@ -36,6 +37,7 @@ export const DEFAULT_CONTENT: PostListContent = {
   blogId: '',
   orderBy: 'date',
   order: 'desc',
+  openIn: 'overlay',
   className: '',
 };
 

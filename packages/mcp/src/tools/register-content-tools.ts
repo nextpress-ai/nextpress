@@ -1,3 +1,4 @@
+import { registerBlogTools } from "./blog-tools.js";
 import { registerBlockTools } from "./block-tools.js";
 import { registerMediaTools } from "./media-tools.js";
 import { registerPageTools } from "./page-tools.js";
@@ -21,6 +22,7 @@ export function registerContentTools({
 }): void {
 	const deps = { server, client };
 	registerSiteTools(deps);
+	registerBlogTools(deps);
 	registerPageTools(deps);
 	registerPostTools(deps);
 	registerTemplateTools(deps);

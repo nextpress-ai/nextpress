@@ -40,4 +40,41 @@ export function registerPreviewTools({ server, client }: ToolDeps): void {
 				});
 			}),
 	);
+
+	server.registerTool(
+		"preview_post",
+		{
+			title: "Preview post",
+			description:
+				"Create a time-limited share URL so humans can review a draft post without logging in.",
+			inputSchema: {
+				id: z.string().min(1).describe("Post UUID"),
+				expiresInSeconds: z
+					.number()
+					.int()
+					.min(60)
+					.max(3600)
+					.optional()
+					.describe("Token lifetime in seconds (max 3600)"),
+			},
+		},
+		async ({ id, expiresInSeconds }) =>
+			runTool(async () => {
+				const token = await client.preview.createShareToken({
+					contentType: "post",
+					contentId: id,
+					expiresInSeconds: expiresInSeconds ?? 3600,
+				});
+				return formatJson({
+					...token,
+					previewUrl:
+						token.previewUrl ||
+						client.preview.buildSharePreviewUrl({
+							contentType: "post",
+							contentId: id,
+							token: token.token,
+						}),
+				});
+			}),
+	);
 }

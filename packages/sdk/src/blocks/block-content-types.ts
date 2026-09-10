@@ -125,6 +125,8 @@ export type PostListContent = {
 	blogId?: string;
 	orderBy?: string;
 	order?: string;
+	/** Overlay keeps the grid; page navigates to `/post/{slug}`. */
+	openIn?: "overlay" | "page";
 };
 
 export type PostTitleContent = {

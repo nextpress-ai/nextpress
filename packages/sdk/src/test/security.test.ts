@@ -105,6 +105,34 @@ describe("security", () => {
 		expect(calledPath).not.toContain("/etc/passwd");
 	});
 
+	it("lists published posts on the public API without sending the key", async () => {
+		const { fetchMock, calls } = createMockFetch([
+			{
+				method: "GET",
+				path: "/api/public/posts",
+				handler: () =>
+					Response.json({
+						posts: [],
+						total: 0,
+						page: 1,
+						per_page: 12,
+						total_pages: 0,
+					}),
+			},
+		]);
+		const nextpress = createNextpress({
+			baseUrl: "https://cms.example.com",
+			apiKey: SECRET_KEY,
+			siteId: mockIds.siteId,
+			fetch: fetchMock,
+		});
+
+		const listed = await nextpress.public.posts({ per_page: 6 });
+		expect(listed.posts).toEqual([]);
+		expect(new URL(calls[0]?.url ?? "").pathname).toBe("/api/public/posts");
+		expect(calls[0]?.headers.authorization).toBeUndefined();
+	});
+
 	it("rejects javascript: URLs in block media content before upload", async () => {
 		const fetchMock = vi.fn();
 		const nextpress = createNextpress({

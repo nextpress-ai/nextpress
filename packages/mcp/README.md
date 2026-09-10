@@ -87,10 +87,11 @@ New pages and posts default to **draft** until you or the agent publishes them e
 | `list_pages` / `get_page` | Find and load pages |
 | `create_page` / `update_page` | Create drafts or update existing pages |
 | `publish_page` | Set a page to published |
-| `list_posts` / `get_post` / `create_post` / `update_post` | Blog posts |
+| `list_blogs` / `get_blog` / `create_blog` | Blogs (needed before `create_post`) |
+| `list_posts` / `get_post` / `create_post` / `update_post` / `publish_post` | Blog posts |
 | `list_templates` / `get_template` | Reusable templates |
 | `list_media` / `upload_media` | Media library |
-| `preview_page` | Preview share URL for a page |
+| `preview_page` / `preview_post` | Preview share URL |
 | `list_block_types` / `build_blocks` | Block catalog and tree builder |
 | `validate_blocks` | Validate a block tree without saving |
 | `patch_page_blocks` / `patch_post_blocks` | Targeted block edits (prefer over full-tree replace) |

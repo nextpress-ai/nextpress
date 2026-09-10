@@ -317,7 +317,7 @@ export function createPostsRoutes(deps: Deps): Router {
 
         // Include authorId and slug in the data before validation
         const parsedData = postSchemas.insert.parse({
-          ...req.body,
+          ...coerceDates(req.body as Record<string, unknown>, ['publishedAt']),
           slug: slugValue,
           authorId: userId,
         });

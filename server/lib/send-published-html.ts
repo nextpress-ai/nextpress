@@ -2,6 +2,7 @@ import type { Response } from "express";
 import type { Deps } from "../routes/shared/deps";
 import { buildPublishedPageHtml } from "../routes/shared/build-published-page-html";
 import { resolveSiteThemeSettings } from "../routes/shared/resolve-site-theme-settings";
+import { bindPublishedPostLists } from "./bind-published-post-lists";
 import {
 	preparePublishedPost,
 	type PublishedContentRow,
@@ -36,11 +37,19 @@ export async function sendPublishedHtml({
 		? await resolveSiteThemeSettings({ models, siteId })
 		: null;
 
+	const blocks = siteId
+		? await bindPublishedPostLists({
+				models,
+				siteId,
+				blocks: prepared.blocks,
+			})
+		: prepared.blocks;
+
 	const html = buildPublishedPageHtml({
 		page: {
 			id: document.id,
 			title: document.title,
-			blocks: prepared.blocks,
+			blocks,
 			other: document.other,
 		},
 		canonicalUrl,

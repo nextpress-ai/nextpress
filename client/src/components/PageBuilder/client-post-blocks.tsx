@@ -28,7 +28,7 @@ function wrapEditorPostBlock(
 }
 
 /**
- * Preview/public overrides for post blocks that need live fetch (comments, prev/next).
+ * Preview/public overrides for post blocks that need live fetch (comments, prev/next, lists).
  * Title, excerpt, and image stay on the SSR renderer after `bindPostBlocks`.
  */
 export const CLIENT_POST_COMPONENTS: Record<string, React.FC<BlockConfig>> = {
@@ -43,5 +43,8 @@ export const CLIENT_POST_COMPONENTS: Record<string, React.FC<BlockConfig>> = {
   ),
   "post/info": wrapEditorPostBlock(
     () => import("./blocks/post-info/PostInfoBlock"),
+  ),
+  "post/list": wrapEditorPostBlock(
+    () => import("./blocks/post-list/PostListBlock"),
   ),
 };

@@ -1,6 +1,7 @@
 import type { BlockConfig } from "@shared/schema-types";
 import {
 	bindPostBlocks,
+	documentHasBlockName,
 	type BindablePostDocument,
 } from "@shared/bind-post-blocks";
 import {
@@ -109,6 +110,9 @@ export function buildPublishedPageHtml({
 	const blockJsScripts = collectBlockJsScripts(blocks);
 	if (blockJsScripts) {
 		bodyParts.push(blockJsScripts);
+	}
+	if (documentHasBlockName({ blocks, name: "post/list" })) {
+		bodyParts.push(`<script src="/vendor/post-list-overlay.js"></script>`);
 	}
 	const bodyScripts = bodyParts.join("\n");
 

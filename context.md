@@ -43,7 +43,14 @@ UUID PKs everywhere except sessions.sid.
 
 ## Decision records
 
-### 2026-09-10 — Page-builder Auto Layout panel (Group / Container / Columns)
+### 2026-09-10 — Post list overlay + public post grid
+- Post List default is a responsive grid; details open in an overlay (`openIn: overlay`). Full page is still an option.
+- Published lists bind real posts (SSR + public JSON `GET /api/public/posts`). Overlay fetches `/api/public/post/:slug` including `renderedHtml`.
+- SDK: `public.posts()`. MCP: `list_blogs`, `get_blog`, `create_blog`, `publish_post`, `preview_post`.
+- Showcase seed: `packages/sdk/scripts/build-showcase-site.ts` (needs integration.config.ts). Does not start the server.
+- Visitor polish (2026-09-10): SPA Post List must not put `--grid` on both wrapper and items — nested 3-col grids squeezed cards to ~142px. Cover needs `display:flex` so inner copy fills `minHeight` (percent height does not resolve against min-height). Overlay portals to `document.body` under `html.dark`, so it must set its own `--npb-text-primary` ink or post HTML renders white on white.
+
+
 - One Style-tab **Layout** card (`AutoLayoutPanel`) for Group, Container, and Columns. Direction, wrap, 9-point align, Packed/Between/Around/Evenly, gap presets, Hug/Fill/Fixed, overflow. Same `styles` keys as the old CSS chips — no schema change.
 - Group Content tab is starters only (Vertical / Horizontal / Grid 2 / Grid 3) plus HTML tag. Fine-tune lives on Style.
 - New Group and Container inserts default to flex column + `gap: 1rem`. Saved `display: block` Groups are not rewritten on read.
