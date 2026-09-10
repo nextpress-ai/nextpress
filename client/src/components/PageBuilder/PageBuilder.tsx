@@ -378,6 +378,9 @@ export default function PageBuilder({
   const selectedBlock = selectedBlockId
     ? (findBlock(blocks, selectedBlockId) ?? null)
     : null;
+  const parentBlock = selectedBlock?.parentId
+    ? findBlock(blocks, selectedBlock.parentId)
+    : null;
 
   const saveMutation = usePageSave({
     isTemplate,
@@ -798,6 +801,7 @@ export default function PageBuilder({
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                   selectedBlock={selectedBlock}
+                  parentBlock={parentBlock}
                   updateBlock={updateBlockPartial}
                   setHoverHighlight={setHoverHighlight}
                   sidebarVisible={sidebarVisible}
@@ -850,6 +854,7 @@ export default function PageBuilder({
                   <MotionSidebarPanel visible={inspectorVisible} className="h-full shrink-0">
                     <BuilderInspectorSidebar
                       selectedBlock={selectedBlock}
+                      parentBlock={parentBlock}
                       updateBlock={updateBlockPartial}
                       setHoverHighlight={setHoverHighlight}
                       onToggleInspector={toggleInspector}

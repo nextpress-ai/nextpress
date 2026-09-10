@@ -148,11 +148,7 @@ function ColumnsRenderer({
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={
-                      snapshot.isDraggingOver
-                        ? "rounded border-2 border-solid border-npb-accent bg-npb-accent/5"
-                        : "rounded border-2 border-dashed border-npb-border-default"
-                    }
+                    className="rounded npb-drop-target"
                     style={{
                       display: "flex",
                       flexDirection: "column",
@@ -160,7 +156,19 @@ function ColumnsRenderer({
                       alignItems: columnAlignItems,
                       minHeight: "72px",
                       padding: "8px",
-                      paddingBottom: columnChildren.length > 0 ? "20px" : "8px",
+                      outline:
+                        columnChildren.length === 0 || snapshot.isDraggingOver
+                          ? snapshot.isDraggingOver
+                            ? "2px solid var(--npb-accent)"
+                            : "2px dashed var(--npb-border-default)"
+                          : undefined,
+                      outlineOffset:
+                        columnChildren.length === 0 || snapshot.isDraggingOver
+                          ? "-1px"
+                          : undefined,
+                      background: snapshot.isDraggingOver
+                        ? "rgba(59,130,246,0.06)"
+                        : undefined,
                     }}
                   >
                     {columnChildren.length > 0 ? (
@@ -179,6 +187,7 @@ function ColumnsRenderer({
                                 dragSnapshot.isDragging ? "opacity-50" : ""
                               }`}
                               style={{
+                                ...dragProvided.draggableProps.style,
                                 width: "100%",
                                 minWidth: 0,
                                 ...getBlockSiblingFlexItemStyles(childBlock.styles, "column"),

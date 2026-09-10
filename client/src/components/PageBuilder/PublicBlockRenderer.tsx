@@ -11,6 +11,7 @@ import {
 	stripBlockContainerPlacementStyles,
 	type BlockStackDirection,
 } from "@shared/block-container-placement";
+import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
 import { BLOCK_COMPONENTS } from "../../../../renderer/react/block-components";
 import { registerClientBlockComponents } from "../../../../renderer/react/render-helpers";
 import { ClientIconBlock } from "./blocks/ClientIconBlock";
@@ -61,24 +62,38 @@ function BlockWrapper({
 	stackDirection: BlockStackDirection;
 	children: React.ReactNode;
 }) {
-	const flexItemPlacement = getBlockSiblingFlexItemStyles(block.styles, stackDirection);
+	const flexItemPlacement = {
+		...getHorizontalFlexChildStyles({
+			isHorizontal: stackDirection === "row",
+			childStyles: block.styles,
+			blockName: block.name,
+		}),
+		...getBlockSiblingFlexItemStyles(block.styles, stackDirection),
+	};
 	const animationAttributes = block.other?.animation?.entry
 		? getEntryAnimationAttributes(block.other.animation.entry)
 		: {};
+	const columnFill = stackDirection !== "row" ? { width: "100%" as const } : {};
 	return (
-		<div className="block-container w-full">
-			<div style={{ width: "100%", minWidth: 0, ...flexItemPlacement, ...getBlockStackLayerWrapperStyles(block) }}>
-				<div
-					className={classNames.join(" ")}
-					style={{
-						width: styles.width || "100%",
-						minWidth: 0,
-						boxSizing: "border-box",
-					}}
-					{...animationAttributes}
-				>
-					{children}
-				</div>
+		<div
+			className="block-container"
+			style={{
+				minWidth: 0,
+				...columnFill,
+				...flexItemPlacement,
+				...getBlockStackLayerWrapperStyles(block),
+			}}
+		>
+			<div
+				className={classNames.join(" ")}
+				style={{
+					width: styles.width || "100%",
+					minWidth: 0,
+					boxSizing: "border-box",
+				}}
+				{...animationAttributes}
+			>
+				{children}
 			</div>
 		</div>
 	);

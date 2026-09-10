@@ -5,6 +5,7 @@ import BlockSettings from './BlockSettings';
 /** Inputs shared by compact and wide inspector shells. */
 export type BuilderInspectorPanelProps = {
   selectedBlock: BlockConfig | null;
+  parentBlock?: BlockConfig | null;
   updateBlock: (blockId: string, updates: Partial<BlockConfig>) => void;
   setHoverHighlight: (area: 'padding' | 'margin' | null) => void;
 };
@@ -24,6 +25,7 @@ const emptySettingsClass =
  */
 export function BuilderInspectorPanel({
   selectedBlock,
+  parentBlock = null,
   updateBlock,
   setHoverHighlight,
 }: BuilderInspectorPanelProps): ReactElement {
@@ -38,6 +40,7 @@ export function BuilderInspectorPanel({
           {selectedBlock ? (
             <BlockSettings
               block={selectedBlock}
+              parentBlock={parentBlock}
               onUpdate={(updates) => updateBlock(selectedBlock.id, updates)}
               onHoverArea={setHoverHighlight}
             />

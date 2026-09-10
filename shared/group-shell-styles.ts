@@ -3,7 +3,6 @@ import type { BlockContent } from "./schema-types";
 import {
 	getContainerChildrenStackStyle,
 	getContainerOuterShellStyle,
-	getContainerParentDisplayMode,
 	getContainerSiblingStackDirection,
 	readContainerLayoutFromBlock,
 } from "./block-container-placement";
@@ -92,9 +91,8 @@ export function buildGroupShellStyles({
 		styles,
 		content: content as Record<string, unknown>,
 	});
-	const parentDisplay = getContainerParentDisplayMode(containerLayout);
 	const stackDirection = getContainerSiblingStackDirection(containerLayout);
-	const isHorizontal = parentDisplay === "flex" && containerLayout.flexDirection === "row";
+	const isHorizontal = stackDirection === "row";
 
 	const outerStyle = mergeGroupDimensionStyles(
 		getContainerOuterShellStyle(styles, { children }),

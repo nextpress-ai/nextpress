@@ -43,6 +43,15 @@ UUID PKs everywhere except sessions.sid.
 
 ## Decision records
 
+### 2026-09-10 — Page-builder Auto Layout panel (Group / Container / Columns)
+- One Style-tab **Layout** card (`AutoLayoutPanel`) for Group, Container, and Columns. Direction, wrap, 9-point align, Packed/Between/Around/Evenly, gap presets, Hug/Fill/Fixed, overflow. Same `styles` keys as the old CSS chips — no schema change.
+- Group Content tab is starters only (Vertical / Horizontal / Grid 2 / Grid 3) plus HTML tag. Fine-tune lives on Style.
+- New Group and Container inserts default to flex column + `gap: 1rem`. Saved `display: block` Groups are not rewritten on read.
+- Row children: unset width and `100%` still Fill (`flex-grow: 1`) so old rows do not collapse. Hug is grow 0 + `fit-content`. Fixed is `flex-basis` of the length. Shared helper `getHorizontalFlexChildStyles` in editor, public SPA, and SSR.
+- Child “Pin in parent” only when the parent is flex/grid. Copy is Left / Center / Right, not CSS property names.
+- Editor drop targets use outline, not border + extra padding, so editor gap matches publish.
+- Tests: `pnpm test layout` (Vitest harness, no FakePageBuilder, no Storybook). Owner-run `pnpm audit:demo-pages` now also records inner-stack display / flex-direction / gap; agents do not start servers.
+
 ### 2026-08-27 — Export/import feature SHIPPED (CLI) + npm CLI removed
 - Built: `nextpress export [--users] [--sites] [--pages] [--blogs] [--posts] [--comments] [--media] [--templates] [--options] [--site <name>] [--with-media-files] [--out f] [--force]` and `nextpress import <file> [--entities...] [--mode overwrite|skip]`. No entity flags = all.
 - Architecture: one engine in server codebase (`server/transfer/`), in-container runner (`dist/transfer-cli.js`) invoked by bash CLI via `compose exec`. Chosen over API-key HTTP for CLI (docker access already implies full trust) and over bash-side SQL (logic stays in TS, reusable).

@@ -16,12 +16,12 @@ import {
   getBlockSiblingFlexItemStyles,
   getBlockStackLayerWrapperStyles,
   readContainerLayoutFromBlock,
-  getContainerParentDisplayMode,
   getContainerSiblingStackDirection,
   getContainerChildrenStackStyle,
   hasContainerShellSizing,
   stackNeedsVerticalPlacementRoom,
 } from "@shared/block-container-placement";
+import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
 import { resolveSpacingSides, spacingOverlayLength, hasNonZeroSpacing } from '@/lib/resolve-spacing-sides';
 import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
 import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
@@ -70,10 +70,9 @@ export function ContainerChildren({
   if (!isContainer) return null;
 
   const layout = readContainerLayoutFromBlock({ styles: block.styles, content: block.content as Record<string, unknown> });
-  const parentDisplay = getContainerParentDisplayMode(layout);
-  const isHorizontal = parentDisplay === 'flex' && layout.flexDirection === 'row';
-  const dropDirection = isHorizontal ? 'horizontal' : 'vertical';
   const siblingStackDirection = getContainerSiblingStackDirection(layout);
+  const isHorizontal = siblingStackDirection === 'row';
+  const dropDirection = isHorizontal ? 'horizontal' : 'vertical';
   const childrenStackStyle = getContainerChildrenStackStyle(layout, {
     shellStyles: block.styles,
     children,
@@ -91,7 +90,7 @@ export function ContainerChildren({
       'Children:',
       children,
       'Display:',
-      parentDisplay,
+      layout.display,
     );
   }
   if (isPreview) {
@@ -105,11 +104,11 @@ export function ContainerChildren({
           <div
             key={child.id}
             style={{
-              minWidth: 0,
-              flex:
-                parentDisplay === 'flex' && layout.flexDirection === 'row'
-                  ? '1 1 auto'
-                  : undefined,
+              ...getHorizontalFlexChildStyles({
+                isHorizontal,
+                childStyles: child.styles,
+                blockName: child.name,
+              }),
               ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
               ...getBlockStackLayerWrapperStyles(child),
             }}
@@ -129,25 +128,30 @@ export function ContainerChildren({
   }
   return (
     <Droppable droppableId={block.id} direction={dropDirection as any}>
-      {(provided, snapshot) => (
+      {(provided, snapshot) => {
+        const showDropChrome =
+          children.length === 0 || snapshot.isDraggingOver;
+        return (
         <div
           ref={provided.innerRef}
           {...provided.droppableProps}
           data-container-children="true"
-          className={stackClassName}
+          className={`${stackClassName} npb-drop-target`.trim()}
           style={{
             ...childrenStackStyle,
             ...(needsEmptyDropMinHeight ? { minHeight: "60px" } : {}),
             minWidth: 0,
             width: "100%",
-            border: snapshot.isDraggingOver
-              ? '2px solid #3b82f6'
-              : '2px dashed #e2e8f0',
-            borderRadius: '4px',
-            background: snapshot.isDraggingOver
-              ? 'rgba(59,130,246,0.06)'
+            outline: showDropChrome
+              ? snapshot.isDraggingOver
+                ? "2px solid var(--npb-focus, #3b82f6)"
+                : "2px dashed var(--npb-border-default, #e2e8f0)"
               : undefined,
-            paddingBottom: children.length > 0 ? '20px' : '0px',
+            outlineOffset: showDropChrome ? "-1px" : undefined,
+            borderRadius: showDropChrome ? "4px" : undefined,
+            background: snapshot.isDraggingOver
+              ? "rgba(59,130,246,0.06)"
+              : undefined,
           }}>
           {children.length > 0 ? (
             children.map((child: BlockConfig, childIndex: number) => (
@@ -162,8 +166,12 @@ export function ContainerChildren({
                     {...dragProvided.draggableProps}
                     className={`relative group ${dragSnapshot.isDragging ? 'opacity-50' : ''}`}
                     style={{
-                      minWidth: 0,
-                      flex: isHorizontal ? '1 1 auto' : undefined,
+                      ...dragProvided.draggableProps.style,
+                      ...getHorizontalFlexChildStyles({
+                        isHorizontal,
+                        childStyles: child.styles,
+                        blockName: child.name,
+                      }),
                       ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
                       ...getBlockStackLayerWrapperStyles(child),
                     }}
@@ -190,7 +198,8 @@ export function ContainerChildren({
           {children.length > 0 && snapshot.placeholderIndex === children.length && <DropPlaceholder />}
           {provided.placeholder}
         </div>
-      )}
+        );
+      }}
     </Droppable>
   );
 }

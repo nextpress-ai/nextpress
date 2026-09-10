@@ -305,7 +305,7 @@ export function getContainerChildrenStackStyle(
 	},
 ): CSSProperties {
 	const parentDisplay = getContainerParentDisplayMode(layout);
-	const isHorizontal = parentDisplay === "flex" && layout.flexDirection === "row";
+	const isHorizontal = getContainerSiblingStackDirection(layout) === "row";
 
 	const childOuterDisplay =
 		parentDisplay === "flex" ? "flex" : parentDisplay === "grid" ? "grid" : "flex";

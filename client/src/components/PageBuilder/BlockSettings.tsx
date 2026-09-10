@@ -31,18 +31,13 @@ import {
   Italic,
   ExternalLink,
   Target,
-  ChevronDown,
-  ChevronUp,
-  ChevronRight,
   Ruler,
   Square,
   Circle,
   Hash,
   Move,
-  RotateCw,
   Columns,
   Rows,
-  Grid3X3,
   Minus,
   Sparkles,
   Layers,
@@ -58,6 +53,9 @@ import AnimationPicker from "./AnimationPicker"
 import type { TokenEntry, BlockAnimation } from "@shared/schema-types"
 import { FreeformSpacingSideRow } from "./freeform-spacing-side-row";
 import { DimensionPresetField } from "./dimension-preset-field";
+import { AutoLayoutPanel } from "./auto-layout-panel";
+import { ChildPinCard } from "./child-pin-card";
+import { parentAllowsChildPin } from "@shared/auto-layout-model";
 import {
 	MAX_WIDTH_PRESETS,
 	MIN_HEIGHT_PRESETS,
@@ -131,9 +129,11 @@ interface BlockSettingsProps {
   block: BlockConfig;
   onUpdate: (updates: Partial<BlockConfig>) => void;
   onHoverArea?: (area: 'padding' | 'margin' | null) => void;
+  /** Immediate parent — pin card only shows when this is a flex/grid stack. */
+  parentBlock?: BlockConfig | null;
 }
 
-export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSettingsProps) {
+export default function BlockSettings({ block, onUpdate, onHoverArea, parentBlock = null }: BlockSettingsProps) {
   const [customCss, setCustomCss] = useState(block.customCss || '');
   const [paddingLinked, setPaddingLinked] = useState(true);
   const accessor = getBlockStateAccessor(block.id);
@@ -358,6 +358,12 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
 
   const renderStyleSettings = () => {
     const isColumnsBlock = block.name === "core/columns";
+    const isLayoutBlock = [
+      "core/group",
+      "core/container",
+      "container",
+      "core/columns",
+    ].includes(block.name);
     const showTypographyStyles = [
       "heading",
       "core/heading",
@@ -710,56 +716,53 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
           </div>
         </CollapsibleCard>
 
-        <CollapsibleCard title="Position in container" icon={Layout} defaultOpen={false}>
-          <p className="npb-settings-hint mb-3 text-xs">
-            Where this block sits among siblings (canvas, columns, flex row/column stacks). Uses flex layout;
-            vertical center/bottom shows when extra space exists in the parent.
-          </p>
-          <SettingsChipGroup
-            label="Horizontal"
-            icon={AlignLeft}
-            options={[
-              { value: "__unset", label: "Default", icon: Circle },
-              { value: "left", label: "Left", icon: AlignLeft },
-              { value: "center", label: "Center", icon: AlignCenter },
-              { value: "right", label: "Right", icon: AlignRight },
-            ]}
-            value={
-              (getResolvedPlacementStyles().contentAlignHorizontal ??
-                "__unset") as string
+        {parentAllowsChildPin(parentBlock) ? (
+          <ChildPinCard
+            horizontal={
+              (getResolvedPlacementStyles().contentAlignHorizontal ?? "__unset") as string
             }
-            onChange={(v) =>
-              updateStyles({
-                contentAlignHorizontal:
-                  v === "__unset"
-                    ? null
-                    : (v as "left" | "center" | "right"),
-              })
-            }
-          />
-          <SettingsChipGroup
-            label="Vertical"
-            icon={AlignCenter}
-            className="mt-4"
-            options={[
-              { value: "__unset", label: "Default", icon: Circle },
-              { value: "top", label: "Top", icon: ChevronUp },
-              { value: "middle", label: "Middle", icon: AlignCenter },
-              { value: "bottom", label: "Bottom", icon: ChevronDown },
-            ]}
-            value={
+            vertical={
               (getResolvedPlacementStyles().contentAlignVertical ?? "__unset") as string
             }
-            onChange={(v) =>
-              updateStyles({
-                contentAlignVertical:
-                  v === "__unset" ? null : (v as "top" | "middle" | "bottom"),
-              })
-            }
+            onChange={(patch) => updateStyles(patch)}
           />
-        </CollapsibleCard>
+        ) : null}
 
-        {/* Layout & Dimensions */}
+        {isLayoutBlock ? (
+          <>
+            <AutoLayoutPanel
+              block={block}
+              hideDisplay={isColumnsBlock}
+              onStylesChange={(next) => updateStyles(next)}
+            />
+            <CollapsibleCard title="Max size" icon={Layout} defaultOpen={false}>
+              <DimensionPresetField
+                label="Max width"
+                value={
+                  block.styles?.maxWidth != null && block.styles.maxWidth !== ""
+                    ? String(block.styles.maxWidth)
+                    : undefined
+                }
+                presets={MAX_WIDTH_PRESETS}
+                onChange={(next) => updateStyles({ maxWidth: next })}
+                customPlaceholder="e.g. 1200px, 90rem"
+              />
+              <div className="mt-4">
+                <DimensionPresetField
+                  label="Min height"
+                  value={
+                    block.styles?.minHeight != null && block.styles.minHeight !== ""
+                      ? String(block.styles.minHeight)
+                      : undefined
+                  }
+                  presets={MIN_HEIGHT_PRESETS}
+                  onChange={(next) => updateStyles({ minHeight: next })}
+                  customPlaceholder="e.g. 24rem, 100dvh"
+                />
+              </div>
+            </CollapsibleCard>
+          </>
+        ) : (
         <CollapsibleCard title="Layout & Dimensions" icon={Layout} defaultOpen={false}>
             <DimensionPresetField
               label="Width"
@@ -814,170 +817,6 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 customPlaceholder="e.g. 400px, 50dvh"
               />
             </div>
-            {/* Display Type for layout blocks — flex/grid controls live here (Style tab). */}
-            {['container', 'core/group', 'core/container'].includes(block.name) && (
-              <>
-                  <div>
-                    <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
-                      <Grid3X3 className="w-3 h-3" />
-                      Display
-                    </Label>
-                  <SettingsChipGroup
-                    label=""
-                    options={[
-                      { value: 'block', label: 'Block' },
-                      { value: 'flex', label: 'Flex' },
-                      { value: 'grid', label: 'Grid' },
-                      { value: 'inline', label: 'Inline' },
-                    ]}
-                    value={block.styles?.display || 'block'}
-                    onChange={(value) => updateStyles({ display: value })}
-                  />
-                </div>
-
-                {/* Flex Direction (if display is flex) */}
-                {(block.styles?.display === 'flex' || block.styles?.display === 'inline-flex') && (
-                  <div>
-                    <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
-                      <RotateCw className="w-3 h-3" />
-                      Direction
-                    </Label>
-                    <SettingsChipGroup
-                      label=""
-                      options={[
-                        { value: 'row', label: 'Row' },
-                        { value: 'column', label: 'Column' },
-                        { value: 'row-reverse', label: 'Row Rev' },
-                        { value: 'column-reverse', label: 'Col Rev' },
-                      ]}
-                      value={block.styles?.flexDirection || 'column'}
-                      onChange={(value) => updateStyles({ flexDirection: value })}
-                    />
-                  </div>
-                )}
-
-                {/* Flex Wrap (if display is flex) */}
-                {(block.styles?.display === 'flex' || block.styles?.display === 'inline-flex') && (
-                  <div>
-                    <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
-                      <Rows className="w-3 h-3" />
-                      Wrap
-                    </Label>
-                    <SettingsChipGroup
-                      label=""
-                      options={[
-                        { value: 'nowrap', label: 'No Wrap' },
-                        { value: 'wrap', label: 'Wrap' },
-                        { value: 'wrap-reverse', label: 'Wrap Rev' },
-                      ]}
-                      value={block.styles?.flexWrap || 'nowrap'}
-                      onChange={(value) => updateStyles({ flexWrap: value })}
-                    />
-                  </div>
-                )}
-
-                {(block.styles?.display === 'grid' || block.styles?.display === 'inline-grid') && (
-                  <>
-                    <div>
-                      <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
-                        <Grid3X3 className="w-3 h-3" />
-                        Grid columns
-                      </Label>
-                      <Input
-                        value={
-                          block.styles?.gridTemplateColumns != null
-                            ? String(block.styles.gridTemplateColumns)
-                            : ""
-                        }
-                        onChange={(e) =>
-                          updateStyles({ gridTemplateColumns: e.target.value || undefined })
-                        }
-                        placeholder="e.g. repeat(2, 1fr)"
-                        className="mt-2 h-8 rounded-none text-sm focus-visible:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
-                        <Grid3X3 className="w-3 h-3" />
-                        Grid rows
-                      </Label>
-                      <Input
-                        value={
-                          block.styles?.gridTemplateRows != null
-                            ? String(block.styles.gridTemplateRows)
-                            : ""
-                        }
-                        onChange={(e) =>
-                          updateStyles({ gridTemplateRows: e.target.value || undefined })
-                        }
-                        placeholder="e.g. auto 1fr"
-                        className="mt-2 h-8 rounded-none text-sm focus-visible:outline-none"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* Justify Content */}
-                <div>
-                  <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
-                    <AlignCenter className="w-3 h-3" />
-                    Justify
-                  </Label>
-                  <SettingsChipGroup
-                    label=""
-                    options={[
-                      { value: 'flex-start', label: 'Start' },
-                      { value: 'center', label: 'Center' },
-                      { value: 'flex-end', label: 'End' },
-                      { value: 'space-between', label: 'Between' },
-                      { value: 'space-around', label: 'Around' },
-                    ]}
-                    value={block.styles?.justifyContent || 'flex-start'}
-                    onChange={(value) => updateStyles({ justifyContent: value })}
-                  />
-                </div>
-
-                {/* Align Items */}
-                <div>
-                  <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
-                    <AlignLeft className="w-3 h-3" />
-                    Align
-                  </Label>
-                  <SettingsChipGroup
-                    label=""
-                    options={[
-                      { value: 'flex-start', label: 'Start' },
-                      { value: 'center', label: 'Center' },
-                      { value: 'flex-end', label: 'End' },
-                      { value: 'stretch', label: 'Stretch' },
-                    ]}
-                    value={block.styles?.alignItems || 'flex-start'}
-                    onChange={(value) => updateStyles({ alignItems: value })}
-                  />
-                </div>
-
-                {/* Gap */}
-                {!isColumnsBlock && (
-                  <div>
-                  <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                    <Move className="w-3 h-3" />
-                    Gap
-                  </Label>
-                  <Input
-                    value={
-                      block.styles?.gap !== undefined && block.styles.gap !== null
-                        ? String(block.styles.gap)
-                        : ""
-                    }
-                    onChange={(e) => updateStyles({ gap: e.target.value || undefined })}
-                    placeholder="e.g. 16px, 1rem"
-                    className="mt-2 h-8 rounded-none text-sm focus-visible:outline-none"
-                  />
-                  </div>
-                )}
-              </>
-            )}
-
             {block.name === "core/image" && (
               <div>
                 <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
@@ -1008,85 +847,8 @@ export default function BlockSettings({ block, onUpdate, onHoverArea }: BlockSet
                 </Select>
               </div>
             )}
-
-            {/* Overflow */}
-            {['container', 'core/group', 'core/container'].includes(block.name) && (
-              <div>
-                <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                  <Square className="w-3 h-3" />
-                  Overflow
-                </Label>
-                <SettingsChipGroup
-                  label=""
-                  options={[
-                    { value: 'visible', label: 'Visible' },
-                    { value: 'hidden', label: 'Hidden' },
-                    { value: 'auto', label: 'Auto' },
-                    { value: 'scroll', label: 'Scroll' },
-                  ]}
-                  value={block.styles?.overflow || 'visible'}
-                  onChange={(value) => updateStyles({ overflow: value })}
-                />
-              </div>
-            )}
-
-            {/* For Columns, layout direction/gap live here (not in Content tab). */}
-            {isColumnsBlock && (
-              <>
-                <div>
-                  <Label className="text-sm font-semibold npb-settings-label mb-3 flex items-center gap-2">
-                    <RotateCw className="w-3 h-3" />
-                    Direction
-                  </Label>
-                  <SettingsChipGroup
-                    label=""
-                    options={[
-                      { value: "row", label: "Row" },
-                      { value: "column", label: "Column" },
-                    ]}
-                    value={block.styles?.flexDirection === "column" ? "column" : "row"}
-                    onChange={(value) => updateStyles({ flexDirection: value })}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                    <Move className="w-3 h-3" />
-                    Gap
-                  </Label>
-                  <Input
-                    value={
-                      block.styles?.gap !== undefined && block.styles.gap !== null
-                        ? String(block.styles.gap)
-                        : ""
-                    }
-                    onChange={(e) => updateStyles({ gap: e.target.value || undefined })}
-                    placeholder="e.g. 20px, 2rem"
-                    className="mt-2 h-8 rounded-none text-sm focus-visible:outline-none"
-                  />
-                </div>
-              </>
-            )}
-
-            {isColumnsBlock && (
-              <div>
-                <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                  <Square className="w-3 h-3" />
-                  Overflow
-                </Label>
-                <SettingsChipGroup
-                  label=""
-                  options={[
-                    { value: 'visible', label: 'Visible' },
-                    { value: 'hidden', label: 'Hidden' },
-                    { value: 'auto', label: 'Auto' },
-                    { value: 'scroll', label: 'Scroll' },
-                  ]}
-                  value={block.styles?.overflow || 'visible'}
-                  onChange={(value) => updateStyles({ overflow: value })}
-                />
-              </div>
-            )}
         </CollapsibleCard>
+        )}
 
         {/* Border */}
         <CollapsibleCard title="Border & Radius" icon={Square} defaultOpen={isFormFieldBlock}>

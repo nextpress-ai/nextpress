@@ -31,4 +31,19 @@ describe("buildGroupShellStyles", () => {
 		expect(innerStackStyle.flexDirection).toBe("column");
 		expect(innerStackStyle.gap).toBe("16px");
 	});
+
+	it("treats row-reverse as a horizontal stack", () => {
+		const { stackDirection, isHorizontal, innerStackStyle } = buildGroupShellStyles({
+			styles: {
+				display: "flex",
+				flexDirection: "row-reverse",
+				gap: "8px",
+			},
+			content: {},
+			children: [],
+		});
+		expect(stackDirection).toBe("row");
+		expect(isHorizontal).toBe(true);
+		expect(innerStackStyle.flexDirection).toBe("row-reverse");
+	});
 });

@@ -13,6 +13,7 @@ import { BuilderInspectorPanel } from './BuilderInspectorPanel';
 /** Right rail: selected block settings at wide builder widths. */
 export type BuilderInspectorSidebarProps = {
   selectedBlock: BlockConfig | null;
+  parentBlock?: BlockConfig | null;
   updateBlock: (blockId: string, updates: Partial<BlockConfig>) => void;
   setHoverHighlight: (area: 'padding' | 'margin' | null) => void;
   onToggleInspector: () => void;
@@ -32,6 +33,7 @@ const headerIconBtnClass =
  */
 export function BuilderInspectorSidebar({
   selectedBlock,
+  parentBlock = null,
   updateBlock,
   setHoverHighlight,
   onToggleInspector,
@@ -59,6 +61,7 @@ export function BuilderInspectorSidebar({
         <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
           <BuilderInspectorPanel
             selectedBlock={selectedBlock}
+            parentBlock={parentBlock}
             updateBlock={updateBlock}
             setHoverHighlight={setHoverHighlight}
           />

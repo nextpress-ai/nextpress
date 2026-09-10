@@ -13,12 +13,11 @@ import {
 	getBlockStackLayerWrapperStyles,
 	getContainerChildrenStackStyle,
 	getContainerOuterShellStyle,
-	getContainerParentDisplayMode,
 	getContainerSiblingStackDirection,
 	readContainerLayoutFromBlock,
 } from "@shared/block-container-placement";
 import { buildGroupShellStyles, readGroupShellContent } from "@shared/group-shell-styles";
-import { getInlineFlexChildStyles } from "@shared/icon-block-visuals";
+import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
 
 /**
  * Columns Block Component
@@ -146,14 +145,16 @@ export function GroupBlock(block: BlockConfig) {
 		if (!ChildComponent) {
 			return null;
 		}
-		const inlineFlex = getInlineFlexChildStyles(child.name, isHorizontal);
+		const rowFlex = getHorizontalFlexChildStyles({
+			isHorizontal,
+			childStyles: child.styles,
+			blockName: child.name,
+		});
 		return (
 			<div
 				key={child.id}
 				style={{
-					minWidth: inlineFlex.flexShrink === 0 ? undefined : 0,
-					flex: isHorizontal && !inlineFlex.flex ? "1 1 auto" : inlineFlex.flex,
-					flexShrink: inlineFlex.flexShrink,
+					...rowFlex,
 					...getBlockSiblingFlexItemStyles(child.styles, stackDirection),
 					...getBlockStackLayerWrapperStyles(child),
 				}}
@@ -197,9 +198,8 @@ export function ContainerBlock(block: BlockConfig) {
 
 	const mergedClassName = ["wp-block-container", dataClassName, className].filter(Boolean).join(" ");
 	const layout = readContainerLayoutFromBlock({ styles: style });
-	const parentDisplay = getContainerParentDisplayMode(layout);
 	const stackDirection = getContainerSiblingStackDirection(layout);
-	const isHorizontal = parentDisplay === "flex" && layout.flexDirection === "row";
+	const isHorizontal = stackDirection === "row";
 	const innerStackStyle = getContainerChildrenStackStyle(layout, {
 		shellStyles: style,
 		children: block.children?.map((child) => ({ styles: child.styles })),
@@ -213,14 +213,16 @@ export function ContainerBlock(block: BlockConfig) {
 		if (!ChildComponent) {
 			return null;
 		}
-		const inlineFlex = getInlineFlexChildStyles(child.name, isHorizontal);
+		const rowFlex = getHorizontalFlexChildStyles({
+			isHorizontal,
+			childStyles: child.styles,
+			blockName: child.name,
+		});
 		return (
 			<div
 				key={child.id}
 				style={{
-					minWidth: inlineFlex.flexShrink === 0 ? undefined : 0,
-					flex: isHorizontal && !inlineFlex.flex ? "1 1 auto" : inlineFlex.flex,
-					flexShrink: inlineFlex.flexShrink,
+					...rowFlex,
 					...getBlockSiblingFlexItemStyles(child.styles, stackDirection),
 					...getBlockStackLayerWrapperStyles(child),
 				}}

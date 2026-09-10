@@ -25,6 +25,7 @@ export type BuilderSidebarProps = {
   activeTab: 'blocks' | 'settings';
   setActiveTab: (tab: 'blocks' | 'settings') => void;
   selectedBlock: BlockConfig | null;
+  parentBlock?: BlockConfig | null;
   updateBlock: (blockId: string, updates: Partial<BlockConfig>) => void;
   setHoverHighlight: (area: 'padding' | 'margin' | null) => void;
   sidebarVisible: boolean;
@@ -42,6 +43,7 @@ export function BuilderSidebar({
   activeTab,
   setActiveTab,
   selectedBlock,
+  parentBlock = null,
   updateBlock,
   setHoverHighlight,
   sidebarVisible,
@@ -154,6 +156,7 @@ export function BuilderSidebar({
           <TabsContent value="settings" className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
             <BuilderInspectorPanel
               selectedBlock={selectedBlock}
+              parentBlock={parentBlock}
               updateBlock={updateBlock}
               setHoverHighlight={setHoverHighlight}
             />

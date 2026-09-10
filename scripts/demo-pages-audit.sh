@@ -24,6 +24,18 @@ audit_eval='(() => {
   const canvasOverflow = canvas ? canvas.scrollWidth - canvas.clientWidth : 0;
   const pass = isEditor ? canvasOverflow <= 1 : overflowX <= 1 && stackOverflow <= 1;
   const h1 = document.querySelector("h1, .wp-block-heading");
+  const layoutEl = document.querySelector(
+    ".wp-block-group__inner-container, .wp-block-columns, [data-container-children]"
+  );
+  let layout = null;
+  if (layoutEl) {
+    const cs = getComputedStyle(layoutEl);
+    layout = {
+      display: cs.display,
+      flexDirection: cs.flexDirection,
+      gap: cs.gap,
+    };
+  }
   return {
     pass,
     overflowX,
@@ -32,6 +44,7 @@ audit_eval='(() => {
     title: document.title,
     hasH1: !!h1,
     h1Text: h1 ? (h1.innerText || "").slice(0, 60) : "",
+    layout,
   };
 })()'
 
@@ -46,7 +59,7 @@ declare -a WIDTHS=(390 768)
 
 mkdir -p "$(dirname "$OUT")"
 : > /tmp/demo-test-results.tsv
-echo -e "slug\tsurface\twidth\tpass\toverflowX\tstack\ttextLen\thasH1" >> /tmp/demo-test-results.tsv
+  echo -e "slug\tsurface\twidth\tpass\toverflowX\tstack\ttextLen\thasH1\tlayoutDisplay\tlayoutDir\tlayoutGap" >> /tmp/demo-test-results.tsv
 
 curl -s -c /tmp/demo-test-cookies.txt -b /tmp/demo-test-cookies.txt \
   -X POST "${BASE}/api/auth/sign-in/email" \
@@ -83,15 +96,18 @@ run_check() {
     ab click "[aria-label=\"${device}\"]" >/dev/null 2>&1 || true
     ab wait 1200 >/dev/null
   fi
-  local result pass overflow stack text_len has_h1
+  local result pass overflow stack text_len has_h1 layout_display layout_dir layout_gap
   result="$(ab --json eval "$audit_eval" 2>/dev/null || echo '{}')"
   pass="$(echo "$result" | jq -r '.data.result.pass // false')"
   overflow="$(echo "$result" | jq -r '.data.result.overflowX // "?"')"
   stack="$(echo "$result" | jq -r '.data.result.stackOverflow // "?"')"
   text_len="$(echo "$result" | jq -r '.data.result.textLen // 0')"
   has_h1="$(echo "$result" | jq -r '.data.result.hasH1 // false')"
-  echo -e "${slug}\t${surface}\t${width}\t${pass}\t${overflow}\t${stack}\t${text_len}\t${has_h1}" >> /tmp/demo-test-results.tsv
-  printf "  %-28s %-8s %4spx  pass=%-5s  text=%s  h1=%s\n" "$slug" "$surface" "$width" "$pass" "$text_len" "$has_h1"
+  layout_display="$(echo "$result" | jq -r '.data.result.layout.display // ""')"
+  layout_dir="$(echo "$result" | jq -r '.data.result.layout.flexDirection // ""')"
+  layout_gap="$(echo "$result" | jq -r '.data.result.layout.gap // ""')"
+  echo -e "${slug}\t${surface}\t${width}\t${pass}\t${overflow}\t${stack}\t${text_len}\t${has_h1}\t${layout_display}\t${layout_dir}\t${layout_gap}" >> /tmp/demo-test-results.tsv
+  printf "  %-28s %-8s %4spx  pass=%-5s  text=%s  h1=%s  layout=%s/%s/%s\n" "$slug" "$surface" "$width" "$pass" "$text_len" "$has_h1" "$layout_display" "$layout_dir" "$layout_gap"
 }
 
 echo "[demo-test] SSR curl checks..."
@@ -146,11 +162,11 @@ ssr_fail_count=${#SSR_FAILS[@]}
   echo "**Browser checks:** ${pass_count}/${total} passed"
   echo "**SSR curl:** $(( ${#SLUGS[@]} - ssr_fail_count ))/${#SLUGS[@]} passed"
   echo ""
-  echo "| Slug | Surface | Width | Pass | overflowX | stack | textLen | hasH1 |"
-  echo "|------|---------|-------|------|-----------|-------|---------|-------|"
-  tail -n +2 /tmp/demo-test-results.tsv | while IFS=$'\t' read -r s surf w p o st tl h1; do
+  echo "| Slug | Surface | Width | Pass | overflowX | stack | textLen | hasH1 | display | flex-direction | gap |"
+  echo "|------|---------|-------|------|-----------|-------|---------|-------|---------|----------------|-----|"
+  tail -n +2 /tmp/demo-test-results.tsv | while IFS=$'\t' read -r s surf w p o st tl h1 ld ldir lg; do
     icon=$([[ "$p" == "true" ]] && echo "✅" || echo "❌")
-    echo "| $s | $surf | ${w}px | $icon $p | $o | $st | $tl | $h1 |"
+    echo "| $s | $surf | ${w}px | $icon $p | $o | $st | $tl | $h1 | $ld | $ldir | $lg |"
   done
   echo ""
   if [[ "$fail_count" -eq 0 && "$ssr_fail_count" -eq 0 ]]; then
