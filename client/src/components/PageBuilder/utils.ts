@@ -138,10 +138,13 @@ export function getBlockDisplayName(blockType: string): string {
 }
 
 export function sanitizeHtml(html: string): string {
-  // Basic HTML sanitization - remove script tags and dangerous attributes
   return html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/on\w+="[^"]*"/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/\son\w+\s*=\s*`[^`]*`/gi, '')
+    .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
     .replace(/javascript:/gi, '')
     .replace(/vbscript:/gi, '');
 }

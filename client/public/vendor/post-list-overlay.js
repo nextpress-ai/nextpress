@@ -5,6 +5,49 @@
 (function initPostListOverlay() {
 	if (typeof document === "undefined") return;
 
+	var overlayAbort = null;
+
+	function visitorSiteIdHint() {
+		try {
+			var fromQuery = new URLSearchParams(location.search).get("siteId");
+			if (fromQuery) return fromQuery;
+			var pathMatch = location.pathname.match(/^\/sites\/([^/]+)\//);
+			if (!pathMatch || !pathMatch[1]) return "";
+			return decodeURIComponent(pathMatch[1]);
+		} catch (err) {
+			return "";
+		}
+	}
+
+	function withSiteId(url) {
+		var siteId = visitorSiteIdHint();
+		if (!siteId) return url;
+		return url + (url.indexOf("?") >= 0 ? "&" : "?") + "siteId=" + encodeURIComponent(siteId);
+	}
+
+	function isSafeHttpUrl(url) {
+		if (!url || typeof url !== "string") return false;
+		var trimmed = url.trim();
+		if (!trimmed) return false;
+		if (trimmed.charAt(0) === "/" && trimmed.charAt(1) !== "/") return true;
+		try {
+			var parsed = new URL(trimmed);
+			return parsed.protocol === "http:" || parsed.protocol === "https:";
+		} catch (err) {
+			return false;
+		}
+	}
+
+	function hashSlug() {
+		var hash = location.hash || "";
+		if (hash.indexOf("#post/") !== 0) return "";
+		try {
+			return decodeURIComponent(hash.slice(6));
+		} catch (err) {
+			return "";
+		}
+	}
+
 	function overlayRoot() {
 		var existing = document.getElementById("np-post-overlay");
 		if (existing) return existing;
@@ -22,6 +65,7 @@
 			"</article>";
 		document.body.appendChild(dialog);
 		dialog.addEventListener("close", function () {
+			if (overlayAbort) overlayAbort.abort();
 			if (location.hash.indexOf("#post/") === 0) {
 				history.replaceState(null, "", location.pathname + location.search);
 			}
@@ -36,7 +80,7 @@
 		if (title) title.textContent = post.title || "Untitled";
 		if (body) {
 			body.replaceChildren();
-			if (post.featuredImage) {
+			if (post.featuredImage && isSafeHttpUrl(post.featuredImage)) {
 				var img = document.createElement("img");
 				img.src = post.featuredImage;
 				img.alt = "";
@@ -61,14 +105,23 @@
 
 	function openSlug(slug) {
 		if (!slug) return;
-		fetch("/api/public/post/" + encodeURIComponent(slug))
+		if (overlayAbort) overlayAbort.abort();
+		overlayAbort = typeof AbortController === "function" ? new AbortController() : null;
+		var signal = overlayAbort ? overlayAbort.signal : undefined;
+		var requested = slug;
+		fetch(withSiteId("/api/public/post/" + encodeURIComponent(slug)), signal ? { signal: signal } : undefined)
 			.then(function (res) {
 				if (!res.ok) throw new Error("Post not found");
 				return res.json();
 			})
-			.then(fillOverlay)
-			.catch(function () {
-				window.location.href = "/post/" + encodeURIComponent(slug);
+			.then(function (post) {
+				if (hashSlug() !== requested) return;
+				fillOverlay(post);
+			})
+			.catch(function (err) {
+				if (err && err.name === "AbortError") return;
+				if (hashSlug() !== requested) return;
+				window.location.href = withSiteId("/post/" + encodeURIComponent(slug));
 			});
 	}
 
@@ -90,7 +143,7 @@
 
 	window.addEventListener("hashchange", function () {
 		if (location.hash.indexOf("#post/") === 0) {
-			openSlug(decodeURIComponent(location.hash.slice(6)));
+			openSlug(hashSlug());
 		} else {
 			var dialog = document.getElementById("np-post-overlay");
 			if (dialog && dialog.open && typeof dialog.close === "function") dialog.close();
@@ -98,6 +151,6 @@
 	});
 
 	if (location.hash.indexOf("#post/") === 0) {
-		openSlug(decodeURIComponent(location.hash.slice(6)));
+		openSlug(hashSlug());
 	}
 })();

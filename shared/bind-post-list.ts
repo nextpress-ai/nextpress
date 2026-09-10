@@ -36,6 +36,19 @@ export function postOverlayHash(slug: string): string {
 	return `#post/${encodeURIComponent(slug)}`;
 }
 
+/** True when a featured-image URL is http(s) or a same-origin path. */
+export function isSafePublicMediaUrl(url: string): boolean {
+	const trimmed = url.trim();
+	if (!trimmed) return false;
+	if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return true;
+	try {
+		const parsed = new URL(trimmed);
+		return parsed.protocol === "http:" || parsed.protocol === "https:";
+	} catch {
+		return false;
+	}
+}
+
 /** Read `#post/{slug}` from a location hash. */
 export function readPostOverlaySlug(hash: string): string {
 	const raw = hash.startsWith("#") ? hash.slice(1) : hash;

@@ -3,6 +3,7 @@ import type { BlockConfig } from "./schema-types";
 import {
 	bindPostListBlock,
 	bindPostListBlocks,
+	isSafePublicMediaUrl,
 	postOverlayHash,
 	readPostListContent,
 	readPostOverlaySlug,
@@ -79,5 +80,12 @@ describe("bind-post-list", () => {
 		expect(postOverlayHash("field-notes")).toBe("#post/field-notes");
 		expect(readPostOverlaySlug("#post/field-notes")).toBe("field-notes");
 		expect(readPostOverlaySlug("#other")).toBe("");
+	});
+
+	it("accepts only http(s) or same-origin media URLs", () => {
+		expect(isSafePublicMediaUrl("/uploads/cover.jpg")).toBe(true);
+		expect(isSafePublicMediaUrl("https://cdn.example/a.jpg")).toBe(true);
+		expect(isSafePublicMediaUrl("javascript:alert(1)")).toBe(false);
+		expect(isSafePublicMediaUrl("//evil.example/x")).toBe(false);
 	});
 });

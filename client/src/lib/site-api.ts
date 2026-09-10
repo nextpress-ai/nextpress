@@ -11,6 +11,20 @@ export const appendSiteIdToUrl = (url: string, siteId: string | undefined): stri
 	return `${url}${separator}siteId=${encodeURIComponent(siteId)}`;
 };
 
+/** Visitor site hint so public fetches match the page, not the default site. */
+export const readVisitorSiteIdHint = (): string | undefined => {
+	if (typeof window === "undefined") return undefined;
+	const fromQuery = new URLSearchParams(window.location.search).get("siteId");
+	if (fromQuery) return fromQuery;
+	const pathMatch = window.location.pathname.match(/^\/sites\/([^/]+)\//);
+	if (!pathMatch?.[1]) return undefined;
+	try {
+		return decodeURIComponent(pathMatch[1]);
+	} catch {
+		return pathMatch[1];
+	}
+};
+
 /** Builds a site-scoped options API URL. */
 export const buildSiteOptionUrl = (params: { name: string; siteId: string }): string =>
 	appendSiteIdToUrl(`/api/options/${params.name}`, params.siteId);

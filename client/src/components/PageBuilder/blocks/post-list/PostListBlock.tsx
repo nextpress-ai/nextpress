@@ -16,6 +16,8 @@ import {
 } from './post-list-model';
 import { PostListSettings } from './post-list-settings';
 import { openOverlayHash, PostListOverlay } from './post-list-overlay';
+import { appendSiteIdToUrl, readVisitorSiteIdHint } from '@/lib/site-api';
+import { isSafePublicMediaUrl } from '@shared/bind-post-list';
 
 // ============================================================================
 // RENDERER
@@ -47,8 +49,9 @@ function PostListRenderer({
   const cfg = { ...DEFAULT_CONTENT, ...content } as Required<PostListContent>;
   const shouldFetchReal = isPreview || !!cfg.blogId;
 
+  const siteIdHint = readVisitorSiteIdHint();
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['posts', isPreview ? 'public' : 'admin', cfg.blogId, cfg.postsPerPage, cfg.orderBy, cfg.order],
+    queryKey: ['posts', isPreview ? 'public' : 'admin', siteIdHint, cfg.blogId, cfg.postsPerPage, cfg.orderBy, cfg.order],
     queryFn: async () => {
       const params = new URLSearchParams({
         per_page: String(cfg.postsPerPage),
@@ -66,23 +69,15 @@ function PostListRenderer({
       }
       if (cfg.order) params.set('order', cfg.order);
 
-      let res = isPreview
-        ? await fetch(`/api/public/posts?${params.toString()}`, {
-            credentials: 'same-origin',
-          })
+      const res = isPreview
+        ? await fetch(
+            appendSiteIdToUrl(
+              `/api/public/posts?${params.toString()}`,
+              readVisitorSiteIdHint(),
+            ),
+            { credentials: 'same-origin' },
+          )
         : await fetch(`/api/posts?${params.toString()}`, { credentials: 'include' });
-      if (isPreview && !res.ok) {
-        const fallback = new URLSearchParams({
-          per_page: String(cfg.postsPerPage),
-          status: 'publish',
-        });
-        if (cfg.blogId) fallback.set('blog_id', cfg.blogId);
-        if (params.get('sort')) fallback.set('sort', params.get('sort') ?? '');
-        if (cfg.order) fallback.set('order', cfg.order);
-        res = await fetch(`/api/posts?${fallback.toString()}`, {
-          credentials: 'same-origin',
-        });
-      }
       if (!res.ok) throw new Error(`Failed to fetch posts (${res.status})`);
       const json = await res.json();
       const items: PostItem[] = (
@@ -190,7 +185,10 @@ function PostCard({
 
   const Wrapper = isPreview ? 'a' : 'div';
   const wrapperProps = isPreview
-    ? { href: `/post/${post.slug}`, onClick: handleVisitorClick }
+    ? {
+        href: appendSiteIdToUrl(`/post/${post.slug}`, readVisitorSiteIdHint()),
+        onClick: handleVisitorClick,
+      }
     : {};
 
   /** Overlay shown in editor mode on real posts — indicates they are clickable for inline editing */
@@ -206,7 +204,7 @@ function PostCard({
   ) : null;
 
   const featuredImage = (size: string) =>
-    post.featuredImage ? (
+    post.featuredImage && isSafePublicMediaUrl(post.featuredImage) ? (
       <div
         className={`${size} flex-shrink-0 rounded bg-npb-surface-inset overflow-hidden flex items-center justify-center`}>
         <img
@@ -249,7 +247,9 @@ function PostCard({
         {...wrapperProps}
         className="flex flex-col rounded-lg border border-npb-border-default overflow-hidden hover:border-npb-border-strong transition-colors"
         style={{ textDecoration: 'none', color: 'inherit' }}>
-        {cfg.showFeaturedImage && post.featuredImage ? (
+        {cfg.showFeaturedImage &&
+        post.featuredImage &&
+        isSafePublicMediaUrl(post.featuredImage) ? (
           <div
             className="w-full bg-npb-surface-inset flex items-center justify-center"
             style={{ height: layout === 'cards' ? 180 : 140 }}>

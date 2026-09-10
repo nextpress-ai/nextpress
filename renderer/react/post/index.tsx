@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { getRenderProps, parseStructuredContent } from "../render-helpers";
+import { isSafePublicMediaUrl } from "@shared/bind-post-list";
 
 export { PostCommentsBlock } from "./comments";
 
@@ -285,7 +286,7 @@ export function PostListBlock(block: BlockConfig) {
 							data-np-open={openIn}
 							style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: isGrid ? "column" : "row", gap: isGrid ? 0 : "1rem" }}
 						>
-							{showFeaturedImage && image ? (
+							{showFeaturedImage && image && isSafePublicMediaUrl(image) ? (
 								<img className="np-post-list__image" src={image} alt="" />
 							) : null}
 							<div className="np-post-list__body">

@@ -14,6 +14,8 @@ export function sanitizeHtml(html: string): string {
 		.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
 		.replace(/\son\w+\s*=\s*"[^"]*"/gi, "")
 		.replace(/\son\w+\s*=\s*'[^']*'/gi, "")
+		.replace(/\son\w+\s*=\s*`[^`]*`/gi, "")
+		.replace(/\son\w+\s*=\s*[^\s>]+/gi, "")
 		.replace(/javascript:/gi, "")
 		.replace(/vbscript:/gi, "");
 }

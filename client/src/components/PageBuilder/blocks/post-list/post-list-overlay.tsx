@@ -6,7 +6,8 @@ import {
 	DialogDescription,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { readPostOverlaySlug } from "@shared/bind-post-list";
+import { isSafePublicMediaUrl, readPostOverlaySlug } from "@shared/bind-post-list";
+import { appendSiteIdToUrl, readVisitorSiteIdHint } from "@/lib/site-api";
 
 type PublicPostDetail = {
 	title?: string;
@@ -53,9 +54,15 @@ export function PostListOverlay({ enabled }: { enabled: boolean }) {
 	const open = Boolean(slug);
 
 	const { data, isLoading, isError } = useQuery({
-		queryKey: ["public-post-overlay", slug],
-		queryFn: async () => {
-			const res = await fetch(`/api/public/post/${encodeURIComponent(slug)}`);
+		queryKey: ["public-post-overlay", slug, readVisitorSiteIdHint()],
+		queryFn: async ({ signal }) => {
+			const res = await fetch(
+				appendSiteIdToUrl(
+					`/api/public/post/${encodeURIComponent(slug)}`,
+					readVisitorSiteIdHint(),
+				),
+				{ signal },
+			);
 			if (!res.ok) throw new Error("Post not found");
 			return (await res.json()) as PublicPostDetail;
 		},
@@ -64,6 +71,7 @@ export function PostListOverlay({ enabled }: { enabled: boolean }) {
 	});
 
 	const title = data?.title || (isLoading ? "Loading" : "Post");
+	const fullPostHref = appendSiteIdToUrl(`/post/${slug}`, readVisitorSiteIdHint());
 
 	return (
 		<Dialog
@@ -85,10 +93,10 @@ export function PostListOverlay({ enabled }: { enabled: boolean }) {
 					{isError ? (
 						<p className="np-post-overlay__status np-post-overlay__status--error">
 							Could not load this post.{" "}
-							<a href={`/post/${slug}`}>Open full post</a>
+							<a href={fullPostHref}>Open full post</a>
 						</p>
 					) : null}
-					{data?.featuredImage ? (
+					{data?.featuredImage && isSafePublicMediaUrl(data.featuredImage) ? (
 						<img
 							src={data.featuredImage}
 							alt=""
@@ -105,7 +113,7 @@ export function PostListOverlay({ enabled }: { enabled: boolean }) {
 						/>
 					) : data && !isLoading && !isError ? (
 						<p className="np-post-overlay__status">
-							<a href={`/post/${slug}`}>Open full post</a>
+							<a href={fullPostHref}>Open full post</a>
 						</p>
 					) : null}
 				</div>

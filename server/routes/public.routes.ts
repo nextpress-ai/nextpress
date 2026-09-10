@@ -16,6 +16,7 @@ import type { Filter } from '@shared/create-models';
 import { bindPostBlocks } from '@shared/bind-post-blocks';
 import { bindablePostFromRecord } from '@shared/bind-post-blocks';
 import { renderBlocksToHtml } from '../../renderer/to-html';
+import { sanitizeHtml } from '@shared/sanitize-html';
 import type { BlockConfig } from '@shared/schema-types';
 
 /**
@@ -162,7 +163,10 @@ export function createPublicRoutes(deps: Deps): Router {
         });
         res.json({
           ...payload,
-          renderedHtml: boundBlocks.length > 0 ? renderBlocksToHtml(boundBlocks) : '',
+          renderedHtml:
+            boundBlocks.length > 0
+              ? sanitizeHtml(renderBlocksToHtml(boundBlocks))
+              : '',
         });
       });
 
