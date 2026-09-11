@@ -50,6 +50,8 @@ env
 
 # Agent / AI workspace (local only — not part of the repo)
 AGENTS.md
+intent.md
+intent-*.md
 docs/
 opencode.json
 .opencode/
