@@ -62,6 +62,7 @@
 
   /* Motion */
   --npb-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --npb-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --npb-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --npb-duration-fast: 100ms;
   --npb-duration-normal: 200ms;
@@ -450,6 +451,26 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
     font-family: "Segoe UI", system-ui, sans-serif;
+  }
+  :root {
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .dark {
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 

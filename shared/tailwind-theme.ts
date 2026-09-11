@@ -126,6 +126,7 @@ export const tailwindThemeExtend = {
 		"npb-slow": "var(--npb-duration-slow)",
 	},
 	transitionTimingFunction: {
+		"npb-in": "var(--npb-ease-in)",
 		"npb-out": "var(--npb-ease-out)",
 		"npb-in-out": "var(--npb-ease-in-out)",
 	},

@@ -190,7 +190,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <TooltipProvider>
+        <TooltipProvider delayDuration={300}>
           <SonnerToaster />
           <Toaster />
           <Router />
