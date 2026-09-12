@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
-import { DEFAULT_PAGE_DESIGN } from "@shared/page-other";
+import { prepareVisitorPageBlocks } from "@shared/page-shell-model";
 import { PAGE_BLOCK_STACK_GAP } from "@shared/block-container-placement";
 import { resolveBlockTreeForSurface } from "@shared/resolve-block-for-surface";
 import {
@@ -56,8 +56,13 @@ export function PublicBlockStack({
     ? bindPostBlocks({ blocks, post: boundPost })
     : blocks;
 
-  const { css: deviceAndTokenCss } = resolveBlockTreeForSurface({
+  const preparedBlocks = prepareVisitorPageBlocks({
     blocks: resolvedBlocks,
+    leftoverDesign: design,
+  });
+
+  const { css: deviceAndTokenCss } = resolveBlockTreeForSurface({
+    blocks: preparedBlocks,
     surface: deviceView ? "canvas" : "publish",
     deviceView,
   });
@@ -82,12 +87,10 @@ export function PublicBlockStack({
   return (
     <PageProvider postDocument={postDocument}>
       <div
-        className="np-public-block-stack mx-auto flex w-full min-w-0 flex-col items-stretch overflow-x-clip"
+        className="np-public-block-stack has-page-shell mx-auto flex w-full min-w-0 flex-col items-stretch overflow-x-clip"
         data-testid={testId}
         style={{
           ...themeCssVars,
-          maxWidth: design?.containerWidth ?? DEFAULT_PAGE_DESIGN.containerWidth,
-          padding: design?.padding ?? DEFAULT_PAGE_DESIGN.padding,
           gap: PAGE_BLOCK_STACK_GAP,
         }}
       >
@@ -99,7 +102,7 @@ export function PublicBlockStack({
           <h1 className="sr-only">{pageTitle}</h1>
         ) : null}
         <BlockAnimationRuntime contentKey={animationContentKey} />
-        {resolvedBlocks.map((block) => (
+        {preparedBlocks.map((block) => (
           <PublicBlockRenderer key={block.id} block={block} deviceView={deviceView} />
         ))}
       </div>

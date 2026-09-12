@@ -10,6 +10,9 @@ import {
   resolveNonPublicListSiteId,
 } from '../lib/content-access';
 import { validateContentForSave } from '@shared/validate-content-save';
+import { ensureRootPageShell } from '@shared/page-shell-model';
+import { randomUUID } from 'node:crypto';
+import type { BlockConfig } from '@shared/schema-types';
 import { enrichPageForApi } from '@shared/page-other';
 import { mergePageOtherWithThemeDefaults } from '@shared/theme-to-page-design';
 import { resolveSiteThemeSettings } from './shared/resolve-site-theme-settings';
@@ -409,7 +412,13 @@ export function createPagesRoutes(deps: Deps): Router {
           ...parsedData,
           title: String(title),
           slug: normalizedSlug,
-          blocks: contentValidation.blocks,
+          blocks: ensureRootPageShell({
+            blocks: Array.isArray(contentValidation.blocks)
+              ? (contentValidation.blocks as BlockConfig[])
+              : [],
+            leftoverDesign: otherWithTheme.design,
+            shellId: randomUUID(),
+          }).blocks,
           other: contentValidation.other,
         };
 

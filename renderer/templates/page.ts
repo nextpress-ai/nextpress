@@ -14,6 +14,7 @@ export interface PageRenderOptions {
   textColor?: string;
   noIndex?: boolean;
   customMeta?: Array<{ name: string; content: string }>;
+  hasPageShell?: boolean;
 }
 
 export const PageTemplate = (
@@ -68,10 +69,10 @@ export const PageTemplate = (
         
         #main-content {
           flex: 1;
-          max-width: ${options.containerWidth || '1200px'};
+          max-width: ${options.hasPageShell ? 'none' : options.containerWidth || '1200px'};
           width: 100%;
           margin: 0 auto;
-          padding: ${options.padding || '2rem 1rem'};
+          padding: ${options.hasPageShell ? '0' : options.padding || '2rem 1rem'};
         }
         
         /* WordPress block styles */
@@ -140,7 +141,7 @@ export const PageTemplate = (
           <header>
               </header>
   
-          <main id="main-content">
+          <main id="main-content"${options.hasPageShell ? ' class="has-page-shell"' : ''}>
               ${blockContentHtml}
           </main>
   

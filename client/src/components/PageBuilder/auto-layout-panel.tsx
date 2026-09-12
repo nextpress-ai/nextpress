@@ -28,12 +28,36 @@ import {
 	type AutoLayoutDistribution,
 	type AutoLayoutResize,
 } from "@shared/auto-layout-model";
+import type { StackType } from "@shared/stack-model";
+import {
+	ASPECT_RATIO_PRESETS,
+	GRID_MIN_TRACK_WIDTH_PRESETS,
+} from "@shared/dimension-presets";
+
+const AUTO_TRACK_PATTERN = /^repeat\(auto-(fit|fill),\s*minmax\(([^,]+),\s*1fr\)\)$/;
+
+/** Rewrites the min track width of an auto-fit/auto-fill grid template. */
+export function setAutoTrackMinWidth(template: string, min: string): string {
+	const match = AUTO_TRACK_PATTERN.exec(template.trim());
+	if (!match) return template;
+	return `repeat(auto-${match[1]}, minmax(${min}, 1fr))`;
+}
+
+/** Reads the min track width of an auto-fit/auto-fill grid template, if any. */
+export function readAutoTrackMinWidth(template: string | undefined): string | undefined {
+	if (!template) return undefined;
+	const match = AUTO_TRACK_PATTERN.exec(template.trim());
+	return match ? match[2].trim() : undefined;
+}
 
 export type AutoLayoutPanelProps = {
 	block: BlockConfig;
 	onStylesChange: (styles: Record<string, unknown>) => void;
 	/** Columns keep track count in Content — hide display mode chips. */
 	hideDisplay?: boolean;
+	/** Stack block: the mode lives in Content; direction chips write through to it. */
+	stackMode?: StackType;
+	onStackModeChange?: (next: StackType) => void;
 };
 
 const DISPLAY_OPTIONS = [
@@ -85,6 +109,8 @@ export function AutoLayoutPanel({
 	block,
 	onStylesChange,
 	hideDisplay = false,
+	stackMode,
+	onStackModeChange,
 }: AutoLayoutPanelProps) {
 	const layout = readContainerLayoutFromBlock({
 		styles: block.styles,
@@ -93,6 +119,8 @@ export function AutoLayoutPanel({
 	const display = layout.display === "inline-flex" ? "flex" : layout.display;
 	const isFlex = display === "flex";
 	const isGrid = display === "grid";
+	const isStack = stackMode !== undefined;
+	const stackIsOverlay = stackMode === "overlay";
 	const stackIsRow = isFlex && (layout.flexDirection === "row" || layout.flexDirection === "row-reverse");
 	const directionValue =
 		layout.flexDirection === "row-reverse" || layout.flexDirection === "row" ? "row" : "column";
@@ -175,47 +203,51 @@ export function AutoLayoutPanel({
 		<div role="region" aria-label="Auto layout">
 			<CollapsibleCard title="Layout" icon={Layout} defaultOpen={true}>
 				<div className="space-y-4">
-					{!hideDisplay ? (
-						<SettingsChipGroup
-							label="Display"
-							ariaLabel="Display"
-							options={DISPLAY_OPTIONS}
-							value={display === "inline" || display === "inline-block" ? "block" : display}
-							onChange={(value) =>
-								patch({
-									display: value,
-									...(value === "flex"
-										? { flexDirection: layout.flexDirection || "column" }
-										: {}),
-								})
-							}
-						/>
-					) : null}
+				{!hideDisplay && !isStack ? (
+					<SettingsChipGroup
+						label="Display"
+						ariaLabel="Display"
+						options={DISPLAY_OPTIONS}
+						value={display === "inline" || display === "inline-block" ? "block" : display}
+						onChange={(value) =>
+							patch({
+								display: value,
+								...(value === "flex"
+									? { flexDirection: layout.flexDirection || "column" }
+									: {}),
+							})
+						}
+					/>
+				) : null}
 
-					{(isFlex || hideDisplay) && (
-						<LayoutSettingsSection title="Stack">
-							<SettingsChipGroup
-								label="Direction"
-								ariaLabel="Direction"
-								options={DIRECTION_OPTIONS}
-								value={directionValue}
-								onChange={(value) => {
-									const reversed =
-										layout.flexDirection === "row-reverse" ||
-										layout.flexDirection === "column-reverse";
-									patch({
-										display: "flex",
-										flexDirection:
-											value === "row"
-												? reversed
-													? "row-reverse"
-													: "row"
-												: reversed
-													? "column-reverse"
-													: "column",
-									});
-								}}
-							/>
+				{(isFlex || hideDisplay) && !stackIsOverlay && (
+					<LayoutSettingsSection title="Stack">
+						<SettingsChipGroup
+							label="Direction"
+							ariaLabel="Direction"
+							options={DIRECTION_OPTIONS}
+							value={directionValue}
+							onChange={(value) => {
+								if (isStack && onStackModeChange) {
+									onStackModeChange(value === "row" ? "horizontal" : "vertical");
+									return;
+								}
+								const reversed =
+									layout.flexDirection === "row-reverse" ||
+									layout.flexDirection === "column-reverse";
+								patch({
+									display: "flex",
+									flexDirection:
+										value === "row"
+											? reversed
+												? "row-reverse"
+												: "row"
+											: reversed
+												? "column-reverse"
+												: "column",
+								});
+							}}
+						/>
 							<SettingsChipGroup
 								label="Wrap"
 								ariaLabel="Wrap"
@@ -249,7 +281,7 @@ export function AutoLayoutPanel({
 						</LayoutSettingsSection>
 					)}
 
-					{isGrid && (
+					{isGrid && !isStack && (
 						<LayoutSettingsSection title="Grid">
 							<SettingsChipGroup
 								label="Tracks"
@@ -263,6 +295,23 @@ export function AutoLayoutPanel({
 									patch({ display: "grid", gridTemplateColumns: value })
 								}
 							/>
+							{readAutoTrackMinWidth(layout.gridTemplateColumns) ? (
+								<DimensionPresetField
+									label="Min column width"
+									value={readAutoTrackMinWidth(layout.gridTemplateColumns)}
+									presets={GRID_MIN_TRACK_WIDTH_PRESETS}
+									onChange={(next) =>
+										patch({
+											display: "grid",
+											gridTemplateColumns: setAutoTrackMinWidth(
+												layout.gridTemplateColumns ?? "",
+												next ?? "200px",
+											),
+										})
+									}
+									customPlaceholder="e.g. 220px, 16rem"
+								/>
+							) : null}
 							<div>
 								<Label className="npb-settings-label text-sm font-semibold">
 									Custom tracks
@@ -338,6 +387,18 @@ export function AutoLayoutPanel({
 							options={OVERFLOW_OPTIONS}
 							value={(block.styles?.overflow as string) || "visible"}
 							onChange={(value) => patch({ overflow: value })}
+						/>
+
+						<DimensionPresetField
+							label="Aspect ratio"
+							value={
+								block.styles?.aspectRatio != null && block.styles.aspectRatio !== ""
+									? String(block.styles.aspectRatio)
+									: undefined
+							}
+							presets={ASPECT_RATIO_PRESETS}
+							onChange={(next) => patch({ aspectRatio: next ?? null })}
+							customPlaceholder="e.g. 3 / 2"
 						/>
 
 						{isFlex ? (

@@ -101,6 +101,17 @@ figure.wp-block-embed {
   box-sizing: border-box;
 }
 
+/* Stack shells — layout (flex/grid) is inline; CSS only guards the box */
+.wp-block-stack {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.wp-block-stack__inner > * {
+  min-width: 0;
+}
+
 /* Columns */
 .wp-block-columns {
   display: flex;
@@ -175,6 +186,281 @@ figure.wp-block-embed {
   overflow-x: clip;
 }
 
+#main-content.has-page-shell,
+.np-public-block-stack.has-page-shell {
+  max-width: none;
+  padding: 0;
+}
+
+.wp-block-page-shell {
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.wp-block-header {
+  container-type: inline-size;
+  container-name: np-header;
+  width: 100%;
+  box-sizing: border-box;
+  background: inherit;
+  color: inherit;
+}
+
+.wp-block-header.is-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(12px);
+}
+
+.wp-block-header__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.wp-block-header__slot {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.wp-block-header__slot.is-middle {
+  flex: 1;
+  justify-content: center;
+}
+
+.wp-block-header__slot.is-right {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.wp-block-header__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  color: inherit;
+}
+
+.wp-block-header__mark {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--npb-accent, #f97316);
+  flex-shrink: 0;
+}
+
+.wp-block-header__brand img {
+  height: 1.75rem;
+  width: auto;
+}
+
+.wp-block-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wp-block-header__nav a,
+.wp-block-header__nav summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.8125rem;
+  line-height: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.72;
+}
+
+.wp-block-header__nav a:hover,
+.wp-block-header__nav summary:hover {
+  opacity: 1;
+}
+
+.wp-block-header__dropdown {
+  position: relative;
+}
+
+.wp-block-header__dropdown summary {
+  list-style: none;
+}
+
+.wp-block-header__dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.wp-block-header__dropdown summary::after {
+  content: "";
+  width: 0.28rem;
+  height: 0.28rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-1px);
+}
+
+.wp-block-header__dropdown-list {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  min-width: 10rem;
+  padding: 0.4rem;
+  margin: 0;
+  list-style: none;
+  background: inherit;
+  background-color: var(--npb-canvas-page, Canvas);
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  z-index: 20;
+}
+
+.wp-block-header__dropdown-list a {
+  display: block;
+  padding: 0.4rem 0.5rem;
+  opacity: 0.8;
+}
+
+.wp-block-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wp-block-header__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  color: inherit;
+  opacity: 1;
+}
+
+.wp-block-header__action.is-solid {
+  background: var(--npb-accent, #f97316);
+  border-color: transparent;
+  color: #fff;
+}
+
+.wp-block-header__mobile-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+.wp-block-header__mobile-toggle > summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  min-width: 2rem;
+  cursor: pointer;
+}
+
+.wp-block-header__mobile-toggle > summary::-webkit-details-marker {
+  display: none;
+}
+
+.wp-block-header__burger,
+.wp-block-header__burger::before,
+.wp-block-header__burger::after {
+  display: block;
+  width: 1rem;
+  height: 1.5px;
+  background: currentColor;
+}
+
+.wp-block-header__burger {
+  position: relative;
+}
+
+.wp-block-header__burger::before,
+.wp-block-header__burger::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.wp-block-header__burger::before {
+  top: -4px;
+}
+
+.wp-block-header__burger::after {
+  top: 4px;
+}
+
+.wp-block-header__mobile-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  padding: 0.85rem 1.25rem 1rem;
+  box-sizing: border-box;
+  background: inherit;
+  background-color: var(--npb-canvas-page, Canvas);
+}
+
+.wp-block-header__mobile-body .wp-block-header__nav,
+.wp-block-header__mobile-body .wp-block-header__actions {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.wp-block-header__desktop {
+  display: contents;
+}
+
+.wp-block-header__mobile-panel {
+  display: none;
+}
+
+@container np-header (max-width: 767px) {
+  .wp-block-header__desktop {
+    display: none;
+  }
+  .wp-block-header__mobile-toggle {
+    display: inline-flex;
+    margin-left: auto;
+  }
+  .wp-block-header__mobile-panel[open],
+  .wp-block-header__mobile-panel {
+    display: block;
+  }
+  .wp-block-header__mobile-panel:not([open]) .wp-block-header__mobile-body {
+    display: none;
+  }
+}
+
 .wp-block-gallery,
 .wp-block-gallery .blocks-gallery-grid {
   max-width: 100%;
@@ -184,8 +470,8 @@ figure.wp-block-embed {
 ${GALLERY_PUBLISH_CSS}
 
 @media (max-width: 768px) {
-  #main-content,
-  .np-public-block-stack {
+  #main-content:not(.has-page-shell),
+  .np-public-block-stack:not(.has-page-shell) {
     padding: 1rem !important;
   }
 

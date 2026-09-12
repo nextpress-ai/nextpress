@@ -12,9 +12,11 @@ import PageBuilder from '@/components/PageBuilder/PageBuilder';
 import PublishDialog from '@/components/PageBuilder/PublishDialog';
 import { SiteMenu } from '@/components/PageBuilder/EditorBar';
 import { useToast } from '@/hooks/use-toast';
-import type { BlockConfig, Page, Post, Template } from '@shared/schema-types';
+import type { BlockConfig, Page, PageOther, Post, Template } from '@shared/schema-types';
 import { storeSlugToIdMapping, getPageIdFromSlug } from '@/lib/editorStorage';
 import { setParentIds } from '@/lib/handlers/treeUtils';
+import { generateId } from '@/lib/utils';
+import { ensureRootPageShell, readPageDesign } from '@shared/page-shell-model';
 import { apiRequest } from '@/lib/queryClient';
 import {
   clearPageDraft,
@@ -62,6 +64,21 @@ type PageAction =
       type: 'UPDATE_METADATA';
       payload: { title: string; slug: string; status: string; version: number };
     };
+
+function blocksWithRootShell({
+  blocks,
+  leftoverDesign,
+}: {
+  blocks: unknown;
+  leftoverDesign?: PageOther['design'];
+}): BlockConfig[] {
+  const parented = setParentIds(Array.isArray(blocks) ? (blocks as BlockConfig[]) : [], null);
+  return ensureRootPageShell({
+    blocks: parented,
+    leftoverDesign,
+    shellId: generateId(),
+  }).blocks;
+}
 
 const initialPageState: PageState = {
   blocks: [],
@@ -289,10 +306,10 @@ export default function PageBuilderEditor({
       });
     const source = useLocal ? localDraft : data;
 
-    const initialBlocks = setParentIds(
-      Array.isArray(source?.blocks) ? source.blocks : [],
-      null,
-    );
+    const initialBlocks = blocksWithRootShell({
+      blocks: source?.blocks,
+      leftoverDesign: (source as { other?: PageOther })?.other?.design,
+    });
     const initialTitle = String(source?.title || 'Untitled');
     const initialSlug = String(source?.slug || '');
     const initialStatus = String(source?.status || 'draft');
@@ -495,7 +512,10 @@ export default function PageBuilderEditor({
         const response = await apiRequest('GET', `/api/posts/${detail.postId}`);
         const post: Post = await response.json();
 
-        const postBlocks = setParentIds(Array.isArray(post.blocks) ? post.blocks : [], null);
+        const postBlocks = blocksWithRootShell({
+          blocks: post.blocks,
+          leftoverDesign: (post as { other?: PageOther }).other?.design,
+        });
         setInlinePostId(post.id);
         setInlinePostData(post);
         dispatchPageState({
@@ -838,9 +858,7 @@ latestPageStateRef.current = {
       payload: {
         blocks: pageState.blocks,
         title: pageState.title,
-        design: (data as { other?: { design?: unknown } })?.other?.design as
-          | import('@shared/schema-types').PageOther['design']
-          | undefined,
+        design: readPageDesign({ blocks: pageState.blocks }),
         savedAt: Date.now(),
       },
     });

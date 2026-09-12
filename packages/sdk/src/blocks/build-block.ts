@@ -390,11 +390,15 @@ export function createBlocksBuilder(): BlocksBuilder {
 		},
 
 		starterLayout: (): BlockConfig[] => [
-			fromName("core/heading", {
-				settings: { content: { text: "Page title", level: 1 } },
-			}),
-			fromName("core/paragraph", {
-				settings: { content: { text: "Start writing your content…" } },
+			fromName("core/page-shell", {
+				children: [
+					fromName("core/heading", {
+						settings: { content: { text: "Page title", level: 1 } },
+					}),
+					fromName("core/paragraph", {
+						settings: { content: { text: "Start writing your content…" } },
+					}),
+				],
 			}),
 		],
 	};

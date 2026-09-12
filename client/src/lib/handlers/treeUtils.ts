@@ -2,6 +2,40 @@
 import { generateId } from '@/lib/utils';
 import type { BlockConfig } from '@shared/schema-types';
 import { blockRegistry, getDefaultBlock as getDefaultBlockExport } from '@/components/PageBuilder/blocks';
+import {
+  findRootPageShell,
+  PAGE_SHELL_BLOCK_NAME,
+} from '@shared/page-shell-model';
+import { HEADER_BLOCK_NAME } from '@shared/header-model';
+
+export type InsertBlockResult = {
+  blocks: BlockConfig[];
+  newId?: string;
+  refused?: "page-shell-exists";
+};
+
+function retargetRootIntoShell({
+  blocks,
+  type,
+  destParentId,
+  destIndex,
+}: {
+  blocks: BlockConfig[];
+  type: string;
+  destParentId: string | null;
+  destIndex: number;
+}): { parentId: string | null; index: number } {
+  if (destParentId !== null || type === PAGE_SHELL_BLOCK_NAME) {
+    return { parentId: destParentId, index: destIndex };
+  }
+  const shell = findRootPageShell(blocks);
+  if (!shell) return { parentId: destParentId, index: destIndex };
+  const childCount = Array.isArray(shell.children) ? shell.children.length : 0;
+  return {
+    parentId: shell.id,
+    index: type === HEADER_BLOCK_NAME ? 0 : Math.min(Math.max(destIndex, 0), childCount),
+  };
+}
 
 export function findBlock(rootBlocks: BlockConfig[], targetId: string): BlockConfig | null {
   function search(list: BlockConfig[]): BlockConfig | null {
@@ -39,27 +73,43 @@ export function findBlockPath(rootBlocks: BlockConfig[], targetId: string): numb
   return path;
 }
 
-export function insertNewBlock(rootBlocks: BlockConfig[], parentId: string | null, index: number, type: string): { blocks: BlockConfig[]; newId?: string } {
+export function insertNewBlock(rootBlocks: BlockConfig[], parentId: string | null, index: number, type: string): InsertBlockResult {
   const clone = structuredClone(rootBlocks) as BlockConfig[];
   const id = generateId();
   
   // Use getDefaultBlock to create block with new structure
   const newBlock = getDefaultBlockExport(type, id);
   if (!newBlock) return { blocks: rootBlocks };
+
+  if (type === PAGE_SHELL_BLOCK_NAME) {
+    if (findRootPageShell(clone)) {
+      return { blocks: rootBlocks, refused: "page-shell-exists" };
+    }
+    newBlock.parentId = null;
+    clone.splice(Math.max(0, index), 0, newBlock);
+    return { blocks: clone, newId: newBlock.id };
+  }
+
+  const target = retargetRootIntoShell({
+    blocks: clone,
+    type,
+    destParentId: parentId,
+    destIndex: index,
+  });
   
   // Set parentId
-  newBlock.parentId = parentId;
+  newBlock.parentId = target.parentId;
   
-  if (!parentId) {
-    clone.splice(index, 0, newBlock);
+  if (!target.parentId) {
+    clone.splice(target.index, 0, newBlock);
     return { blocks: clone, newId: newBlock.id };
   }
   
   function insert(list: BlockConfig[]): boolean {
     for (const b of list) {
-      if (b.id === parentId) {
+      if (b.id === target.parentId) {
         if (!Array.isArray(b.children)) b.children = [];
-        b.children.splice(index, 0, newBlock!);
+        b.children.splice(target.index, 0, newBlock!);
         return true;
       }
       
@@ -111,6 +161,19 @@ export function moveExistingBlock(rootBlocks: BlockConfig[], sourceParentId: str
     return rootBlocks;
   }
 
+  let nextDestParentId = destParentId;
+  let nextDestIndex = destIndex;
+  if (movedBlock.name !== PAGE_SHELL_BLOCK_NAME) {
+    const retargeted = retargetRootIntoShell({
+      blocks: clone,
+      type: movedBlock.name,
+      destParentId: nextDestParentId,
+      destIndex: nextDestIndex,
+    });
+    nextDestParentId = retargeted.parentId;
+    nextDestIndex = retargeted.index;
+  }
+
   // Prevent moving a block into itself or its descendants
   function containsIdInSubtree(node: BlockConfig, targetId: string): boolean {
     if (node.id === targetId) return true;
@@ -127,15 +190,15 @@ export function moveExistingBlock(rootBlocks: BlockConfig[], sourceParentId: str
     return rootBlocks;
   }*/
 
-  const sameParent = sourceParentId === destParentId;
+  const sameParent = sourceParentId === nextDestParentId;
   // No-op scenarios (dropping in the same place)
-  if (sameParent && destIndex === sourceIndex) {
+  if (sameParent && nextDestIndex === sourceIndex) {
     return rootBlocks;
   }
   
   // Additional no-op case: when moving to immediately after itself in same container
   // (e.g., moving from index 0 to index 1 in same container)
-  if (sameParent && destIndex === sourceIndex + 1) {
+  if (sameParent && nextDestIndex === sourceIndex + 1) {
     return rootBlocks;
   }
 
@@ -143,22 +206,22 @@ export function moveExistingBlock(rootBlocks: BlockConfig[], sourceParentId: str
   sourceContainer.splice(sourceIndex, 1);
 
   // Find destination container after mutation, because the source removal can affect indices
-  const { container: destContainer, parentBlock: destParent } = findParent(clone, destParentId);
-  if ((destParentId !== null && !destParent) || !destContainer) {
-    console.error("Destination not found", { destParentId, destIndex });
+  const { container: destContainer, parentBlock: destParent } = findParent(clone, nextDestParentId);
+  if ((nextDestParentId !== null && !destParent) || !destContainer) {
+    console.error("Destination not found", { destParentId: nextDestParentId, destIndex: nextDestIndex });
     return rootBlocks;
   }
 
-  let targetIndex = destIndex;
-  if (sameParent && destIndex > sourceIndex) {
-    targetIndex = destIndex - 1;
+  let targetIndex = nextDestIndex;
+  if (sameParent && nextDestIndex > sourceIndex) {
+    targetIndex = nextDestIndex - 1;
   }
   if (targetIndex < 0 || Number.isNaN(targetIndex)) targetIndex = 0;
   if (targetIndex > destContainer.length) targetIndex = destContainer.length;
 
   // Update parentId when moving to a different parent
   if (!sameParent) {
-    movedBlock.parentId = destParentId;
+    movedBlock.parentId = nextDestParentId;
   }
 
   destContainer.splice(targetIndex, 0, movedBlock);

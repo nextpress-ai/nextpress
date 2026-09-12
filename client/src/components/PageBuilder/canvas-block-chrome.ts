@@ -3,6 +3,20 @@ import type { CSSProperties } from "react";
 /** Editor-only: hug wraps the used content; span fills the layout slot. */
 export type CanvasChromeMode = "hug" | "span";
 
+const SPAN_CHROME_BLOCKS = new Set([
+  "core/header",
+  "core/page-shell",
+  "core/stack",
+  "core/group",
+  "core/container",
+  "core/columns",
+]);
+
+/** Headers and layout blocks fill the slot; text and media start hugged. */
+export function defaultCanvasChromeMode(blockName: string): CanvasChromeMode {
+  return SPAN_CHROME_BLOCKS.has(blockName) ? "span" : "hug";
+}
+
 export type CanvasChromeAlign = "left" | "center" | "right";
 
 type ChromeStyleSource = CSSProperties & {

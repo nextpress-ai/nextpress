@@ -43,9 +43,16 @@ UUID PKs everywhere except sessions.sid.
 
 ## Decision records
 
+### 2026-09-12 — Page design lives on the page shell
+- Every page has one root **Page shell**. Font, width, padding, background, and text color are set there — not in Page Settings.
+- Page Settings is title, slug, SEO, and icons only. The Design tab is gone. Do not write those values back to `page.other.design`.
+- Old pages wrap on editor open: existing root blocks become shell children, and leftover `page.other.design` is copied onto the shell once so the published look does not jump. After that, only the shell is read.
+- Header is a structured block (brand / links / buttons). It paints edge to edge inside the shell. Sticky follows the canvas scroll, not the browser window.
+- Visitor, preview, and publish always render through a shell. There is no no-shell visitor path.
+
 ### 2026-09-12 — Canvas chrome hugs content
-- Editor selection box defaults to hug (`fit-content`). Toolbar icon toggles span (full slot). Session only — not saved, not published.
-- Blue outline only when the block is selected. Hover still shows the toolbar, no hover ring.
+- Editor selection box defaults to hug (`fit-content`) for text and media. Header and layout blocks (`core/header`, `core/page-shell`, stack, group, container, columns) start in span (full slot). Toolbar still toggles. Session only — not saved, not published.
+- Blue outline and toolbar only when the block is selected. Hover on an unselected block does nothing.
 - Do not reuse Style Width / Hug / Fill for this. Those write published `styles.width`.
 
 ### 2026-09-10 — Post list overlay + public post grid
@@ -90,3 +97,11 @@ UUID PKs everywhere except sessions.sid.
 ## Operator scripts gate
 
 Per AGENTS.md: never commit new/changed operator scripts (`scripts/*` money-touching) without audit + unit tests + dry-run.
+
+## Hidden-tab flex bug (2026-09-12)
+
+- Symptom: builder sidebar (tabbed shell, <1280px) scroll area clipped at ~half height; block library unreachable below the fold.
+- Root cause: `BuilderSidebar` puts `flex` (display) on `TabsContent`. Radix keeps inactive tab content mounted with the `hidden` attribute, whose UA `display:none` is ALWAYS beaten by author display classes — so the hidden Settings tab split the column 50/50 with the active Blocks tab. Pure CSS chain (flex/min-h-0/h-full) was provably sound; the bug only shows in the Radix DOM.
+- Fix: `data-[state=inactive]:hidden` added to the base `TabsContent` in `ui/tabs.tsx` — author display classes can no longer resurrect hidden tabs anywhere in the app (specificity: `[data-state=inactive][class]` beats `.flex`). Verified live at 1222×659: tab content 205→434px, viewport scrollable (4606px content), wide rail unaffected.
+- Gotcha for future UI: never rely on the `hidden` attribute alone when adding `display:*` classes to Radix primitives that keep content mounted (Tabs Content, Accordion Content with forceMount, Dialog non-modal siblings).
+- Debug workflow that cracked it: agent-browser `set viewport 1222 659` → live `getBoundingClientRect` walk of the chain → compare both `TabsContent` computed displays. Dev server was on :5000 (SPA fallback returns HTML 200 for unknown /api paths — check response BODY content-type when probing, status alone lies).

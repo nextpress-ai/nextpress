@@ -186,6 +186,32 @@ export function getBlockStackLayerWrapperStyles(block: {
 	return { position: "relative", zIndex: z };
 }
 
+/**
+ * Grid-item placement for a child of an overlay (AB) stack: every child shares grid cell 1/1,
+ * so paint order (child order / stackLayer) decides what covers what.
+ *
+ * Pins map to grid-native alignment; unpinned children stretch to fill the cell.
+ * `left` and no vertical pin keep the grid default `stretch`, matching flex-stack behavior.
+ */
+export function getOverlayChildItemStyles(
+	rawStyles: CSSProperties | Record<string, unknown> | undefined,
+): CSSProperties {
+	const { h, v } = readPlacement(rawStyles);
+	const out: CSSProperties = {
+		gridArea: "1 / 1",
+		minWidth: 0,
+	};
+
+	if (h === "center") out.justifySelf = "center";
+	else if (h === "right") out.justifySelf = "end";
+
+	if (v === "top") out.alignSelf = "start";
+	else if (v === "middle") out.alignSelf = "center";
+	else if (v === "bottom") out.alignSelf = "end";
+
+	return out;
+}
+
 /** Layout controls for container/group blocks (Style tab → `styles`; group may also use `content`). */
 export type ContainerLayoutDisplay =
 	| "block"

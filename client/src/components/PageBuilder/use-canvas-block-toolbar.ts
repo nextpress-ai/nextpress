@@ -49,6 +49,8 @@ export function useCanvasBlockToolbar({
   const [painted, setPainted] = useState(keepMounted);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
+  const selectedRef = useRef(isSelected);
+  selectedRef.current = isSelected;
 
   if (isSelected !== prevSelected) {
     setPrevSelected(isSelected);
@@ -71,7 +73,7 @@ export function useCanvasBlockToolbar({
   };
 
   const reveal = () => {
-    if (!enabledRef.current) return;
+    if (!enabledRef.current || !selectedRef.current) return;
     setOpen(true);
     bumpIdle();
   };

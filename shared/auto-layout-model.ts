@@ -190,6 +190,7 @@ export const AUTO_LAYOUT_GAP_PRESETS = SPACING_PRESETS;
 export const GRID_TRACK_STARTERS: readonly { value: string; label: string }[] = [
 	{ value: "repeat(2, 1fr)", label: "2 col" },
 	{ value: "repeat(3, 1fr)", label: "3 col" },
+	{ value: "repeat(auto-fit, minmax(220px, 1fr))", label: "RAM" },
 	{ value: "repeat(auto-fill, minmax(200px, 1fr))", label: "Auto fill" },
 	{ value: "250px 1fr", label: "Sidebar L" },
 	{ value: "1fr 250px", label: "Sidebar R" },
@@ -256,6 +257,7 @@ export function parentAllowsChildPin(
 ): boolean {
 	if (!parent) return false;
 	if (parent.name === "core/columns") return true;
+	if (parent.name === "core/stack") return true;
 	const layout = readContainerLayoutFromBlock({
 		styles: parent.styles,
 		content: parent.content as Record<string, unknown>,

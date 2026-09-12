@@ -1,10 +1,11 @@
 import type { BlockConfig } from "@shared/schema-types";
+import { readPageShellContent } from "./page-shell-model.js";
 
 /** How a picker entry is loaded at runtime. */
 export type FontSourceKind = "system" | "bundled";
 
 export type FontCatalogEntry = {
-	/** Stored on `page.other.design.fontFamily` or `block.styles.fontFamily`. */
+	/** Stored on the page shell or `block.styles.fontFamily`. */
 	value: string;
 	label: string;
 	source: FontSourceKind;
@@ -116,6 +117,10 @@ export const collectFontFamiliesFromBlocks = (blocks: BlockConfig[]): string[] =
 			const fontFamily = block.styles?.fontFamily;
 			if (typeof fontFamily === "string" && fontFamily.trim() !== "") {
 				families.add(fontFamily.trim());
+			}
+			if (block.name === "core/page-shell") {
+				const shellFont = readPageShellContent(block.content).fontFamily.trim();
+				if (shellFont) families.add(shellFont);
 			}
 			if (block.children?.length) {
 				walk(block.children);

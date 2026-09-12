@@ -86,7 +86,7 @@ describe('useCanvasBlockToolbar', () => {
     expect(result.current.toolbarOpen).toBe(false);
   });
 
-  it('opens on hover and unmounts after idle plus fade when not selected', () => {
+  it('does nothing on hover until the block is selected', () => {
     const { result } = renderHook(() =>
       useCanvasBlockToolbar({ enabled: true, isSelected: false }),
     );
@@ -94,18 +94,14 @@ describe('useCanvasBlockToolbar', () => {
     act(() => {
       result.current.blockHoverHandlers.onMouseEnter();
     });
-    expect(result.current.toolbarOpen).toBe(true);
-    expect(result.current.paintToolbar).toBe(true);
-
     act(() => {
-      vi.advanceTimersByTime(CANVAS_BLOCK_TOOLBAR_IDLE_MS);
+      result.current.blockHoverHandlers.onPointerMove({
+        movementX: 4,
+        movementY: 0,
+      });
     });
+
     expect(result.current.toolbarOpen).toBe(false);
-    expect(result.current.paintToolbar).toBe(true);
-
-    act(() => {
-      vi.advanceTimersByTime(CANVAS_BLOCK_TOOLBAR_FADE_MS);
-    });
     expect(result.current.paintToolbar).toBe(false);
   });
 

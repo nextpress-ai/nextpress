@@ -28,6 +28,8 @@ export function getHorizontalFlexChildStyles(params: {
 	isHorizontal: boolean;
 	childStyles?: CSSProperties | Record<string, unknown>;
 	blockName?: string;
+	/** Pancake behavior: fixed width that may shrink when the row runs out of room (`flex: 0 1 <w>`). */
+	shrink?: boolean;
 }): CSSProperties {
 	if (!params.isHorizontal) {
 		return { minWidth: 0 };
@@ -51,7 +53,7 @@ export function getHorizontalFlexChildStyles(params: {
 		if (w.endsWith("%")) {
 			return flexItem(1, 1, "auto");
 		}
-		return flexItem(0, 0, w, { width: w, maxWidth: "100%" });
+		return flexItem(0, params.shrink ? 1 : 0, w, { width: w, maxWidth: "100%" });
 	}
 
 	return flexItem(1, 1, "auto");

@@ -29,6 +29,7 @@ import type { ThemeSettings } from "@shared/theme-settings";
 import { themeSettingsToStyleBlock } from "@shared/theme-to-css-vars";
 import type { PageDesignSettings } from "@shared/schema-types";
 import { resolveVisitorDesign } from "@shared/theme-to-page-design";
+import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
 
 type PublishedDocument = {
 	id: string;
@@ -56,7 +57,16 @@ export function buildPublishedPageHtml({
 	themeRawSettings,
 }: BuildPublishedPageHtmlParams): string {
 	const rawBlocks = (Array.isArray(page.blocks) ? page.blocks : []) as BlockConfig[];
-	const blocks = post ? bindPostBlocks({ blocks: rawBlocks, post }) : rawBlocks;
+	const boundBlocks = post ? bindPostBlocks({ blocks: rawBlocks, post }) : rawBlocks;
+	const pageOtherEarly =
+		page.other && typeof page.other === "object"
+			? (page.other as Record<string, unknown>)
+			: {};
+	const leftoverDesign = pageOtherEarly.design as PageDesignSettings | undefined;
+	const blocks = prepareVisitorPageBlocks({
+		blocks: boundBlocks,
+		leftoverDesign,
+	});
 	const blockContentHtml = renderBlocksToHtml(blocks);
 
 	const allCustomCss = collectBlockCustomCss(blocks);
@@ -80,12 +90,11 @@ export function buildPublishedPageHtml({
 	const hasAnimations = blocks.some((b) => b.other?.animation);
 	const hasEntryAnimations = blocks.some((b) => b.other?.animation?.entry);
 
-	const pageOther =
-		page.other && typeof page.other === "object"
-			? (page.other as Record<string, unknown>)
-			: {};
-	const rawDesign = pageOther.design as PageDesignSettings | undefined;
-	const design = resolveVisitorDesign({ design: rawDesign, themeSettings });
+	const pageOther = pageOtherEarly;
+	const design = resolveVisitorDesign({
+		design: readPageDesign({ blocks }),
+		themeSettings,
+	});
 
 	const headParts: string[] = [];
 	if (themeSettings) {
@@ -126,6 +135,7 @@ export function buildPublishedPageHtml({
 		padding: design.padding,
 		backgroundColor: design.backgroundColor?.style,
 		textColor: design.textColor?.style,
+		hasPageShell: true,
 		noIndex: seo.noIndex === true,
 		customMeta: Array.isArray(seo.customMeta)
 			? (seo.customMeta as Array<{ name: string; content: string }>)

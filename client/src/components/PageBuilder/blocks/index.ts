@@ -15,6 +15,9 @@ import MediaTextBlock from './media-text/MediaTextBlock';
 import SeparatorBlock from './separator/SeparatorBlock';
 import GroupBlock from './group/GroupBlock';
 import ContainerBlock from './container/ContainerBlock';
+import StackBlock from './stack/StackBlock';
+import PageShellBlock from './page-shell/PageShellBlock';
+import HeaderBlock from './header/HeaderBlock';
 import ButtonsBlock from './buttons/ButtonsBlock';
 import GalleryBlock from './gallery/GalleryBlock';
 import CoverBlock from './cover/CoverBlock';
@@ -59,6 +62,8 @@ if (import.meta.env.DEBUG_BUILDER) {
     MediaTextBlock,
     SeparatorBlock,
     ContainerBlock,
+    PageShellBlock,
+    HeaderBlock,
     GroupBlock,
     ButtonsBlock,
     GalleryBlock,
@@ -106,6 +111,9 @@ export const blockRegistry: Record<string, BlockDefinition> = {
   'core/columns': ColumnsBlock,
   'core/container': ContainerBlock,
   'core/group': GroupBlock,
+  'core/stack': StackBlock,
+  'core/page-shell': PageShellBlock,
+  'core/header': HeaderBlock,
   'core/quote': QuoteBlock,
   'core/list': ListBlock,
   'core/media-text': MediaTextBlock,

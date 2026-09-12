@@ -44,6 +44,7 @@ import {
 import { useCanvasBlockToolbar } from './use-canvas-block-toolbar';
 import {
   type CanvasChromeMode,
+  defaultCanvasChromeMode,
   getCanvasChromeFrameStyle,
   getCanvasChromeInnerStyle,
   getCanvasChromeSlotStyle,
@@ -66,6 +67,7 @@ export function ContainerChildren({
   onBlockChange,
   stackClassName,
   overlay = false,
+  itemStyle,
 }: {
   block: BlockConfig;
   isPreview: boolean;
@@ -74,6 +76,8 @@ export function ContainerChildren({
   stackClassName?: string;
   /** AB stack: children share one grid cell; child order + stackLayer decide paint order. */
   overlay?: boolean;
+  /** Extra wrapper style per child (page shell bleed vs content column). */
+  itemStyle?: (child: BlockConfig) => React.CSSProperties;
 }) {
   const children = Array.isArray(block.children) ? block.children : [];
   const isContainer = !!blockRegistry[block.name]?.isContainer;
@@ -91,8 +95,8 @@ export function ContainerChildren({
         children,
       });
 
-  const childWrapperStyles = (child: BlockConfig): React.CSSProperties =>
-    overlay
+  const childWrapperStyles = (child: BlockConfig): React.CSSProperties => ({
+    ...(overlay
       ? {
           ...getOverlayChildItemStyles(child.styles),
           ...getBlockStackLayerWrapperStyles(child),
@@ -106,7 +110,9 @@ export function ContainerChildren({
           }),
           ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
           ...getBlockStackLayerWrapperStyles(child),
-        };
+        }),
+    ...(itemStyle ? itemStyle(child) : {}),
+  });
   const needsEmptyDropMinHeight =
     !isPreview &&
     children.length === 0 &&
@@ -448,7 +454,9 @@ export default function BlockRenderer({
   const actions = useBlockActions();
   const effectiveSelected = isSelected || actions?.selectedBlockId === block.id;
   const isEditing = !isPreview && actions?.editingBlockId === block.id;
-  const [editorChromeMode, setEditorChromeMode] = useState<CanvasChromeMode>("hug");
+  const [editorChromeMode, setEditorChromeMode] = useState<CanvasChromeMode>(() =>
+    defaultCanvasChromeMode(block.name),
+  );
   const chromeMode: CanvasChromeMode = isPreview ? "span" : editorChromeMode;
   const chromeAlign = readCanvasChromeAlign({
     styles: block.styles,
@@ -616,18 +624,24 @@ export default function BlockRenderer({
     }
   };
 
+  const listenForHover = !isPreview && effectiveSelected;
   const pointerHoverHandlers = {
     onMouseEnter: (event: React.MouseEvent) => {
       event.stopPropagation();
+      if (!listenForHover) return;
       registerBlockHover();
       blockHoverHandlers.onMouseEnter();
     },
     onMouseLeave: (event: React.MouseEvent) => {
       event.stopPropagation();
+      if (!listenForHover) return;
       clearBlockHover();
       blockHoverHandlers.onMouseLeave();
     },
-    onPointerMove: blockHoverHandlers.onPointerMove,
+    onPointerMove: (event: React.PointerEvent) => {
+      if (!listenForHover) return;
+      blockHoverHandlers.onPointerMove(event);
+    },
   };
 
   const showEditingChrome = !isPreview && isEditing;
@@ -661,7 +675,7 @@ export default function BlockRenderer({
   return (
     <div
       className="relative group"
-      {...(isPreview || useTopToolbarHoverStrip
+      {...(isPreview || !listenForHover || useTopToolbarHoverStrip
         ? {}
         : pointerHoverHandlers)}
       onClick={(e) => {
@@ -689,18 +703,14 @@ export default function BlockRenderer({
               className={`absolute top-0 left-0 right-0 z-30 ${toolbarPanelClass}`}
             />
           )}
-          {!isPreview && useTopToolbarHoverStrip && (
+          {!isPreview && useTopToolbarHoverStrip && paintToolbar && (
             <div
               className="absolute top-0 left-0 right-0 z-30 flex flex-col"
               {...pointerHoverHandlers}>
-              {paintToolbar ? (
-                <BlockEditorToolbarPanel
-                  {...toolbarPanelProps}
-                  className={toolbarPanelClass}
-                />
-              ) : (
-                <div className="h-9 w-full shrink-0" aria-hidden />
-              )}
+              <BlockEditorToolbarPanel
+                {...toolbarPanelProps}
+                className={toolbarPanelClass}
+              />
             </div>
           )}
 

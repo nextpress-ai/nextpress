@@ -209,6 +209,13 @@ export function useDragAndDropHandler(
             destIndexGlobal,
             draggableId,
           );
+          if (inserted.refused === "page-shell-exists") {
+            toast({
+              title: "Page shell already on this page",
+              description: "Each page can have only one page shell.",
+            });
+            return;
+          }
           if (inserted.blocks === blocks) {
             toast({
               title: 'Failed to add block',

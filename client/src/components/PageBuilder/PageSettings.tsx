@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Plus } from 'lucide-react';
-import TokenColorPicker from './TokenColorPicker';
 import { useContentLists } from '@/hooks/useContentLists';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -37,11 +36,9 @@ import type {
   Page,
   Post,
   Template,
-  TokenEntry,
   PageOther,
   MetaTagEntry,
 } from '@shared/schema-types';
-import { PAGE_FONT_CATALOG } from "@shared/font-catalog";
 import {
   buildPageSettingsPayload,
   type PageSettingsFormValues,
@@ -75,17 +72,9 @@ type EditablePageFields = {
   templateId?: string | null;
 };
 
-const CONTAINER_WIDTH_OPTIONS = [
-  { value: '960px', label: '960px' },
-  { value: '1024px', label: '1024px' },
-  { value: '1200px', label: '1200px (Default)' },
-  { value: '1440px', label: '1440px' },
-  { value: '100%', label: 'Full Width' },
-] as const;
-
 /**
  * PageSettingsModal - Dialog-based page settings editor
- * Organized in three tabs: General, Design, and SEO
+ * Title, slug, SEO, and icons. Page design lives on the page shell.
  */
 export default function PageSettingsModal({
   open,
@@ -118,7 +107,6 @@ export default function PageSettingsModal({
   // Extract current other field data
   const pageOther = (page as { other?: PageOther })?.other;
   const currentSeo = pageOther?.seo;
-  const currentDesign = pageOther?.design;
   const currentIcons = pageOther?.icons;
 
   // General tab state
@@ -141,15 +129,6 @@ export default function PageSettingsModal({
   const [customMetaTags, setCustomMetaTags] = useState<MetaTagEntry[]>(
     currentSeo?.customMeta ?? []
   );
-
-  // Design tab state (pages only)
-  const [fontFamily, setFontFamily] = useState(currentDesign?.fontFamily ?? 'system-ui');
-  const [containerWidth, setContainerWidth] = useState(currentDesign?.containerWidth ?? '1200px');
-  const [padding, setPadding] = useState(currentDesign?.padding ?? '2rem 1rem');
-  const [backgroundColor, setBackgroundColor] = useState<TokenEntry | undefined>(
-    currentDesign?.backgroundColor
-  );
-  const [textColor, setTextColor] = useState<TokenEntry | undefined>(currentDesign?.textColor);
 
   // Icon settings state (pages only)
   const [iconDefaultSet, setIconDefaultSet] = useState(currentIcons?.defaultSet ?? 'lucide');
@@ -177,11 +156,6 @@ export default function PageSettingsModal({
         canonicalUrl,
         noIndex,
         customMetaTags,
-        fontFamily,
-        containerWidth,
-        padding,
-        backgroundColor,
-        textColor,
         iconDefaultSet,
         iconDefaultSize,
       };
@@ -282,14 +256,6 @@ export default function PageSettingsModal({
     setCustomMetaTags(updated);
   };
 
-  const handleBackgroundChange = (entry: TokenEntry) => {
-    setBackgroundColor(entry);
-  };
-
-  const handleTextColorChange = (entry: TokenEntry) => {
-    setTextColor(entry);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh]">
@@ -298,9 +264,8 @@ export default function PageSettingsModal({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="flex-1">
-          <TabsList className={`grid w-full ${contentType === 'page' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="general">General</TabsTrigger>
-            {contentType === 'page' && <TabsTrigger value="design">Design</TabsTrigger>}
             <TabsTrigger value="seo">SEO</TabsTrigger>
           </TabsList>
 
@@ -450,113 +415,43 @@ export default function PageSettingsModal({
                   </div>
                 </>
               )}
-            </TabsContent>
 
-            {/* Design Tab - Pages Only */}
-            {contentType === 'page' && (
-              <TabsContent value="design" className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fontFamily">Font Family</Label>
-                  <Select value={fontFamily} onValueChange={setFontFamily}>
-                    <SelectTrigger id="fontFamily">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAGE_FONT_CATALOG.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="containerWidth">Container Width</Label>
-                  <Select value={containerWidth} onValueChange={setContainerWidth}>
-                    <SelectTrigger id="containerWidth">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONTAINER_WIDTH_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="padding">Padding</Label>
-                  <Input
-                    id="padding"
-                    value={padding}
-                    onChange={(e) => setPadding(e.target.value)}
-                    placeholder="2rem 1rem"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Background Color</Label>
-                  <TokenColorPicker
-                    property="backgroundColor"
-                    currentEntry={backgroundColor}
-                    currentStyleValue={backgroundColor?.style}
-                    onChange={handleBackgroundChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Text Color</Label>
-                  <TokenColorPicker
-                    property="color"
-                    currentEntry={textColor}
-                    currentStyleValue={textColor?.style}
-                    onChange={handleTextColorChange}
-                  />
-                </div>
-
-                {/* Icon Settings */}
-                <div className="pt-4 border-t border-npb-border-default">
-                  <h4 className="text-sm font-semibold text-npb-text-primary mb-3">Icons</h4>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="iconDefaultSet">Default Icon Set</Label>
-                      <Select value={iconDefaultSet} onValueChange={(v) => setIconDefaultSet(v as typeof iconDefaultSet)}>
-                        <SelectTrigger id="iconDefaultSet">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="lucide">Lucide</SelectItem>
-                          <SelectItem value="all">All Sets</SelectItem>
-                        </SelectContent>
-                      </Select>
-<p className="text-xs text-npb-text-muted">
-                        Default icon set for new Icon and Button blocks on this page
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="iconDefaultSize">Default Icon Size</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id="iconDefaultSize"
-                          type="number"
-                          value={iconDefaultSize}
-                          onChange={(e) => setIconDefaultSize(Number(e.target.value) || 24)}
-                          min={8}
-                          max={200}
-                          className="w-24 h-9"
-                        />
-                        <span className="text-xs text-npb-text-muted">px</span>
-                      </div>
+              {contentType === 'page' && (
+                <div className="pt-2 space-y-4">
+                  <h4 className="text-sm font-semibold text-npb-text-primary">Icons</h4>
+                  <div className="space-y-2">
+                    <Label htmlFor="iconDefaultSet">Default icon set</Label>
+                    <Select value={iconDefaultSet} onValueChange={(v) => setIconDefaultSet(v as typeof iconDefaultSet)}>
+                      <SelectTrigger id="iconDefaultSet">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="lucide">Lucide</SelectItem>
+                        <SelectItem value="all">All Sets</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-npb-text-muted">
+                      Used for new icon and button blocks on this page
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="iconDefaultSize">Default icon size</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="iconDefaultSize"
+                        type="number"
+                        value={iconDefaultSize}
+                        onChange={(e) => setIconDefaultSize(Number(e.target.value) || 24)}
+                        min={8}
+                        max={200}
+                        className="w-24 h-9"
+                      />
+                      <span className="text-xs text-npb-text-muted">px</span>
                     </div>
                   </div>
                 </div>
-              </TabsContent>
-            )}
+              )}
+            </TabsContent>
 
             {/* SEO Tab */}
             <TabsContent value="seo" className="space-y-4 mt-4">

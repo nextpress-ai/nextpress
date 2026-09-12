@@ -41,6 +41,17 @@ const mockBlockRegistry = vi.hoisted(() => ({
     isContainer: true,
     handlesOwnChildren: false,
   },
+  'core/header': {
+    id: 'core/header',
+    name: 'Header',
+    label: 'Header',
+    component: ({ value }: { value: BlockConfig }) => (
+      <header className="wp-block-header" data-testid="header-block" data-block-id={value.id}>
+        Header
+      </header>
+    ),
+    isContainer: false,
+  },
 }));
 
 // Mock the block registry using the resolved module path
@@ -207,7 +218,7 @@ describe('BlockRenderer', () => {
   })
 
   describe('Selection and Interaction', () => {
-    it('should show block controls when hovered', () => {
+    it('does not show controls on hover until the block is selected', () => {
       const block = createMockBlock('test-block', 'core/paragraph')
       
       renderWithProviders(
@@ -224,11 +235,10 @@ describe('BlockRenderer', () => {
       const blockElement = paragraphElement?.closest('.relative.group')
       expect(blockElement).toBeInTheDocument()
       
-      // Hover to show controls
       fireEvent.mouseEnter(blockElement!)
       
-      // Block label should use display name
-      expect(screen.getByText('Paragraph')).toBeInTheDocument()
+      expect(screen.queryByText('Paragraph')).not.toBeInTheDocument()
+      expect(document.querySelector('.npb-canvas-toolbar')).not.toBeInTheDocument()
       expect(document.querySelector('.npb-canvas-block-hover')).not.toBeInTheDocument()
       expect(document.querySelector('.block-test-block')).not.toHaveClass(
         'npb-canvas-block-selected',
@@ -325,6 +335,24 @@ describe('BlockRenderer', () => {
         within(wrapper as HTMLElement).getByRole('button', { name: /hug content/i }),
       )
       expect(document.querySelector('[data-span]')).toHaveAttribute('data-span', 'false')
+    })
+
+    it('spans header and layout blocks by default', () => {
+      const block = createMockBlock('header-block', 'core/header')
+
+      renderWithProviders(
+        <BlockRenderer
+          block={block}
+          isSelected={true}
+          isPreview={false}
+          onDuplicate={() => {}}
+          onDelete={() => {}}
+        />
+      )
+
+      const frame = document.querySelector('[data-span]')
+      expect(frame).toHaveAttribute('data-span', 'true')
+      expect(frame).toHaveStyle({ width: '100%' })
     })
 
     it('should not show controls in preview mode', () => {

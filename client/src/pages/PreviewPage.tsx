@@ -13,6 +13,7 @@ import { useActiveSite } from "@/hooks/useActiveSite";
 import { useSiteThemeSettings } from "@/hooks/use-site-theme-settings";
 import { buildVisitorDocumentStyle } from "@/lib/visitor-theme-style";
 import { resolveVisitorDesign } from "@shared/theme-to-page-design";
+import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
 
 interface PreviewPageProps {
   postId?: string;
@@ -164,8 +165,12 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
   }
 
   const pageOther = (data as { other?: PageOther } | undefined)?.other;
+  blocks = prepareVisitorPageBlocks({
+    blocks,
+    leftoverDesign: liveSession?.design ?? pageOther?.design,
+  });
   const design = resolveVisitorDesign({
-    design: liveSession?.design ?? pageOther?.design,
+    design: readPageDesign({ blocks }),
     themeSettings,
   });
   const visitorStyle = buildVisitorDocumentStyle({ themeCssVars, design });

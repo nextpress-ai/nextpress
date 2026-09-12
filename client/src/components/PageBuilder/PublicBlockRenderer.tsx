@@ -67,6 +67,7 @@ function BlockWrapper({
 			isHorizontal: stackDirection === "row",
 			childStyles: block.styles,
 			blockName: block.name,
+			shrink: block.settings?.stackShrink === true,
 		}),
 		...getBlockSiblingFlexItemStyles(block.styles, stackDirection),
 	};

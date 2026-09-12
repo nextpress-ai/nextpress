@@ -41,6 +41,7 @@ import {
   Minus,
   Sparkles,
   Layers,
+  MoveHorizontal,
 } from "lucide-react";
 import type { BlockConfig, DisplayCondition } from "@shared/schema-types";
 import { blockRegistry } from "./blocks";
@@ -55,7 +56,14 @@ import { FreeformSpacingSideRow } from "./freeform-spacing-side-row";
 import { DimensionPresetField } from "./dimension-preset-field";
 import { AutoLayoutPanel } from "./auto-layout-panel";
 import { ChildPinCard } from "./child-pin-card";
-import { parentAllowsChildPin } from "@shared/auto-layout-model";
+import { parentAllowsChildPin, readResizeFromLength } from "@shared/auto-layout-model";
+import {
+	readContainerLayoutFromBlock,
+	getContainerSiblingStackDirection,
+	getContainerParentDisplayMode,
+} from "@shared/block-container-placement";
+import { readStackTypeFromContent, type StackType } from "@shared/stack-model";
+import { STACK_MODE_STARTER_STYLES } from "./blocks/stack/stack-model";
 import {
 	MAX_WIDTH_PRESETS,
 	MIN_HEIGHT_PRESETS,
@@ -176,6 +184,29 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
           ...block.styles,
           ...styleUpdates,
         },
+      });
+    }
+  };
+
+  // Stack mode lives in structured content; the Auto Layout direction chip writes
+  // through to it (plus the mode's starter styles) so panel and Content tab agree.
+  const isStackBlock = block.name === "core/stack";
+  const setStackMode = (next: StackType) => {
+    const current = block.content;
+    const isStructured =
+      current && typeof current === "object" && "kind" in current && current.kind === "structured";
+    const data = isStructured
+      ? { ...((current as { data?: Record<string, unknown> }).data ?? {}), stackType: next }
+      : { stackType: next };
+    const structuredContent = { kind: "structured", data } as BlockConfig["content"];
+    const modeStyles = STACK_MODE_STARTER_STYLES[next];
+    if (accessor) {
+      accessor.setContent(structuredContent);
+      accessor.setStyles({ ...(accessor.getStyles() || {}), ...modeStyles });
+    } else {
+      onUpdate({
+        content: structuredContent,
+        styles: { ...(block.styles ?? {}), ...modeStyles } as BlockConfig["styles"],
       });
     }
   };
@@ -358,11 +389,14 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
 
   const renderStyleSettings = () => {
     const isColumnsBlock = block.name === "core/columns";
+    const isPageShell = block.name === "core/page-shell";
+    const ownsOwnLook = isPageShell || block.name === "core/header";
     const isLayoutBlock = [
       "core/group",
       "core/container",
       "container",
       "core/columns",
+      "core/stack",
     ].includes(block.name);
     const showTypographyStyles = [
       "heading",
@@ -389,6 +423,18 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
     };
     return (
       <div className="space-y-6">
+        {isPageShell ? (
+          <p className="npb-settings-hint-muted text-xs">
+            Font, width, padding, and colors are on the Content tab. Those are the
+            only page-look controls — Style width, spacing, and colors do not apply
+            to the page shell.
+          </p>
+        ) : null}
+        {block.name === "core/header" ? (
+          <p className="npb-settings-hint-muted text-xs">
+            Header layout, links, and buttons are on the Content tab.
+          </p>
+        ) : null}
         {/* Typography */}
         {showTypographyStyles && (
           <CollapsibleCard title="Typography" icon={Type} defaultOpen={true}>
@@ -524,7 +570,8 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
           </CollapsibleCard>
         )}
 
-        {/* Colors */}
+        {/* Colors — page shell paints these from Content, not block.styles */}
+        {!ownsOwnLook && (
         <CollapsibleCard title="Colors" icon={Palette} defaultOpen={true}>
           {/* Text Color */}
           <div>
@@ -590,8 +637,10 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
             </div>
           </div>
         </CollapsibleCard>
+        )}
 
         {/* Spacing */}
+        {!ownsOwnLook && (
         <CollapsibleCard title="Spacing" icon={Move} defaultOpen={true}>
           <p className="npb-settings-hint mb-3 text-xs">
             Each side is freeform CSS spacing. Use lengths with <span className="font-semibold">no space</span> between
@@ -715,8 +764,9 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
             </div>
           </div>
         </CollapsibleCard>
+        )}
 
-        {parentAllowsChildPin(parentBlock) ? (
+        {!ownsOwnLook && parentAllowsChildPin(parentBlock) ? (
           <ChildPinCard
             horizontal={
               (getResolvedPlacementStyles().contentAlignHorizontal ?? "__unset") as string
@@ -728,11 +778,41 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
           />
         ) : null}
 
-        {isLayoutBlock ? (
+        {(() => {
+          if (!parentBlock) return null;
+          const parentLayout = readContainerLayoutFromBlock({
+            styles: parentBlock.styles,
+            content: parentBlock.content as Record<string, unknown>,
+          });
+          if (getContainerParentDisplayMode(parentLayout) !== "flex") return null;
+          if (getContainerSiblingStackDirection(parentLayout) !== "row") return null;
+          if (readResizeFromLength(block.styles?.width) !== "fixed") return null;
+          return (
+            <CollapsibleCard title="Shrink when tight" icon={MoveHorizontal} defaultOpen={false}>
+              <SettingsChipGroup
+                label="Fixed width behavior"
+                ariaLabel="Fixed width behavior"
+                options={[
+                  { value: "off", label: "Off" },
+                  { value: "on", label: "On" },
+                ]}
+                value={block.settings?.stackShrink === true ? "on" : "off"}
+                onChange={(value) => updateSettings({ stackShrink: value === "on" })}
+              />
+              <p className="npb-settings-hint-muted mt-2 text-xs">
+                On: this block compresses below its fixed width when the row runs out of room.
+              </p>
+            </CollapsibleCard>
+          );
+        })()}
+
+        {!ownsOwnLook && isLayoutBlock ? (
           <>
             <AutoLayoutPanel
               block={block}
               hideDisplay={isColumnsBlock}
+              stackMode={isStackBlock ? readStackTypeFromContent(block.content) : undefined}
+              onStackModeChange={isStackBlock ? setStackMode : undefined}
               onStylesChange={(next) => updateStyles(next)}
             />
             <CollapsibleCard title="Max size" icon={Layout} defaultOpen={false}>
@@ -762,7 +842,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
               </div>
             </CollapsibleCard>
           </>
-        ) : (
+        ) : !ownsOwnLook ? (
         <CollapsibleCard title="Layout & Dimensions" icon={Layout} defaultOpen={false}>
             <DimensionPresetField
               label="Width"
@@ -848,9 +928,10 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
               </div>
             )}
         </CollapsibleCard>
-        )}
+        ) : null}
 
         {/* Border */}
+        {!ownsOwnLook && (
         <CollapsibleCard title="Border & Radius" icon={Square} defaultOpen={isFormFieldBlock}>
           {isFormFieldBlock ? (
             <p className="npb-settings-hint mb-3 text-xs">
@@ -905,6 +986,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
             className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
           />
         </CollapsibleCard>
+        )}
 
         <CollapsibleCard title="Custom CSS" icon={Code} defaultOpen={false}>
           <div className="space-y-3">

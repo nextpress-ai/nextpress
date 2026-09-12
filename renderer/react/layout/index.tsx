@@ -11,13 +11,20 @@ import {
 import {
 	getBlockSiblingFlexItemStyles,
 	getBlockStackLayerWrapperStyles,
+	getOverlayChildItemStyles,
 	getContainerChildrenStackStyle,
 	getContainerOuterShellStyle,
 	getContainerSiblingStackDirection,
 	readContainerLayoutFromBlock,
 } from "@shared/block-container-placement";
 import { buildGroupShellStyles, readGroupShellContent } from "@shared/group-shell-styles";
+import { buildStackShellStyles } from "@shared/stack-shell-styles";
 import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
+import { PageShellBlock } from "./page-shell";
+import { HeaderBlock } from "./header";
+
+export { PageShellBlock } from "./page-shell";
+export { HeaderBlock } from "./header";
 
 /**
  * Columns Block Component
@@ -149,6 +156,7 @@ export function GroupBlock(block: BlockConfig) {
 			isHorizontal,
 			childStyles: child.styles,
 			blockName: child.name,
+			shrink: child.settings?.stackShrink === true,
 		});
 		return (
 			<div
@@ -186,6 +194,59 @@ export function GroupBlock(block: BlockConfig) {
 }
 
 /**
+ * Stack Block Component — vertical / horizontal / AB overlay container.
+ * Overlay (AB): every child shares grid cell 1/1; child order paints bottom-to-top
+ * and `other.stackLayer` overrides. Consumes the same shared helpers as the editor
+ * canvas so preview and publish cannot drift.
+ */
+export function StackBlock(block: BlockConfig) {
+	const { style, className, attributes } = getRenderProps(block);
+
+	const mergedClassName = ["wp-block-stack", className].filter(Boolean).join(" ");
+	const childBlocks = block.children ?? [];
+	const { outerStyle, innerStackStyle, isHorizontal, isOverlay } = buildStackShellStyles({
+		styles: style,
+		content: block.content,
+		children: childBlocks.map((child) => ({ styles: child.styles })),
+	});
+
+	const renderChild = (child: BlockConfig): React.ReactNode => {
+		const ChildComponent = getBlockComponent(child.name);
+		if (!ChildComponent) {
+			return null;
+		}
+		const wrapper = isOverlay
+			? {
+					...getOverlayChildItemStyles(child.styles),
+					...getBlockStackLayerWrapperStyles(child),
+				}
+			: {
+					...getHorizontalFlexChildStyles({
+						isHorizontal,
+						childStyles: child.styles,
+						blockName: child.name,
+						shrink: child.settings?.stackShrink === true,
+					}),
+					...getBlockSiblingFlexItemStyles(child.styles, isHorizontal ? "row" : "column"),
+					...getBlockStackLayerWrapperStyles(child),
+				};
+		return (
+			<div key={child.id} style={wrapper}>
+				<ChildComponent {...child} />
+			</div>
+		);
+	};
+
+	return (
+		<div className={mergedClassName || undefined} style={outerStyle} {...attributes}>
+			<div className="wp-block-stack__inner" style={innerStackStyle}>
+				{childBlocks.map((child) => renderChild(child))}
+			</div>
+		</div>
+	);
+}
+
+/**
  * Container Block — single column wrapper with styles from block config
  */
 export function ContainerBlock(block: BlockConfig) {
@@ -217,6 +278,7 @@ export function ContainerBlock(block: BlockConfig) {
 			isHorizontal,
 			childStyles: child.styles,
 			blockName: child.name,
+			shrink: child.settings?.stackShrink === true,
 		});
 		return (
 			<div

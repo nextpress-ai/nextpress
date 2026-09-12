@@ -12,6 +12,7 @@ import {
 import { layoutStressFixture } from "@shared/test/fixtures/responsive/fixtures";
 import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
 import type { BlockConfig } from "@shared/schema-types";
+import { ensureRootPageShell, PAGE_SHELL_BLOCK_NAME } from "@shared/page-shell-model";
 
 describe("layout.golden", () => {
 	it("old block Group stays block with no gap on the inner stack", () => {
@@ -81,6 +82,17 @@ describe("layout.golden", () => {
 			const sig = buildLayoutSignature(block);
 			expect(sig.canvasClassNames).toEqual(sig.publishClassNames);
 		}
+	});
+
+	it("wraps golden layout fixtures in a page shell", () => {
+		const { blocks } = ensureRootPageShell({
+			blocks: [oldBlockGroup, flexColumnGroup],
+			leftoverDesign: { fontFamily: "Georgia, serif", containerWidth: "960px", padding: "1rem" },
+			shellId: "shell-golden",
+		});
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]?.name).toBe(PAGE_SHELL_BLOCK_NAME);
+		expect(blocks[0]?.children).toHaveLength(2);
 	});
 
 	it("layout stress fixture top-level signatures keep canvas/publish class parity", () => {

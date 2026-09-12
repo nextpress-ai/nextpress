@@ -34,6 +34,7 @@ import { reIdTemplateBlocks } from '@/lib/re-id-template-blocks';
 import { persistResponsiveDefaultsToBlocks } from '@shared/persist-responsive-defaults';
 import { validateBlockResponsiveHealth } from '@shared/validate-block-responsive-health';
 import { writePreviewSession } from '@shared/preview-session';
+import { readPageDesign } from '@shared/page-shell-model';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { CreatePageModal } from '@/components/Pages/CreatePageModal';
@@ -321,7 +322,7 @@ export default function PageBuilder({
         payload: {
           blocks,
           title: isTemplate ? (data as { name?: string }).name : (data as Page).title,
-          design: ((data as Page)?.other as PageOther)?.design,
+          design: readPageDesign({ blocks }),
           savedAt: Date.now(),
         },
       });

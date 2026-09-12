@@ -9,6 +9,7 @@ import { SkipLink } from "@/components/a11y/skip-link";
 import { useSiteThemeSettings } from "@/hooks/use-site-theme-settings";
 import { buildVisitorDocumentStyle } from "@/lib/visitor-theme-style";
 import { resolveVisitorDesign } from "@shared/theme-to-page-design";
+import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
 import type { Post } from "@shared/schema-types";
 import type { BlockConfig } from "@shared/schema-types";
 import type { PageOther } from "@shared/schema-types";
@@ -121,14 +122,18 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
     );
   }
 
-  const blocks: BlockConfig[] = (data.builderData || data.blocks as BlockConfig[]) || [];
+  const rawBlocks: BlockConfig[] = (data.builderData || data.blocks as BlockConfig[]) || [];
   const publishDate = data.publishedAt ? new Date(data.publishedAt) : new Date();
 
   // Extract page other settings
   const pageOther = (data as { other?: PageOther })?.other;
   const seo = pageOther?.seo;
+  const blocks = prepareVisitorPageBlocks({
+    blocks: rawBlocks,
+    leftoverDesign: pageOther?.design,
+  });
   const design = resolveVisitorDesign({
-    design: pageOther?.design,
+    design: readPageDesign({ blocks }),
     themeSettings,
   });
   const visitorStyle = buildVisitorDocumentStyle({ themeCssVars, design });
@@ -180,7 +185,7 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
       </Helmet>
 
       {/* Page content */}
-      <main id="main-content" className="w-full" tabIndex={-1}>
+      <main id="main-content" className="has-page-shell w-full" tabIndex={-1}>
         {/* Handle pages with traditional content (non-page builder) */}
         {!data.usePageBuilder && data.content ? (
           <div 

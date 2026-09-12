@@ -13,6 +13,9 @@ export const BLOCK_NAMES = [
 	"core/columns",
 	"core/container",
 	"core/group",
+	"core/stack",
+	"core/page-shell",
+	"core/header",
 	"core/quote",
 	"core/list",
 	"core/media-text",
@@ -221,6 +224,75 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 		defaultContent: () => structured({ tagName: "div" }),
 		defaultStyles: {
 			padding: "1.25em 2.375em",
+		},
+	},
+	"core/stack": {
+		name: "core/stack",
+		label: "Stack",
+		type: "container",
+		category: "layout",
+		defaultContent: () => structured({ stackType: "vertical" }),
+		defaultStyles: {
+			width: "100%",
+			gap: "1rem",
+			padding: "0px",
+			margin: "0px",
+		},
+	},
+	"core/page-shell": {
+		name: "core/page-shell",
+		label: "Page shell",
+		type: "container",
+		category: "layout",
+		defaultContent: () =>
+			structured({
+				fontFamily: "system-ui",
+				containerWidth: "1200px",
+				padding: "2rem 1rem",
+			}),
+		defaultStyles: {
+			width: "100%",
+			boxSizing: "border-box",
+			padding: "0px",
+			margin: "0px",
+		},
+	},
+	"core/header": {
+		name: "core/header",
+		label: "Header",
+		type: "block",
+		category: "layout",
+		defaultContent: () =>
+			structured({
+				variant: "links-and-actions",
+				brand: { kind: "wordmark", text: "Site", href: "/" },
+				brandSlot: "left",
+				nav: [
+					{
+						id: "nav-dropdown",
+						label: "Dropdown",
+						href: "#",
+						children: [
+							{ id: "nav-dropdown-1", label: "Overview", href: "#" },
+							{ id: "nav-dropdown-2", label: "Pricing", href: "#" },
+						],
+					},
+					{ id: "nav-1", label: "Link one", href: "#" },
+					{ id: "nav-2", label: "Link two", href: "#" },
+					{ id: "nav-3", label: "Link three", href: "#" },
+				],
+				navSlot: "right",
+				actions: [
+					{ id: "action-1", label: "Button", href: "#", style: "ghost" },
+					{ id: "action-2", label: "Buy now", href: "#", style: "solid" },
+				],
+				actionsSlot: "right",
+				sticky: false,
+			}),
+		defaultStyles: {
+			width: "100%",
+			padding: "0px",
+			margin: "0px",
 		},
 	},
 	"core/quote": {

@@ -66,6 +66,25 @@ export const BORDER_RADIUS_PRESETS: readonly DimensionPreset[] = [
 	{ value: "50%", label: "Circle" },
 ] as const;
 
+export const ASPECT_RATIO_PRESETS: readonly DimensionPreset[] = [
+	{ value: "__auto__", label: "Auto" },
+	{ value: "1 / 1", label: "1:1" },
+	{ value: "4 / 3", label: "4:3" },
+	{ value: "3 / 4", label: "3:4" },
+	{ value: "16 / 9", label: "16:9" },
+	{ value: "9 / 16", label: "9:16" },
+	{ value: "21 / 9", label: "21:9" },
+] as const;
+
+/** Min column widths for auto-fit/auto-fill grid tracks (the RAM pattern). */
+export const GRID_MIN_TRACK_WIDTH_PRESETS: readonly DimensionPreset[] = [
+	{ value: "160px", label: "160" },
+	{ value: "200px", label: "200" },
+	{ value: "240px", label: "240" },
+	{ value: "300px", label: "300" },
+	{ value: "400px", label: "400" },
+] as const;
+
 /** CSS length units supported in numeric fields and validation hints. */
 export const NPB_DIMENSION_UNITS = [
 	"px",

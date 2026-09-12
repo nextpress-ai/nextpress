@@ -53,6 +53,7 @@ export function buildLayoutSignature(block: BlockConfig): LayoutSignature {
 				isHorizontal,
 				childStyles: child.styles,
 				blockName: child.name,
+				shrink: child.settings?.stackShrink === true,
 			}),
 			...getBlockSiblingFlexItemStyles(child.styles, stackDirection),
 			...getBlockStackLayerWrapperStyles(child),

@@ -76,6 +76,23 @@ describe('treeUtils', () => {
       const { blocks: next } = insertNewBlock(initial, 'missing', 0, 'core/paragraph');
       expect(next).toBe(initial); // unchanged reference
     });
+
+    it('refuses a second page shell', () => {
+      const shell = makeBlock('shell', 'core/page-shell', []);
+      const initial = [shell];
+      const result = insertNewBlock(initial, null, 1, 'core/page-shell');
+      expect(result.refused).toBe('page-shell-exists');
+      expect(result.blocks).toBe(initial);
+    });
+
+    it('puts a root header inside the existing shell', () => {
+      const shell = makeBlock('shell', 'core/page-shell', [makeBlock('h1')]);
+      const { blocks: next, newId } = insertNewBlock([shell], null, 0, 'core/header');
+      expect(next).toHaveLength(1);
+      expect(next[0]?.name).toBe('core/page-shell');
+      expect(next[0]?.children?.[0]?.name).toBe('core/header');
+      expect(next[0]?.children?.[0]?.id).toBe(newId);
+    });
   });
 
   describe('moveExistingBlock', () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  defaultCanvasChromeMode,
   getCanvasChromeFrameStyle,
   getCanvasChromeInnerStyle,
   getCanvasChromeSlotStyle,
@@ -33,6 +34,15 @@ describe("readCanvasChromeAlign", () => {
     expect(readCanvasChromeAlign({ content: { textAlign: "justify" } })).toBe(
       "left",
     );
+  });
+});
+
+describe("defaultCanvasChromeMode", () => {
+  it("spans header and layout blocks, hugs the rest", () => {
+    expect(defaultCanvasChromeMode("core/header")).toBe("span");
+    expect(defaultCanvasChromeMode("core/page-shell")).toBe("span");
+    expect(defaultCanvasChromeMode("core/group")).toBe("span");
+    expect(defaultCanvasChromeMode("core/paragraph")).toBe("hug");
   });
 });
 

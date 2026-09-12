@@ -1,13 +1,11 @@
 import type {
   MetaTagEntry,
   Page,
-  PageDesignSettings,
   PageIconSettings,
   PageOther,
   PageSeoSettings,
   Post,
   Template,
-  TokenEntry,
 } from '@shared/schema-types';
 
 export type PageSettingsFormValues = {
@@ -25,11 +23,6 @@ export type PageSettingsFormValues = {
   canonicalUrl: string;
   noIndex: boolean;
   customMetaTags: MetaTagEntry[];
-  fontFamily: string;
-  containerWidth: string;
-  padding: string;
-  backgroundColor?: TokenEntry;
-  textColor?: TokenEntry;
   iconDefaultSet: PageIconSettings['defaultSet'];
   iconDefaultSize: number;
 };
@@ -87,14 +80,6 @@ export function buildPageSettingsPayload({
     customMeta:
       values.customMetaTags.length > 0 ? values.customMetaTags : undefined,
   };
-  const designSettings: PageDesignSettings = {
-    ...existingOther.design,
-    fontFamily: values.fontFamily,
-    containerWidth: values.containerWidth,
-    padding: values.padding,
-    backgroundColor: values.backgroundColor,
-    textColor: values.textColor,
-  };
   const iconSettings: PageIconSettings = {
     ...existingOther.icons,
     defaultSet: values.iconDefaultSet,
@@ -104,7 +89,6 @@ export function buildPageSettingsPayload({
     ...existingOther,
     seo: seoSettings,
     ...(contentType === 'page' && {
-      design: designSettings,
       icons: iconSettings,
     }),
   };

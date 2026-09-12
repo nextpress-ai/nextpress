@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { models } from "./storage.js";
+import { ensureRootPageShell } from "@shared/page-shell-model";
+import type { BlockConfig } from "@shared/schema-types";
 
 type StarterBlock = {
 	id: string;
@@ -28,7 +30,7 @@ function buildStarterBlocks({ kind }: { kind: "page" | "post" }): StarterBlock[]
 			? "Replace this starter layout with your own blocks, or edit it in place."
 			: "Start writing your post. This layout comes from the default post template.";
 
-	return [
+	const starter: StarterBlock[] = [
 		{
 			id: headingId,
 			name: "core/heading",
@@ -85,6 +87,10 @@ function buildStarterBlocks({ kind }: { kind: "page" | "post" }): StarterBlock[]
 			},
 		},
 	];
+	return ensureRootPageShell({
+		blocks: starter as BlockConfig[],
+		shellId: randomUUID(),
+	}).blocks as StarterBlock[];
 }
 
 /**

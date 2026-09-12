@@ -107,6 +107,18 @@ export function applyResponsiveDefaults({
 			if (!styles.width) styles.width = "100%";
 			break;
 		}
+		case "core/stack": {
+			// Structural container: full width, no factory padding rhythm.
+			if (!styles.width) styles.width = "100%";
+			if (!styles.boxSizing) styles.boxSizing = "border-box";
+			break;
+		}
+		case "core/page-shell":
+		case "core/header": {
+			if (!styles.width) styles.width = "100%";
+			if (!styles.boxSizing) styles.boxSizing = "border-box";
+			break;
+		}
 		case "core/image":
 		case "post/featured-image": {
 			const px = parsePxWidth(styles.width);

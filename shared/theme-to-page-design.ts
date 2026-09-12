@@ -91,9 +91,8 @@ export const mergePageOtherWithThemeDefaults = ({
 };
 
 /**
- * Resolves visitor layout and colors for pages and posts. Posts never store
- * other.design, so public and preview surfaces seed from the active theme or
- * DEFAULT_PAGE_DESIGN instead of rendering full-bleed without padding.
+ * Resolves visitor layout and colors around the page shell. Callers pass
+ * `readPageDesign({ blocks })` — leftover `page.other.design` is not the source.
  */
 export const resolveVisitorDesign = ({
 	design,

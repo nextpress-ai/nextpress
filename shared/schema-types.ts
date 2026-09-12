@@ -159,7 +159,7 @@ export interface PageSeoSettings {
   customMeta?: MetaTagEntry[];
 }
 
-/** Per-page design settings stored in page.other.design */
+/** Leftover per-page design. Live design is read from the root page shell. */
 export interface PageDesignSettings {
   fontFamily?: string;
   containerWidth?: string;
