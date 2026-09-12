@@ -1,6 +1,6 @@
-import React, { isValidElement, ReactNode } from 'react';
+import React, { isValidElement, ReactNode, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Copy, Trash2, GripVertical, Pencil, Check } from 'lucide-react';
+import { Copy, Trash2, GripVertical, Pencil, Check, UnfoldHorizontal, FoldHorizontal } from 'lucide-react';
 import type { BlockConfig } from '@shared/schema-types';
 import { blockRegistry } from './blocks';
 import { Droppable, Draggable, DropPlaceholder } from '@/lib/dnd';
@@ -15,6 +15,7 @@ import {
   stripBlockContainerPlacementStyles,
   getBlockSiblingFlexItemStyles,
   getBlockStackLayerWrapperStyles,
+  getOverlayChildItemStyles,
   readContainerLayoutFromBlock,
   getContainerSiblingStackDirection,
   getContainerChildrenStackStyle,
@@ -41,6 +42,13 @@ import {
   truncateWithEllipsis,
 } from '@/lib/truncate-with-ellipsis';
 import { useCanvasBlockToolbar } from './use-canvas-block-toolbar';
+import {
+  type CanvasChromeMode,
+  getCanvasChromeFrameStyle,
+  getCanvasChromeInnerStyle,
+  getCanvasChromeSlotStyle,
+  readCanvasChromeAlign,
+} from './canvas-block-chrome';
 
 /** Ring fade and entry preview both use `animation`; keep preview on an inner wrapper. */
 function isEntryPreviewAnimationEnd(
@@ -57,12 +65,15 @@ export function ContainerChildren({
   isPreview,
   onBlockChange,
   stackClassName,
+  overlay = false,
 }: {
   block: BlockConfig;
   isPreview: boolean;
   onBlockChange?: (updated: BlockConfig) => void;
   /** Applied to the flex/grid stack that directly wraps children (e.g. wp-block-container__inner). */
   stackClassName?: string;
+  /** AB stack: children share one grid cell; child order + stackLayer decide paint order. */
+  overlay?: boolean;
 }) {
   const children = Array.isArray(block.children) ? block.children : [];
   const isContainer = !!blockRegistry[block.name]?.isContainer;
@@ -71,12 +82,31 @@ export function ContainerChildren({
 
   const layout = readContainerLayoutFromBlock({ styles: block.styles, content: block.content as Record<string, unknown> });
   const siblingStackDirection = getContainerSiblingStackDirection(layout);
-  const isHorizontal = siblingStackDirection === 'row';
+  const isHorizontal = !overlay && siblingStackDirection === 'row';
   const dropDirection = isHorizontal ? 'horizontal' : 'vertical';
-  const childrenStackStyle = getContainerChildrenStackStyle(layout, {
-    shellStyles: block.styles,
-    children,
-  });
+  const childrenStackStyle = overlay
+    ? { display: 'grid', width: '100%', minWidth: 0 }
+    : getContainerChildrenStackStyle(layout, {
+        shellStyles: block.styles,
+        children,
+      });
+
+  const childWrapperStyles = (child: BlockConfig): React.CSSProperties =>
+    overlay
+      ? {
+          ...getOverlayChildItemStyles(child.styles),
+          ...getBlockStackLayerWrapperStyles(child),
+        }
+      : {
+          ...getHorizontalFlexChildStyles({
+            isHorizontal,
+            childStyles: child.styles,
+            blockName: child.name,
+            shrink: child.settings?.stackShrink === true,
+          }),
+          ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
+          ...getBlockStackLayerWrapperStyles(child),
+        };
   const needsEmptyDropMinHeight =
     !isPreview &&
     children.length === 0 &&
@@ -103,15 +133,7 @@ export function ContainerChildren({
         {children.map((child) => (
           <div
             key={child.id}
-            style={{
-              ...getHorizontalFlexChildStyles({
-                isHorizontal,
-                childStyles: child.styles,
-                blockName: child.name,
-              }),
-              ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
-              ...getBlockStackLayerWrapperStyles(child),
-            }}
+            style={childWrapperStyles(child)}
           >
             <BlockRenderer
               block={child}
@@ -167,13 +189,7 @@ export function ContainerChildren({
                     className={`relative group ${dragSnapshot.isDragging ? 'opacity-50' : ''}`}
                     style={{
                       ...dragProvided.draggableProps.style,
-                      ...getHorizontalFlexChildStyles({
-                        isHorizontal,
-                        childStyles: child.styles,
-                        blockName: child.name,
-                      }),
-                      ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
-                      ...getBlockStackLayerWrapperStyles(child),
+                      ...childWrapperStyles(child),
                     }}
                   >
                     <BlockRenderer
@@ -252,6 +268,8 @@ function BlockEditorToolbarPanel({
   className,
   open,
   engageHandlers,
+  chromeMode,
+  onToggleChromeMode,
 }: {
   label: string;
   /** Full toolbar string when `label` is JS-truncated (block name, icon ref, etc.). */
@@ -268,6 +286,8 @@ function BlockEditorToolbarPanel({
     onMouseEnter: () => void;
     onMouseLeave: () => void;
   };
+  chromeMode: CanvasChromeMode;
+  onToggleChromeMode: () => void;
 }) {
   const labelClass =
     'block min-w-0 flex-1 px-2 text-left text-xs text-npb-text-secondary';
@@ -354,6 +374,31 @@ function BlockEditorToolbarPanel({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              title={chromeMode === "hug" ? "Span full width" : "Hug content"}
+              aria-label={chromeMode === "hug" ? "Span full width" : "Hug content"}
+              aria-pressed={chromeMode === "span"}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleChromeMode();
+              }}
+              className="h-6 w-6 p-0 text-npb-text-secondary hover:text-npb-text-primary">
+              {chromeMode === "hug" ? (
+                <UnfoldHorizontal className="w-3 h-3" />
+              ) : (
+                <FoldHorizontal className="w-3 h-3" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {chromeMode === "hug" ? "Span full width" : "Hug content"}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
               variant="ghost"
               size="sm"
               title="Duplicate block"
@@ -403,6 +448,15 @@ export default function BlockRenderer({
   const actions = useBlockActions();
   const effectiveSelected = isSelected || actions?.selectedBlockId === block.id;
   const isEditing = !isPreview && actions?.editingBlockId === block.id;
+  const [editorChromeMode, setEditorChromeMode] = useState<CanvasChromeMode>("hug");
+  const chromeMode: CanvasChromeMode = isPreview ? "span" : editorChromeMode;
+  const chromeAlign = readCanvasChromeAlign({
+    styles: block.styles,
+    content:
+      block.content && typeof block.content === "object" ? block.content : undefined,
+  });
+  const chromeSlotStyle = getCanvasChromeSlotStyle({ mode: chromeMode, align: chromeAlign });
+  const chromeFrameStyle = getCanvasChromeFrameStyle({ mode: chromeMode });
   const {
     toolbarOpen,
     paintToolbar,
@@ -434,6 +488,11 @@ export default function BlockRenderer({
   const mergedStyles: React.CSSProperties = stripBlockContainerPlacementStyles({
     ...block.styles,
     ...(tokenResolution?.style || {}),
+  });
+  const chromeInnerStyle = getCanvasChromeInnerStyle({
+    mode: chromeMode,
+    explicitWidth: mergedStyles.width,
+    isPreview,
   });
 
   // Create a patched block with token-resolved styles for the component
@@ -573,21 +632,31 @@ export default function BlockRenderer({
 
   const showEditingChrome = !isPreview && isEditing;
   const showSelectedChrome = !isPreview && effectiveSelected && !showEditingChrome;
-  const showHoverChrome =
-    !isPreview &&
-    toolbarOpen &&
-    !effectiveSelected &&
-    (actions?.hoveredBlockId === undefined || actions.hoveredBlockId === block.id);
 
   const blockChromeClasses = [
     `block-${block.id}`,
     showSelectedChrome ? 'npb-canvas-block-selected' : '',
     showEditingChrome ? 'npb-canvas-block-editing' : '',
-    showHoverChrome ? 'npb-canvas-block-hover' : '',
     'relative',
   ]
     .filter(Boolean)
     .join(' ');
+
+  const toolbarPanelProps = {
+    label: blockToolbarLabel,
+    labelTooltip: blockToolbarLabelTooltip,
+    dragHandleProps,
+    isEditing,
+    onStartEditing: () => actions?.onStartEditing?.(block.id),
+    onStopEditing: () => actions?.onStopEditing?.(),
+    onDuplicate,
+    onDelete,
+    open: toolbarOpen,
+    engageHandlers: toolbarEngageHandlers,
+    chromeMode,
+    onToggleChromeMode: () =>
+      setEditorChromeMode((mode) => (mode === "hug" ? "span" : "hug")),
+  };
 
   return (
     <div
@@ -608,135 +677,125 @@ export default function BlockRenderer({
           actions?.onStartEditing?.(block.id);
         }
       }}>
-      {!isPreview && !useTopToolbarHoverStrip && paintToolbar && (
-        <BlockEditorToolbarPanel
-          label={blockToolbarLabel}
-          labelTooltip={blockToolbarLabelTooltip}
-          dragHandleProps={dragHandleProps}
-          isEditing={isEditing}
-          onStartEditing={() => actions?.onStartEditing?.(block.id)}
-          onStopEditing={() => actions?.onStopEditing?.()}
-          onDuplicate={onDuplicate}
-          onDelete={onDelete}
-          open={toolbarOpen}
-          engageHandlers={toolbarEngageHandlers}
-          className={`absolute top-0 left-0 right-0 z-30 ${toolbarPanelClass}`}
-        />
-      )}
-      {!isPreview && useTopToolbarHoverStrip && (
+      <div style={chromeSlotStyle}>
         <div
-          className="absolute top-0 left-0 right-0 z-30 flex flex-col"
-          {...pointerHoverHandlers}>
-          {paintToolbar ? (
+          className="relative"
+          data-span={chromeMode === "span" ? "true" : "false"}
+          style={chromeFrameStyle}
+        >
+          {!isPreview && !useTopToolbarHoverStrip && paintToolbar && (
             <BlockEditorToolbarPanel
-              label={blockToolbarLabel}
-              labelTooltip={blockToolbarLabelTooltip}
-              dragHandleProps={dragHandleProps}
-              isEditing={isEditing}
-              onStartEditing={() => actions?.onStartEditing?.(block.id)}
-              onStopEditing={() => actions?.onStopEditing?.()}
-              onDuplicate={onDuplicate}
-              onDelete={onDelete}
-              open={toolbarOpen}
-              engageHandlers={toolbarEngageHandlers}
-              className={toolbarPanelClass}
+              {...toolbarPanelProps}
+              className={`absolute top-0 left-0 right-0 z-30 ${toolbarPanelClass}`}
             />
-          ) : (
-            <div className="h-9 w-full shrink-0" aria-hidden />
           )}
-        </div>
-      )}
-
-        <div className={!isPreview ? 'cursor-pointer' : ''}>
-          <div
-            data-block-id={block.id}
-            data-chrome={!isPreview && showSelectedChrome && toolbarOpen ? 'true' : 'false'}
-            className={blockChromeClasses}
-            style={{
-              width: '100%',
-              minWidth: 0,
-              boxSizing: 'border-box',
-            }}
-            {...entryAnimationAttributes}
-          >
-          {showPaddingHighlight ? (
-            <>
-              <div
-                className="absolute left-0 right-0 pointer-events-none z-20"
-                style={{
-                  top: 0,
-                  height: spacingOverlayLength(pTop),
-                  background: 'rgba(34,197,94,0.15)',
-                }}
-              />
-              <div
-                className="absolute left-0 right-0 pointer-events-none z-20"
-                style={{
-                  bottom: 0,
-                  height: spacingOverlayLength(pBottom),
-                  background: 'rgba(34,197,94,0.15)',
-                }}
-              />
-              <div
-                className="absolute top-0 bottom-0 pointer-events-none z-20"
-                style={{
-                  left: 0,
-                  width: spacingOverlayLength(pLeft),
-                  background: 'rgba(34,197,94,0.15)',
-                }}
-              />
-              <div
-                className="absolute top-0 bottom-0 pointer-events-none z-20"
-                style={{
-                  right: 0,
-                  width: spacingOverlayLength(pRight),
-                  background: 'rgba(34,197,94,0.15)',
-                }}
-              />
-            </>
-          ) : null}
-          {showMarginHighlight ? (
+          {!isPreview && useTopToolbarHoverStrip && (
             <div
-              className="pointer-events-none absolute inset-0 z-20"
+              className="absolute top-0 left-0 right-0 z-30 flex flex-col"
+              {...pointerHoverHandlers}>
+              {paintToolbar ? (
+                <BlockEditorToolbarPanel
+                  {...toolbarPanelProps}
+                  className={toolbarPanelClass}
+                />
+              ) : (
+                <div className="h-9 w-full shrink-0" aria-hidden />
+              )}
+            </div>
+          )}
+
+          <div className={!isPreview ? 'cursor-pointer' : ''}>
+            <div
+              data-block-id={block.id}
+              data-chrome={!isPreview && showSelectedChrome && toolbarOpen ? 'true' : 'false'}
+              className={blockChromeClasses}
               style={{
-                outline: '2px dashed rgba(59,130,246,0.6)',
-                outlineOffset: 0,
+                width: '100%',
+                minWidth: 0,
+                boxSizing: 'border-box',
               }}
-            />
-          ) : null}
-          <div
-            className={entryPreviewClassName || undefined}
-            style={{
-              width: mergedStyles?.width || '100%',
-              ...(entryPreview
-                ? {
-                    ['--animate-duration' as string]: `${entryPreview.durationMs}ms`,
-                    animationDelay:
-                      entryPreview.delayMs > 0 ? `${entryPreview.delayMs}ms` : undefined,
-                  }
-                : {}),
-            }}
-            onAnimationEnd={
-              entryPreview
-                ? (event) => {
-                    if (!isEntryPreviewAnimationEnd(event, entryPreview.animName)) return;
-                    clearEntryAnimationPreview(entryPreview.token);
-                  }
-                : undefined
-            }
-          >
-            {contentEl}
+              {...entryAnimationAttributes}
+            >
+            {showPaddingHighlight ? (
+              <>
+                <div
+                  className="absolute left-0 right-0 pointer-events-none z-20"
+                  style={{
+                    top: 0,
+                    height: spacingOverlayLength(pTop),
+                    background: 'rgba(34,197,94,0.15)',
+                  }}
+                />
+                <div
+                  className="absolute left-0 right-0 pointer-events-none z-20"
+                  style={{
+                    bottom: 0,
+                    height: spacingOverlayLength(pBottom),
+                    background: 'rgba(34,197,94,0.15)',
+                  }}
+                />
+                <div
+                  className="absolute top-0 bottom-0 pointer-events-none z-20"
+                  style={{
+                    left: 0,
+                    width: spacingOverlayLength(pLeft),
+                    background: 'rgba(34,197,94,0.15)',
+                  }}
+                />
+                <div
+                  className="absolute top-0 bottom-0 pointer-events-none z-20"
+                  style={{
+                    right: 0,
+                    width: spacingOverlayLength(pRight),
+                    background: 'rgba(34,197,94,0.15)',
+                  }}
+                />
+              </>
+            ) : null}
+            {showMarginHighlight ? (
+              <div
+                className="pointer-events-none absolute inset-0 z-20"
+                style={{
+                  outline: '2px dashed rgba(59,130,246,0.6)',
+                  outlineOffset: 0,
+                }}
+              />
+            ) : null}
+            <div
+              className={entryPreviewClassName || undefined}
+              style={{
+                ...chromeInnerStyle,
+                ...(entryPreview
+                  ? {
+                      ['--animate-duration' as string]: `${entryPreview.durationMs}ms`,
+                      animationDelay:
+                        entryPreview.delayMs > 0 ? `${entryPreview.delayMs}ms` : undefined,
+                    }
+                  : {}),
+              }}
+              onAnimationEnd={
+                entryPreview
+                  ? (event) => {
+                      if (!isEntryPreviewAnimationEnd(event, entryPreview.animName)) return;
+                      clearEntryAnimationPreview(entryPreview.token);
+                    }
+                  : undefined
+              }
+            >
+              {contentEl}
+            </div>
+          </div>
           </div>
         </div>
-        {injectedCSS && <style dangerouslySetInnerHTML={{ __html: injectedCSS }} />}
-        {isContainer && !childrenHandledInRenderer && (
-          <ContainerChildren
-            block={block}
-            isPreview={isPreview}
-            onBlockChange={onBlockChange}
-          />
-        )}
       </div>
+      {injectedCSS && <style dangerouslySetInnerHTML={{ __html: injectedCSS }} />}
+      {isContainer && !childrenHandledInRenderer && (
+        <ContainerChildren
+          block={block}
+          isPreview={isPreview}
+          onBlockChange={onBlockChange}
+        />
+      )}
     </div>
   );
 }

@@ -229,6 +229,10 @@ describe('BlockRenderer', () => {
       
       // Block label should use display name
       expect(screen.getByText('Paragraph')).toBeInTheDocument()
+      expect(document.querySelector('.npb-canvas-block-hover')).not.toBeInTheDocument()
+      expect(document.querySelector('.block-test-block')).not.toHaveClass(
+        'npb-canvas-block-selected',
+      )
     })
 
     it('should call onSelect when clicked', () => {
@@ -291,6 +295,36 @@ describe('BlockRenderer', () => {
       const highlight = document.querySelector('.block-test-block')
       expect(highlight).toHaveClass('npb-canvas-block-selected')
       expect(highlight).toHaveAttribute('data-chrome', 'true')
+    })
+
+    it('hugs content by default and spans the slot when toggled', () => {
+      const block = createMockBlock('test-block', 'core/paragraph')
+
+      renderWithProviders(
+        <BlockRenderer
+          block={block}
+          isSelected={true}
+          isPreview={false}
+          onDuplicate={() => {}}
+          onDelete={() => {}}
+        />
+      )
+
+      const frame = document.querySelector('[data-span]')
+      expect(frame).toHaveAttribute('data-span', 'false')
+      expect(frame).toHaveStyle({ width: 'fit-content' })
+
+      const wrapper = document.querySelector('.wp-block-paragraph')?.closest('.relative.group')
+      fireEvent.click(
+        within(wrapper as HTMLElement).getByRole('button', { name: /span full width/i }),
+      )
+      expect(document.querySelector('[data-span]')).toHaveAttribute('data-span', 'true')
+      expect(document.querySelector('[data-span]')).toHaveStyle({ width: '100%' })
+
+      fireEvent.click(
+        within(wrapper as HTMLElement).getByRole('button', { name: /hug content/i }),
+      )
+      expect(document.querySelector('[data-span]')).toHaveAttribute('data-span', 'false')
     })
 
     it('should not show controls in preview mode', () => {

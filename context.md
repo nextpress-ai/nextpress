@@ -43,6 +43,11 @@ UUID PKs everywhere except sessions.sid.
 
 ## Decision records
 
+### 2026-09-12 — Canvas chrome hugs content
+- Editor selection box defaults to hug (`fit-content`). Toolbar icon toggles span (full slot). Session only — not saved, not published.
+- Blue outline only when the block is selected. Hover still shows the toolbar, no hover ring.
+- Do not reuse Style Width / Hug / Fill for this. Those write published `styles.width`.
+
 ### 2026-09-10 — Post list overlay + public post grid
 - Post List default is a responsive grid; details open in an overlay (`openIn: overlay`). Full page is still an option.
 - Published lists bind real posts (SSR + public JSON `GET /api/public/posts`). Overlay fetches `/api/public/post/:slug` including `renderedHtml`.

@@ -1074,16 +1074,11 @@
   to { opacity: 1; }
 }
 
-/* Selection ring — fixed 2px outline so hover/select/edit never resize the block. */
+/* Selection ring — fixed 2px outline so select/edit never resize the block. Hover has no ring. */
 .npb-canvas-block-selected,
-.npb-canvas-block-hover,
 .npb-canvas-block-editing {
   outline: 2px solid transparent;
   outline-offset: 0;
-}
-
-.npb-canvas-block-hover {
-  outline-color: color-mix(in srgb, var(--npb-accent, #3b82f6) 45%, transparent);
 }
 
 .npb-canvas-block-selected {
