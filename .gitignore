@@ -52,6 +52,9 @@ env
 AGENTS.md
 intent.md
 intent-*.md
+task.md
+task-*.md
+.zcode/
 docs/
 opencode.json
 .opencode/
