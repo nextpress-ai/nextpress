@@ -205,7 +205,7 @@ export function TableSettings({ block, onUpdate }: TableSettingsProps) {
       </CollapsibleCard>
 
       {/* Style & Display Options Card */}
-      <CollapsibleCard title="Styles & Options" icon={Sparkles} defaultOpen={true}>
+      <CollapsibleCard title="Styles & Options" icon={Sparkles} defaultOpen={false}>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <SettingsLabel htmlFor="table-striped">Striped rows</SettingsLabel>

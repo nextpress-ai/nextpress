@@ -3,6 +3,7 @@ import type { BlockConfig } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
+import { UnitValueField } from "../../unit-value-field";
 import { Minus as SeparatorIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
@@ -92,22 +93,24 @@ function SeparatorSettings({ block, onUpdate }: SeparatorSettingsProps) {
       </CollapsibleCard>
 
       {/* Settings Card */}
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div>
-            <SettingsLabel htmlFor="separator-width">Width</SettingsLabel>
-            <Input
+            <UnitValueField
               id="separator-width"
+              label="Width"
+              segmentLabel={null}
+              keywords={["auto"]}
               value={
                 styles?.width !== undefined &&
                 styles.width !== null &&
                 String(styles.width).trim() !== ""
                   ? String(styles.width)
-                  : ""
+                  : undefined
               }
-              onChange={(e) => updateStyles({ width: e.target.value })}
+              onChange={(next) => updateStyles({ width: next })}
               placeholder="e.g. 100px, 50%, auto"
-              className="mt-1 h-9"
+              ariaLabel="Separator width"
             />
           </div>
         </div>

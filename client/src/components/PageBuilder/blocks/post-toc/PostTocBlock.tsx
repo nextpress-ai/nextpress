@@ -269,7 +269,7 @@ function PostTocSettings({ block, onUpdate }: PostTocSettingsProps) {
       </CollapsibleCard>
 
       {/* Display Settings */}
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen>
+      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           {/* Max Depth */}
           <div>

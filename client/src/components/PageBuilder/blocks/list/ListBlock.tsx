@@ -188,7 +188,7 @@ function ListSettings({ block, onUpdate }: ListSettingsProps) {
           />
         </div>
       </CollapsibleCard>
-      <CollapsibleCard title="List options" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="List options" icon={Settings} defaultOpen={false}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <SettingsLabel htmlFor="list-type">List Type</SettingsLabel>

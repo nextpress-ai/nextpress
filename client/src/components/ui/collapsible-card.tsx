@@ -4,8 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 /**
- * Accordion panel for page builder sidebar block settings.
- * Chrome reads tokens from `.npb-editor-sidebar` / `--light` (see `client/src/index.css`).
+ * One section of the block settings sidebar: a flat header row that opens a body, divided from
+ * the next section by a hairline (design system §16 — dividers, not nested boxes).
+ * Chrome reads tokens from `.npb-editor-sidebar` (see `client/src/index.css`).
+ * A block with only one section should use `SettingsSection` instead — nothing to open or close.
  */
 export function CollapsibleCard({
 	title,
@@ -33,7 +35,7 @@ export function CollapsibleCard({
 		>
 			<button
 				type="button"
-				className="npb-settings-collapsible-header npb-settings-collapsible-trigger !p-4"
+				className="npb-settings-collapsible-header npb-settings-collapsible-trigger !px-4 !py-3"
 				onClick={() => setIsOpen((open) => !open)}
 				aria-expanded={isOpen}
 				aria-controls={panelId}
@@ -62,7 +64,7 @@ export function CollapsibleCard({
 				)}
 			>
 				<div className="overflow-hidden">
-					<CardContent className="space-y-4 !p-4 !pt-4">{children}</CardContent>
+					<CardContent className="space-y-4 !px-4 !pb-4 !pt-1">{children}</CardContent>
 				</div>
 			</div>
 		</Card>

@@ -16,6 +16,9 @@ const HeaderBlock = createBlockDefinition<HeaderContent>({
 	icon: PanelTop,
 	description: "Site header with brand, links, and buttons",
 	category: "layout",
+	// Children only appear in the "Blocks" layout, but the header must be a container to hold them.
+	isContainer: true,
+	handlesOwnChildren: true,
 	defaultContent: DEFAULT_HEADER_CONTENT,
 	defaultStyles: {
 		width: "100%",
@@ -26,7 +29,14 @@ const HeaderBlock = createBlockDefinition<HeaderContent>({
 	settings: HeaderSettings,
 	hasSettings: true,
 	parseContent: readHeaderContent,
-	render: ({ content }) => <HeaderCanvas content={normalizeHeaderContent(content)} />,
+	render: ({ content, value, isPreview, onNestedBlockChange }) => (
+		<HeaderCanvas
+			content={normalizeHeaderContent(content)}
+			hostBlock={value}
+			isPreview={isPreview}
+			onNestedBlockChange={onNestedBlockChange}
+		/>
+	),
 });
 
 export default HeaderBlock;

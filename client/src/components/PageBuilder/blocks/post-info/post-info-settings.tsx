@@ -85,7 +85,7 @@ export function PostInfoSettings({ block, onUpdate }: PostInfoSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Format" icon={Settings} defaultOpen>
+      <CollapsibleCard title="Format" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div>
             <SettingsLabel>Date Format</SettingsLabel>
@@ -130,7 +130,7 @@ export function PostInfoSettings({ block, onUpdate }: PostInfoSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Details" icon={Settings} defaultOpen>
+      <CollapsibleCard title="Details" icon={Settings} defaultOpen={false}>
         <div className="space-y-3">
           <div>
             <SettingsLabel htmlFor="post-info-categories">Categories</SettingsLabel>

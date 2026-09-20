@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsChipGroup } from "../../settings-chip-group";
-import { SettingsLabel } from "../../shared";
+import { DimensionPresetField } from "../../dimension-preset-field";
+import { SettingsDisclosure, SettingsLabel } from "../../shared";
 import { MediaUrlField } from "../shared/media-url-field";
 import TokenColorPicker from "../../TokenColorPicker";
 import {
@@ -16,7 +17,12 @@ import {
 	createHeaderAction,
 	createHeaderNavChild,
 	createHeaderNavItem,
+	DEFAULT_HEADER_ACTION_RADIUS,
+	DEFAULT_HEADER_ACTION_SIZE,
 	DEFAULT_HEADER_CONTENT,
+	DEFAULT_HEADER_LOGO_RADIUS,
+	DEFAULT_HEADER_LOGO_SIZE,
+	headerHasBlocksSlot,
 	HEADER_ACTION_RADIUS_PRESETS,
 	HEADER_ACTION_SIZE_PRESETS,
 	HEADER_LOGO_RADIUS_PRESETS,
@@ -25,8 +31,8 @@ import {
 	nextHeaderActionStyle,
 	normalizeHeaderContent,
 	readHeaderContent,
+	slotsForHeaderVariant,
 	type HeaderAction,
-	type HeaderActionSize,
 	type HeaderContent,
 	type HeaderNavChild,
 	type HeaderNavItem,
@@ -93,6 +99,14 @@ export function HeaderSettings({
 		parseContent: readHeaderContent,
 	});
 	const content = normalizeHeaderContent(rawContent);
+	// Show only the groups the chosen layout actually paints.
+	const shows = slotsForHeaderVariant(content.variant);
+
+	const pickLayout = (variant: HeaderVariant) => {
+		updateContent(applyHeaderVariant(content, variant));
+		// Only containers may hold child blocks. Set after the content write so it is the last one.
+		if (headerHasBlocksSlot(variant) && block.type !== "container") onUpdate?.({ type: "container" });
+	};
 
 	const updateNav = (index: number, patch: Partial<HeaderNavItem>) => {
 		updateContent({
@@ -126,10 +140,13 @@ export function HeaderSettings({
 			<CollapsibleCard title="Layout" defaultOpen={true}>
 				<HeaderVariantPicker
 					value={content.variant}
-					onChange={(value) =>
-						updateContent(applyHeaderVariant(content, value as HeaderVariant))
-					}
+					onChange={(value) => pickLayout(value as HeaderVariant)}
 				/>
+				{headerHasBlocksSlot(content.variant) ? (
+					<p className="npb-settings-hint-muted mt-3 text-xs">
+						Drop any block on the header's right side, on the canvas.
+					</p>
+				) : null}
 				<div className="mt-3 flex items-center justify-between gap-3">
 					<SettingsLabel htmlFor="header-sticky">Stay on scroll</SettingsLabel>
 					<Switch
@@ -182,32 +199,6 @@ export function HeaderSettings({
 								updateContent({ brand: { ...content.brand, logoUrl: item.url } })
 							}
 						/>
-						<SettingsChipGroup
-							label="Size"
-							ariaLabel="Logo size"
-							options={HEADER_LOGO_SIZE_PRESETS.map((option) => ({
-								value: option.value,
-								label: option.label,
-								accessibleName: option.label,
-							}))}
-							value={content.brand.logoSize}
-							onChange={(logoSize) =>
-								updateContent({ brand: { ...content.brand, logoSize } })
-							}
-						/>
-						<SettingsChipGroup
-							label="Corners"
-							ariaLabel="Logo corners"
-							options={HEADER_LOGO_RADIUS_PRESETS.map((option) => ({
-								value: option.value,
-								label: option.label,
-								accessibleName: option.label,
-							}))}
-							value={content.brand.logoRadius}
-							onChange={(logoRadius) =>
-								updateContent({ brand: { ...content.brand, logoRadius } })
-							}
-						/>
 						<div className="flex items-center justify-between gap-3">
 							<SettingsLabel htmlFor="header-logo-show-name">Show name</SettingsLabel>
 							<Switch
@@ -218,6 +209,32 @@ export function HeaderSettings({
 								}
 							/>
 						</div>
+						<SettingsDisclosure title="Logo look">
+							<DimensionPresetField
+								label="Size"
+								presets={HEADER_LOGO_SIZE_PRESETS}
+								value={content.brand.logoSize}
+								defaultValue={DEFAULT_HEADER_LOGO_SIZE}
+								customPlaceholder="e.g. 3rem or 48px"
+								onChange={(next) =>
+									updateContent({
+										brand: { ...content.brand, logoSize: next ?? DEFAULT_HEADER_LOGO_SIZE },
+									})
+								}
+							/>
+							<DimensionPresetField
+								label="Corners"
+								presets={HEADER_LOGO_RADIUS_PRESETS}
+								value={content.brand.logoRadius}
+								defaultValue={DEFAULT_HEADER_LOGO_RADIUS}
+								customPlaceholder="e.g. 8px"
+								onChange={(next) =>
+									updateContent({
+										brand: { ...content.brand, logoRadius: next ?? DEFAULT_HEADER_LOGO_RADIUS },
+									})
+								}
+							/>
+						</SettingsDisclosure>
 					</div>
 				) : null}
 				<div className="mt-3">
@@ -231,7 +248,8 @@ export function HeaderSettings({
 				</div>
 			</CollapsibleCard>
 
-			<CollapsibleCard title="Links" defaultOpen={true}>
+			{shows.showNav ? (
+			<CollapsibleCard title="Links" defaultOpen={false}>
 				<div className="divide-y divide-npb-divider">
 					{content.nav.map((item, index) => {
 						const isMenu = (item.children?.length ?? 0) > 0;
@@ -352,8 +370,10 @@ export function HeaderSettings({
 					Add link
 				</Button>
 			</CollapsibleCard>
+			) : null}
 
-			<CollapsibleCard title="Buttons" defaultOpen={true}>
+			{shows.showActions ? (
+			<CollapsibleCard title="Buttons" defaultOpen={false}>
 				<div className="divide-y divide-npb-divider">
 					{content.actions.map((item, index) => (
 						<div key={item.id} className="space-y-3 py-3 first:pt-0 last:pb-0">
@@ -372,66 +392,63 @@ export function HeaderSettings({
 								onChange={(href) => updateAction(index, { href })}
 							/>
 							<div className="space-y-3">
-								<SettingsChipGroup
-									label="Look"
-									ariaLabel="Button look"
-									options={[
-										{ value: "ghost", label: "Ghost", accessibleName: "Ghost button" },
-										{ value: "solid", label: "Solid", accessibleName: "Solid button" },
-									]}
-									value={item.style}
-									onChange={(value) =>
-										updateAction(index, { style: value === "ghost" ? "ghost" : "solid" })
-									}
-								/>
-								<SettingsChipGroup
-									label="Size"
-									ariaLabel="Button size"
-									options={HEADER_ACTION_SIZE_PRESETS.map((option) => ({
-										value: option.value,
-										label: option.label,
-										accessibleName: option.label,
-									}))}
-									value={item.size}
-									onChange={(size) =>
-										updateAction(index, { size: size as HeaderActionSize })
-									}
-								/>
-								<SettingsChipGroup
-									label="Corners"
-									ariaLabel="Button corners"
-									options={HEADER_ACTION_RADIUS_PRESETS.map((option) => ({
-										value: option.value,
-										label: option.label,
-										accessibleName: option.label,
-									}))}
-									value={item.radius}
-									onChange={(radius) => updateAction(index, { radius })}
-								/>
-								<div className="space-y-2">
-									<div className="flex items-center justify-between gap-2">
-										<SettingsLabel>Color</SettingsLabel>
-										{item.color ? (
-											<Button
-												type="button"
-												variant="ghost"
-												size="sm"
-												className="h-8 px-2"
-												onClick={() => updateAction(index, { color: undefined })}
-											>
-												Theme
-											</Button>
-										) : null}
-									</div>
-									<TokenColorPicker
-										property="backgroundColor"
-										currentEntry={item.color}
-										currentStyleValue={item.color?.style}
-										onChange={(entry: TokenEntry) =>
-											updateAction(index, { color: entry })
+								<SettingsDisclosure title="Button style">
+									<SettingsChipGroup
+										label="Look"
+										ariaLabel="Button look"
+										options={[
+											{ value: "ghost", label: "Ghost", accessibleName: "Ghost button" },
+											{ value: "solid", label: "Solid", accessibleName: "Solid button" },
+										]}
+										value={item.style}
+										onChange={(value) =>
+											updateAction(index, { style: value === "ghost" ? "ghost" : "solid" })
 										}
 									/>
-								</div>
+									<DimensionPresetField
+										label="Size"
+										presets={HEADER_ACTION_SIZE_PRESETS}
+										value={item.size}
+										defaultValue={DEFAULT_HEADER_ACTION_SIZE}
+										customPlaceholder="Text size, e.g. 0.95rem"
+										onChange={(next) =>
+											updateAction(index, { size: next ?? DEFAULT_HEADER_ACTION_SIZE })
+										}
+									/>
+									<DimensionPresetField
+										label="Corners"
+										presets={HEADER_ACTION_RADIUS_PRESETS}
+										value={item.radius}
+										defaultValue={DEFAULT_HEADER_ACTION_RADIUS}
+										customPlaceholder="e.g. 8px"
+										onChange={(next) =>
+											updateAction(index, { radius: next ?? DEFAULT_HEADER_ACTION_RADIUS })
+										}
+									/>
+									<div className="space-y-2">
+										<div className="flex items-center justify-between gap-2">
+											<SettingsLabel>Color</SettingsLabel>
+											{item.color ? (
+												<Button
+													type="button"
+													variant="ghost"
+													size="sm"
+													className="h-8 px-2"
+													onClick={() => updateAction(index, { color: undefined })}
+												>
+													Theme
+												</Button>
+											) : null}
+										</div>
+										<TokenColorPicker
+											ariaLabel="Button color"
+											property="backgroundColor"
+											currentEntry={item.color}
+											currentStyleValue={item.color?.style}
+											onChange={(entry: TokenEntry) => updateAction(index, { color: entry })}
+										/>
+									</div>
+								</SettingsDisclosure>
 								<RemoveRow
 									label="Remove button"
 									onClick={() =>
@@ -465,6 +482,7 @@ export function HeaderSettings({
 					Add button
 				</Button>
 			</CollapsibleCard>
+			) : null}
 		</div>
 	);
 }

@@ -81,7 +81,7 @@ export function PostListSettings({
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Display" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Display" icon={Settings} defaultOpen={false}>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <SettingsLabel htmlFor="pl-excerpt">Show excerpt</SettingsLabel>

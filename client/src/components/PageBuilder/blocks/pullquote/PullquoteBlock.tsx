@@ -186,7 +186,7 @@ function PullquoteSettings({ block, onUpdate }: PullquoteSettingsProps) {
       </CollapsibleCard>
 
       {/* Settings Card */}
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <p className="text-xs text-npb-text-muted">
             Text alignment is in the Style tab.

@@ -3,7 +3,7 @@ import type { BlockConfig } from "@shared/schema-types";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
-import { SettingsLabel } from '../../shared';
+import { UnitValueField } from "../../unit-value-field";
 import { FileText as PreformattedIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
@@ -137,7 +137,7 @@ function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
       </CollapsibleCard>
 
       {/* Settings Card */}
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div>
             <SettingsLabel htmlFor="preformatted-bg-color">Background Color</SettingsLabel>
@@ -178,17 +178,18 @@ function PreformattedSettings({ block, onUpdate }: PreformattedSettingsProps) {
           </div>
 
           <div>
-            <SettingsLabel htmlFor="preformatted-font-size">Font Size</SettingsLabel>
-            <Input
+            <UnitValueField
               id="preformatted-font-size"
+              label="Font Size"
+              segmentLabel={null}
               value={
                 styles?.fontSize !== undefined && styles.fontSize !== null
                   ? String(styles.fontSize)
-                  : ""
+                  : undefined
               }
-              onChange={(e) => updateStyles({ fontSize: e.target.value })}
+              onChange={(next) => updateStyles({ fontSize: next })}
               placeholder="14px"
-              className="mt-1 h-9"
+              ariaLabel="Font size"
             />
           </div>
         </div>

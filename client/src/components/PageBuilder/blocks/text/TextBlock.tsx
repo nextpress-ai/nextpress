@@ -3,9 +3,8 @@ import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { CollapsibleCard } from "@/components/ui/collapsible-card";
-import { SettingsLabel } from '../../shared';
-import { Type } from "lucide-react";
+import { SettingsLabel, SettingsSection } from '../../shared';
+import { Type } from 'lucide-react';
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
 import { InlineTextEditor } from "../shared/inline-text-editor";
@@ -142,11 +141,7 @@ function TextSettings({ block, onUpdate }: TextSettingsProps) {
 
   return (
     <div className="space-y-4">
-      <CollapsibleCard
-        title="Content"
-        icon={Type}
-        defaultOpen={true}
-      >
+      <SettingsSection>
         <div className="space-y-4">
           <div>
             <SettingsLabel htmlFor="text-content">Text Content</SettingsLabel>
@@ -170,7 +165,7 @@ function TextSettings({ block, onUpdate }: TextSettingsProps) {
             />
           </div>
         </div>
-      </CollapsibleCard>
+      </SettingsSection>
     </div>
   );
 }

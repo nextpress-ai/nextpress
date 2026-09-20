@@ -113,6 +113,8 @@ export function resolveTokenMap(
   const modifierEntries: Array<{ entry: import('@shared/schema-types').TokenEntry; resolvedValue: string }> = []
 
   for (const entry of Object.values(tokenMap)) {
+    // A removed color is saved as `null` (a deep merge cannot delete a key), so skip it.
+    if (!entry) continue
     const resolvedValue = resolveTokenEntryValue(entry, units)
 
     if (!resolvedValue) continue

@@ -82,7 +82,7 @@ export function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Playback" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Playback" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           {/* Player Controls */}
           <div className="grid grid-cols-2 gap-4">

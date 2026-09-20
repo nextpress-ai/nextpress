@@ -3,6 +3,7 @@ import {
 	HEADER_PLACEHOLDERS,
 	headerBarClassName,
 	headerActionLookStyle,
+	headerCollapsesToMenu,
 	headerLogoMarkStyle,
 	resolveHeaderHref,
 	visibleHeaderSlots,
@@ -10,6 +11,7 @@ import {
 	type HeaderBrand,
 	type HeaderContent,
 	type HeaderNavItem,
+	type HeaderSlotPart,
 } from "./header-model.js";
 
 function LogoPlaceholderIcon() {
@@ -126,33 +128,44 @@ function ActionButtons({ actions }: { actions: HeaderAction[] }) {
 function SlotParts({
 	names,
 	content,
+	blocks,
 }: {
-	names: Array<"brand" | "nav" | "actions">;
+	names: HeaderSlotPart[];
 	content: HeaderContent;
+	blocks?: React.ReactNode;
 }) {
 	return (
 		<>
 			{names.map((name) => {
 				if (name === "brand") return <BrandMark key="brand" brand={content.brand} />;
 				if (name === "nav") return <NavLinks key="nav" items={content.nav} />;
+				if (name === "blocks") return <React.Fragment key="blocks">{blocks}</React.Fragment>;
 				return <ActionButtons key="actions" actions={content.actions} />;
 			})}
 		</>
 	);
 }
 
-/** Shared header chrome for canvas, preview, and publish. */
+/**
+ * Shared header chrome for canvas, preview, and publish.
+ *
+ * `blocks` is what the caller paints in the blocks layout's right side (the editor passes a drop
+ * area, publish passes rendered child blocks). Layouts without links get no menu button at all.
+ */
 export function HeaderBar({
 	content,
 	disableLinks = false,
+	blocks,
 }: {
 	content: HeaderContent;
 	disableLinks?: boolean;
+	blocks?: React.ReactNode;
 }) {
 	const slots = visibleHeaderSlots(content);
+	const hasMenu = headerCollapsesToMenu(content.variant);
 	return (
 		<header
-			className={headerBarClassName({ sticky: content.sticky })}
+			className={headerBarClassName({ sticky: content.sticky, variant: content.variant })}
 			onClick={(event) => {
 				if (!disableLinks) return;
 				const target = event.target;
@@ -162,30 +175,32 @@ export function HeaderBar({
 		>
 			<div className="wp-block-header__bar">
 				<div className="wp-block-header__slot is-left">
-					<SlotParts names={slots.left} content={content} />
+					<SlotParts names={slots.left} content={content} blocks={blocks} />
 				</div>
 				<div className="wp-block-header__desktop">
 					{slots.middle.length > 0 ? (
 						<div className="wp-block-header__slot is-middle">
-							<SlotParts names={slots.middle} content={content} />
+							<SlotParts names={slots.middle} content={content} blocks={blocks} />
 						</div>
 					) : null}
 					{slots.right.length > 0 ? (
 						<div className="wp-block-header__slot is-right">
-							<SlotParts names={slots.right} content={content} />
+							<SlotParts names={slots.right} content={content} blocks={blocks} />
 						</div>
 					) : null}
 				</div>
 			</div>
-			<details className="wp-block-header__mobile-panel">
-				<summary className="wp-block-header__mobile-toggle" aria-label="Open menu">
-					<span className="wp-block-header__burger" aria-hidden="true" />
-				</summary>
-				<div className="wp-block-header__mobile-body">
-					<NavLinks items={content.nav} />
-					<ActionButtons actions={content.actions} />
-				</div>
-			</details>
+			{hasMenu ? (
+				<details className="wp-block-header__mobile-panel">
+					<summary className="wp-block-header__mobile-toggle" aria-label="Open menu">
+						<span className="wp-block-header__burger" aria-hidden="true" />
+					</summary>
+					<div className="wp-block-header__mobile-body">
+						<NavLinks items={content.nav} />
+						<ActionButtons actions={content.actions} />
+					</div>
+				</details>
+			) : null}
 		</header>
 	);
 }

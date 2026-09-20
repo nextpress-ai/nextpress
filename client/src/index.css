@@ -559,13 +559,9 @@
     --border: rgb(229 231 235 / 0.9);
     --input: rgb(229 231 235);
     --background: rgb(255 255 255);
-    --npb-settings-hero-bg: rgb(249 250 251);
-    --npb-settings-hero-border: rgb(209 213 219 / 0.65);
-    --npb-settings-hero-title: rgb(24 24 27);
-    --npb-settings-hero-sub: rgb(107 114 128);
     --npb-settings-panel-bg: rgb(255 255 255 / 0.95);
     --npb-settings-panel-border: rgb(229 231 235);
-    --npb-settings-label: rgb(24 24 27);
+    --npb-settings-label: rgb(82 82 91);
     --npb-settings-hint: rgb(55 65 81);
     --npb-settings-hint-muted: rgb(156 163 175);
     --npb-settings-divider: rgb(229 231 235 / 0.85);
@@ -579,18 +575,12 @@
     --npb-chip-active-text: rgb(24 24 27);
     --npb-chip-active-shadow: 0 1px 0 0 rgb(0 0 0 / 0.05);
     --npb-chip-ring: rgb(59 130 246 / 0.35);
-    --npb-coll-bg: rgb(249 250 251);
-    --npb-coll-header-bg: rgb(243 244 246);
-    --npb-coll-header-hover: rgb(229 231 235);
-    --npb-coll-border: rgb(229 231 235);
+    --npb-coll-header-hover: rgb(243 244 246);
     --npb-coll-header-divider: rgb(229 231 235 / 0.85);
     --npb-coll-title: rgb(24 24 27);
     --npb-coll-icon: rgb(107 114 128);
     --npb-coll-chevron: rgb(156 163 175);
-    --npb-coll-shadow: 0 1px 0 0 rgb(0 0 0 / 0.05);
     --npb-coll-body-text: rgb(55 65 81);
-    --npb-settings-hero-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.8);
-    --npb-settings-panel-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.6);
     --npb-sidebar-field-bg: rgb(255 255 255);
     --npb-sidebar-field-text: rgb(24 24 27);
     --npb-sidebar-field-border: rgb(209 213 219 / 0.85);
@@ -606,22 +596,18 @@
     --npb-sidebar-tab-active-bg: rgb(255 255 255);
     --npb-sidebar-tab-active-text: rgb(24 24 27);
     --npb-sidebar-tab-active-shadow: 0 1px 0 0 rgb(0 0 0 / 0.06), inset 0 1px 0 0 rgb(255 255 255 / 0.9);
-    --npb-sidebar-scroll-fade-0: rgb(249 250 251 / 0.85);
-    --npb-sidebar-scroll-fade-1: rgb(249 250 251 / 0.45);
-    --npb-sidebar-scroll-fade-2: rgb(249 250 251 / 0.12);
+    --npb-sidebar-scroll-fade-0: rgb(255 255 255 / 0.85);
+    --npb-sidebar-scroll-fade-1: rgb(255 255 255 / 0.45);
+    --npb-sidebar-scroll-fade-2: rgb(255 255 255 / 0.12);
   }
 
   .dark .npb-editor-sidebar {
     --border: rgb(63 63 70 / 0.38);
     --input: rgb(63 63 70 / 0.45);
     --background: rgb(5 5 7);
-    --npb-settings-hero-bg: rgb(3 3 5);
-    --npb-settings-hero-border: rgb(63 63 70 / 0.52);
-    --npb-settings-hero-title: rgb(250 250 250);
-    --npb-settings-hero-sub: rgb(161 161 170);
     --npb-settings-panel-bg: rgb(9 9 11 / 0.88);
     --npb-settings-panel-border: rgb(63 63 70 / 0.38);
-    --npb-settings-label: rgb(244 244 245);
+    --npb-settings-label: rgb(212 212 216);
     --npb-settings-hint: rgb(228 228 231);
     --npb-settings-hint-muted: rgb(161 161 170);
     --npb-settings-divider: rgb(63 63 70 / 0.3);
@@ -635,18 +621,12 @@
     --npb-chip-active-text: rgb(250 250 250);
     --npb-chip-active-shadow: 0 1px 0 0 rgb(0 0 0 / 0.55);
     --npb-chip-ring: rgb(161 161 170 / 0.35);
-    --npb-coll-bg: rgb(9 9 11 / 0.92);
-    --npb-coll-header-bg: rgb(3 3 5);
-    --npb-coll-header-hover: rgb(15 15 18);
-    --npb-coll-border: rgb(63 63 70 / 0.34);
+    --npb-coll-header-hover: rgb(24 24 27);
     --npb-coll-header-divider: rgb(63 63 70 / 0.26);
     --npb-coll-title: rgb(250 250 250);
     --npb-coll-icon: rgb(200 200 204);
     --npb-coll-chevron: rgb(161 161 170);
-    --npb-coll-shadow: 0 1px 0 0 rgb(0 0 0 / 0.35);
     --npb-coll-body-text: rgb(228 228 231);
-    --npb-settings-hero-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
-    --npb-settings-panel-inset: inset 0 1px 0 0 rgb(255 255 255 / 0.03);
     --npb-sidebar-field-bg: rgb(7 7 9);
     --npb-sidebar-field-text: rgb(250 250 250);
     --npb-sidebar-field-border: rgb(63 63 70 / 0.58);
@@ -690,24 +670,11 @@
     );
   }
 
-  .npb-settings-hero {
-    border-radius: 0;
-    border: 1px solid var(--npb-settings-hero-border);
-    background-color: var(--npb-settings-hero-bg);
-    padding: 1rem;
-    box-shadow: var(--npb-settings-hero-inset);
-  }
-
-  .npb-settings-hero-title {
-    color: var(--npb-settings-hero-title);
-  }
-
-  .npb-settings-panel {
+  /* Small inset tile (icon preview, swatch). Not a panel: sections are divided by lines, never boxed. */
+  .npb-settings-well {
     border-radius: 0;
     border: 1px solid var(--npb-settings-panel-border);
     background-color: var(--npb-settings-panel-bg);
-    padding: 1rem;
-    box-shadow: var(--npb-settings-panel-inset);
   }
 
   .npb-settings-label {
@@ -753,19 +720,24 @@
     padding-right: 0.75rem;
   }
 
+  /* A section is a flat row + body divided from the next by one hairline — no box, no shaded band. */
   .npb-settings-collapsible-card {
     border-radius: 0;
-    border: 1px solid var(--npb-coll-border);
-    background-color: var(--npb-coll-bg);
+    border: 0;
+    border-bottom: 1px solid var(--npb-settings-divider);
+    background-color: transparent;
     color: var(--npb-coll-body-text);
-    box-shadow: var(--npb-coll-shadow);
+    box-shadow: none;
+  }
+
+  /* Block settings files stack sections inside `space-y-*` wrappers; dividers replace those gaps. */
+  .npb-editor-sidebar .npb-settings-collapsible-card {
+    margin-top: 0 !important;
   }
 
   .npb-settings-collapsible-header {
     cursor: pointer;
-    border-bottom: 1px solid var(--npb-coll-header-divider);
-    background-color: var(--npb-coll-header-bg);
-    padding: 1rem;
+    background-color: transparent;
     transition: background-color 150ms ease;
   }
 
@@ -815,7 +787,7 @@
   }
 
   .npb-settings-chip {
-    height: 2.5rem;
+    height: 2.25rem;
     min-width: 0;
     border-radius: 0;
     border: 1px solid var(--npb-chip-border);

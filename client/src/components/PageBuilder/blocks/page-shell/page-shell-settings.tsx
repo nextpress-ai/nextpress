@@ -1,8 +1,5 @@
 import React from "react";
 import type { BlockConfig, TokenEntry } from "@shared/schema-types";
-import { CollapsibleCard } from "@/components/ui/collapsible-card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -10,11 +7,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Layout } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
-import { SettingsChipGroup } from "../../settings-chip-group";
-import TokenColorPicker from "../../TokenColorPicker";
+import { DimensionPresetField } from "../../dimension-preset-field";
+import { SettingsLabel, SettingsSection } from "../../shared";
+import ColorField from "../../ColorField";
 import { PAGE_FONT_CATALOG } from "@shared/font-catalog";
+import { PAGE_PADDING_PRESETS } from "@shared/dimension-presets";
 import {
 	DEFAULT_PAGE_SHELL_CONTENT,
 	PAGE_SHELL_WIDTH_OPTIONS,
@@ -22,6 +20,10 @@ import {
 	type PageShellContent,
 } from "./page-shell-model";
 
+/**
+ * The page's look: font, width, padding, colors. One group, so no accordion — the block's name
+ * ("Page shell") is already the title above the tabs.
+ */
 export function PageShellSettings({
 	block,
 	onUpdate,
@@ -37,67 +39,71 @@ export function PageShellSettings({
 	});
 
 	return (
-		<div className="space-y-4">
-			<CollapsibleCard title="Page design" icon={Layout} defaultOpen={true}>
-				<div className="space-y-3">
-					<div className="space-y-2">
-						<Label htmlFor="page-shell-font">Font</Label>
-						<Select
-							value={content.fontFamily}
-							onValueChange={(value) => updateContent({ fontFamily: value })}
-						>
-							<SelectTrigger id="page-shell-font">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{PAGE_FONT_CATALOG.map((option) => (
-									<SelectItem key={option.value} value={option.value}>
-										{option.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-					<SettingsChipGroup
-						label="Content width"
-						ariaLabel="Content width"
-						options={PAGE_SHELL_WIDTH_OPTIONS.map((option) => ({
-							value: option.value,
-							label: option.label,
-							accessibleName: option.label,
-						}))}
-						value={content.containerWidth}
-						onChange={(value) => updateContent({ containerWidth: value })}
-					/>
-					<div className="space-y-2">
-						<Label htmlFor="page-shell-padding">Padding</Label>
-						<Input
-							id="page-shell-padding"
-							value={content.padding}
-							onChange={(event) => updateContent({ padding: event.target.value })}
-							placeholder="2rem 1rem"
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label>Background</Label>
-						<TokenColorPicker
-							property="backgroundColor"
-							currentEntry={content.backgroundColor}
-							currentStyleValue={content.backgroundColor?.style}
-							onChange={(entry: TokenEntry) => updateContent({ backgroundColor: entry })}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label>Text</Label>
-						<TokenColorPicker
-							property="color"
-							currentEntry={content.textColor}
-							currentStyleValue={content.textColor?.style}
-							onChange={(entry: TokenEntry) => updateContent({ textColor: entry })}
-						/>
-					</div>
-				</div>
-			</CollapsibleCard>
-		</div>
+		<SettingsSection>
+			<div className="space-y-2">
+				<SettingsLabel htmlFor="page-shell-font">Font</SettingsLabel>
+				<Select
+					value={content.fontFamily}
+					onValueChange={(value) => updateContent({ fontFamily: value })}
+				>
+					<SelectTrigger id="page-shell-font" className="npb-settings-select-trigger">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{PAGE_FONT_CATALOG.map((option) => (
+							<SelectItem key={option.value} value={option.value}>
+								{option.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
+			<DimensionPresetField
+				label="Content width"
+				presets={PAGE_SHELL_WIDTH_OPTIONS}
+				value={content.containerWidth}
+				defaultValue={DEFAULT_PAGE_SHELL_CONTENT.containerWidth}
+				customPlaceholder="e.g. 1100px or 80rem"
+				onChange={(next) =>
+					updateContent({ containerWidth: next ?? DEFAULT_PAGE_SHELL_CONTENT.containerWidth })
+				}
+			/>
+			<DimensionPresetField
+				label="Padding"
+				presets={PAGE_PADDING_PRESETS}
+				value={content.padding}
+				defaultValue={DEFAULT_PAGE_SHELL_CONTENT.padding}
+				customPlaceholder="e.g. 3rem 1.5rem"
+				onChange={(next) =>
+					updateContent({ padding: next ?? DEFAULT_PAGE_SHELL_CONTENT.padding })
+				}
+			/>
+			<div className="space-y-2">
+				<SettingsLabel>Colors</SettingsLabel>
+				<ColorField
+					ariaLabel="Page color"
+					defaultProperty="backgroundColor"
+					targets={[
+						{
+							property: "backgroundColor",
+							label: "Background",
+							entry: content.backgroundColor,
+							styleValue: content.backgroundColor?.style,
+						},
+						{
+							property: "color",
+							label: "Text",
+							entry: content.textColor,
+							styleValue: content.textColor?.style,
+						},
+					]}
+					onChange={(entry: TokenEntry) =>
+						updateContent(
+							entry.property === "color" ? { textColor: entry } : { backgroundColor: entry },
+						)
+					}
+				/>
+			</div>
+		</SettingsSection>
 	);
 }

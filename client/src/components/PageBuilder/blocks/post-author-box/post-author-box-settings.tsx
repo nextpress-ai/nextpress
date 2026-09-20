@@ -1,5 +1,5 @@
 import type { BlockConfig } from '@shared/schema-types';
-import { SettingsLabel } from '../../shared';
+import { SettingsLabel, SettingsSection } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -10,8 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CollapsibleCard } from '@/components/ui/collapsible-card';
-import { Settings } from 'lucide-react';
 import { useSettingsState } from '../useSettingsState';
 import { MediaUrlField } from '../shared/media-url-field';
 import { usePostDocument } from '../../PageContext';
@@ -83,7 +81,7 @@ export function PostAuthorBoxSettings({
 
   return (
     <div className="space-y-4">
-      <CollapsibleCard title="Author Box Settings" icon={Settings} defaultOpen>
+      <SettingsSection>
         <div className="space-y-4">
           <div className="space-y-2">
             <p className="text-sm text-npb-text-secondary">
@@ -292,7 +290,7 @@ export function PostAuthorBoxSettings({
             </div>
           ))}
         </div>
-      </CollapsibleCard>
+      </SettingsSection>
     </div>
   );
 }

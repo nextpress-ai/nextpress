@@ -206,7 +206,7 @@ function QuoteSettings({ block, onUpdate }: QuoteSettingsProps) {
       </CollapsibleCard>
 
       {/* Settings Card */}
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div>
             <SettingsLabel htmlFor="quote-text-align">Text Align</SettingsLabel>

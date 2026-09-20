@@ -225,7 +225,7 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
             <div className="mt-1 flex min-w-0 items-center gap-2">
               {currentIcon ? (
                 <>
-                  <div className="npb-settings-panel flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-npb-border-default bg-npb-surface-raised">
+                  <div className="npb-settings-well flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-npb-border-default bg-npb-surface-raised">
                     <IconRenderer icon={currentIcon} size={16} />
                   </div>
                   <Tooltip>
@@ -318,7 +318,7 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
         </div>
       </CollapsibleCard>
       
-      <CollapsibleCard title="Link Settings" icon={Link} defaultOpen={true}>
+      <CollapsibleCard title="Link Settings" icon={Link} defaultOpen={false}>
         <LinkTargetChips
           value={content?.linkTarget}
           legacyTarget={content?.target}

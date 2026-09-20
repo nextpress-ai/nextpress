@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from "../../shared";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -20,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { generateBlockId } from "../../utils";
 import { useSettingsState } from "../useSettingsState";
+import { UnitValueField } from "../../unit-value-field";
 import {
   type ColumnLayout,
   type ColumnsContent,
@@ -174,23 +174,16 @@ export function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
               </div>
               {layoutMode === "flex" ? (
                 <div className="space-y-1">
-                  <SettingsLabel htmlFor={`col-width-${index}`} className="text-xs">
-                    Width
-                  </SettingsLabel>
-                  <Input
+                  <UnitValueField
                     id={`col-width-${index}`}
-                    className="h-9 font-mono text-xs"
-                    value={column.width ?? "auto"}
-                    onChange={(e) => updateColumn(index, { width: e.target.value })}
-                    onBlur={(e) => {
-                      const t = e.target.value.trim();
-                      const next = t.length === 0 ? "auto" : t;
-                      if (next !== column.width) {
-                        updateColumn(index, { width: next });
-                      }
-                    }}
+                    label="Width"
+                    segmentLabel={null}
+                    keywords={["auto"]}
+                    units={["px", "%", "rem", "em", "fr"]}
+                    value={column.width}
+                    onChange={(next) => updateColumn(index, { width: next ?? "auto" })}
                     placeholder="e.g. 50%, 240px, 1fr, auto"
-                    aria-label={`Column ${index + 1} width`}
+                    ariaLabel={`Column ${index + 1} width`}
                   />
                   <p className="text-[11px] text-muted-foreground leading-snug">
                     Any CSS width (%, px, rem, calc), flex share (1fr, 2fr), or auto.
@@ -204,7 +197,7 @@ export function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Row layout" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Row layout" icon={Settings} defaultOpen={false}>
         <div className="space-y-3">
           <div className="grid grid-cols-12 gap-2 items-center">
             <div className="col-span-4">
@@ -229,26 +222,22 @@ export function ColumnsSettings({ block, onUpdate }: ColumnsSettingsProps) {
           </div>
 
           {layoutMode === "flex" && data.direction !== "column" && (
-            <div className="grid grid-cols-12 gap-2 items-center">
-              <div className="col-span-4">
-                <SettingsLabel htmlFor="columns-min-width">Min Width</SettingsLabel>
-              </div>
-              <div className="col-span-8">
-                <Input
+            <div>
+                <UnitValueField
                   id="columns-min-width"
-                  className="h-9"
+                  label="Min Width"
+                  segmentLabel={null}
                   value={
                     data.minColumnWidth !== undefined &&
                     data.minColumnWidth !== null &&
                     String(data.minColumnWidth).trim() !== ""
                       ? String(data.minColumnWidth)
-                      : ""
+                      : undefined
                   }
-                  onChange={(e) => updateContent({ minColumnWidth: e.target.value })}
+                  onChange={(next) => updateContent({ minColumnWidth: next })}
                   placeholder="220px"
-                  aria-label="Minimum column width"
+                  ariaLabel="Minimum column width"
                 />
-              </div>
             </div>
           )}
 

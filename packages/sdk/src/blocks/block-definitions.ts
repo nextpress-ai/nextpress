@@ -260,7 +260,8 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 	"core/header": {
 		name: "core/header",
 		label: "Header",
-		type: "block",
+		// A container: in the "brand-and-blocks" layout the right side holds child blocks.
+		type: "container",
 		category: "layout",
 		defaultContent: () =>
 			structured({

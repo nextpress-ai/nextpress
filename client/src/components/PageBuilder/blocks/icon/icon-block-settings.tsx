@@ -22,13 +22,8 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import TokenColorPicker from "../../TokenColorPicker";
-import {
-  NumericWithUnitField,
-  composeCssLength,
-  parseCssLengthToNumericWithUnit,
-  type NumericWithUnitValue,
-} from "../../numeric-with-unit-field";
-import type { NpbNumericLengthUnit } from "@/lib/icon-indexes";
+import { UnitValueField } from "../../unit-value-field";
+import { SIZE_UNITS, parseUnitValue } from "@shared/unit-value";
 import {
   type IconContent,
   parseIconContent,
@@ -44,35 +39,22 @@ function settingsChipClass(selected: boolean): string {
   );
 }
 
-function iconSizeToField(icon: IconReference): NumericWithUnitValue {
-  const unit: NpbNumericLengthUnit = icon.sizeUnit ?? "px";
-  const n = icon.size ?? 24;
-  return { magnitude: String(n), unit };
-}
-
-function iconStrokeToField(icon: IconReference): NumericWithUnitValue {
-  const unit: NpbNumericLengthUnit = icon.strokeWidthUnit ?? "px";
-  const n = icon.strokeWidth ?? 2;
-  return { magnitude: String(n), unit };
-}
-
 function paddingStyleToField(padding: unknown): {
-  field: NumericWithUnitValue;
+  value: string | undefined;
   asymmetric: boolean;
 } {
   const raw = String(padding ?? "").trim();
   if (!raw) {
-    return { field: { magnitude: "", unit: "px" }, asymmetric: false };
+    return { value: undefined, asymmetric: false };
   }
   const parts = raw.split(/\s+/).filter(Boolean);
   if (parts.length === 0) {
-    return { field: { magnitude: "", unit: "px" }, asymmetric: false };
+    return { value: undefined, asymmetric: false };
   }
   const first = parts[0]!;
   const asymmetric = parts.some((p) => p !== first);
-  const parsed = parseCssLengthToNumericWithUnit(first);
   return {
-    field: parsed ?? { magnitude: "", unit: "px" },
+    value: first,
     asymmetric,
   };
 }
@@ -89,13 +71,6 @@ export type IconBlockSettingsProps = {
  */
 export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
   const { accessor, rerender } = useSettingsState({ block, onUpdate });
-  const [iconSizeDraft, setIconSizeDraft] = React.useState<NumericWithUnitValue | null>(
-    null,
-  );
-  const [iconStrokeDraft, setIconStrokeDraft] = React.useState<NumericWithUnitValue | null>(
-    null,
-  );
-  const [paddingDraft, setPaddingDraft] = React.useState<NumericWithUnitValue | null>(null);
 
   const content = accessor
     ? (accessor.getContent() as unknown as IconContent)
@@ -200,29 +175,22 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
     updateContent({ icon });
   };
 
-  React.useEffect(() => {
-    setIconSizeDraft(null);
-  }, [currentIcon.size]);
-
-  React.useEffect(() => {
-    setIconStrokeDraft(null);
-  }, [currentIcon.strokeWidth]);
-
-  const sizeField = iconSizeDraft ?? iconSizeToField(currentIcon);
-  const strokeField = iconStrokeDraft ?? iconStrokeToField(currentIcon);
+  // Older icons store only a number, so fall back to the same defaults the field always showed.
+  const sizeValue = `${currentIcon.size ?? 24}${currentIcon.sizeUnit ?? "px"}`;
+  const strokeValue = `${currentIcon.strokeWidth ?? 2}${currentIcon.strokeWidthUnit ?? "px"}`;
   const padState = paddingStyleToField(styles?.padding);
-  const paddingField = paddingDraft ?? padState.field;
+  const paddingValue = padState.value;
 
   return (
     <div className="space-y-4">
       <CollapsibleCard title="Icon" icon={Smile} defaultOpen={true}>
         <div className="space-y-4">
           <div>
-            <Label className="npb-settings-label text-sm font-semibold">
+            <Label className="npb-settings-label text-sm font-medium">
               Selected Icon
             </Label>
             <div className="mt-2 flex min-w-0 items-center gap-3">
-              <div className="npb-settings-panel flex h-10 w-10 shrink-0 items-center justify-center rounded-none border p-0">
+              <div className="npb-settings-well flex h-10 w-10 shrink-0 items-center justify-center rounded-none border p-0">
                 <IconRenderer icon={currentIcon} size={20} />
               </div>
               <Tooltip>
@@ -247,43 +215,29 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Appearance" icon={Type} defaultOpen={true}>
+      <CollapsibleCard title="Appearance" icon={Type} defaultOpen={false}>
         <div className="space-y-4">
-          <NumericWithUnitField
+          <UnitValueField
             id="icon-size"
             label="Icon size"
-            value={sizeField}
-            magnitudeInputProps={{
-              onBlur: () => setIconSizeDraft(null),
-            }}
+            value={sizeValue}
+            segmentLabel={null}
             onChange={(next) => {
-              const raw = next.magnitude.trim();
-              if (raw === "") {
-                setIconSizeDraft({ magnitude: next.magnitude, unit: next.unit });
-                updateContent({
-                  icon: { ...currentIcon, sizeUnit: next.unit },
-                });
-                return;
-              }
-              const n = Number(raw);
-              if (!Number.isFinite(n)) {
-                setIconSizeDraft({ magnitude: next.magnitude, unit: next.unit });
-                return;
-              }
-              setIconSizeDraft(null);
-              const safe = Math.min(200, Math.max(0.25, n));
+              const parsed = parseUnitValue({ value: next, units: SIZE_UNITS });
+              const n = parsed.kind === "amount" ? Number(parsed.amount) : NaN;
+              if (!Number.isFinite(n) || parsed.kind !== "amount") return;
               updateContent({
                 icon: {
                   ...currentIcon,
-                  size: safe,
-                  sizeUnit: next.unit,
+                  size: Math.min(200, Math.max(0.25, n)),
+                  sizeUnit: (parsed.unit || currentIcon.sizeUnit || "px") as IconReference["sizeUnit"],
                 },
               });
             }}
           />
 
           <div>
-            <Label className="npb-settings-label flex items-center gap-2 text-sm font-semibold">
+            <Label className="npb-settings-label flex items-center gap-2 text-sm font-medium">
               <Palette className="h-3 w-3" />
               Icon color
             </Label>
@@ -291,7 +245,7 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
               Token map + resolver (same pattern as Style → Colors). Overrides the
               legacy content color when a token or custom entry resolves.
             </p>
-            <div className="npb-settings-panel mt-2 rounded-none border p-3">
+            <div className="npb-settings-well mt-2 rounded-none border p-3">
               <TokenColorPicker
                 property="color"
                 currentEntry={getTokenEntry("color")}
@@ -308,14 +262,14 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
           <div>
             <Label
               htmlFor="icon-bg-token"
-              className="npb-settings-label text-sm font-semibold">
+              className="npb-settings-label text-sm font-medium">
               Background color
             </Label>
             <p className="npb-settings-hint-muted mt-1 text-xs">
               Uses TokenColorPicker + <span className="font-mono">tokenMap</span> like
               container / paragraph blocks.
             </p>
-            <div id="icon-bg-token" className="npb-settings-panel mt-2 rounded-none border p-3">
+            <div id="icon-bg-token" className="npb-settings-well mt-2 rounded-none border p-3">
               <TokenColorPicker
                 property="backgroundColor"
                 currentEntry={getTokenEntry("backgroundColor")}
@@ -326,34 +280,20 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
           </div>
 
           {currentIcon.iconSet === "lucide" && (
-            <NumericWithUnitField
+            <UnitValueField
               id="icon-stroke"
               label="Stroke width"
-              value={strokeField}
-              magnitudeInputProps={{
-                onBlur: () => setIconStrokeDraft(null),
-              }}
+              value={strokeValue}
+              segmentLabel={null}
               onChange={(next) => {
-                const raw = next.magnitude.trim();
-                if (raw === "") {
-                  setIconStrokeDraft({ magnitude: next.magnitude, unit: next.unit });
-                  updateContent({
-                    icon: { ...currentIcon, strokeWidthUnit: next.unit },
-                  });
-                  return;
-                }
-                const n = Number(raw);
-                if (!Number.isFinite(n)) {
-                  setIconStrokeDraft({ magnitude: next.magnitude, unit: next.unit });
-                  return;
-                }
-                setIconStrokeDraft(null);
-                const safe = Math.min(8, Math.max(0.25, n));
+                const parsed = parseUnitValue({ value: next, units: SIZE_UNITS });
+                const n = parsed.kind === "amount" ? Number(parsed.amount) : NaN;
+                if (!Number.isFinite(n) || parsed.kind !== "amount") return;
                 updateContent({
                   icon: {
                     ...currentIcon,
-                    strokeWidth: safe,
-                    strokeWidthUnit: next.unit,
+                    strokeWidth: Math.min(8, Math.max(0.25, n)),
+                    strokeWidthUnit: (parsed.unit || currentIcon.strokeWidthUnit || "px") as IconReference["strokeWidthUnit"],
                   },
                 });
               }}
@@ -361,27 +301,19 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
           )}
 
           <div>
-            <NumericWithUnitField
+            <UnitValueField
               id="icon-padding-uniform"
               label="Inner padding (uniform)"
-              value={paddingField}
-              magnitudeInputProps={{
-                onBlur: () => setPaddingDraft(null),
-              }}
+              value={paddingValue}
+              segmentLabel={null}
               onChange={(next) => {
-                const raw = next.magnitude.trim();
-                if (raw === "") {
-                  setPaddingDraft(null);
+                if (next === undefined) {
                   removeUniformPadding();
                   return;
                 }
-                const n = Number(raw);
-                if (!Number.isFinite(n)) {
-                  setPaddingDraft(next);
-                  return;
-                }
-                setPaddingDraft(null);
-                updateStyles({ padding: composeCssLength(next) });
+                const parsed = parseUnitValue({ value: next, units: SIZE_UNITS });
+                if (parsed.kind !== "amount") return;
+                updateStyles({ padding: `${Number(parsed.amount)}${parsed.unit || "px"}` });
               }}
             />
             {padState.asymmetric ? (
@@ -410,7 +342,7 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
           <div>
             <Label
               htmlFor="icon-label"
-              className="npb-settings-label text-sm font-semibold">
+              className="npb-settings-label text-sm font-medium">
               Accessible label
             </Label>
             <Input

@@ -1,8 +1,47 @@
 import React from "react";
+import type { BlockConfig } from "@shared/schema-types";
 import { HeaderBar } from "@shared/header-view";
-import type { HeaderContent } from "@shared/header-model";
+import {
+	HEADER_BLOCKS_ROW_STYLES,
+	headerHasBlocksSlot,
+	type HeaderContent,
+} from "@shared/header-model";
+import { ContainerChildren } from "../../BlockRenderer";
 
-/** Canvas header — same bar as publish, links do not leave the editor. */
-export function HeaderCanvas({ content }: { content: HeaderContent }) {
-	return <HeaderBar content={content} disableLinks={true} />;
+/** Room for an empty drop area so there is something to aim at while the row has no blocks yet. */
+const EMPTY_DROP_MIN_WIDTH = "14rem";
+
+/**
+ * Canvas header — same bar as publish, links do not leave the editor. In the blocks layout the
+ * right side is a real drop area: drag any block onto it.
+ */
+export function HeaderCanvas({
+	content,
+	hostBlock,
+	isPreview = false,
+	onNestedBlockChange,
+}: {
+	content: HeaderContent;
+	hostBlock?: BlockConfig;
+	isPreview?: boolean;
+	onNestedBlockChange?: (updated: BlockConfig) => void;
+}) {
+	const children = hostBlock?.children ?? [];
+	const blocks =
+		hostBlock && headerHasBlocksSlot(content.variant) ? (
+			<div style={{ minWidth: children.length === 0 && !isPreview ? EMPTY_DROP_MIN_WIDTH : undefined }}>
+				<ContainerChildren
+					block={{
+						...hostBlock,
+						styles: { ...HEADER_BLOCKS_ROW_STYLES } as BlockConfig["styles"],
+						children,
+					}}
+					isPreview={isPreview}
+					stackClassName="wp-block-header__blocks"
+					onBlockChange={onNestedBlockChange}
+				/>
+			</div>
+		) : undefined;
+
+	return <HeaderBar content={content} disableLinks={true} blocks={blocks} />;
 }

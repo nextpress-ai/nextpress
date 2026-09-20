@@ -11,13 +11,13 @@ export type BuilderInspectorPanelProps = {
 };
 
 const panelShellClass =
-  'relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--npb-radius-surface)] bg-npb-surface-raised';
+  'relative flex min-h-0 flex-1 flex-col overflow-hidden';
 const scrollBodyClass = 'min-h-0 flex-1 overflow-y-auto overscroll-contain';
 const scrollPanelBottomFade = (
   <div className="npb-editor-scroll-fade pointer-events-none" aria-hidden />
 );
 const emptySettingsClass =
-  'rounded-[var(--npb-radius-surface)] bg-npb-surface-inset/60 p-6 text-center text-sm text-npb-text-muted';
+  'm-4 rounded-[var(--npb-radius-surface)] bg-npb-surface-inset/60 p-6 text-center text-sm text-npb-text-muted';
 
 /**
  * Renders selected-block controls or a clear empty state in one scrollable
@@ -36,7 +36,7 @@ export function BuilderInspectorPanel({
       role="region"
       aria-label="Block inspector">
       <div className={scrollBodyClass}>
-        <div className="max-w-full pr-2 pb-4">
+        <div className="max-w-full pb-6">
           {selectedBlock ? (
             <BlockSettings
               block={selectedBlock}

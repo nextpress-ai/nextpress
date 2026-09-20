@@ -87,7 +87,7 @@ export function CoverSettings({ block, onUpdate }: CoverSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Layout & overlay" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Layout & overlay" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           {blockData?.backgroundType === 'image' && (
             <div className="flex items-center justify-between">

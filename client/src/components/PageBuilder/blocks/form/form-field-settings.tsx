@@ -109,7 +109,7 @@ export function FormFieldSettings<T extends FormFieldBase>({
 					</div>
 				</div>
 			</CollapsibleCard>
-			<CollapsibleCard title="Settings" icon={Settings} defaultOpen>
+			<CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
 				<p className="text-xs text-npb-text-muted">
 					Width, colors, and borders are in the Style tab.
 				</p>

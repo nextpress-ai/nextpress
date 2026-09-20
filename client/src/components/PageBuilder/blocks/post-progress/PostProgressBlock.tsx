@@ -303,7 +303,7 @@ function PostProgressSettings({
       </CollapsibleCard>
 
       {/* Behavior */}
-      <CollapsibleCard title="Behavior" icon={Settings} defaultOpen>
+      <CollapsibleCard title="Behavior" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div>
             <SettingsLabel htmlFor="progress-position">Position</SettingsLabel>

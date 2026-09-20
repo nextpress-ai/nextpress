@@ -1,11 +1,20 @@
 import type { BlockContent, TokenEntry } from "./schema-types.js";
-import { BORDER_RADIUS_PRESETS } from "./dimension-presets.js";
+import { BORDER_RADIUS_PRESETS, isCssLength } from "./dimension-presets.js";
 import { unwrapStructured } from "./page-shell-model.js";
 
 export const HEADER_BLOCK_NAME = "core/header";
 
 export type HeaderSlot = "left" | "middle" | "right";
-export type HeaderVariant = "links-and-actions" | "links-only" | "split" | "actions-only";
+export type HeaderVariant =
+	| "links-and-actions"
+	| "links-only"
+	| "split"
+	| "actions-only"
+	/** Brand on the left, any blocks you drop in on the right. No menu, no built-in links or buttons. */
+	| "brand-and-blocks";
+
+/** One thing a header can paint in a slot. `blocks` is the drop area for the blocks layout. */
+export type HeaderSlotPart = "brand" | "nav" | "actions" | "blocks";
 export type HeaderActionStyle = "ghost" | "solid";
 export type HeaderBrandKind = "wordmark" | "logo";
 
@@ -74,7 +83,9 @@ export type HeaderNavItem = {
 	children?: HeaderNavChild[];
 };
 
-export type HeaderActionSize = "sm" | "md" | "lg" | "xl";
+export type HeaderActionSizePreset = "sm" | "md" | "lg" | "xl";
+/** A preset name, or a custom CSS font size such as `0.95rem` (height and padding follow it). */
+export type HeaderActionSize = string;
 
 export type HeaderAction = {
 	id: string;
@@ -94,13 +105,12 @@ export const HEADER_ACTION_SIZE_PRESETS = [
 ] as const;
 
 export const HEADER_ACTION_RADIUS_PRESETS = BORDER_RADIUS_PRESETS;
-export const DEFAULT_HEADER_ACTION_SIZE: HeaderActionSize = "md";
+export const DEFAULT_HEADER_ACTION_SIZE: HeaderActionSizePreset = "md";
 export const DEFAULT_HEADER_ACTION_RADIUS = "9999px";
 
-const HEADER_ACTION_SIZE_LOOK: Record<
-	HeaderActionSize,
-	{ minHeight: string; padding: string; fontSize: string }
-> = {
+type HeaderActionSizeLook = { minHeight: string; padding: string; fontSize: string };
+
+const HEADER_ACTION_SIZE_LOOK: Record<HeaderActionSizePreset, HeaderActionSizeLook> = {
 	sm: { minHeight: "1.5rem", padding: "0.2rem 0.65rem", fontSize: "0.6875rem" },
 	md: { minHeight: "1.75rem", padding: "0.3rem 0.8rem", fontSize: "0.75rem" },
 	lg: { minHeight: "2.25rem", padding: "0.45rem 1rem", fontSize: "0.8125rem" },
@@ -117,9 +127,28 @@ export type HeaderActionLookStyle = {
 	color?: string;
 };
 
+function isHeaderActionSizePreset(value: string): value is HeaderActionSizePreset {
+	return value in HEADER_ACTION_SIZE_LOOK;
+}
+
+/**
+ * Keeps a preset name or whatever custom text was typed. Text is not checked here so the
+ * settings box never fights the person mid-typing; `headerActionSizeLook` is where a bad value
+ * falls back.
+ */
 export function readHeaderActionSize(value: unknown): HeaderActionSize {
-	if (value === "sm" || value === "md" || value === "lg" || value === "xl") return value;
-	return DEFAULT_HEADER_ACTION_SIZE;
+	if (typeof value !== "string") return DEFAULT_HEADER_ACTION_SIZE;
+	return value.trim() || DEFAULT_HEADER_ACTION_SIZE;
+}
+
+/**
+ * Custom sizes set the font size and scale height and padding from it in `em`, keeping the
+ * same proportions as the MD preset. Anything that is not a real length paints as MD.
+ */
+export function headerActionSizeLook(size: HeaderActionSize): HeaderActionSizeLook {
+	if (isHeaderActionSizePreset(size)) return HEADER_ACTION_SIZE_LOOK[size];
+	if (!isCssLength(size)) return HEADER_ACTION_SIZE_LOOK[DEFAULT_HEADER_ACTION_SIZE];
+	return { fontSize: size, minHeight: "2.33em", padding: "0.4em 1.07em" };
 }
 
 export function readHeaderActionRadius(value: unknown): string {
@@ -142,9 +171,8 @@ function readHeaderActionColor(value: unknown): TokenEntry | undefined {
 
 /** Size, corners, and optional paint for a header button. */
 export function headerActionLookStyle(action: HeaderAction): HeaderActionLookStyle {
-	const size = readHeaderActionSize(action.size);
 	const look: HeaderActionLookStyle = {
-		...HEADER_ACTION_SIZE_LOOK[size],
+		...headerActionSizeLook(readHeaderActionSize(action.size)),
 		borderRadius: readHeaderActionRadius(action.radius),
 	};
 	const paint = action.color?.style?.trim();
@@ -180,6 +208,7 @@ export const HEADER_VARIANT_OPTIONS: readonly {
 	{ value: "links-only", label: "Links", accessibleName: "Brand left, links right" },
 	{ value: "split", label: "Split", accessibleName: "Brand left, links middle, buttons right" },
 	{ value: "actions-only", label: "Buttons", accessibleName: "Brand left, buttons right" },
+	{ value: "brand-and-blocks", label: "Blocks", accessibleName: "Brand left, your own blocks right" },
 ] as const;
 
 /** Empty-field hints in settings. Starter content below is what a new header paints. */
@@ -339,21 +368,52 @@ export function normalizeHeaderContent(partial: HeaderContent): HeaderContent {
 export function slotsForHeaderVariant(variant: HeaderVariant): {
 	showNav: boolean;
 	showActions: boolean;
+	showBlocks: boolean;
 	brandSlot: HeaderSlot;
 	navSlot: HeaderSlot;
 	actionsSlot: HeaderSlot;
 } {
 	if (variant === "links-only") {
-		return { showNav: true, showActions: false, brandSlot: "left", navSlot: "right", actionsSlot: "right" };
+		return { showNav: true, showActions: false, showBlocks: false, brandSlot: "left", navSlot: "right", actionsSlot: "right" };
 	}
 	if (variant === "split") {
-		return { showNav: true, showActions: true, brandSlot: "left", navSlot: "middle", actionsSlot: "right" };
+		return { showNav: true, showActions: true, showBlocks: false, brandSlot: "left", navSlot: "middle", actionsSlot: "right" };
 	}
 	if (variant === "actions-only") {
-		return { showNav: false, showActions: true, brandSlot: "left", navSlot: "right", actionsSlot: "right" };
+		return { showNav: false, showActions: true, showBlocks: false, brandSlot: "left", navSlot: "right", actionsSlot: "right" };
 	}
-	return { showNav: true, showActions: true, brandSlot: "left", navSlot: "right", actionsSlot: "right" };
+	if (variant === "brand-and-blocks") {
+		return { showNav: false, showActions: false, showBlocks: true, brandSlot: "left", navSlot: "right", actionsSlot: "right" };
+	}
+	return { showNav: true, showActions: true, showBlocks: false, brandSlot: "left", navSlot: "right", actionsSlot: "right" };
 }
+
+/**
+ * Only layouts with links fold into a menu on narrow screens. With no links there is nothing to
+ * hide, so buttons or blocks on the right stay in view — no hamburger.
+ */
+export function headerCollapsesToMenu(variant: HeaderVariant): boolean {
+	return slotsForHeaderVariant(variant).showNav;
+}
+
+/** True when the right side is a drop area for child blocks. */
+export function headerHasBlocksSlot(variant: HeaderVariant): boolean {
+	return slotsForHeaderVariant(variant).showBlocks;
+}
+
+/**
+ * How the child blocks in the blocks layout are laid out: one row, right-aligned, wrapping on
+ * narrow screens. The editor feeds this to the container helpers; publish gets the same
+ * arrangement from the `.wp-block-header__blocks` CSS rule.
+ */
+export const HEADER_BLOCKS_ROW_STYLES = {
+	display: "flex",
+	flexDirection: "row",
+	flexWrap: "wrap",
+	alignItems: "center",
+	justifyContent: "flex-end",
+	gap: "0.5rem",
+} as const;
 
 export function applyHeaderVariant(content: HeaderContent, variant: HeaderVariant): HeaderContent {
 	const slots = slotsForHeaderVariant(variant);
@@ -373,7 +433,8 @@ const isVariant = (value: unknown): value is HeaderVariant =>
 	value === "links-and-actions" ||
 	value === "links-only" ||
 	value === "split" ||
-	value === "actions-only";
+	value === "actions-only" ||
+	value === "brand-and-blocks";
 
 const readNavChild = (value: unknown): HeaderNavChild | null => {
 	if (!value || typeof value !== "object") return null;
@@ -448,15 +509,15 @@ export function readHeaderContent(content: BlockContent | undefined): HeaderCont
 }
 
 export function visibleHeaderSlots(content: HeaderContent): {
-	left: Array<"brand" | "nav" | "actions">;
-	middle: Array<"brand" | "nav" | "actions">;
-	right: Array<"brand" | "nav" | "actions">;
+	left: HeaderSlotPart[];
+	middle: HeaderSlotPart[];
+	right: HeaderSlotPart[];
 } {
 	const slots = slotsForHeaderVariant(content.variant);
-	const left: Array<"brand" | "nav" | "actions"> = [];
-	const middle: Array<"brand" | "nav" | "actions"> = [];
-	const right: Array<"brand" | "nav" | "actions"> = [];
-	const place = (name: "brand" | "nav" | "actions", slot: HeaderSlot) => {
+	const left: HeaderSlotPart[] = [];
+	const middle: HeaderSlotPart[] = [];
+	const right: HeaderSlotPart[] = [];
+	const place = (name: HeaderSlotPart, slot: HeaderSlot) => {
 		if (slot === "middle") middle.push(name);
 		else if (slot === "right") right.push(name);
 		else left.push(name);
@@ -464,11 +525,21 @@ export function visibleHeaderSlots(content: HeaderContent): {
 	place("brand", content.brandSlot);
 	if (slots.showNav) place("nav", content.navSlot);
 	if (slots.showActions) place("actions", content.actionsSlot);
+	if (slots.showBlocks) place("blocks", "right");
 	return { left, middle, right };
 }
 
-export function headerBarClassName({ sticky }: { sticky: boolean }): string {
-	return ["wp-block-header", sticky ? "is-sticky" : ""].filter(Boolean).join(" ");
+export function headerBarClassName({
+	sticky,
+	variant,
+}: {
+	sticky: boolean;
+	variant?: HeaderVariant;
+}): string {
+	const noMenu = variant !== undefined && !headerCollapsesToMenu(variant);
+	return ["wp-block-header", sticky ? "is-sticky" : "", noMenu ? "is-no-menu" : ""]
+		.filter(Boolean)
+		.join(" ");
 }
 
 /**

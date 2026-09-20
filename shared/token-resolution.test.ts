@@ -49,3 +49,20 @@ describe("resolveTokenMapForSSR", () => {
 		expect(modifierCSS).toContain("background-color");
 	});
 });
+
+describe("resolveTokenMapForSSR with removed colors", () => {
+	it("skips a color that was removed (saved as null) and keeps the rest", () => {
+		const tokenMap = {
+			color: null,
+			backgroundColor: {
+				property: "backgroundColor",
+				value: "",
+				variant: null,
+				alias: "bg",
+				style: "#112233",
+			},
+		} as unknown as Record<string, import("./schema-types").TokenEntry>;
+		const { style } = resolveTokenMapForSSR("b1", tokenMap, {});
+		expect(style).toEqual({ backgroundColor: "#112233" });
+	});
+});

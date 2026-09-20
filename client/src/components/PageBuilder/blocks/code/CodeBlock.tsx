@@ -260,7 +260,7 @@ function CodeSettings({ block, onUpdate }: CodeSettingsProps) {
       </CollapsibleCard>
 
       {/* Display Settings Card */}
-      <CollapsibleCard title="Display Options" icon={Sparkles} defaultOpen={true}>
+      <CollapsibleCard title="Display Options" icon={Sparkles} defaultOpen={false}>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <SettingsLabel htmlFor="code-linenumbers">Show line numbers</SettingsLabel>

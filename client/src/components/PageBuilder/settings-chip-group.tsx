@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
@@ -30,7 +30,29 @@ type SettingsChipGroupProps = {
   labelMaxChars?: number;
   /** Grid (default) or horizontal scroll for long preset rows (e.g. gap). */
   layout?: "grid" | "scroll";
+  /** Small control at the end of the label row (e.g. a Reset button). */
+  labelAction?: ReactNode;
 };
+
+/**
+ * Picks how many chips sit side by side. Short labels (SM, MD, 2XL) go four across, medium
+ * ones three, long ones two — and it avoids leaving a single orphan chip on the last row.
+ */
+export function chipColumnCount({
+  optionCount,
+  longestLabel,
+}: {
+  optionCount: number;
+  longestLabel: number;
+}): number {
+  if (optionCount <= 2) return Math.max(1, optionCount);
+  const target = longestLabel <= 4 ? 4 : longestLabel <= 8 ? 3 : 2;
+  const columns = Math.min(optionCount, target);
+  if (optionCount % columns !== 0 && columns > 2 && optionCount % (columns - 1) === 0) {
+    return columns - 1;
+  }
+  return columns;
+}
 
 /**
  * Dense chip grid for block sidebar settings so alignment, weight, and layout enums stay visually
@@ -46,9 +68,15 @@ export function SettingsChipGroup({
   ariaLabel,
   labelMaxChars = NPB_SETTINGS_CHIP_LABEL_MAX_CHARS,
   layout = "grid",
+  labelAction,
 }: SettingsChipGroupProps) {
-  const gridCols =
-    options.length === 1 ? "grid-cols-1" : options.length === 2 ? "grid-cols-2" : "grid-cols-2";
+  const columns = chipColumnCount({
+    optionCount: options.length,
+    longestLabel: Math.max(
+      0,
+      ...options.map((option) => Math.min(option.label.length, labelMaxChars)),
+    ),
+  });
   const groupLabel = label || ariaLabel || "Options";
   const isScroll = layout === "scroll";
 
@@ -76,16 +104,26 @@ export function SettingsChipGroup({
 
   return (
     <div className={cn("space-y-3", className)}>
-      {label ? (
-        <Label className="npb-settings-label flex items-center gap-2 text-sm font-semibold">
-          {Icon ? <Icon className="h-4 w-4" /> : null}
-          {label}
-        </Label>
+      {label || labelAction ? (
+        <div className="flex items-center justify-between gap-2">
+          {label ? (
+            <Label className="npb-settings-label flex items-center gap-2 text-sm font-medium">
+              {Icon ? <Icon className="h-4 w-4" /> : null}
+              {label}
+            </Label>
+          ) : (
+            <span />
+          )}
+          {labelAction}
+        </div>
       ) : null}
       <div
         className={cn(
-          isScroll ? "npb-settings-chip-scroll flex gap-2 overflow-x-auto pb-0.5" : cn("grid gap-2", gridCols),
+          isScroll ? "npb-settings-chip-scroll flex gap-2 overflow-x-auto pb-0.5" : "grid gap-2",
         )}
+        style={
+          isScroll ? undefined : { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }
+        }
         role="radiogroup"
         aria-label={groupLabel}
         onKeyDown={onGroupKeyDown}

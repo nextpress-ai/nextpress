@@ -260,7 +260,7 @@ function ButtonsSettings({ block, onUpdate }: ButtonsSettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div>
             <SettingsLabel htmlFor="buttons-layout">Layout</SettingsLabel>

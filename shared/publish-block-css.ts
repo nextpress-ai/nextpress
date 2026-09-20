@@ -359,6 +359,17 @@ figure.wp-block-embed {
   gap: 0.5rem;
 }
 
+/* Blocks layout: whatever blocks were dropped on the right, in one wrapping row. */
+.wp-block-header__blocks {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .wp-block-header__action {
   display: inline-flex;
   align-items: center;
@@ -497,6 +508,21 @@ figure.wp-block-embed {
     padding: 0 0 0 0.75rem;
     border: 0;
     background: transparent;
+  }
+}
+
+/* Layouts with no links (Buttons, Blocks) have no menu, so the right side never folds away:
+   it stays in view and wraps under the brand when the header gets narrow. */
+.wp-block-header.is-no-menu .wp-block-header__bar {
+  flex-wrap: wrap;
+}
+
+@container np-header (max-width: 767px) {
+  .wp-block-header.is-no-menu .wp-block-header__bar {
+    padding-right: 1.25rem;
+  }
+  .wp-block-header.is-no-menu .wp-block-header__desktop {
+    display: contents;
   }
 }
 

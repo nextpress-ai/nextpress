@@ -2,8 +2,8 @@ import { useState, useCallback, useRef } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
-import { CollapsibleCard } from "@/components/ui/collapsible-card"
-import { Zap, MousePointer, Repeat, Eye, X } from "lucide-react"
+import { SettingsDisclosure } from "./shared/settings-disclosure"
+import { Eye } from 'lucide-react'
 import type { BlockAnimation, EntryAnimation, HoverAnimation, LoopAnimation } from "@shared/schema-types"
 import { entryPresets, hoverPresets, loopPresets, type AnimationPreset } from "@/lib/animation-presets"
 import {
@@ -111,7 +111,7 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
   return (
     <div className="space-y-4">
       {/* Entry Animations */}
-      <CollapsibleCard title="Entry Animation" icon={Eye} defaultOpen={!!animation?.entry}>
+      <SettingsDisclosure title="Entry Animation" defaultOpen={!!animation?.entry}>
         {renderPresetGrid(
           entryPresets,
           animation?.entry?.name,
@@ -214,10 +214,10 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
             </button>
           </div>
         )}
-      </CollapsibleCard>
+      </SettingsDisclosure>
 
       {/* Hover Animations */}
-      <CollapsibleCard title="Hover Animation" icon={MousePointer} defaultOpen={!!animation?.hover}>
+      <SettingsDisclosure title="Hover Animation" defaultOpen={!!animation?.hover}>
         {renderPresetGrid(
           hoverPresets,
           animation?.hover?.name,
@@ -231,10 +231,10 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
           },
           (name) => previewHoverOrLoopAnimation(name)
         )}
-      </CollapsibleCard>
+      </SettingsDisclosure>
 
       {/* Loop Animations */}
-      <CollapsibleCard title="Loop Animation" icon={Repeat} defaultOpen={!!animation?.loop}>
+      <SettingsDisclosure title="Loop Animation" defaultOpen={!!animation?.loop}>
         {renderPresetGrid(
           loopPresets,
           animation?.loop?.name,
@@ -248,7 +248,7 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
             }
           }
         )}
-      </CollapsibleCard>
+      </SettingsDisclosure>
     </div>
   )
 }

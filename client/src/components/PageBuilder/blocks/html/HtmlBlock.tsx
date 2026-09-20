@@ -1,9 +1,8 @@
 import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { Textarea } from "@/components/ui/textarea";
-import { CollapsibleCard } from "@/components/ui/collapsible-card";
-import { SettingsLabel } from '../../shared';
-import { Code2 as HtmlIcon } from "lucide-react";
+import { SettingsLabel, SettingsSection } from '../../shared';
+import { Code2 as HtmlIcon } from 'lucide-react';
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
 import { useSettingsState } from "../useSettingsState";
@@ -85,7 +84,7 @@ function HtmlSettings({ block, onUpdate }: HtmlSettingsProps) {
   return (
     <div className="space-y-4">
       {/* Content Card */}
-      <CollapsibleCard title="Content" icon={HtmlIcon} defaultOpen={true}>
+      <SettingsSection>
         <div className="space-y-4">
           <div>
             <SettingsLabel htmlFor="html-content">Custom HTML</SettingsLabel>
@@ -106,7 +105,7 @@ function HtmlSettings({ block, onUpdate }: HtmlSettingsProps) {
             </p>
           </div>
         </div>
-      </CollapsibleCard>
+      </SettingsSection>
 
 
     </div>

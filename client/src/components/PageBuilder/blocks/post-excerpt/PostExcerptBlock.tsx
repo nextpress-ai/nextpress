@@ -196,7 +196,7 @@ function PostExcerptSettings({ block, onUpdate }: PostExcerptSettingsProps) {
       </CollapsibleCard>
 
       {/* Excerpt Settings */}
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen>
+      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           {/* Max Length Slider */}
           <div className="space-y-2">

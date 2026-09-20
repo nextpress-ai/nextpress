@@ -1,5 +1,4 @@
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { UnitValueField } from "./unit-value-field";
 
 interface FreeformSpacingSideRowProps {
 	label: string;
@@ -11,8 +10,8 @@ interface FreeformSpacingSideRowProps {
 }
 
 /**
- * One padding or margin side as freeform CSS text (e.g. `16px`, `120px`, `2rem`, `auto`, `calc(…)`).
- * NextPress expects the number and unit adjacent (`120px`); avoid `120 px`.
+ * One padding or margin side: a number and a unit (`16` + `px`), or a value typed whole
+ * (`2rem`, `auto`, `calc(…)`). Uses the same group as every other custom length.
  */
 export function FreeformSpacingSideRow({
 	label,
@@ -23,21 +22,17 @@ export function FreeformSpacingSideRow({
 }: FreeformSpacingSideRowProps) {
 	return (
 		<div
-			className="w-full space-y-1.5"
+			className="w-full"
 			onMouseEnter={() => onHoverArea?.(hoverArea)}
 			onMouseLeave={() => onHoverArea?.(null)}
 		>
-			<Label className="text-xs text-muted-foreground">{label}</Label>
-			<Input
+			<UnitValueField
+				label={label}
+				ariaLabel={`${hoverArea} ${label.toLowerCase()}`}
+				segmentLabel={null}
+				keywords={["auto"]}
 				value={value}
-				placeholder="16px, 120px, 20rem, auto…"
-				spellCheck={false}
-				autoComplete="off"
-				className="h-9 w-full text-sm"
-				onChange={(e) => {
-					const raw = e.target.value;
-					onCommit(raw.trim() === "" ? null : raw);
-				}}
+				onChange={(next) => onCommit(next ?? null)}
 			/>
 		</div>
 	);

@@ -109,7 +109,7 @@ function DividerSettings({ block, onUpdate }: DividerSettingsProps) {
       </CollapsibleCard>
 
       {/* Settings Card */}
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div>
             <SettingsLabel htmlFor="divider-width">Width (%)</SettingsLabel>

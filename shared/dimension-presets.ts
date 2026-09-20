@@ -117,3 +117,47 @@ export function resolvePresetCssValue(
 	}
 	return presetValue;
 }
+
+export const FONT_WEIGHT_PRESETS: readonly DimensionPreset[] = [
+	{ value: "300", label: "Light" },
+	{ value: "normal", label: "Normal" },
+	{ value: "500", label: "Medium" },
+	{ value: "bold", label: "Bold" },
+] as const;
+
+/** Unitless multipliers — they scale with the font size, unlike `24px`. */
+export const LINE_HEIGHT_PRESETS: readonly DimensionPreset[] = [
+	{ value: "1.25", label: "Tight" },
+	{ value: "1.5", label: "Normal" },
+	{ value: "1.75", label: "Relaxed" },
+	{ value: "2", label: "Loose" },
+] as const;
+
+/** What a preset field's custom group edits: a length (number + unit), or a plain box (numbers, text). */
+export type CustomValueKind = "length" | "number" | "text";
+
+const CSS_LENGTH = new RegExp(`^-?(\\d+\\.?\\d*|\\.\\d+)(${NPB_DIMENSION_UNITS.join("|")})$`, "i");
+
+/** True for `0` or a number followed by a supported unit (`18px`, `1.2rem`, `50%`). */
+export function isCssLength(value: string | undefined): boolean {
+	const text = value?.trim() ?? "";
+	return text === "0" || CSS_LENGTH.test(text);
+}
+
+/** Which preset (if any) a saved value equals. */
+export function findPreset(
+	value: string | undefined,
+	presets: readonly DimensionPreset[],
+): DimensionPreset | undefined {
+	const text = value?.trim();
+	if (!text) return undefined;
+	return presets.find((preset) => preset.value === text);
+}
+
+/** Page shell padding, written as "top-and-bottom left-and-right". */
+export const PAGE_PADDING_PRESETS: readonly DimensionPreset[] = [
+	{ value: "0", label: "None" },
+	{ value: "1rem 0.75rem", label: "Tight" },
+	{ value: "2rem 1rem", label: "Normal" },
+	{ value: "4rem 2rem", label: "Roomy" },
+] as const;

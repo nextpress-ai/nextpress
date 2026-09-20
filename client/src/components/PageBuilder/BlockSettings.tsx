@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,28 +17,21 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { SettingsChipGroup } from "./settings-chip-group";
+import { SettingsLabel } from "./shared";
 
-import { 
-  Palette, 
-  Type, 
-  Layout, 
-  Code, 
-  AlignLeft, 
-  AlignCenter, 
-  AlignRight, 
+import {
+  Palette,
+  Type,
+  Layout,
+  Code,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
   AlignJustify,
-  Bold,
-  Italic,
-  ExternalLink,
   Target,
-  Ruler,
   Square,
-  Circle,
   Hash,
   Move,
-  Columns,
-  Rows,
-  Minus,
   Sparkles,
   Layers,
   MoveHorizontal,
@@ -49,11 +42,21 @@ import { ConditionBuilder } from "@/components/Templates/ConditionBuilder";
 import { VariablePicker } from "@/components/Templates/VariablePicker";
 import { getBlockStateAccessor } from "./blocks/blockStateRegistry";
 import type { CSSProperties } from "react";
+import ColorField, { type ColorTarget } from "./ColorField";
+import { ButtonLookCard } from "./blocks/button/button-look-card";
 import TokenColorPicker from "./TokenColorPicker"
 import AnimationPicker from "./AnimationPicker"
 import type { TokenEntry, BlockAnimation } from "@shared/schema-types"
-import { FreeformSpacingSideRow } from "./freeform-spacing-side-row";
 import { DimensionPresetField } from "./dimension-preset-field";
+import { SpacingSidesField } from "./spacing-sides-field";
+import { SettingsDisclosure } from "./shared/settings-disclosure";
+import {
+  buildSpacingStyles,
+  readSpacingSides,
+  spacingSideKeys,
+  type SpacingSideKey,
+} from "./spacing-styles";
+import { anyStyleSet, anyTokenSet } from "./style-set";
 import { AutoLayoutPanel } from "./auto-layout-panel";
 import { ChildPinCard } from "./child-pin-card";
 import { parentAllowsChildPin, readResizeFromLength } from "@shared/auto-layout-model";
@@ -70,68 +73,11 @@ import {
 	WIDTH_PRESETS,
 	HEIGHT_PRESETS,
 	FONT_SIZE_PRESETS,
+	FONT_WEIGHT_PRESETS,
+	LINE_HEIGHT_PRESETS,
   BORDER_RADIUS_PRESETS,
-  SPACING_PRESETS,
 } from "@shared/dimension-presets";
 import { BLOCK_FONT_CATALOG } from "@shared/font-catalog";
-
-type SpacingSideQuad = {
-  top: string;
-  right: string;
-  bottom: string;
-  left: string;
-};
-
-/**
- * WHY: Matches CSS box shorthand expansion so sidebar sides align with serialized `padding` / `margin`.
- */
-function expandSpacingShorthand(raw: unknown): SpacingSideQuad {
-  if (raw == null || raw === "") {
-    return { top: "", right: "", bottom: "", left: "" };
-  }
-  const str = typeof raw === "string" ? raw : String(raw);
-  const values = str
-    .split(/\s+/)
-    .map((v: string) => v.trim())
-    .filter((v) => v.length > 0);
-  if (values.length === 0) return { top: "", right: "", bottom: "", left: "" };
-  if (values.length === 1) {
-    const v = values[0]!;
-    return { top: v, right: v, bottom: v, left: v };
-  }
-  if (values.length === 2) {
-    const [a, b] = values as [string, string];
-    return { top: a, right: b, bottom: a, left: b };
-  }
-  if (values.length === 3) {
-    const [a, b, c] = values as [string, string, string];
-    return { top: a, right: b, bottom: c, left: b };
-  }
-  const [a, b, c, d] = values as [string, string, string, string];
-  return { top: a, right: b, bottom: c, left: d };
-}
-
-/**
- * WHY: Longhands win over shorthand in the UI when both appear after merges (accessor vs tree styles).
- */
-function overlaySpacingLonghands(
-  st: Record<string, unknown>,
-  expanded: SpacingSideQuad,
-  prefix: "padding" | "margin",
-): SpacingSideQuad {
-  const pick = (longSuffix: string, side: keyof SpacingSideQuad): string => {
-    const longKey = `${prefix}${longSuffix}`;
-    const v = st[longKey];
-    if (v != null && String(v).trim() !== "") return String(v);
-    return expanded[side];
-  };
-  return {
-    top: pick("Top", "top"),
-    right: pick("Right", "right"),
-    bottom: pick("Bottom", "bottom"),
-    left: pick("Left", "left"),
-  };
-}
 
 interface BlockSettingsProps {
   block: BlockConfig;
@@ -143,7 +89,10 @@ interface BlockSettingsProps {
 
 export default function BlockSettings({ block, onUpdate, onHoverArea, parentBlock = null }: BlockSettingsProps) {
   const [customCss, setCustomCss] = useState(block.customCss || '');
-  const [paddingLinked, setPaddingLinked] = useState(true);
+  // The sidebar is not remounted when another block is selected, so re-seed the textarea.
+  useEffect(() => {
+    setCustomCss(block.customCss || '');
+  }, [block.id]);
   const accessor = getBlockStateAccessor(block.id);
 
   // Display conditions from block settings
@@ -171,18 +120,28 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
     }
   };
 
+  /**
+   * `undefined` means "clear this style". The in-memory accessor drops the key; the tree path
+   * deep-merges (which skips `undefined`), so it gets an explicit `null` instead.
+   */
   const updateStyles = (styleUpdates: any) => {
     if (accessor) {
-      const current = accessor.getStyles() || {};
-      accessor.setStyles({
-        ...current,
-        ...styleUpdates,
+      const merged = { ...(accessor.getStyles() || {}), ...styleUpdates } as Record<string, unknown>;
+      Object.keys(merged).forEach((key) => {
+        if (merged[key] === undefined) delete merged[key];
       });
+      accessor.setStyles(merged as CSSProperties);
     } else {
+      const patch = Object.fromEntries(
+        Object.entries(styleUpdates as Record<string, unknown>).map(([key, value]) => [
+          key,
+          value === undefined ? null : value,
+        ]),
+      );
       onUpdate({
         styles: {
           ...block.styles,
-          ...styleUpdates,
+          ...patch,
         },
       });
     }
@@ -256,6 +215,40 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
     })
   }
 
+  /** Background and text, each with the token (if any) and the plain style value behind it. */
+  const colorTargets = (modifier?: 'hover'): ColorTarget[] => [
+    {
+      property: 'backgroundColor',
+      label: 'Background',
+      entry: getTokenEntry('backgroundColor', modifier),
+      styleValue: modifier ? undefined : (block.styles?.backgroundColor as string | undefined),
+      modifier,
+    },
+    {
+      property: 'color',
+      label: 'Text',
+      entry: getTokenEntry('color', modifier),
+      styleValue: modifier ? undefined : (block.styles?.color as string | undefined),
+      modifier,
+    },
+  ];
+
+  /** Sets or removes several colour tokens in one update (`null` removes one). */
+  const setTokens = (tokens: Record<string, TokenEntry | null>) => {
+    const currentOther = block.other || {};
+    onUpdate({
+      other: {
+        ...currentOther,
+        tokenMap: { ...(currentOther.tokenMap || {}), ...tokens } as Record<string, TokenEntry>,
+      },
+    });
+  };
+
+  const clearColor = (target: ColorTarget) => {
+    purgeTokenMapKeys([getTokenMapKey(target.property, target.modifier)]);
+    if (!target.modifier) updateStyles({ [target.property]: undefined });
+  };
+
   // Animation system helper
   // Uses null (not undefined) to clear animation, because deepMerge skips undefined values
   const updateAnimation = (animation: BlockAnimation | undefined) => {
@@ -268,22 +261,21 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
     })
   }
 
+  /**
+   * Removes color tokens. A deep merge cannot delete a key that is missing from the patch, so a
+   * removed token is written as an explicit `null` (the token resolvers skip nulls).
+   */
   const purgeTokenMapKeys = (keys: string[]) => {
     const cur = block.other?.tokenMap;
     if (!cur) return;
-    let changed = false;
-    const next = { ...cur };
-    for (const k of keys) {
-      if (next[k] != null) {
-        delete next[k];
-        changed = true;
-      }
-    }
-    if (!changed) return;
+    const present = keys.filter((key) => cur[key] != null);
+    if (present.length === 0) return;
+    const next = { ...cur } as Record<string, TokenEntry | null>;
+    for (const key of present) next[key] = null;
     onUpdate({
       other: {
         ...block.other,
-        tokenMap: next,
+        tokenMap: next as Record<string, TokenEntry>,
       },
     });
   };
@@ -300,57 +292,26 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
   const getResolvedPlacementStyles = (): Record<string, unknown> =>
     getResolvedStylesForSpacing();
 
-  /** Writes one padding/margin side as raw CSS, clears conflicting tokenMap entry, drops shorthand `padding`/`margin` when needed. */
-  const commitSpacingSide = (cssKey: keyof CSSProperties, fullValue: string | null) => {
-    purgeTokenMapKeys([String(cssKey)]);
-    const shorthand =
-      String(cssKey).startsWith("padding") && cssKey !== "padding"
-        ? ("padding" as const)
-        : String(cssKey).startsWith("margin") && cssKey !== "margin"
-          ? ("margin" as const)
-          : null;
-    const key = String(cssKey);
-    /** Merged tree + accessor — shorthand may live only on `block.styles` while edits apply via accessor. */
+  /** Writes one value (or `null` to clear) to the listed padding/margin sides in a single update. */
+  const commitSpacingSides = (cssKeys: readonly SpacingSideKey[], fullValue: string | null) => {
+    purgeTokenMapKeys([...cssKeys]);
     const resolved = getResolvedStylesForSpacing();
-
-    const buildNextStyles = (prev: Record<string, unknown>): Record<string, unknown> => {
-      const s = { ...prev };
-      // Dropping shorthand only in the patch object is not enough: updateBlockDeep deep-merges
-      // nested `styles` and keeps stale margin/padding unless explicitly cleared with null.
-      if (shorthand && resolved[shorthand] != null) {
-        delete s[shorthand];
-        s[shorthand] = null;
-      }
-      // WHY: `updateBlockDeep` deep-merges `styles`; omitted keys keep old values. Explicit `null`
-      // clears longhands the same way shorthand uses `padding: null` above.
-      if (fullValue == null || fullValue === "") {
-        s[key] = null;
-      } else {
-        s[key] = fullValue;
-      }
-      return s;
-    };
-
     if (accessor) {
       const prev = (accessor.getStyles() || {}) as Record<string, unknown>;
-      accessor.setStyles(buildNextStyles(prev) as CSSProperties);
+      accessor.setStyles(
+        buildSpacingStyles({ resolved, previous: prev, cssKeys, value: fullValue }) as CSSProperties,
+      );
     } else {
       const prev = (block.styles || {}) as Record<string, unknown>;
-      onUpdate({ styles: buildNextStyles(prev) as BlockConfig["styles"] });
+      onUpdate({
+        styles: buildSpacingStyles({
+          resolved,
+          previous: prev,
+          cssKeys,
+          value: fullValue,
+        }) as BlockConfig["styles"],
+      });
     }
-  };
-
-  // Get individual spacing values with fallbacks
-  const getPaddingValues = (): SpacingSideQuad => {
-    const st = getResolvedStylesForSpacing();
-    const expanded = expandSpacingShorthand(st.padding);
-    return overlaySpacingLonghands(st, expanded, "padding");
-  };
-
-  const getMarginValues = (): SpacingSideQuad => {
-    const st = getResolvedStylesForSpacing();
-    const expanded = expandSpacingShorthand(st.margin);
-    return overlaySpacingLonghands(st, expanded, "margin");
   };
 
   const renderContentSettings = () => {
@@ -410,40 +371,66 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
       block.name,
     );
     const showButtonLabelAlign = ["button", "core/button"].includes(block.name);
+    const isButtonBlock = ["button", "core/button"].includes(block.name);
+    const prefersTextColor = ["heading", "core/heading", "text", "core/paragraph", "core/pullquote", "core/quote"].includes(block.name);
     const isFormFieldBlock = ["core/input", "core/textarea", "core/select"].includes(block.name);
-    const sideLabel: Record<string, string> = {
-      paddingTop: "Top",
-      paddingRight: "Right",
-      paddingBottom: "Bottom",
-      paddingLeft: "Left",
-      marginTop: "Top",
-      marginRight: "Right",
-      marginBottom: "Bottom",
-      marginLeft: "Left",
-    };
+    // Progressive disclosure: a card opens by itself only when it already holds saved values,
+    // so nobody has to hunt for what they changed. Everything else waits for a click.
+    const styleNow = getResolvedStylesForSpacing();
+    const tokenMap = block.other?.tokenMap as Record<string, TokenEntry> | undefined;
+    const colorProps = ["color", "backgroundColor"] as const;
+    const hasHoverColors = anyTokenSet({ tokenMap, properties: colorProps, modifier: "hover" });
+    const hasColors =
+      hasHoverColors ||
+      anyTokenSet({ tokenMap, properties: colorProps }) ||
+      anyStyleSet({ styles: styleNow, keys: colorProps });
+    const marginKeys = spacingSideKeys("margin");
+    const hasMargin = anyStyleSet({ styles: styleNow, keys: ["margin", ...marginKeys], keepAuto: true });
+    const hasSpacing =
+      hasMargin ||
+      anyStyleSet({ styles: styleNow, keys: ["padding", ...spacingSideKeys("padding")], keepAuto: true });
+    const hasDimensions = anyStyleSet({
+      styles: styleNow,
+      keys: ["width", "maxWidth", "minHeight", "height", "objectFit"],
+    });
+    const hasMaxSize = anyStyleSet({ styles: styleNow, keys: ["maxWidth", "minHeight"] });
+    const hasBorder = anyStyleSet({ styles: styleNow, keys: ["border", "borderRadius"] });
+    const hasSecondaryTypography = anyStyleSet({
+      styles: styleNow,
+      keys: ["fontWeight", "lineHeight"],
+    });
+    const styleText = (value: unknown): string | undefined =>
+      value != null && String(value).trim() !== "" ? String(value) : undefined;
     return (
-      <div className="space-y-6">
+      <div>
         {isPageShell ? (
-          <p className="npb-settings-hint-muted text-xs">
+          <p className="npb-settings-hint-muted px-4 pt-4 text-xs">
             Font, width, padding, and colors are on the Content tab. Those are the
             only page-look controls — Style width, spacing, and colors do not apply
             to the page shell.
           </p>
         ) : null}
         {block.name === "core/header" ? (
-          <p className="npb-settings-hint-muted text-xs">
+          <p className="npb-settings-hint-muted px-4 pt-4 text-xs">
             Header layout, links, and buttons are on the Content tab.
           </p>
         ) : null}
-        {/* Typography */}
+        {isButtonBlock && (
+          <ButtonLookCard
+            styles={styleNow}
+            tokenMap={tokenMap}
+            onStyles={(patch) => updateStyles(patch)}
+            onTokens={setTokens}
+            onAccent={updateTokenEntry}
+          />
+        )}
+
+        {/* Typography — primary card for text blocks, so it opens right away */}
         {showTypographyStyles && (
-          <CollapsibleCard title="Typography" icon={Type} defaultOpen={true}>
+          <CollapsibleCard title="Typography" icon={Type} defaultOpen={!isButtonBlock}>
             {/* Font Family */}
             <div>
-              <Label className="npb-settings-label flex items-center gap-2 text-sm font-semibold">
-                <Type className="w-3 h-3" />
-                Font Family
-              </Label>
+              <SettingsLabel>Font Family</SettingsLabel>
               <Select
                 value={
                   block.styles?.fontFamily != null && block.styles.fontFamily !== ""
@@ -475,60 +462,12 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
               </Select>
             </div>
 
-            {/* Font Size */}
-            <SettingsChipGroup
-              label="Font Size"
-              icon={Ruler}
-              options={FONT_SIZE_PRESETS.map((preset) => ({
-                value: preset.value,
-                label: preset.label,
-              }))}
-              value={
-                block.styles?.fontSize != null ? String(block.styles.fontSize) : ""
-              }
-              onChange={(value) => updateStyles({ fontSize: value || undefined })}
-            />
-            <Input
-              value={
-                block.styles?.fontSize !== undefined && block.styles.fontSize !== null
-                  ? String(block.styles.fontSize)
-                  : ""
-              }
-              onChange={(e) => updateStyles({ fontSize: e.target.value })}
-              placeholder="Custom size, e.g. 18px"
-              className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
-            />
-            
-            {/* Line Height - Full Width */}
-            <div>
-              <Label className="npb-settings-label flex items-center gap-2 text-sm font-semibold">
-                <Rows className="w-3 h-3" />
-                Line Height
-              </Label>
-              <Input
-                value={
-                  block.styles?.lineHeight !== undefined && block.styles.lineHeight !== null
-                    ? String(block.styles.lineHeight)
-                    : ""
-                }
-                onChange={(e) => updateStyles({ lineHeight: e.target.value })}
-                placeholder="1.6"
-                className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
-              />
-            </div>
-            
-            {/* Font Weight - Chip Grid */}
-            <SettingsChipGroup
-              label="Font Weight"
-              icon={Bold}
-              options={[
-                { value: '300', label: 'Light', icon: Minus },
-                { value: 'normal', label: 'Normal', icon: Circle },
-                { value: '500', label: 'Medium', icon: Square },
-                { value: 'bold', label: 'Bold', icon: Bold },
-              ]}
-              value={String(block.styles?.fontWeight ?? 'normal')}
-              onChange={(value) => updateStyles({ fontWeight: String(value) })}
+            <DimensionPresetField
+              label="Font size"
+              presets={FONT_SIZE_PRESETS}
+              value={styleText(block.styles?.fontSize)}
+              onChange={(next) => updateStyles({ fontSize: next })}
+              customPlaceholder="e.g. 18px, 1.2rem"
             />
 
             {/* Paragraph / heading: flowing block text */}
@@ -567,202 +506,70 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
                 />
               </div>
             )}
+
+            <SettingsDisclosure title="Weight & line height" defaultOpen={hasSecondaryTypography}>
+              <DimensionPresetField
+                label="Line height"
+                presets={LINE_HEIGHT_PRESETS}
+                kind="number"
+                value={styleText(block.styles?.lineHeight)}
+                onChange={(next) => updateStyles({ lineHeight: next })}
+                customPlaceholder="e.g. 1.6 or 24px"
+              />
+
+              <DimensionPresetField
+                label="Font weight"
+                presets={FONT_WEIGHT_PRESETS}
+                kind="text"
+                value={styleText(block.styles?.fontWeight)}
+                onChange={(next) => updateStyles({ fontWeight: next })}
+                customPlaceholder="e.g. 600 or 800"
+              />
+            </SettingsDisclosure>
           </CollapsibleCard>
         )}
 
         {/* Colors — page shell paints these from Content, not block.styles */}
         {!ownsOwnLook && (
-        <CollapsibleCard title="Colors" icon={Palette} defaultOpen={true}>
-          {/* Text Color */}
-          <div>
-            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-              <Type className="w-3 h-3" />
-              Text Color
-            </Label>
-            <div className="mt-2">
-              <TokenColorPicker
-                property="color"
-                currentEntry={getTokenEntry("color")}
-                currentStyleValue={block.styles?.color as string | undefined}
-                onChange={updateTokenEntry}
-              />
-            </div>
-          </div>
-          
-          {/* Background Color */}
-          <div>
-            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-              <Square className="w-3 h-3" />
-              Background Color
-            </Label>
-            <div className="mt-2">
-              <TokenColorPicker
-                property="backgroundColor"
-                currentEntry={getTokenEntry("backgroundColor")}
-                currentStyleValue={block.styles?.backgroundColor as string | undefined}
-                onChange={updateTokenEntry}
-              />
-            </div>
-          </div>
-
-          {/* Hover text color */}
-          <div>
-            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-              <Type className="w-3 h-3" />
-              Hover text color
-            </Label>
-            <div className="mt-2">
-              <TokenColorPicker
-                property="color"
-                modifier="hover"
-                currentEntry={getTokenEntry("color", "hover")}
-                onChange={updateTokenEntry}
-              />
-            </div>
-          </div>
-
-          {/* Hover background */}
-          <div>
-            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-              <Square className="w-3 h-3" />
-              Hover background
-            </Label>
-            <div className="mt-2">
-              <TokenColorPicker
-                property="backgroundColor"
-                modifier="hover"
-                currentEntry={getTokenEntry("backgroundColor", "hover")}
-                onChange={updateTokenEntry}
-              />
-            </div>
-          </div>
+        <CollapsibleCard title="Colors" icon={Palette} defaultOpen={hasColors}>
+          <ColorField
+            ariaLabel="Color"
+            defaultProperty={prefersTextColor ? 'color' : 'backgroundColor'}
+            targets={colorTargets()}
+            onChange={updateTokenEntry}
+            onClear={clearColor}
+          />
+          <SettingsDisclosure title="Hover colors" defaultOpen={hasHoverColors}>
+            <ColorField
+              ariaLabel="Hover color"
+              defaultProperty={prefersTextColor ? 'color' : 'backgroundColor'}
+              targets={colorTargets('hover')}
+              onChange={updateTokenEntry}
+              onClear={clearColor}
+            />
+          </SettingsDisclosure>
         </CollapsibleCard>
         )}
 
-        {/* Spacing */}
+        {/* Spacing — padding first; margin folds away until asked for or already set */}
         {!ownsOwnLook && (
-        <CollapsibleCard title="Spacing" icon={Move} defaultOpen={true}>
-          <p className="npb-settings-hint mb-3 text-xs">
-            Each side is freeform CSS spacing. Use lengths with <span className="font-semibold">no space</span> between
-            the number and unit (<span className="font-mono">120px</span>,{' '}
-            <span className="font-mono">20rem</span>). You can also use <span className="font-mono">auto</span>,
-            percentages, or <span className="font-mono">calc(…)</span>.
-          </p>
-
-          {/* Padding */}
-          <div className="mb-8">
-            <div className="mb-3">
-              <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                <Square className="w-3 h-3" />
-                Padding
-              </Label>
-            </div>
-            <SettingsChipGroup
-              label="Quick padding (all sides)"
-              options={SPACING_PRESETS.map((preset) => ({
-                value: preset.value,
-                label: preset.label,
-              }))}
-              value={(() => {
-                const sides = getPaddingValues();
-                const allMatch =
-                  sides.top === sides.right &&
-                  sides.top === sides.bottom &&
-                  sides.top === sides.left;
-                return allMatch ? sides.top : '';
-              })()}
-              onChange={(value) => {
-                commitSpacingSide('paddingTop', value);
-                commitSpacingSide('paddingRight', value);
-                commitSpacingSide('paddingBottom', value);
-                commitSpacingSide('paddingLeft', value);
-              }}
-              className="mb-4"
+        <CollapsibleCard title="Spacing" icon={Move} defaultOpen={hasSpacing}>
+          <SpacingSidesField
+            label="Padding"
+            kind="padding"
+            sides={readSpacingSides({ styles: styleNow, kind: "padding" })}
+            onHoverArea={onHoverArea}
+            onCommit={commitSpacingSides}
+          />
+          <SettingsDisclosure title="Margin" defaultOpen={hasMargin}>
+            <SpacingSidesField
+              label="Margin"
+              kind="margin"
+              sides={readSpacingSides({ styles: styleNow, kind: "margin" })}
+              onHoverArea={onHoverArea}
+              onCommit={commitSpacingSides}
             />
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <span className="text-xs text-npb-text-muted">
-                {paddingLinked ? 'All sides stay linked' : 'Each side edits independently'}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => setPaddingLinked((linked) => !linked)}>
-                {paddingLinked ? 'Edit sides separately' : 'Link all sides'}
-              </Button>
-            </div>
-            {paddingLinked ? (
-              <FreeformSpacingSideRow
-                label="All sides"
-                value={(() => {
-                  const sides = getPaddingValues();
-                  const allMatch =
-                    sides.top === sides.right &&
-                    sides.top === sides.bottom &&
-                    sides.top === sides.left;
-                  return allMatch ? sides.top : sides.top || '';
-                })()}
-                hoverArea="padding"
-                onHoverArea={onHoverArea}
-                onCommit={(full) => {
-                  commitSpacingSide('paddingTop', full);
-                  commitSpacingSide('paddingRight', full);
-                  commitSpacingSide('paddingBottom', full);
-                  commitSpacingSide('paddingLeft', full);
-                }}
-              />
-            ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {(
-                [
-                  ["paddingTop", "top"],
-                  ["paddingRight", "right"],
-                  ["paddingBottom", "bottom"],
-                  ["paddingLeft", "left"],
-                ] as const
-              ).map(([prop, corner]) => (
-                <FreeformSpacingSideRow
-                  key={prop}
-                  label={sideLabel[prop]}
-                  value={getPaddingValues()[corner]}
-                  hoverArea="padding"
-                  onHoverArea={onHoverArea}
-                  onCommit={(full) => commitSpacingSide(prop, full)}
-                />
-              ))}
-            </div>
-            )}
-          </div>
-
-          {/* Margin */}
-          <div>
-            <div className="mb-3">
-              <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                <Square className="w-3 h-3" />
-                Margin
-              </Label>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {(
-                [
-                  ["marginTop", "top"],
-                  ["marginRight", "right"],
-                  ["marginBottom", "bottom"],
-                  ["marginLeft", "left"],
-                ] as const
-              ).map(([prop, corner]) => (
-                <FreeformSpacingSideRow
-                  key={prop}
-                  label={sideLabel[prop]}
-                  value={getMarginValues()[corner]}
-                  hoverArea="margin"
-                  onHoverArea={onHoverArea}
-                  onCommit={(full) => commitSpacingSide(prop, full)}
-                />
-              ))}
-            </div>
-          </div>
+          </SettingsDisclosure>
         </CollapsibleCard>
         )}
 
@@ -815,7 +622,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
               onStackModeChange={isStackBlock ? setStackMode : undefined}
               onStylesChange={(next) => updateStyles(next)}
             />
-            <CollapsibleCard title="Max size" icon={Layout} defaultOpen={false}>
+            <CollapsibleCard title="Max size" icon={Layout} defaultOpen={hasMaxSize}>
               <DimensionPresetField
                 label="Max width"
                 value={
@@ -827,7 +634,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
                 onChange={(next) => updateStyles({ maxWidth: next })}
                 customPlaceholder="e.g. 1200px, 90rem"
               />
-              <div className="mt-4">
+              <div>
                 <DimensionPresetField
                   label="Min height"
                   value={
@@ -843,7 +650,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
             </CollapsibleCard>
           </>
         ) : !ownsOwnLook ? (
-        <CollapsibleCard title="Layout & Dimensions" icon={Layout} defaultOpen={false}>
+        <CollapsibleCard title="Layout & Dimensions" icon={Layout} defaultOpen={hasDimensions}>
             <DimensionPresetField
               label="Width"
               value={
@@ -856,7 +663,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
               customPlaceholder="e.g. 320px, 50%, 80dvh"
             />
 
-            <div className="mt-4">
+            <div>
               <DimensionPresetField
                 label="Max width"
                 value={
@@ -870,7 +677,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
               />
             </div>
 
-            <div className="mt-4">
+            <div>
               <DimensionPresetField
                 label="Min height"
                 value={
@@ -884,7 +691,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
               />
             </div>
 
-            <div className="mt-4">
+            <div>
               <DimensionPresetField
                 label="Height"
                 value={
@@ -899,10 +706,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
             </div>
             {block.name === "core/image" && (
               <div>
-                <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                  <Square className="w-3 h-3" />
-                  Object fit
-                </Label>
+                <SettingsLabel>Object fit</SettingsLabel>
                 <Select
                   value={(block.styles?.objectFit as string) || "contain"}
                   onValueChange={(value) =>
@@ -932,7 +736,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
 
         {/* Border */}
         {!ownsOwnLook && (
-        <CollapsibleCard title="Border & Radius" icon={Square} defaultOpen={isFormFieldBlock}>
+        <CollapsibleCard title="Border & Radius" icon={Square} defaultOpen={isFormFieldBlock || hasBorder}>
           {isFormFieldBlock ? (
             <p className="npb-settings-hint mb-3 text-xs">
               Border and radius apply to the field control. Use{' '}
@@ -941,54 +745,30 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
           ) : null}
           {/* Border - Full Width */}
           <div>
-            <Label className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-              <Square className="w-3 h-3" />
-              Border
-            </Label>
+            <SettingsLabel>Border</SettingsLabel>
             <Input
               value={
                 block.styles?.border !== undefined && block.styles.border !== null
                   ? String(block.styles.border)
                   : ""
               }
-              onChange={(e) => updateStyles({ border: e.target.value })}
+              onChange={(e) => updateStyles({ border: e.target.value || undefined })}
               placeholder="none — e.g. 1px solid #ccc"
               className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
             />
           </div>
           
-          {/* Border Radius */}
-          <SettingsChipGroup
+          <DimensionPresetField
             label="Corner shape"
-            icon={Circle}
-            options={BORDER_RADIUS_PRESETS.map((preset) => ({
-              value: preset.value,
-              label: preset.label,
-            }))}
-            value={
-              block.styles?.borderRadius != null
-                ? String(block.styles.borderRadius)
-                : ""
-            }
-            onChange={(value) =>
-              updateStyles({ borderRadius: value || undefined })
-            }
-          />
-          <Input
-            value={
-              block.styles?.borderRadius !== undefined &&
-              block.styles.borderRadius !== null
-                ? String(block.styles.borderRadius)
-                : ""
-            }
-            onChange={(e) => updateStyles({ borderRadius: e.target.value })}
-            placeholder="Custom radius, e.g. 6px"
-            className="mt-2 h-9 rounded-none text-sm focus-visible:outline-none"
+            presets={BORDER_RADIUS_PRESETS}
+            value={styleText(block.styles?.borderRadius)}
+            onChange={(next) => updateStyles({ borderRadius: next })}
+            customPlaceholder="e.g. 6px, 0.5rem"
           />
         </CollapsibleCard>
         )}
 
-        <CollapsibleCard title="Custom CSS" icon={Code} defaultOpen={false}>
+        <CollapsibleCard title="Custom CSS" icon={Code} defaultOpen={customCss.trim() !== ""}>
           <div className="space-y-3">
             <Textarea
               value={customCss}
@@ -1006,65 +786,63 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
     );
   };
 
+  const blockDef = blockRegistry[block.name];
+  const BlockIcon = blockDef?.icon;
+  const tabTriggerClass =
+    "flex min-h-9 items-center justify-center rounded-md border border-transparent px-3 py-2 text-xs font-medium text-npb-text-muted transition-colors hover:bg-npb-interactive-bg-hover hover:text-npb-text-primary data-[state=active]:bg-npb-interactive-bg-active data-[state=active]:text-npb-interactive-text-active";
+
   return (
-    <div className="npb-block-settings space-y-4">
-      <div className="npb-settings-hero">
-        <h3 className="npb-settings-hero-title mb-1 text-sm font-semibold">Block Settings</h3>
-        <p className="npb-settings-hint-muted text-xs">{blockRegistry[block.name]?.label || block.name}</p>
-      </div>
-
+    <div className="npb-block-settings">
       <Tabs defaultValue="content" className="w-full">
-        <TabsList className="grid h-auto min-h-10 w-full grid-cols-3 gap-1 rounded-[var(--npb-radius-surface)] bg-npb-surface-inset p-1">
-          <TabsTrigger
-            value="content"
-            className="flex min-h-9 items-center justify-center gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-medium text-npb-text-muted hover:bg-npb-interactive-bg-hover hover:text-npb-text-primary data-[state=active]:bg-npb-interactive-bg-active data-[state=active]:text-npb-interactive-text-active transition-colors">
-            <Type className="h-3 w-3" /> Content
-          </TabsTrigger>
-          <TabsTrigger
-            value="style"
-            className="flex min-h-9 items-center justify-center gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-medium text-npb-text-muted hover:bg-npb-interactive-bg-hover hover:text-npb-text-primary data-[state=active]:bg-npb-interactive-bg-active data-[state=active]:text-npb-interactive-text-active transition-colors">
-            <Palette className="h-3 w-3" /> Style
-          </TabsTrigger>
-          <TabsTrigger
-            value="advanced"
-            className="flex min-h-9 items-center justify-center gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-medium text-npb-text-muted hover:bg-npb-interactive-bg-hover hover:text-npb-text-primary data-[state=active]:bg-npb-interactive-bg-active data-[state=active]:text-npb-interactive-text-active transition-colors">
-            <Code className="h-3 w-3" /> Advanced
-          </TabsTrigger>
-        </TabsList>
+        {/* One header: which block, then the tabs. Stays put while the sections scroll. */}
+        <div className="sticky top-0 z-10 border-b border-npb-divider bg-npb-surface-base">
+          <div className="flex items-center gap-2 px-4 pb-3 pt-4">
+            {BlockIcon ? (
+              <BlockIcon className="h-4 w-4 shrink-0 text-npb-text-muted" aria-hidden />
+            ) : null}
+            <h3 className="min-w-0 truncate text-sm font-semibold text-npb-text-primary">
+              {blockDef?.label || block.name}
+            </h3>
+          </div>
+          <TabsList className="mx-4 mb-3 grid h-auto min-h-10 w-[calc(100%-2rem)] grid-cols-3 gap-1 rounded-[var(--npb-radius-surface)] bg-npb-surface-inset p-1">
+            <TabsTrigger value="content" className={tabTriggerClass}>
+              Content
+            </TabsTrigger>
+            <TabsTrigger value="style" className={tabTriggerClass}>
+              Style
+            </TabsTrigger>
+            <TabsTrigger value="advanced" className={tabTriggerClass}>
+              Advanced
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="content" className="mt-4 space-y-4">
-          <div className="npb-settings-panel">
+        <TabsContent value="content" className="mt-0">
+          <div key={block.id}>
             {/* Variable insertion for blocks with text content */}
             {typeof (block.content as Record<string, unknown>)?.value === 'string' && (
-              <div className="mb-4 npb-settings-divider-b pb-4">
-                <div className="flex items-center justify-between">
-                  <Label className="npb-settings-label text-sm font-semibold">Insert Variable</Label>
-                  <VariablePicker
-                    onInsert={(variable) => {
-                      const currentValue = (block.content as Record<string, unknown>)?.value as string || '';
-                      updateContent({ value: currentValue + variable });
-                    }}
-                  />
-                </div>
-                <p className="mt-1 text-[11px] npb-settings-hint-muted">
-                  Click a variable to append it to the block content below
-                </p>
+              <div className="flex items-center justify-between border-b border-npb-divider px-4 py-3">
+                <SettingsLabel>Insert variable</SettingsLabel>
+                <VariablePicker
+                  onInsert={(variable) => {
+                    const currentValue = (block.content as Record<string, unknown>)?.value as string || '';
+                    updateContent({ value: currentValue + variable });
+                  }}
+                />
               </div>
             )}
             {renderContentSettings()}
           </div>
         </TabsContent>
 
-        <TabsContent value="style" className="mt-4 space-y-4">
-          <div className="npb-settings-panel">
-            {renderStyleSettings()}
-          </div>
+        <TabsContent value="style" className="mt-0">
+          <div key={block.id}>{renderStyleSettings()}</div>
         </TabsContent>
 
-        <TabsContent value="advanced" className="mt-4 space-y-4">
-          <div className="npb-settings-panel">
+        <TabsContent value="advanced" className="mt-0">
+          <div key={block.id}>
             {/* Animation Section */}
-            <CollapsibleCard title="Animations" icon={Sparkles} defaultOpen={false}>
+            <CollapsibleCard title="Animations" icon={Sparkles} defaultOpen={Boolean(block.other?.animation)}>
               <AnimationPicker
                 animation={block.other?.animation}
                 blockId={block.id}
@@ -1073,14 +851,18 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
             </CollapsibleCard>
 
             {/* Anchor ID & CSS Classes — available for all blocks */}
-            <div className="mt-4">
-              <CollapsibleCard title="HTML Anchor & Classes" icon={Hash} defaultOpen={false}>
+            <div>
+              <CollapsibleCard
+                title="HTML Anchor & Classes"
+                icon={Hash}
+                defaultOpen={Boolean(
+                  (block.content as Record<string, unknown>)?.anchor ||
+                    (block.content as Record<string, unknown>)?.className,
+                )}
+              >
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="block-anchor" className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                      <Target className="w-3 h-3" />
-                      Anchor ID
-                    </Label>
+                    <SettingsLabel htmlFor="block-anchor">Anchor ID</SettingsLabel>
                     <Input
                       id="block-anchor"
                       value={(block.content as Record<string, unknown>)?.anchor as string || ''}
@@ -1093,10 +875,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="block-classes" className="text-sm font-semibold npb-settings-label flex items-center gap-2">
-                      <Code className="w-3 h-3" />
-                      CSS Classes
-                    </Label>
+                    <SettingsLabel htmlFor="block-classes">CSS Classes</SettingsLabel>
                     <Input
                       id="block-classes"
                       value={(block.content as Record<string, unknown>)?.className as string || ''}
@@ -1110,12 +889,10 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
             </div>
 
             {block.parentId != null && (
-              <div className="mt-4">
-                <CollapsibleCard title="Stack layer" icon={Layers} defaultOpen={false}>
+              <div>
+                <CollapsibleCard title="Stack layer" icon={Layers} defaultOpen={block.other?.stackLayer != null}>
                   <div className="space-y-2">
-                    <Label className="text-xs font-medium npb-settings-label">
-                      Paint order among siblings
-                    </Label>
+                    <SettingsLabel>Paint order among siblings</SettingsLabel>
                     <p className="npb-settings-hint-muted text-xs">
                       Only applies inside a layout parent (container, group, columns). Higher draws on top;
                       negative sends behind. Flow overlap still needs margins or positioning to separate.
@@ -1154,20 +931,20 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
               </div>
             )}
 
-            <div className="mt-4 space-y-3">
-              <div>
-                <Label className="npb-settings-label text-sm font-semibold">
-                  Display Conditions
-                </Label>
-                <p className="npb-settings-hint-muted mt-0.5 text-xs">
-                  Control when this block is visible. Add conditions to show or
-                  hide the block based on page type, user status, or URL.
+            <div>
+              <CollapsibleCard
+                title="Display conditions"
+                icon={Target}
+                defaultOpen={displayConditions.length > 0}
+              >
+                <p className="npb-settings-hint-muted text-xs">
+                  Show or hide this block based on page type, user status, or URL.
                 </p>
-              </div>
-              <ConditionBuilder
-                conditions={displayConditions}
-                onChange={updateDisplayConditions}
-              />
+                <ConditionBuilder
+                  conditions={displayConditions}
+                  onChange={updateDisplayConditions}
+                />
+              </CollapsibleCard>
             </div>
           </div>
         </TabsContent>

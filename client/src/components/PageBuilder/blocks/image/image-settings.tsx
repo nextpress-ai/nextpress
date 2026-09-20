@@ -132,7 +132,7 @@ export function ImageSettings({ block, onUpdate }: ImageSettingsProps) {
       <CollapsibleCard
         title="Figure layout"
         icon={Settings}
-        defaultOpen={true}
+        defaultOpen={false}
       >
         <div className="space-y-4">
           {/* Block width in the editor (use Style → Position in container for flex placement) */}

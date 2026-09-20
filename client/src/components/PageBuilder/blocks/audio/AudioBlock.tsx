@@ -161,7 +161,7 @@ function AudioSettings({ block, onUpdate }: AudioSettingsProps) {
       </CollapsibleCard>
 
       {/* Settings Card */}
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <SettingsLabel htmlFor="audio-controls">Show Controls</SettingsLabel>

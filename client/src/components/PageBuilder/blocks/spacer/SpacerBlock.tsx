@@ -97,7 +97,7 @@ function SpacerSettings({ block, onUpdate }: SpacerSettingsProps) {
       </CollapsibleCard>
 
       {/* Settings Card (future extensibility) */}
-      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Settings" icon={Settings} defaultOpen={false}>
         <div className="text-npb-text-muted text-xs">No additional settings.</div>
       </CollapsibleCard>
     </div>

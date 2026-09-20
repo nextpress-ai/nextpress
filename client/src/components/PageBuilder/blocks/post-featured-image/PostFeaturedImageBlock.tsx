@@ -251,7 +251,7 @@ function PostFeaturedImageSettings({
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Display" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Display" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div>
             <SettingsLabel htmlFor="fi-object-fit">Object Fit</SettingsLabel>

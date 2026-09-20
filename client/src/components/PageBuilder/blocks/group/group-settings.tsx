@@ -77,7 +77,7 @@ export function GroupSettings({ block, onUpdate }: GroupSettingsProps) {
 				) : null}
 			</CollapsibleCard>
 
-			<CollapsibleCard title="Structure" icon={Brackets} defaultOpen={true}>
+			<CollapsibleCard title="Structure" icon={Brackets} defaultOpen={false}>
 				<SettingsChipGroup
 					label="HTML tag"
 					ariaLabel="HTML tag"

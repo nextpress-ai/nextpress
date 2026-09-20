@@ -1,10 +1,8 @@
 import { useSettingsState } from '../useSettingsState';
 import type { BlockConfig } from '@shared/schema-types';
-import { SettingsLabel } from '../../shared';
+import { SettingsLabel, SettingsSection } from '../../shared';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { CollapsibleCard } from '@/components/ui/collapsible-card';
-import { Settings } from 'lucide-react';
 import { type PostCommentsContent, DEFAULT_CONTENT } from './post-comments-model';
 
 /** Sidebar settings panel for the post comments block. */
@@ -23,7 +21,7 @@ export function PostCommentsSettings({
 
   return (
     <div className="space-y-4">
-      <CollapsibleCard title="Display" icon={Settings} defaultOpen>
+      <SettingsSection>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <SettingsLabel htmlFor="pc-show-form">Show comment form</SettingsLabel>
@@ -66,7 +64,7 @@ export function PostCommentsSettings({
             />
           </div>
         </div>
-      </CollapsibleCard>
+      </SettingsSection>
     </div>
   );
 }

@@ -18,8 +18,10 @@ type ChildPinCardProps = {
  * Sibling pin inside a flex/grid parent — stack language, not CSS property names.
  */
 export function ChildPinCard({ horizontal, vertical, onChange }: ChildPinCardProps) {
+	// Opens by itself only when a pin is already saved; "__unset" is the untouched state.
+	const hasPin = horizontal !== "__unset" || vertical !== "__unset";
 	return (
-		<CollapsibleCard title="Pin in parent" icon={Layout} defaultOpen={true}>
+		<CollapsibleCard title="Pin in parent" icon={Layout} defaultOpen={hasPin}>
 			<p className="npb-settings-hint mb-3 text-xs">
 				Where this block sits among siblings. Vertical middle/bottom shows when the parent has extra space.
 			</p>

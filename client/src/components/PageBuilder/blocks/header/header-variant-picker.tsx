@@ -7,12 +7,13 @@ import {
 
 const VARIANT_SKETCH: Record<
 	HeaderVariant,
-	{ nav: "right" | "middle" | "none"; actions: boolean }
+	{ nav: "right" | "middle" | "none"; actions: boolean; blocks?: boolean }
 > = {
 	"links-and-actions": { nav: "right", actions: true },
 	"links-only": { nav: "right", actions: false },
 	split: { nav: "middle", actions: true },
 	"actions-only": { nav: "none", actions: true },
+	"brand-and-blocks": { nav: "none", actions: false, blocks: true },
 };
 
 function MiniDots({ count }: { count: number }) {
@@ -46,7 +47,7 @@ function MiniPills({ count }: { count: number }) {
 	);
 }
 
-/** Four layout sketches — same arrangements as the header shot. */
+/** One sketch per layout — same arrangements the header paints. */
 export function HeaderVariantPicker({
 	value,
 	onChange,
@@ -84,6 +85,12 @@ export function HeaderVariantPicker({
 						)}
 						{sketch.nav === "right" ? <MiniDots count={3} /> : null}
 						{sketch.actions ? <MiniPills count={2} /> : null}
+						{sketch.blocks ? (
+							<span
+								className="h-2.5 w-8 rounded-sm border border-dashed border-current opacity-60"
+								aria-hidden
+							/>
+						) : null}
 					</button>
 				);
 			})}

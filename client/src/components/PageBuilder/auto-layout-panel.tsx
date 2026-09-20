@@ -1,5 +1,6 @@
 import type { BlockConfig } from "@shared/schema-types";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsDisclosure } from "./shared/settings-disclosure";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Columns2, Layout, Rows2 } from "lucide-react";
@@ -14,7 +15,6 @@ import {
 } from "@shared/dimension-presets";
 import { readContainerLayoutFromBlock } from "@shared/block-container-placement";
 import {
-	AUTO_LAYOUT_GAP_PRESETS,
 	GRID_TRACK_STARTERS,
 	alignPointToFlexStyles,
 	distributionToJustify,
@@ -136,11 +136,6 @@ export function AutoLayoutPanel({
 	const widthResize = readResizeFromLength(block.styles?.width);
 	const heightResize = readResizeFromHeight(block.styles?.height);
 	const gapValue = layout.gap ?? "";
-	const gapChip = AUTO_LAYOUT_GAP_PRESETS.some((preset) => preset.value === gapValue)
-		? gapValue
-		: gapValue
-			? "__custom__"
-			: "";
 
 	const patch = (next: Record<string, unknown>) => onStylesChange(next);
 
@@ -157,46 +152,20 @@ export function AutoLayoutPanel({
 		patch({ justifyContent: distributionToJustify(next, packed) });
 	};
 
-	const gapOptions = [
-		{ value: "", label: "None" },
-		...SPACING_PRESETS.map((preset) => ({
-			value: preset.value,
-			label: preset.label,
-		})),
-		{ value: "__custom__", label: "Custom" },
+	// "None" clears the gap; the presets and the [Custom | value | unit] group come from the shared field.
+	const gapPresets = [
+		{ value: "__none__", label: "None" },
+		...SPACING_PRESETS.filter((preset) => preset.value !== "0"),
 	];
 
 	const gapControl = (
-		<div>
-			<SettingsChipGroup
-				label="Gap"
-				ariaLabel="Gap"
-				layout="scroll"
-				options={gapOptions}
-				value={gapChip}
-				onChange={(value) => {
-					if (value === "__custom__") {
-						patch({
-							gap: gapValue && gapChip === "__custom__" ? gapValue : "1.25rem",
-						});
-						return;
-					}
-					if (value === "") {
-						patch({ gap: null });
-						return;
-					}
-					patch({ gap: value });
-				}}
-			/>
-			{gapChip === "__custom__" ? (
-				<Input
-					value={gapValue}
-					onChange={(e) => patch({ gap: e.target.value || undefined })}
-					placeholder="e.g. 16px, 1rem"
-					className="mt-2 h-8 rounded-none text-sm focus-visible:outline-none"
-				/>
-			) : null}
-		</div>
+		<DimensionPresetField
+			label="Gap"
+			presets={gapPresets}
+			value={gapValue || undefined}
+			onChange={(next) => patch({ gap: next ?? null })}
+			customPlaceholder="e.g. 20"
+		/>
 	);
 
 	return (
@@ -261,7 +230,7 @@ export function AutoLayoutPanel({
 								}
 							/>
 							<div>
-								<Label className="npb-settings-label mb-2 block text-sm font-semibold">
+								<Label className="npb-settings-label mb-2 block text-sm font-medium">
 									Align
 								</Label>
 								<AutoLayoutAlignMatrix
@@ -300,6 +269,7 @@ export function AutoLayoutPanel({
 									label="Min column width"
 									value={readAutoTrackMinWidth(layout.gridTemplateColumns)}
 									presets={GRID_MIN_TRACK_WIDTH_PRESETS}
+									defaultValue="200px"
 									onChange={(next) =>
 										patch({
 											display: "grid",
@@ -313,7 +283,7 @@ export function AutoLayoutPanel({
 								/>
 							) : null}
 							<div>
-								<Label className="npb-settings-label text-sm font-semibold">
+								<Label className="npb-settings-label text-sm font-medium">
 									Custom tracks
 								</Label>
 								<Input
@@ -332,7 +302,7 @@ export function AutoLayoutPanel({
 						</LayoutSettingsSection>
 					)}
 
-					<CollapsibleCard title="Size & advanced" defaultOpen={false}>
+					<SettingsDisclosure title="Size & advanced">
 						<SettingsChipGroup
 							label="Width"
 							ariaLabel="Width"
@@ -397,6 +367,7 @@ export function AutoLayoutPanel({
 									: undefined
 							}
 							presets={ASPECT_RATIO_PRESETS}
+							kind="text"
 							onChange={(next) => patch({ aspectRatio: next ?? null })}
 							customPlaceholder="e.g. 3 / 2"
 						/>
@@ -423,7 +394,7 @@ export function AutoLayoutPanel({
 								}}
 							/>
 						) : null}
-					</CollapsibleCard>
+					</SettingsDisclosure>
 				</div>
 			</CollapsibleCard>
 		</div>

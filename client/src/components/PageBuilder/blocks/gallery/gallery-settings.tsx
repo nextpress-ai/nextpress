@@ -247,7 +247,7 @@ export function GallerySettings({ block, onUpdate }: GallerySettingsProps) {
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Grid layout" icon={Settings} defaultOpen={true}>
+      <CollapsibleCard title="Grid layout" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
           <div>
             <Label htmlFor="gallery-columns">Columns</Label>
