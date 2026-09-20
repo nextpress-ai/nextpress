@@ -74,7 +74,6 @@ export function HeaderVariantPicker({
 								: "border-npb-border-default bg-npb-surface-base text-npb-text-secondary hover:border-npb-border-strong hover:bg-npb-interactive-bg-hover",
 						)}
 					>
-						<span className="h-2 w-2 shrink-0 rounded-full bg-[var(--npb-accent)]" />
 						<span className="h-1 w-8 shrink-0 rounded-full bg-current opacity-70" />
 						{sketch.nav === "middle" ? (
 							<span className="flex flex-1 justify-center">

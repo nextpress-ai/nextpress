@@ -20,6 +20,7 @@ import {
 import { buildGroupShellStyles, readGroupShellContent } from "@shared/group-shell-styles";
 import { buildStackShellStyles } from "@shared/stack-shell-styles";
 import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
+import { headerOverlayPaintStyles } from "@shared/header-model";
 import { PageShellBlock } from "./page-shell";
 import { HeaderBlock } from "./header";
 
@@ -219,6 +220,7 @@ export function StackBlock(block: BlockConfig) {
 			? {
 					...getOverlayChildItemStyles(child.styles),
 					...getBlockStackLayerWrapperStyles(child),
+					...headerOverlayPaintStyles(child),
 				}
 			: {
 					...getHorizontalFlexChildStyles({

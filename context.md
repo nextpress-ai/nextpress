@@ -48,6 +48,7 @@ UUID PKs everywhere except sessions.sid.
 - Page Settings is title, slug, SEO, and icons only. The Design tab is gone. Do not write those values back to `page.other.design`.
 - Old pages wrap on editor open: existing root blocks become shell children, and leftover `page.other.design` is copied onto the shell once so the published look does not jump. After that, only the shell is read.
 - Header is a structured block (brand / links / buttons). It paints edge to edge inside the shell. Sticky follows the canvas scroll, not the browser window.
+- Open header menu is in-flow (pushes the next blocks). In an overlay stack the header wrapper stays at z-index 40 so the menu does not mix with later siblings. Settings use stacked label-above-field rows, path placeholders (`/about`), and a quiet-then-solid button pair. Wordmark is name only. Logo has size, corners, and optional name. Each header button has look (ghost/solid), size, corners, and optional color (Theme resets to the page accent).
 - Visitor, preview, and publish always render through a shell. There is no no-shell visitor path.
 
 ### 2026-09-12 — Canvas chrome hugs content

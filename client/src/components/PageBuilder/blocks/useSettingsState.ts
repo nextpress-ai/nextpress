@@ -40,8 +40,13 @@ export function useSettingsState<TContent>(args: {
   // Read: live accessor when present, else parse the block's own content,
   // falling back to defaults only when there is none. Does NOT merge defaults
   // over existing content — that would inject default fields into the saved payload.
-  const content = (
+  const rawContent = (
     accessor ? accessor.getContent() : parse(block.content) ?? defaultContent
+  ) as TContent;
+  const content = (
+    accessor && parseContent
+      ? parseContent(serialize(rawContent))
+      : rawContent
   ) as TContent;
 
   const styles = accessor ? accessor.getStyles() : block.styles;
@@ -49,8 +54,10 @@ export function useSettingsState<TContent>(args: {
 
   const updateContent = (updates: Partial<TContent>) => {
     if (accessor) {
-      const current = (accessor.getContent() ?? {}) as Record<string, unknown>;
-      accessor.setContent({ ...current, ...updates });
+      accessor.setContent((prev) => {
+        const current = (prev ?? {}) as Record<string, unknown>;
+        return { ...current, ...updates } as TContent;
+      });
       rerender();
     } else if (onUpdate) {
       const parsed = parse(block.content);

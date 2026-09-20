@@ -1,6 +1,10 @@
 import * as React from "react";
 import {
+	HEADER_PLACEHOLDERS,
 	headerBarClassName,
+	headerActionLookStyle,
+	headerLogoMarkStyle,
+	resolveHeaderHref,
 	visibleHeaderSlots,
 	type HeaderAction,
 	type HeaderBrand,
@@ -8,18 +12,63 @@ import {
 	type HeaderNavItem,
 } from "./header-model.js";
 
+function LogoPlaceholderIcon() {
+	return (
+		<svg
+			className="wp-block-header__logo-placeholder-icon"
+			viewBox="0 0 16 16"
+			width="16"
+			height="16"
+			aria-hidden="true"
+			fill="none"
+		>
+			<rect
+				x="2"
+				y="3"
+				width="12"
+				height="10"
+				rx="1.25"
+				stroke="currentColor"
+				strokeWidth="1.25"
+			/>
+			<circle cx="5.75" cy="6.75" r="1.1" fill="currentColor" opacity="0.72" />
+			<path
+				d="M3.5 11.5 6.5 8.75 8.25 10.25 11.25 7.25 12.5 8.5"
+				stroke="currentColor"
+				strokeWidth="1.1"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
 function BrandMark({ brand }: { brand: HeaderBrand }) {
-	const href = brand.href || "/";
+	const href = resolveHeaderHref(brand.href, HEADER_PLACEHOLDERS.brandHref);
+	const label = brand.text.trim() || HEADER_PLACEHOLDERS.brandName;
+
+	if (brand.kind === "logo") {
+		const markStyle = headerLogoMarkStyle(brand);
+		const name = brand.showName || !brand.logoUrl ? (
+			<span className="wp-block-header__brand-label">{label}</span>
+		) : null;
+		return (
+			<a className="wp-block-header__brand" href={href}>
+				{brand.logoUrl ? (
+					<img src={brand.logoUrl} alt={brand.showName ? "" : label} style={markStyle} />
+				) : (
+					<span className="wp-block-header__logo-placeholder" aria-hidden="true" style={markStyle}>
+						<LogoPlaceholderIcon />
+					</span>
+				)}
+				{name}
+			</a>
+		);
+	}
+
 	return (
 		<a className="wp-block-header__brand" href={href}>
-			{brand.kind === "logo" && brand.logoUrl ? (
-				<img src={brand.logoUrl} alt={brand.text || "Site"} />
-			) : (
-				<>
-					<span className="wp-block-header__mark" aria-hidden="true" />
-					<span>{brand.text}</span>
-				</>
-			)}
+			<span className="wp-block-header__brand-label">{label}</span>
 		</a>
 	);
 }
@@ -31,18 +80,20 @@ function NavLinks({ items }: { items: HeaderNavItem[] }) {
 			{items.map((item) =>
 				item.children && item.children.length > 0 ? (
 					<details key={item.id} className="wp-block-header__dropdown">
-						<summary>{item.label}</summary>
+						<summary>{item.label || HEADER_PLACEHOLDERS.linkLabel}</summary>
 						<ul className="wp-block-header__dropdown-list">
 							{item.children.map((child) => (
 								<li key={child.id}>
-									<a href={child.href || "#"}>{child.label}</a>
+									<a href={resolveHeaderHref(child.href, HEADER_PLACEHOLDERS.menuItemHref)}>
+										{child.label || HEADER_PLACEHOLDERS.menuItemLabel}
+									</a>
 								</li>
 							))}
 						</ul>
 					</details>
 				) : (
-					<a key={item.id} href={item.href || "#"}>
-						{item.label}
+					<a key={item.id} href={resolveHeaderHref(item.href, HEADER_PLACEHOLDERS.linkHref)}>
+						{item.label || HEADER_PLACEHOLDERS.linkLabel}
 					</a>
 				),
 			)}
@@ -57,14 +108,15 @@ function ActionButtons({ actions }: { actions: HeaderAction[] }) {
 			{actions.map((action) => (
 				<a
 					key={action.id}
-					href={action.href || "#"}
+					href={resolveHeaderHref(action.href, HEADER_PLACEHOLDERS.buttonHref)}
 					className={
 						action.style === "solid"
 							? "wp-block-header__action is-solid"
 							: "wp-block-header__action"
 					}
+					style={headerActionLookStyle(action)}
 				>
-					{action.label}
+					{action.label || HEADER_PLACEHOLDERS.buttonLabel}
 				</a>
 			))}
 		</div>
@@ -124,16 +176,16 @@ export function HeaderBar({
 						</div>
 					) : null}
 				</div>
-				<details className="wp-block-header__mobile-toggle wp-block-header__mobile-panel">
-					<summary aria-label="Open menu">
-						<span className="wp-block-header__burger" aria-hidden="true" />
-					</summary>
-					<div className="wp-block-header__mobile-body">
-						<NavLinks items={content.nav} />
-						<ActionButtons actions={content.actions} />
-					</div>
-				</details>
 			</div>
+			<details className="wp-block-header__mobile-panel">
+				<summary className="wp-block-header__mobile-toggle" aria-label="Open menu">
+					<span className="wp-block-header__burger" aria-hidden="true" />
+				</summary>
+				<div className="wp-block-header__mobile-body">
+					<NavLinks items={content.nav} />
+					<ActionButtons actions={content.actions} />
+				</div>
+			</details>
 		</header>
 	);
 }

@@ -41,6 +41,7 @@ import {
   NPB_ICON_REFERENCE_ROW_MAX_CHARS,
   truncateWithEllipsis,
 } from '@/lib/truncate-with-ellipsis';
+import { headerOverlayPaintStyles } from '@shared/header-model';
 import { useCanvasBlockToolbar } from './use-canvas-block-toolbar';
 import {
   type CanvasChromeMode,
@@ -100,6 +101,7 @@ export function ContainerChildren({
       ? {
           ...getOverlayChildItemStyles(child.styles),
           ...getBlockStackLayerWrapperStyles(child),
+          ...headerOverlayPaintStyles(child),
         }
       : {
           ...getHorizontalFlexChildStyles({
