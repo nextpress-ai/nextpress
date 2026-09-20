@@ -54,6 +54,7 @@ intent.md
 intent-*.md
 task.md
 task-*.md
+working-*.md
 .zcode/
 docs/
 opencode.json
