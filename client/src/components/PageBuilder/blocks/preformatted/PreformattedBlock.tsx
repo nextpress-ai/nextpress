@@ -3,6 +3,7 @@ import type { BlockConfig } from "@shared/schema-types";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SettingsLabel } from '../../shared';
 import { UnitValueField } from "../../unit-value-field";
 import { FileText as PreformattedIcon, Settings } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
