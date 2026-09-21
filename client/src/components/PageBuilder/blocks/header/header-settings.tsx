@@ -10,7 +10,7 @@ import { SettingsChipGroup } from "../../settings-chip-group";
 import { DimensionPresetField } from "../../dimension-preset-field";
 import { SettingsDisclosure, SettingsLabel } from "../../shared";
 import { MediaUrlField } from "../shared/media-url-field";
-import TokenColorPicker from "../../TokenColorPicker";
+import ColorField from "../../ColorField";
 import {
 	applyHeaderBrandKind,
 	applyHeaderVariant,
@@ -148,7 +148,7 @@ export function HeaderSettings({
 					</p>
 				) : null}
 				<div className="mt-3 flex items-center justify-between gap-3">
-					<SettingsLabel htmlFor="header-sticky">Stay on scroll</SettingsLabel>
+					<SettingsLabel htmlFor="header-sticky">Float on scroll</SettingsLabel>
 					<Switch
 						id="header-sticky"
 						checked={content.sticky}
@@ -426,26 +426,30 @@ export function HeaderSettings({
 										}
 									/>
 									<div className="space-y-2">
-										<div className="flex items-center justify-between gap-2">
-											<SettingsLabel>Color</SettingsLabel>
-											{item.color ? (
-												<Button
-													type="button"
-													variant="ghost"
-													size="sm"
-													className="h-8 px-2"
-													onClick={() => updateAction(index, { color: undefined })}
-												>
-													Theme
-												</Button>
-											) : null}
-										</div>
-										<TokenColorPicker
+										<SettingsLabel>Color</SettingsLabel>
+										<ColorField
 											ariaLabel="Button color"
-											property="backgroundColor"
-											currentEntry={item.color}
-											currentStyleValue={item.color?.style}
-											onChange={(entry: TokenEntry) => updateAction(index, { color: entry })}
+											defaultProperty="backgroundColor"
+											targets={[
+												{
+													property: "backgroundColor",
+													label: item.style === "solid" ? "Background" : "Outline",
+													entry: item.color,
+													styleValue: item.color?.style,
+												},
+												{
+													property: "color",
+													label: "Text",
+													entry: item.textColor,
+													styleValue: item.textColor?.style,
+												},
+											]}
+											onChange={(entry: TokenEntry) =>
+												updateAction(index, entry.property === "color" ? { textColor: entry } : { color: entry })
+											}
+											onTheme={(target) =>
+												updateAction(index, target.property === "color" ? { textColor: undefined } : { color: undefined })
+											}
 										/>
 									</div>
 								</SettingsDisclosure>

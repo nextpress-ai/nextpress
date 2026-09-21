@@ -537,7 +537,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
             defaultProperty={prefersTextColor ? 'color' : 'backgroundColor'}
             targets={colorTargets()}
             onChange={updateTokenEntry}
-            onClear={clearColor}
+            onTheme={clearColor}
           />
           <SettingsDisclosure title="Hover colors" defaultOpen={hasHoverColors}>
             <ColorField
@@ -545,7 +545,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
               defaultProperty={prefersTextColor ? 'color' : 'backgroundColor'}
               targets={colorTargets('hover')}
               onChange={updateTokenEntry}
-              onClear={clearColor}
+              onTheme={clearColor}
             />
           </SettingsDisclosure>
         </CollapsibleCard>

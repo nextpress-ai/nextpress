@@ -9,6 +9,7 @@ import {
 	headerActionLookStyle,
 	headerActionSizeLook,
 	headerCollapsesToMenu,
+	headerFloatWrapperStyles,
 	headerHasBlocksSlot,
 	HEADER_VARIANT_OPTIONS,
 	headerLogoMarkStyle,
@@ -305,5 +306,82 @@ describe("header blocks layout and menu rules", () => {
 			readHeaderContent({ kind: "structured", data: { variant } }).variant;
 		expect(read("brand-and-blocks")).toBe("brand-and-blocks");
 		expect(read("nonsense")).toBe("links-and-actions");
+	});
+});
+
+describe("header button text colour", () => {
+	const paintToken = (style: string) => ({
+		property: "backgroundColor",
+		value: "",
+		variant: null,
+		alias: "bg",
+		style,
+	});
+	const textToken = (style: string) => ({ property: "color", value: "", variant: null, alias: "text", style });
+	const base = { id: "a", label: "Go", href: "/go", size: "md", radius: "9999px" };
+
+	it("leaves buttons exactly as before when no text colour is set", () => {
+		expect(headerActionLookStyle({ ...base, style: "solid", color: paintToken("#111111") })).toMatchObject({
+			backgroundColor: "#111111",
+			color: "#fff",
+		});
+		expect(headerActionLookStyle({ ...base, style: "ghost", color: paintToken("#111111") })).toMatchObject({
+			borderColor: "#111111",
+			color: "#111111",
+		});
+	});
+
+	it("a solid button keeps its background and takes the chosen text colour", () => {
+		const look = headerActionLookStyle({
+			...base,
+			style: "solid",
+			color: paintToken("#111111"),
+			textColor: textToken("#facc15"),
+		});
+		expect(look).toMatchObject({ backgroundColor: "#111111", color: "#facc15" });
+	});
+
+	it("a solid button can set only the text colour and keep the page accent background", () => {
+		const look = headerActionLookStyle({ ...base, style: "solid", textColor: textToken("#000000") });
+		expect(look.color).toBe("#000000");
+		expect(look.backgroundColor).toBeUndefined();
+	});
+
+	it("a ghost button keeps its outline colour when the text is set apart", () => {
+		const look = headerActionLookStyle({
+			...base,
+			style: "ghost",
+			color: paintToken("#16a34a"),
+			textColor: textToken("#111111"),
+		});
+		expect(look).toMatchObject({ borderColor: "#16a34a", color: "#111111" });
+	});
+
+	it("reads a saved text colour back, and drops a malformed one", () => {
+		const read = (textColor: unknown) =>
+			readHeaderContent({
+				kind: "structured",
+				data: { actions: [{ id: "a", label: "Go", href: "/go", style: "solid", textColor }] },
+			}).actions[0]!.textColor;
+		expect(read(textToken("#facc15"))).toMatchObject({ property: "color", style: "#facc15" });
+		expect(read({ property: "color" })).toBeUndefined();
+		expect(read("red")).toBeUndefined();
+	});
+});
+
+describe("float on scroll", () => {
+	const headerBlock = (sticky: boolean) => ({
+		name: "core/header",
+		content: { kind: "structured" as const, data: { ...DEFAULT_HEADER_CONTENT, sticky } },
+	});
+
+	it("sticks the wrapper to the top when the header floats", () => {
+		expect(headerFloatWrapperStyles(headerBlock(true))).toEqual({ position: "sticky", top: 0, zIndex: 40 });
+	});
+
+	it("does nothing when the header does not float, or for any other block", () => {
+		expect(headerFloatWrapperStyles(headerBlock(false))).toEqual({});
+		expect(headerFloatWrapperStyles({ name: "core/group", content: headerBlock(true).content })).toEqual({});
+		expect(headerFloatWrapperStyles({ name: "core/header" })).toEqual({});
 	});
 });

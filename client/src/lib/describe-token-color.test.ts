@@ -42,4 +42,9 @@ describe('describeTokenColor', () => {
     expect(summary.label).toBe('blue-500');
     expect(summary.isSet).toBe(true);
   });
+
+  it('calls a page-theme variable "Theme" instead of showing the variable', () => {
+    const summary = describeTokenColor({ entry: undefined, styleValue: 'var(--npb-accent, #007cba)' });
+    expect(summary).toEqual({ label: 'Theme', swatch: 'var(--npb-accent, #007cba)', isSet: true });
+  });
 });

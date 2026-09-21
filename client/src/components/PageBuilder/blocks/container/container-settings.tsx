@@ -6,7 +6,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Layout, Palette, Ruler } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { cn } from "@/lib/utils";
-import TokenColorPicker from "../../TokenColorPicker";
+import ColorField, { type ColorTarget } from "../../ColorField";
 import {
   type ContainerContent,
   DEFAULT_CONTENT,
@@ -61,14 +61,17 @@ export function ContainerSettings({ block, onUpdate }: ContainerSettingsProps) {
     }
   };
 
-  const clearBackgroundStyleWhileToken = () => {
+  /** A token beats the plain style of the same name, so drop the style when a token is set. */
+  const clearColorStyleWhileToken = (key: "backgroundColor" | "color") => {
     if (accessor) {
       const current = accessor.getStyles() || {};
-      const { backgroundColor: _b, ...rest } = current;
-      accessor.setStyles(rest);
-      rerender();
-    } else if (onUpdate && block.styles?.backgroundColor != null) {
-      const { backgroundColor: _b, ...rest } = block.styles;
+      if (key in current) {
+        const { [key]: _removed, ...rest } = current;
+        accessor.setStyles(rest);
+        rerender();
+      }
+    } else if (onUpdate && block.styles?.[key] != null) {
+      const { [key]: _removed, ...rest } = block.styles;
       onUpdate({ styles: rest });
     }
   };
@@ -86,13 +89,23 @@ export function ContainerSettings({ block, onUpdate }: ContainerSettingsProps) {
     });
   };
 
-  const handleBackgroundTokenChange = (entry: TokenEntry) => {
-    clearBackgroundStyleWhileToken();
-    mergeTokenEntry(entry);
+  /** Hands the colour back to the page's theme: drop the token and any plain style of the same name. */
+  const followTheme = (target: ColorTarget) => {
+    const key = target.property === "color" ? "color" : "backgroundColor";
+    clearColorStyleWhileToken(key);
+    const currentOther = block.other || {};
+    onUpdate?.({
+      other: {
+        ...currentOther,
+        tokenMap: { ...(currentOther.tokenMap || {}), [key]: null } as Record<string, TokenEntry>,
+      },
+    });
   };
 
-  const getBgTokenEntry = (): TokenEntry | undefined =>
-    block.other?.tokenMap?.backgroundColor;
+  const handleColorTokenChange = (entry: TokenEntry) => {
+    clearColorStyleWhileToken(entry.property === "color" ? "color" : "backgroundColor");
+    mergeTokenEntry(entry);
+  };
 
   const tagOptions = [
     { value: "div", label: "div" },
@@ -160,20 +173,27 @@ export function ContainerSettings({ block, onUpdate }: ContainerSettingsProps) {
       <CollapsibleCard title="Style" icon={Palette} defaultOpen={false}>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="container-bg-token" className="npb-settings-label text-sm font-medium">
-              Background
-            </Label>
-            <p className="npb-settings-hint-muted text-xs">
-              Uses the same TokenColorPicker pattern as the Style → Colors section for paragraph blocks.
-            </p>
-            <div id="container-bg-token" className="mt-2">
-              <TokenColorPicker
-                property="backgroundColor"
-                currentEntry={getBgTokenEntry()}
-                currentStyleValue={styles?.backgroundColor as string | undefined}
-                onChange={handleBackgroundTokenChange}
-              />
-            </div>
+            <Label className="npb-settings-label text-sm font-medium">Colors</Label>
+            <ColorField
+              ariaLabel="Container color"
+              defaultProperty="backgroundColor"
+              targets={[
+                {
+                  property: "backgroundColor",
+                  label: "Background",
+                  entry: block.other?.tokenMap?.backgroundColor,
+                  styleValue: styles?.backgroundColor as string | undefined,
+                },
+                {
+                  property: "color",
+                  label: "Text",
+                  entry: block.other?.tokenMap?.color,
+                  styleValue: styles?.color as string | undefined,
+                },
+              ]}
+              onChange={handleColorTokenChange}
+              onTheme={followTheme}
+            />
           </div>
           <DimensionPresetField
             label="Padding"

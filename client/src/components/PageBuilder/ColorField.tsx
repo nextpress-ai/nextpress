@@ -1,6 +1,5 @@
 import { useRef, useState, type JSX } from 'react';
 import type { TokenEntry } from '@shared/schema-types';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { tokenColors, propertyAliasMap } from '@/lib/tailwind-tokens';
@@ -17,14 +16,22 @@ export type ColorTarget = {
   entry?: TokenEntry | null;
   styleValue?: string;
   modifier?: string;
+  /**
+   * True when the colour already follows the page's theme. Leave out when "no colour set" means
+   * that; pass it when the theme is stored as a value (e.g. a `var(--npb-accent)` style).
+   */
+  followsTheme?: boolean;
 };
 
 type ColorFieldProps = {
   /** One target shows just the colours. Two or more add a toggle to switch between them. */
   targets: readonly ColorTarget[];
   onChange: (entry: TokenEntry) => void;
-  /** Adds a Clear button for the colour being edited. */
-  onClear?: (target: ColorTarget) => void;
+  /**
+   * Adds a Theme button: "let this follow the page's theme". It lights up while the colour being
+   * edited already follows the theme, and clicking it hands the colour back to the theme.
+   */
+  onTheme?: (target: ColorTarget) => void;
   /** Which target is showing first. Defaults to the first one. */
   defaultProperty?: string;
   ariaLabel?: string;
@@ -60,11 +67,15 @@ const SHADE_KEYS = ['50', '100', '200', '300', '400', '500', '600', '700', '800'
 
 const swatchName = ({ family, shade }: Swatch): string => (shade ? `${family}-${shade}` : family);
 
+/** The palette as a plain lookup: a name maps to one colour, or to a scale of shades. */
+const COLOR_TABLE = new Map<string, string | Readonly<Record<string, string>>>(Object.entries(tokenColors));
+
 const getHex = ({ family, shade }: Swatch): string | null => {
-  const group = (tokenColors as Record<string, Record<string, string> | string>)[family];
+  const group = COLOR_TABLE.get(family);
   if (!group) return null;
   if (typeof group === 'string') return group;
-  return shade && typeof group[shade] === 'string' && !group[shade]!.startsWith('var(') ? group[shade]! : null;
+  const hex = shade ? group[shade] : undefined;
+  return typeof hex === 'string' && !hex.startsWith('var(') ? hex : null;
 };
 
 const targetKey = (target: ColorTarget): string =>
@@ -119,7 +130,7 @@ function SwatchButton({
 export default function ColorField({
   targets,
   onChange,
-  onClear,
+  onTheme,
   defaultProperty,
   ariaLabel = 'Color',
 }: ColorFieldProps): JSX.Element {
@@ -143,7 +154,8 @@ export default function ColorField({
         : resolveTailwindColorToken(summary.swatch ?? undefined);
   const isSelected = (swatch: Swatch): boolean =>
     selection !== null && selection.family === swatch.family && selection.shade === swatch.shade;
-  const isCustom = summary.isSet && selection === null;
+  const isTheme = active.followsTheme ?? !summary.isSet;
+  const isCustom = summary.isSet && selection === null && !isTheme;
 
   const pick = (swatch: Swatch, hex: string): void => {
     setDraft(null);
@@ -173,14 +185,14 @@ export default function ColorField({
     if (isValidCssColor(text)) setCustom(text.trim());
   };
 
-  const shownText = draft ?? (summary.swatch ?? '');
+  const shownText = draft ?? (isTheme ? '' : (summary.swatch ?? ''));
   const invalid = draft !== null && draft.trim() !== '' && !isValidCssColor(draft);
-  const showHeader = targets.length > 1 || (onClear !== undefined && summary.isSet);
+  const showHeader = targets.length > 1 || onTheme !== undefined;
 
   return (
     <div className="space-y-2" role="group" aria-label={ariaLabel}>
       {showHeader ? (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           {targets.length > 1 ? (
             <div className="flex items-stretch" role="group" aria-label={`${ariaLabel} target`}>
               {targets.map((target, index) => {
@@ -220,16 +232,21 @@ export default function ColorField({
           ) : (
             <span />
           )}
-          {onClear && summary.isSet ? (
-            <Button
+          {onTheme ? (
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="-my-0.5 h-6 px-2 text-xs"
-              onClick={() => onClear(active)}
+              aria-pressed={isTheme}
+              title="Follow the page's theme"
+              onClick={() => {
+                if (!isTheme) onTheme(active);
+              }}
+              className={cn(
+                'npb-settings-chip ml-auto flex shrink-0 items-center px-3 focus:outline-none',
+                isTheme && 'npb-settings-chip--active',
+              )}
             >
-              Clear
-            </Button>
+              Theme
+            </button>
           ) : null}
         </div>
       ) : null}

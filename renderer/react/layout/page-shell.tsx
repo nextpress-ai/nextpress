@@ -3,6 +3,7 @@ import type { BlockConfig } from "@shared/schema-types";
 import { getRenderProps, getBlockComponent } from "../render-helpers";
 import { readPageShellContent } from "@shared/page-shell-model";
 import { buildPageShellOuterStyle, getPageShellChildItemStyle } from "@shared/page-shell-styles";
+import { headerFloatWrapperStyles } from "@shared/header-model";
 
 export function PageShellBlock(block: BlockConfig) {
 	const { className, attributes } = getRenderProps(block);
@@ -20,7 +21,10 @@ export function PageShellBlock(block: BlockConfig) {
 				const ChildComponent = getBlockComponent(child.name);
 				if (!ChildComponent) return null;
 				return (
-					<div key={child.id} style={getPageShellChildItemStyle({ child, content })}>
+					<div
+						key={child.id}
+						style={{ ...getPageShellChildItemStyle({ child, content }), ...headerFloatWrapperStyles(child) }}
+					>
 						<ChildComponent {...child} />
 					</div>
 				);

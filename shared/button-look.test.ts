@@ -3,7 +3,11 @@ import type { TokenEntry } from "./schema-types";
 import {
 	BUTTON_SIZE_PRESETS,
 	BUTTON_SIZE_STYLES,
+	THEME_BUTTON_FILL,
+	THEME_BUTTON_TEXT,
 	buildButtonLookChange,
+	buildButtonThemeChange,
+	buttonFollowsTheme,
 	buttonSizeStyles,
 	customButtonSizeStyles,
 	readButtonLook,
@@ -93,5 +97,39 @@ describe("buildButtonLookChange", () => {
 		const back = buildButtonLookChange({ look: "solid", styles: toGhost.styles, tokenMap: toGhost.tokens });
 		expect(back.styles.backgroundColor).toBe("#2563eb");
 		expect(back.tokens.backgroundColor).toEqual(bg);
+	});
+});
+
+describe("following the page theme", () => {
+	it("gives a solid button the theme fill and the text that reads on it", () => {
+		expect(buildButtonThemeChange({ property: "backgroundColor", look: "solid" })).toEqual({
+			styles: { backgroundColor: THEME_BUTTON_FILL },
+			tokens: { backgroundColor: null },
+		});
+		expect(buildButtonThemeChange({ property: "color", look: "solid" }).styles).toEqual({ color: THEME_BUTTON_TEXT });
+	});
+
+	it("a ghost button's text follows the accent itself", () => {
+		expect(buildButtonThemeChange({ property: "color", look: "ghost" }).styles).toEqual({ color: THEME_BUTTON_FILL });
+	});
+
+	it("falls back to the old blue on a page with no theme", () => {
+		expect(THEME_BUTTON_FILL).toBe("var(--npb-accent, #007cba)");
+		expect(THEME_BUTTON_TEXT).toContain("#ffffff");
+	});
+
+	it("knows when a colour follows the theme, and that a token overrides it", () => {
+		const styles = { backgroundColor: THEME_BUTTON_FILL, color: THEME_BUTTON_TEXT };
+		expect(buttonFollowsTheme({ property: "backgroundColor", look: "solid", styles, tokenMap: undefined })).toBe(true);
+		expect(buttonFollowsTheme({ property: "color", look: "solid", styles, tokenMap: undefined })).toBe(true);
+		expect(buttonFollowsTheme({ property: "backgroundColor", look: "solid", styles: { backgroundColor: "#007cba" }, tokenMap: undefined })).toBe(false);
+		expect(buttonFollowsTheme({ property: "backgroundColor", look: "solid", styles, tokenMap: { backgroundColor: token("backgroundColor", "bg", "#111") } })).toBe(false);
+	});
+
+	it("keeps the theme pair when switching a themed button between solid and ghost", () => {
+		const ghost = buildButtonLookChange({ look: "ghost", styles: { backgroundColor: THEME_BUTTON_FILL, color: THEME_BUTTON_TEXT }, tokenMap: {} });
+		expect(ghost.styles.color).toBe(THEME_BUTTON_FILL);
+		const solid = buildButtonLookChange({ look: "solid", styles: ghost.styles, tokenMap: ghost.tokens });
+		expect(solid.styles).toMatchObject({ backgroundColor: THEME_BUTTON_FILL, color: THEME_BUTTON_TEXT });
 	});
 });

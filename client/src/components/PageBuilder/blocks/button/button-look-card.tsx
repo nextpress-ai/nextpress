@@ -5,10 +5,13 @@ import { BORDER_RADIUS_PRESETS } from "@shared/dimension-presets";
 import {
 	BUTTON_SIZE_PRESETS,
 	buildButtonLookChange,
+	buildButtonThemeChange,
+	buttonFollowsTheme,
 	buttonSizeStyles,
 	customButtonSizeStyles,
 	readButtonLook,
 	readButtonSize,
+	type ButtonColorProperty,
 	type ButtonLook,
 	type ButtonLookChange,
 	type ButtonSize,
@@ -43,6 +46,15 @@ export function ButtonLookCard({ styles, tokenMap, onStyles, onTokens, onAccent 
 	const look = readButtonLook({ styles, tokenMap });
 	const size = readButtonSize(styles);
 	const accentProperty = look === "solid" ? "backgroundColor" : "color";
+
+	const followTheme = (property: ButtonColorProperty) => {
+		const change = buildButtonThemeChange({ property, look });
+		onStyles(change.styles);
+		onTokens(change.tokens);
+	};
+
+	const themeState = (property: ButtonColorProperty) =>
+		buttonFollowsTheme({ property, look, styles, tokenMap });
 
 	const pickLook = (next: ButtonLook) => {
 		if (next === look) return;
@@ -92,18 +104,28 @@ export function ButtonLookCard({ styles, tokenMap, onStyles, onTokens, onAccent 
 			/>
 
 			<div className="space-y-2">
-				<SettingsLabel>Color</SettingsLabel>
+				<SettingsLabel>Colors</SettingsLabel>
 				<ColorField
 					ariaLabel="Button color"
+					defaultProperty={accentProperty}
 					targets={[
 						{
-							property: accentProperty,
-							label: "Color",
-							entry: tokenMap?.[accentProperty],
-							styleValue: text(styles[accentProperty]),
+							property: "backgroundColor",
+							label: "Background",
+							entry: tokenMap?.backgroundColor,
+							styleValue: text(styles.backgroundColor),
+							followsTheme: themeState("backgroundColor"),
+						},
+						{
+							property: "color",
+							label: "Text",
+							entry: tokenMap?.color,
+							styleValue: text(styles.color),
+							followsTheme: themeState("color"),
 						},
 					]}
 					onChange={onAccent}
+					onTheme={(target) => followTheme(target.property === "color" ? "color" : "backgroundColor")}
 				/>
 			</div>
 		</CollapsibleCard>

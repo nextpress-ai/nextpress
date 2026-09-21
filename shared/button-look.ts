@@ -29,6 +29,13 @@ export const CUSTOM_BUTTON_PADDING = "0.75em 1.5em";
 /** Colour a solid button paints when none was chosen. */
 export const DEFAULT_BUTTON_COLOR = "#007cba";
 
+/**
+ * The page theme's colours. A theme sets `--npb-accent` (and `--npb-accent-foreground`, the text that
+ * reads on it) on every published page; the old blue is the fallback for a page with no theme.
+ */
+export const THEME_BUTTON_FILL = `var(--npb-accent, ${DEFAULT_BUTTON_COLOR})`;
+export const THEME_BUTTON_TEXT = "var(--npb-accent-foreground, #ffffff)";
+
 type StyleBag = Record<string, unknown> | undefined;
 type TokenBag = Record<string, TokenEntry | null | undefined> | undefined;
 
@@ -130,9 +137,48 @@ export function buildButtonLookChange({
 	return {
 		styles: {
 			backgroundColor: usable ?? DEFAULT_BUTTON_COLOR,
-			color: "#ffffff",
+			// A theme fill keeps the theme's matching text, so the pair stays readable if the theme changes.
+			color: usable === THEME_BUTTON_FILL ? THEME_BUTTON_TEXT : "#ffffff",
 			border: "none",
 		},
 		tokens: { color: null, backgroundColor: entry && usable ? moveToken(entry, "backgroundColor", "bg") : null },
 	};
+}
+
+export type ButtonColorProperty = "backgroundColor" | "color";
+
+/** What "follow the page theme" means for one of a button's two colours. */
+function themeValueFor({ property, look }: { property: ButtonColorProperty; look: ButtonLook }): string {
+	if (property === "backgroundColor") return THEME_BUTTON_FILL;
+	return look === "ghost" ? THEME_BUTTON_FILL : THEME_BUTTON_TEXT;
+}
+
+/**
+ * Hands a button colour to the page theme: the fill (or a ghost's text) becomes the theme accent, a
+ * solid button's text becomes the accent's matching foreground. Any token that would win is removed.
+ */
+export function buildButtonThemeChange({
+	property,
+	look,
+}: {
+	property: ButtonColorProperty;
+	look: ButtonLook;
+}): ButtonLookChange {
+	return { styles: { [property]: themeValueFor({ property, look }) }, tokens: { [property]: null } };
+}
+
+/** True while a button colour is the theme's (and no token overrides it). */
+export function buttonFollowsTheme({
+	property,
+	look,
+	styles,
+	tokenMap,
+}: {
+	property: ButtonColorProperty;
+	look: ButtonLook;
+	styles: StyleBag;
+	tokenMap: TokenBag;
+}): boolean {
+	if (tokenMap?.[property]) return false;
+	return styles?.[property] === themeValueFor({ property, look });
 }

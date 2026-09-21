@@ -191,3 +191,113 @@ describe('header with no menu and blocks on the right', () => {
   });
 });
 
+describe('float on scroll in the editor canvas', () => {
+  const pageWithHeader = (sticky: boolean): BlockConfig => ({
+    id: 'shell-1',
+    name: 'core/page-shell',
+    type: 'container',
+    label: 'Page shell',
+    category: 'layout',
+    content: blockRegistry['core/page-shell']!.defaultContent as BlockConfig['content'],
+    settings: {},
+    parentId: null,
+    children: [
+      {
+        ...header(),
+        parentId: 'shell-1',
+        content: {
+          kind: 'structured',
+          data: { ...(blockRegistry['core/header']!.defaultContent as { data: Record<string, unknown> }).data, sticky },
+        } as BlockConfig['content'],
+      },
+    ],
+  });
+
+  /** The wrapper nearest the header that is sticky, or null. */
+  const stickyAncestor = (headerEl: Element): HTMLElement | null =>
+    headerEl.closest<HTMLElement>('[style*="position: sticky"]');
+
+  it('sticks a wrapper around the header — not the header itself — when it floats', () => {
+    const Shell = blockRegistry['core/page-shell']!.component!;
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <Shell value={pageWithHeader(true)} onChange={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    const headerEl = container.querySelector('header.wp-block-header')!;
+    const sticky = stickyAncestor(headerEl);
+    expect(sticky).not.toBeNull();
+    expect(sticky).not.toBe(headerEl);
+    // It must be a direct child of the page column, the only place it has room to travel.
+    expect(sticky!.parentElement).toBe(container.querySelector('.wp-block-page-shell__inner'));
+    expect(sticky!.style.top).toBe('0px');
+  });
+
+  it('has no sticky wrapper when the header does not float', () => {
+    const Shell = blockRegistry['core/page-shell']!.component!;
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <Shell value={pageWithHeader(false)} onChange={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    expect(stickyAncestor(container.querySelector('header.wp-block-header')!)).toBeNull();
+  });
+
+  it('calls the setting "Float on scroll"', () => {
+    render(<Builder />);
+    const inspector = screen.getByTestId('inspector');
+    expect(within(inspector).getByText('Float on scroll')).toBeInTheDocument();
+    expect(within(inspector).queryByText('Stay on scroll')).toBeNull();
+  });
+});
+
+describe('two-target colour control in the header buttons', () => {
+  it('sets a button background and its text colour apart, and paints both on the canvas', async () => {
+    const user = userEvent.setup();
+    render(<Builder />);
+    const canvas = screen.getByTestId('canvas');
+    const inspector = screen.getByTestId('inspector');
+    await user.click(within(inspector).getByRole('button', { name: /^Buttons$/ }));
+    await user.click(within(inspector).getAllByRole('button', { name: 'Button style' })[1]!); // the solid one
+    const colors = within(inspector).getByRole('group', { name: 'Button color' }); // only the opened button mounts its colours
+    const toggle = within(colors).getByRole('group', { name: 'Button color target' });
+    expect(within(toggle).getByRole('button', { name: 'Background' })).toBeInTheDocument();
+    await user.click(within(colors).getByRole('button', { name: 'blue-500' }));
+    await user.click(within(toggle).getByRole('button', { name: 'Text' }));
+    await user.click(within(colors).getByRole('button', { name: 'yellow-400' }));
+    const solid = canvas.querySelector<HTMLElement>('.wp-block-header__action.is-solid')!;
+    expect(solid.style.backgroundColor).not.toBe('');
+    expect(solid.style.color).not.toBe('');
+    expect(solid.style.color).not.toBe('rgb(255, 255, 255)');
+  });
+
+  it('calls the first target "Outline" on a ghost button, since a ghost has no fill', async () => {
+    const user = userEvent.setup();
+    render(<Builder />);
+    const inspector = screen.getByTestId('inspector');
+    await user.click(within(inspector).getByRole('button', { name: /^Buttons$/ }));
+    await user.click(within(inspector).getAllByRole('button', { name: 'Button style' })[0]!); // the ghost one
+    const toggle = within(within(inspector).getByRole('group', { name: 'Button color' })).getByRole('group', { name: 'Button color target' });
+    expect(within(toggle).getByRole('button', { name: 'Outline' })).toBeInTheDocument();
+    expect(within(toggle).queryByRole('button', { name: 'Background' })).toBeNull();
+  });
+
+  it('Theme hands a button colour back to the page accent', async () => {
+    const user = userEvent.setup();
+    render(<Builder />);
+    const canvas = screen.getByTestId('canvas');
+    const inspector = screen.getByTestId('inspector');
+    await user.click(within(inspector).getByRole('button', { name: /^Buttons$/ }));
+    await user.click(within(inspector).getAllByRole('button', { name: 'Button style' })[1]!);
+    const colors = within(inspector).getByRole('group', { name: 'Button color' });
+    expect(within(colors).getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'true'); // starts on the theme
+    await user.click(within(colors).getByRole('button', { name: 'blue-500' }));
+    const solid = () => canvas.querySelector<HTMLElement>('.wp-block-header__action.is-solid')!;
+    expect(solid().style.backgroundColor).not.toBe('');
+    expect(within(colors).getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'false');
+    await user.click(within(colors).getByRole('button', { name: 'Theme' }));
+    expect(solid().style.backgroundColor).toBe('');
+    expect(within(colors).getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+

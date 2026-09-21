@@ -94,7 +94,10 @@ export type HeaderAction = {
 	style: HeaderActionStyle;
 	size: HeaderActionSize;
 	radius: string;
+	/** Solid: the button's background. Ghost: its outline (and its text, unless `textColor` is set). */
 	color?: TokenEntry;
+	/** Text colour. Solid buttons are white without it; ghost buttons follow `color`. */
+	textColor?: TokenEntry;
 };
 
 export const HEADER_ACTION_SIZE_PRESETS = [
@@ -176,15 +179,21 @@ export function headerActionLookStyle(action: HeaderAction): HeaderActionLookSty
 		borderRadius: readHeaderActionRadius(action.radius),
 	};
 	const paint = action.color?.style?.trim();
-	if (!paint) return look;
+	const text = action.textColor?.style?.trim();
 	if (action.style === "solid") {
-		look.backgroundColor = paint;
-		look.borderColor = "transparent";
-		look.color = "#fff";
+		if (paint) {
+			look.backgroundColor = paint;
+			look.borderColor = "transparent";
+			look.color = "#fff";
+		}
+		if (text) look.color = text;
 		return look;
 	}
-	look.borderColor = paint;
-	look.color = paint;
+	if (paint) {
+		look.borderColor = paint;
+		look.color = paint;
+	}
+	if (text) look.color = text;
 	return look;
 }
 
@@ -462,6 +471,7 @@ const readAction = (value: unknown): HeaderAction | null => {
 	const row = value as Record<string, unknown>;
 	if (typeof row.id !== "string" || typeof row.label !== "string") return null;
 	const color = readHeaderActionColor(row.color);
+	const textColor = readHeaderActionColor(row.textColor);
 	return {
 		id: row.id,
 		label: row.label,
@@ -470,6 +480,7 @@ const readAction = (value: unknown): HeaderAction | null => {
 		size: readHeaderActionSize(row.size),
 		radius: readHeaderActionRadius(row.radius),
 		...(color ? { color } : {}),
+		...(textColor ? { textColor } : {}),
 	};
 };
 
@@ -552,4 +563,21 @@ export function headerOverlayPaintStyles(block: { name?: string }): {
 } {
 	if (block.name !== HEADER_BLOCK_NAME) return {};
 	return { position: "relative", zIndex: 40 };
+}
+
+/**
+ * "Float on scroll" — the header stays at the top while the page scrolls under it.
+ *
+ * WHY this is on the wrapper, not the `<header>`: `position: sticky` only moves an element within
+ * its parent's box. The header always sits inside wrapper divs exactly as tall as itself, so a
+ * sticky `<header>` has no room to travel and just scrolls away. The outermost wrapper — the direct
+ * child of the tall page column — is the element that has to stick.
+ */
+export function headerFloatWrapperStyles(block: { name?: string; content?: BlockContent }): {
+	position?: "sticky";
+	top?: number;
+	zIndex?: number;
+} {
+	if (block.name !== HEADER_BLOCK_NAME) return {};
+	return readHeaderContent(block.content).sticky ? { position: "sticky", top: 0, zIndex: 40 } : {};
 }

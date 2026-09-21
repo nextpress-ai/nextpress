@@ -211,10 +211,9 @@ figure.wp-block-embed {
   color: inherit;
 }
 
+/* "Float on scroll": the wrapper around the header sticks (see headerFloatWrapperStyles), because a
+   sticky <header> cannot move inside a wrapper exactly its own height. */
 .wp-block-header.is-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 40;
   backdrop-filter: blur(12px);
 }
 

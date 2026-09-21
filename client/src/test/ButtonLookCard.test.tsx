@@ -29,6 +29,9 @@ async function openStyle(block: BlockConfig) {
 const lastStyles = (onUpdate: ReturnType<typeof vi.fn>) =>
   (onUpdate.mock.calls.filter(([updates]) => 'styles' in updates).at(-1)![0] as { styles: Record<string, unknown> }).styles;
 
+// These tests render the whole settings panel; give them room when the machine is busy.
+vi.setConfig({ testTimeout: 20000 });
+
 describe('button block look, size, corners and color', () => {
   it('opens Button look first, with the untouched button reading as Solid and LG', async () => {
     await openStyle(button());
@@ -85,4 +88,45 @@ describe('button block look, size, corners and color', () => {
     await openStyle({ ...button(), id: 'h1', name: 'core/heading', label: 'Heading', content: { kind: 'text', value: 'Hi', level: 2 } as BlockConfig['content'] });
     expect(screen.queryByRole('button', { name: /Button look/ })).toBeNull();
   });
+
+  it('colours both the background and the text of a solid button', async () => {
+    const { user, onUpdate } = await openStyle(button());
+    const colors = screen.getByRole('group', { name: 'Button color' });
+    const toggle = within(colors).getByRole('group', { name: 'Button color target' });
+    // A solid button starts on its background; the text is one click away.
+    expect(within(toggle).getByRole('button', { name: 'Background' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(within(colors).getByRole('button', { name: 'blue-500' }));
+    await user.click(within(toggle).getByRole('button', { name: 'Text' }));
+    expect(within(toggle).getByRole('button', { name: 'Text' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(within(colors).getByRole('button', { name: 'yellow-400' }));
+    const tokens = onUpdate.mock.calls.filter(([updates]) => updates.other?.tokenMap).map(([updates]) => updates.other.tokenMap);
+    expect(tokens.some((map) => map.backgroundColor?.value === 'blue')).toBe(true);
+    expect(tokens.some((map) => map.color?.value === 'yellow')).toBe(true);
+  });
+
+  it('a ghost button starts on its text colour, and the background is still reachable', async () => {
+    await openStyle(button({ styles: { backgroundColor: 'transparent', color: '#16a34a', border: '1px solid currentColor', padding: '12px 24px', fontSize: '16px' } }));
+    const toggle = within(screen.getByRole('group', { name: 'Button color' })).getByRole('group', { name: 'Button color target' });
+    expect(within(toggle).getByRole('button', { name: 'Text' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(toggle).getByRole('button', { name: 'Background' })).toBeInTheDocument();
+  });
+
+  it('Theme gives a solid button the page accent and the text that reads on it', async () => {
+    const { user, onUpdate } = await openStyle(button());
+    const colors = screen.getByRole('group', { name: 'Button color' });
+    expect(within(colors).getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'false');
+    await user.click(within(colors).getByRole('button', { name: 'Theme' }));
+    expect(lastStyles(onUpdate)).toMatchObject({ backgroundColor: 'var(--npb-accent, #007cba)' });
+    const tokenUpdate = onUpdate.mock.calls.find(([updates]) => updates.other?.tokenMap)!;
+    expect(tokenUpdate[0].other.tokenMap.backgroundColor).toBeNull();
+  });
+
+  it('a button already on the theme lights Theme, and its Text target follows the matching foreground', async () => {
+    await openStyle(button({ styles: { backgroundColor: 'var(--npb-accent, #007cba)', color: 'var(--npb-accent-foreground, #ffffff)', padding: '12px 24px', fontSize: '16px' } }));
+    const colors = screen.getByRole('group', { name: 'Button color' });
+    expect(within(colors).getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.setup().click(within(within(colors).getByRole('group', { name: 'Button color target' })).getByRole('button', { name: 'Text' }));
+    expect(within(colors).getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'true');
+  });
 });
+

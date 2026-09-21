@@ -6,6 +6,8 @@ import { DEFAULT_HEADER_CONTENT } from '@shared/header-model';
 // the app always enters through the block table.
 import { getBlockComponent } from '../../../renderer/react/render-helpers';
 import { HeaderBlock } from '../../../renderer/react/layout/header';
+import { PageShellBlock } from '../../../renderer/react/layout/page-shell';
+import { DEFAULT_PAGE_SHELL_CONTENT } from '@shared/page-shell-model';
 
 const button = (id: string, label: string): BlockConfig => ({
   id,
@@ -68,5 +70,49 @@ describe('header on the published page', () => {
   it('is registered under the name the page tree uses, so SSR finds it', () => {
     expect(getBlockComponent('core/header')).toBeDefined();
     expect(getBlockComponent('core/button')).toBeDefined();
+  });
+});
+
+describe('float on scroll on the published page', () => {
+  const shell = (sticky: boolean): BlockConfig => ({
+    id: 'shell-1',
+    name: 'core/page-shell',
+    type: 'container',
+    label: 'Page shell',
+    category: 'layout',
+    content: { kind: 'structured', data: { ...DEFAULT_PAGE_SHELL_CONTENT } } as BlockConfig['content'],
+    settings: {},
+    parentId: null,
+    children: [
+      {
+        ...header('links-and-actions'),
+        parentId: 'shell-1',
+        content: {
+          kind: 'structured',
+          data: { ...DEFAULT_HEADER_CONTENT, variant: 'links-and-actions', sticky },
+        } as BlockConfig['content'],
+      },
+    ],
+  });
+
+  const wrapperOfHeader = (html: string): string => {
+    const at = html.indexOf('<header');
+    return html.slice(html.lastIndexOf('<div', html.lastIndexOf('<div', at) - 1), at);
+  };
+
+  it('sticks the outermost wrapper, the one that can actually travel down the page', () => {
+    const html = renderToStaticMarkup(<PageShellBlock {...shell(true)} />);
+    // The direct child of the page column is the sticky one — not the <header> and not the inner div.
+    const columnChild = html.slice(html.indexOf('<div', html.indexOf('wp-block-page-shell') + 1));
+    expect(columnChild.slice(0, columnChild.indexOf('>'))).toContain('position:sticky');
+    expect(columnChild.slice(0, columnChild.indexOf('>'))).toContain('top:0');
+    expect(html).toContain('is-sticky');
+    expect(wrapperOfHeader(html)).toBeTruthy();
+  });
+
+  it('adds no sticky styling when the header does not float', () => {
+    const html = renderToStaticMarkup(<PageShellBlock {...shell(false)} />);
+    expect(html).not.toContain('position:sticky');
+    expect(html).not.toContain('is-sticky');
   });
 });

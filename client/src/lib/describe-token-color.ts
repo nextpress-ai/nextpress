@@ -29,6 +29,8 @@ export function describeTokenColor({
 
   const hex = entry?.style?.trim() || styleValue?.trim();
   if (!hex) return { label: 'Not set', swatch: null, isSet: false };
+  // A page-theme variable, e.g. var(--npb-accent, #007cba): it follows the theme, so say so.
+  if (hex.startsWith('var(')) return { label: 'Theme', swatch: hex, isSet: true };
 
   const token = resolveTailwindColorToken(hex);
   if (token) {

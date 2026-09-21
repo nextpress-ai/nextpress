@@ -247,16 +247,55 @@ describe('ColorField', () => {
     expect(screen.getByRole('button', { name: 'rose-300' })).toBeInTheDocument();
   });
 
-  it('offers Clear only when a colour is set and a clear handler is given', async () => {
-    const user = userEvent.setup();
-    const onClear = vi.fn();
-    const { rerender } = render(
-      <ColorField ariaLabel="Color" targets={[{ property: 'color', label: 'Text', entry: undefined }]} onChange={vi.fn()} onClear={onClear} />,
+  it('offers a Theme button that is lit while the colour follows the page theme', () => {
+    render(
+      <ColorField ariaLabel="Color" targets={[{ property: 'color', label: 'Text', entry: undefined }]} onChange={vi.fn()} onTheme={vi.fn()} />,
     );
-    expect(screen.queryByRole('button', { name: 'Clear' })).toBeNull();
-    rerender(<ColorField key="with-color" ariaLabel="Color" targets={targets} onChange={vi.fn()} onClear={onClear} />);
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
-    expect(onClear).toHaveBeenCalledWith(expect.objectContaining({ property: 'backgroundColor' }));
+    // Nothing set = the theme's colour, so Theme is lit even before anything is chosen.
+    expect(screen.getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('hands a chosen colour back to the theme with one click, and does nothing when already on the theme', async () => {
+    const user = userEvent.setup();
+    const onTheme = vi.fn();
+    const { unmount } = render(<ColorField key="set" ariaLabel="Color" targets={targets} onChange={vi.fn()} onTheme={onTheme} />);
+    const theme = screen.getByRole('button', { name: 'Theme' });
+    expect(theme).toHaveAttribute('aria-pressed', 'false');
+    await user.click(theme);
+    expect(onTheme).toHaveBeenCalledWith(expect.objectContaining({ property: 'backgroundColor' }));
+    unmount();
+
+    const again = vi.fn();
+    render(<ColorField key="unset" ariaLabel="Color" targets={[{ property: 'color', label: 'Text', entry: undefined }]} onChange={vi.fn()} onTheme={again} />);
+    await user.click(screen.getByRole('button', { name: 'Theme' }));
+    expect(again).not.toHaveBeenCalled();
+  });
+
+  it('follows the theme for the target being edited, and each target keeps its own state', async () => {
+    const user = userEvent.setup();
+    render(<ColorField ariaLabel="Color" targets={targets} onChange={vi.fn()} onTheme={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'false'); // Background is blue
+    await user.click(screen.getByRole('button', { name: 'Text' }));
+    expect(screen.getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'true'); // Text is unset
+  });
+
+  it('honours a theme stored as a value (e.g. a var) and never shows it as a custom colour', () => {
+    render(
+      <ColorField
+        ariaLabel="Color"
+        targets={[{ property: 'backgroundColor', label: 'Background', styleValue: 'var(--npb-accent, #007cba)', followsTheme: true }]}
+        onChange={vi.fn()}
+        onTheme={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Theme' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(screen.getByRole('group', { name: 'Color custom color' })).getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByLabelText('Color custom value')).toHaveValue('');
+  });
+
+  it('has no Theme button when the field cannot follow a theme', () => {
+    render(<ColorField ariaLabel="Color" targets={targets} onChange={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Theme' })).toBeNull();
   });
 });
 

@@ -41,7 +41,7 @@ import {
   NPB_ICON_REFERENCE_ROW_MAX_CHARS,
   truncateWithEllipsis,
 } from '@/lib/truncate-with-ellipsis';
-import { headerOverlayPaintStyles } from '@shared/header-model';
+import { headerFloatWrapperStyles, headerOverlayPaintStyles } from '@shared/header-model';
 import { useCanvasBlockToolbar } from './use-canvas-block-toolbar';
 import {
   type CanvasChromeMode,
@@ -113,6 +113,7 @@ export function ContainerChildren({
           ...getBlockSiblingFlexItemStyles(child.styles, siblingStackDirection),
           ...getBlockStackLayerWrapperStyles(child),
         }),
+    ...headerFloatWrapperStyles(child),
     ...(itemStyle ? itemStyle(child) : {}),
   });
   const needsEmptyDropMinHeight =

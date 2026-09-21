@@ -20,7 +20,7 @@ import {
 import { buildGroupShellStyles, readGroupShellContent } from "@shared/group-shell-styles";
 import { buildStackShellStyles } from "@shared/stack-shell-styles";
 import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
-import { headerOverlayPaintStyles } from "@shared/header-model";
+import { headerFloatWrapperStyles, headerOverlayPaintStyles } from "@shared/header-model";
 import { PageShellBlock } from "./page-shell";
 import { HeaderBlock } from "./header";
 
@@ -166,6 +166,7 @@ export function GroupBlock(block: BlockConfig) {
 					...rowFlex,
 					...getBlockSiblingFlexItemStyles(child.styles, stackDirection),
 					...getBlockStackLayerWrapperStyles(child),
+					...headerFloatWrapperStyles(child),
 				}}
 			>
 				<ChildComponent {...child} />
@@ -233,7 +234,7 @@ export function StackBlock(block: BlockConfig) {
 					...getBlockStackLayerWrapperStyles(child),
 				};
 		return (
-			<div key={child.id} style={wrapper}>
+			<div key={child.id} style={{ ...wrapper, ...headerFloatWrapperStyles(child) }}>
 				<ChildComponent {...child} />
 			</div>
 		);

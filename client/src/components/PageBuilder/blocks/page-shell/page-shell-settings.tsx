@@ -102,6 +102,11 @@ export function PageShellSettings({
 							entry.property === "color" ? { textColor: entry } : { backgroundColor: entry },
 						)
 					}
+					onTheme={(target) =>
+						updateContent(
+							target.property === "color" ? { textColor: undefined } : { backgroundColor: undefined },
+						)
+					}
 				/>
 			</div>
 		</SettingsSection>

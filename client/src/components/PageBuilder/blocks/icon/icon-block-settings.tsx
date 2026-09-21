@@ -3,7 +3,7 @@ import type { BlockConfig, TokenEntry } from "@shared/schema-types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
-import { Smile, Link as LinkIcon, Type, Palette } from "lucide-react";
+import { Link as LinkIcon, Smile, Type } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { IconRenderer } from "../shared/IconRenderer";
 import { IconPickerButton } from "../../IconPicker/IconPickerButton";
@@ -21,7 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import TokenColorPicker from "../../TokenColorPicker";
+import ColorField, { type ColorTarget } from "../../ColorField";
 import { UnitValueField } from "../../unit-value-field";
 import { SIZE_UNITS, parseUnitValue } from "@shared/unit-value";
 import {
@@ -163,6 +163,21 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
     mergeTokenEntry(entry);
   };
 
+  /** Hands the colour back to the page's theme: drop the token, the plain style, and the old saved colour. */
+  const followTheme = (target: ColorTarget) => {
+    const key = target.property === "backgroundColor" ? "backgroundColor" : "color";
+    clearStyleWhileToken(key);
+    const currentOther = block.other || {};
+    onUpdate?.({
+      other: {
+        ...currentOther,
+        tokenMap: { ...(currentOther.tokenMap || {}), [key]: null } as Record<string, TokenEntry>,
+      },
+    });
+    if (key === "color" && currentIcon.color) updateContent({ icon: { ...currentIcon, color: undefined } });
+    rerender();
+  };
+
   const handleColorTokenChange = (entry: TokenEntry) => {
     clearStyleWhileToken("color");
     mergeTokenEntry(entry);
@@ -236,47 +251,35 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
             }}
           />
 
-          <div>
-            <Label className="npb-settings-label flex items-center gap-2 text-sm font-medium">
-              <Palette className="h-3 w-3" />
-              Icon color
-            </Label>
-            <p className="npb-settings-hint-muted mt-1 text-xs">
-              Token map + resolver (same pattern as Style → Colors). Overrides the
-              legacy content color when a token or custom entry resolves.
-            </p>
-            <div className="npb-settings-well mt-2 rounded-none border p-3">
-              <TokenColorPicker
-                property="color"
-                currentEntry={getTokenEntry("color")}
-                currentStyleValue={
-                  (typeof styles?.color === "string" && styles.color) ||
-                  currentIcon.color ||
-                  undefined
-                }
-                onChange={handleColorTokenChange}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label
-              htmlFor="icon-bg-token"
-              className="npb-settings-label text-sm font-medium">
-              Background color
-            </Label>
-            <p className="npb-settings-hint-muted mt-1 text-xs">
-              Uses TokenColorPicker + <span className="font-mono">tokenMap</span> like
-              container / paragraph blocks.
-            </p>
-            <div id="icon-bg-token" className="npb-settings-well mt-2 rounded-none border p-3">
-              <TokenColorPicker
-                property="backgroundColor"
-                currentEntry={getTokenEntry("backgroundColor")}
-                currentStyleValue={styles?.backgroundColor as string | undefined}
-                onChange={handleBackgroundTokenChange}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label className="npb-settings-label text-sm font-medium">Colors</Label>
+            <ColorField
+              ariaLabel="Icon color"
+              defaultProperty="color"
+              targets={[
+                {
+                  property: "color",
+                  label: "Icon",
+                  entry: getTokenEntry("color"),
+                  styleValue:
+                    (typeof styles?.color === "string" && styles.color) ||
+                    currentIcon.color ||
+                    undefined,
+                },
+                {
+                  property: "backgroundColor",
+                  label: "Background",
+                  entry: getTokenEntry("backgroundColor"),
+                  styleValue: styles?.backgroundColor as string | undefined,
+                },
+              ]}
+              onChange={(entry) =>
+                entry.property === "backgroundColor"
+                  ? handleBackgroundTokenChange(entry)
+                  : handleColorTokenChange(entry)
+              }
+              onTheme={followTheme}
+            />
           </div>
 
           {currentIcon.iconSet === "lucide" && (
