@@ -30,6 +30,8 @@ import { themeSettingsToStyleBlock } from "@shared/theme-to-css-vars";
 import type { PageDesignSettings } from "@shared/schema-types";
 import { resolveVisitorDesign } from "@shared/theme-to-page-design";
 import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
+import { buildScrollbarCss } from "@shared/scrollbar-model";
+import { collectBlockExtraCss, treeHasScrollingHeader } from "@shared/collect-block-extra-css";
 
 type PublishedDocument = {
 	id: string;
@@ -86,6 +88,7 @@ export function buildPublishedPageHtml({
 		.filter(Boolean)
 		.join("\n");
 	const deviceStylesCss = collectDeviceStylesCSS(blocks);
+	const extraCss = collectBlockExtraCss(blocks);
 
 	const hasAnimations = blocks.some((b) => b.other?.animation);
 	const hasEntryAnimations = blocks.some((b) => b.other?.animation?.entry);
@@ -105,6 +108,7 @@ export function buildPublishedPageHtml({
 	if (animationCssRules) headParts.push(`<style>${animationCssRules}</style>`);
 	if (modifierCssRules) headParts.push(`<style>${modifierCssRules}</style>`);
 	if (deviceStylesCss) headParts.push(`<style>${deviceStylesCss}</style>`);
+	if (extraCss) headParts.push(`<style>${extraCss}</style>`);
 	if (hasAnimations) headParts.push(`<link rel="stylesheet" href="/vendor/animate.min.css">`);
 	if (hasEntryAnimations) {
 		headParts.push(`<style>${getEntryAnimationBaseCSS()}</style>`);
@@ -115,6 +119,9 @@ export function buildPublishedPageHtml({
 	if (hasEntryAnimations) {
 		bodyParts.push(`<script src="/vendor/entry-animations.js"></script>`);
 		bodyParts.push(`<script>initEntryAnimations();</script>`);
+	}
+	if (treeHasScrollingHeader(blocks)) {
+		bodyParts.push(`<script src="/vendor/header-scroll.js"></script>`);
 	}
 	const blockJsScripts = collectBlockJsScripts(blocks);
 	if (blockJsScripts) {
@@ -136,6 +143,7 @@ export function buildPublishedPageHtml({
 		backgroundColor: design.backgroundColor?.style,
 		textColor: design.textColor?.style,
 		hasPageShell: true,
+		scrollbarCss: buildScrollbarCss({ selector: "html", settings: design.scrollbar }),
 		noIndex: seo.noIndex === true,
 		customMeta: Array.isArray(seo.customMeta)
 			? (seo.customMeta as Array<{ name: string; content: string }>)

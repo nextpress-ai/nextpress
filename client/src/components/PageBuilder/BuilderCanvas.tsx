@@ -58,7 +58,7 @@ export function BuilderCanvas({
           role="region"
           aria-label="Page canvas"
           tabIndex={-1}
-          className={`min-h-full p-4 flex flex-col items-stretch w-full ${snapshot.isDraggingOver ? 'bg-npb-accent/10' : ''}`}
+          className={`flex min-h-full w-full flex-1 flex-col items-stretch ${snapshot.isDraggingOver ? 'bg-npb-accent/10' : ''}`}
           style={{ gap: PAGE_BLOCK_STACK_GAP }}
           onClick={() => actions?.onSelect(null)}
         >
@@ -83,10 +83,11 @@ export function BuilderCanvas({
                   <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    className={`relative group ${snapshot.isDragging ? 'opacity-50' : ''}`}
+                    className={`relative group ${snapshot.isDragging ? 'opacity-50' : ''} ${block.name === 'core/page-shell' ? 'flex min-h-full flex-1 flex-col' : ''}`}
                     style={{
                       width: '100%',
                       minWidth: 0,
+                      ...(block.name === 'core/page-shell' ? { flex: 1 } : {}),
                       ...getBlockSiblingFlexItemStyles(block.styles, 'column'),
                     }}
                     tabIndex={0}
@@ -135,7 +136,8 @@ export function BuilderCanvas({
 
   return (
     <div
-      className="flex-1 overflow-auto bg-npb-canvas-bg p-8 min-h-0"
+      className="flex-1 overflow-auto bg-npb-canvas-bg p-3 min-h-0"
+      data-npb-canvas-scroller
       onClick={() => actions?.onSelect(null)}
     >
       {isPreviewMode && previewUrl ? (
@@ -146,7 +148,7 @@ export function BuilderCanvas({
         />
       ) : (
         <DevicePreview device={deviceView}>
-          <div className="npb-canvas-page bg-npb-canvas-page text-npb-text-primary min-h-full min-w-0 shadow-lg overflow-x-clip">
+          <div className="npb-canvas-page flex min-h-full min-w-0 flex-1 flex-col bg-npb-canvas-page text-npb-text-primary shadow-lg overflow-x-clip">
             {renderEditorStack()}
           </div>
         </DevicePreview>

@@ -32,7 +32,7 @@ function StackRenderer({
   const { outerStyle, isOverlay } = buildStackShellStyles({
     styles,
     content: content as BlockConfig["content"],
-    children: childBlocks.map((child) => ({ styles: child.styles })),
+    children: childBlocks.map((child) => ({ name: child.name, styles: child.styles, content: child.content })),
   });
 
   const blockForChildren: BlockConfig = {

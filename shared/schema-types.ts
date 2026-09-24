@@ -16,6 +16,8 @@ import type {
 } from "./schema";
 import type { CSSProperties } from "react";
 import type { PageIconDefaultSet, ReactIconsPrefix } from "./icon-types";
+import type { ScrollbarSettings } from "./scrollbar-model";
+import type { BlockFills, Fill } from "./fill-model";
 
 // User types
 export type User = typeof users.$inferSelect;
@@ -164,6 +166,12 @@ export interface PageDesignSettings {
   fontFamily?: string;
   containerWidth?: string;
   padding?: string;
+  paddingInline?: string;
+  paddingBlock?: string;
+  contentAlign?: "left" | "center" | "right";
+  scrollbar?: ScrollbarSettings;
+  /** A gradient or picture behind the page. Paints over `backgroundColor` when set. */
+  backgroundFill?: Fill;
   backgroundColor?: TokenEntry;
   textColor?: TokenEntry;
 }
@@ -290,6 +298,8 @@ export interface BlockConfig {
 		tokenMap?: Record<string, TokenEntry>;
 		units?: Record<string, string>;
 		animation?: BlockAnimation | null;
+		/** Gradient or picture fills for this block's background and text. Solid colours stay in `tokenMap`. */
+		fills?: BlockFills;
 		/** Z-order among siblings inside layout containers (group, container, columns, etc.). Higher draws on top. */
 		stackLayer?: number;
 		/** Per-device style overrides merged on top of `styles` in tablet/mobile preview. */

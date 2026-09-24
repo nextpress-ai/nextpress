@@ -13,7 +13,7 @@ import PublishDialog from '@/components/PageBuilder/PublishDialog';
 import { SiteMenu } from '@/components/PageBuilder/EditorBar';
 import { useToast } from '@/hooks/use-toast';
 import type { BlockConfig, Page, PageOther, Post, Template } from '@shared/schema-types';
-import { storeSlugToIdMapping, getPageIdFromSlug } from '@/lib/editorStorage';
+import { storeSlugToIdMapping } from '@/lib/editorStorage';
 import { setParentIds } from '@/lib/handlers/treeUtils';
 import { generateId } from '@/lib/utils';
 import { ensureRootPageShell, readPageDesign } from '@shared/page-shell-model';
@@ -38,6 +38,11 @@ import {
   shouldRestoreLocalDraft,
   stampDraftTimestamp,
 } from '@/lib/editor-persistence';
+import {
+  listEditorEntityQueryKeys,
+  readEditorSaveVersion,
+  writeEditorEntityCache,
+} from '@/lib/editor-entity-cache';
 
 type PageState = {
   blocks: BlockConfig[];
@@ -233,14 +238,11 @@ export default function PageBuilderEditor({
   /** API base path driven by content type */
   const apiBase = isPost ? '/api/posts' : isTemplate ? '/api/templates' : '/api/pages';
 
-  /** Derive resolvedPageId synchronously — getPageIdFromSlug is a sync localStorage call */
-  const resolvedPageId = (() => {
-    if (isSlug && postId && !isPost) {
-      const mappingResult = getPageIdFromSlug(postId);
-      return mappingResult.status && mappingResult.data ? mappingResult.data : postId;
-    }
-    return postId;
-  })();
+  /**
+   * Keep the address as the query id. Swapping a page name for its id after the
+   * first load changed the query and cleared the page, which left the editor on Loading.
+   */
+  const resolvedPageId = postId;
 
   const {
     data: rawData,
@@ -279,12 +281,71 @@ export default function PageBuilderEditor({
   }
 
   /**
+   * Puts a fetched or local copy on the canvas. Used on first load and when
+   * the server copy is newer than the version this editor last saved with.
+   */
+  function applyEditorSource({
+    source,
+    remoteVersion,
+  }: {
+    source: {
+      blocks?: unknown;
+      title?: unknown;
+      slug?: unknown;
+      status?: unknown;
+      excerpt?: string | null;
+      featuredImage?: string | null;
+      categories?: string[];
+      tags?: string[];
+      other?: PageOther | unknown;
+    };
+    remoteVersion: number;
+  }): PageState {
+    const initialBlocks = blocksWithRootShell({
+      blocks: source.blocks,
+      leftoverDesign: (source as { other?: PageOther }).other?.design,
+    });
+    const next: PageState = {
+      blocks: initialBlocks,
+      title: String(source.title || 'Untitled'),
+      slug: String(source.slug || ''),
+      status: String(source.status || 'draft'),
+      version: remoteVersion,
+      isInitialized: true,
+    };
+    dispatchPageState({
+      type: 'LOAD',
+      payload: {
+        blocks: next.blocks,
+        title: next.title,
+        slug: next.slug,
+        status: next.status,
+        version: next.version,
+      },
+    });
+    const loadedOther = parsePostOther(source.other);
+    setPostDoc({
+      excerpt: String(source.excerpt ?? ''),
+      featuredImage: String(source.featuredImage ?? ''),
+      categories: source.categories ?? loadedOther.categories ?? [],
+      tags: source.tags ?? loadedOther.tags ?? [],
+    });
+    latestPageStateRef.current = next;
+    hasUnsavedServerChangesRef.current = false;
+    return next;
+  }
+
+  /**
    * Adjusting state during render: initialize page state when data arrives or changes.
    * Tracks prevDataId to detect when we have new data to load.
    */
   const [prevDataId, setPrevDataId] = useState<string | null>(null);
   const dataId = data?.id ?? null;
-  const dataMatchesCurrent = dataId && dataId === currentId;
+  const dataSlug = data?.slug ?? null;
+  // The address can be the page id or its name. The fetched page always has the id,
+  // so a name in the address used to sit on Loading forever.
+  const dataMatchesCurrent =
+    dataId != null && (dataId === currentId || (dataSlug != null && dataSlug !== '' && dataSlug === currentId));
 
   if (dataMatchesCurrent && dataId !== prevDataId && data) {
     setPrevDataId(dataId);
@@ -306,48 +367,10 @@ export default function PageBuilderEditor({
       });
     const source = useLocal ? localDraft : data;
 
-    const initialBlocks = blocksWithRootShell({
-      blocks: source?.blocks,
-      leftoverDesign: (source as { other?: PageOther })?.other?.design,
+    const loaded = applyEditorSource({
+      source,
+      remoteVersion: readExpectedVersion(data),
     });
-    const initialTitle = String(source?.title || 'Untitled');
-    const initialSlug = String(source?.slug || '');
-    const initialStatus = String(source?.status || 'draft');
-
-    const initialVersion = readExpectedVersion(data);
-
-    dispatchPageState({
-      type: 'LOAD',
-      payload: {
-        blocks: initialBlocks,
-        title: initialTitle,
-        slug: initialSlug,
-        status: initialStatus,
-        version: initialVersion,
-      },
-    });
-    const loadedPost = source as {
-      excerpt?: string | null;
-      featuredImage?: string | null;
-      categories?: string[];
-      tags?: string[];
-      other?: unknown;
-    };
-    const loadedOther = parsePostOther(loadedPost.other);
-    setPostDoc({
-      excerpt: String(loadedPost.excerpt ?? ''),
-      featuredImage: String(loadedPost.featuredImage ?? ''),
-      categories: loadedPost.categories ?? loadedOther.categories ?? [],
-      tags: loadedPost.tags ?? loadedOther.tags ?? [],
-    });
-    latestPageStateRef.current = {
-      blocks: initialBlocks,
-      title: initialTitle,
-      slug: initialSlug,
-      status: initialStatus,
-      version: initialVersion,
-      isInitialized: true,
-    };
 
     // Store slug mapping for pages only
     if (!isPost && data.id && data.slug) {
@@ -359,17 +382,17 @@ export default function PageBuilderEditor({
       if (useLocal) {
         const stampedDraft = stampDraftTimestamp({
           ...data,
-          title: initialTitle,
-          slug: initialSlug,
-          status: initialStatus,
-          blocks: initialBlocks,
+          title: loaded.title,
+          slug: loaded.slug,
+          status: loaded.status,
+          blocks: loaded.blocks,
         });
         if (isPost) {
           savePostDraft(data.id, stampedDraft);
         } else {
           savePageDraftWithHistory(
             data.id,
-            { ...stampedDraft, version: initialVersion },
+            { ...stampedDraft, version: loaded.version },
             3,
           );
         }
@@ -381,8 +404,9 @@ export default function PageBuilderEditor({
     }
   }
 
-  // Also reset prevDataId when currentId changes (so we re-load on navigation)
-  if (dataId && dataId !== currentId && prevDataId !== null) {
+  // Re-load when the address changes to a different page. A name in the address
+  // is the same page as its id, so that match must not clear the load.
+  if (dataId && dataId !== currentId && dataSlug !== currentId && prevDataId !== null) {
     setPrevDataId(null);
   }
 
@@ -626,9 +650,26 @@ latestPageStateRef.current = {
 
       if (isInlineTarget) {
         setInlinePostData(updated as Post);
-        queryClient.setQueryData([`/api/posts/${inlinePostId}`], updated);
+        writeEditorEntityCache({
+          queryClient,
+          keys: listEditorEntityQueryKeys({
+            apiBase: '/api/posts',
+            id: inlinePostId,
+            slug: 'slug' in updated ? updated.slug : undefined,
+          }),
+          entity: updated,
+        });
       } else {
-        queryClient.setQueryData([`${apiBase}/${data.id}`], updated);
+        writeEditorEntityCache({
+          queryClient,
+          keys: listEditorEntityQueryKeys({
+            apiBase,
+            id: data.id,
+            slug: 'slug' in updated ? updated.slug : data.slug,
+            address: currentId,
+          }),
+          entity: updated,
+        });
       }
 
       const meta = readRemoteEntityMeta(updated, isTemplate);
@@ -651,7 +692,7 @@ latestPageStateRef.current = {
 
       queryClient.invalidateQueries({ queryKey: [apiBase] });
     },
-    [apiBase, data?.id, inlinePostId, isPost, isTemplate, queryClient],
+    [apiBase, currentId, data?.id, data?.slug, inlinePostId, isPost, isTemplate, queryClient],
   );
 
   const clearPersistedDraft = useCallback(() => {
@@ -779,7 +820,11 @@ latestPageStateRef.current = {
       const updated = await saveEditorBlocks({
         contentType: editorContentType,
         id: inlinePostId ?? data.id,
-        expectedVersion: readExpectedVersion(inlinePostData ?? data),
+        expectedVersion: readEditorSaveVersion({
+          inlinePost: inlinePostId ? inlinePostData : null,
+          pageVersion: latestPageStateRef.current.version,
+          fallback: data,
+        }),
         title: fromBlocks.title || pageState.title,
         slug: pageState.slug,
         status: pageState.status,
@@ -809,11 +854,56 @@ latestPageStateRef.current = {
       console.error(`Error saving ${type}:`, err);
       const error = err as Error & { code?: string };
       if (error.code === VERSION_STALE) {
-        toast({
-          title: `${isPost || inlinePostId ? 'Post' : 'Page'} changed elsewhere`,
-          description: 'Reload and try again before saving.',
-          variant: 'destructive',
-        });
+        const label = isPost || inlinePostId ? 'Post' : 'Page';
+        try {
+          const response = await apiRequest('GET', `${apiBase}/${inlinePostId ?? data.id}`);
+          const raw = (await response.json()) as Page | Post | Template;
+          const fresh = isTemplate
+            ? adaptTemplateToEditorData(raw as Template)
+            : isPost || inlinePostId
+              ? adaptPostToEditorData(raw as Post)
+              : (raw as Page);
+          if (inlinePostId) {
+            setInlinePostData(raw as Post);
+            writeEditorEntityCache({
+              queryClient,
+              keys: listEditorEntityQueryKeys({
+                apiBase: '/api/posts',
+                id: inlinePostId,
+                slug: 'slug' in raw ? raw.slug : undefined,
+              }),
+              entity: raw,
+            });
+          } else {
+            writeEditorEntityCache({
+              queryClient,
+              keys: listEditorEntityQueryKeys({
+                apiBase,
+                id: data.id,
+                slug: 'slug' in raw ? raw.slug : data.slug,
+                address: currentId,
+              }),
+              entity: raw,
+            });
+          }
+          clearPersistedDraft();
+          applyEditorSource({
+            source: fresh,
+            remoteVersion: readExpectedVersion(fresh),
+          });
+          setPrevDataId(fresh.id);
+          toast({
+            title: `${label} changed elsewhere`,
+            description: 'Loaded the latest copy.',
+          });
+        } catch (reloadError) {
+          console.error('Error reloading after a stale save:', reloadError);
+          toast({
+            title: `${label} changed elsewhere`,
+            description: 'Reload the page and try again before saving.',
+            variant: 'destructive',
+          });
+        }
         return false;
       }
       toast({

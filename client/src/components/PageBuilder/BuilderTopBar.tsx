@@ -16,7 +16,12 @@ import {
   Eye,
   EyeOff,
   PanelRightOpen,
+  Info,
 } from "lucide-react";
+import { blockRegistry } from "@/components/PageBuilder/blocks";
+import { topLevelBlockOptions, topLevelSelectionId } from "@/components/PageBuilder/top-level-blocks";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PagesMenu, BlogMenu, DesignMenu } from "@/components/PageBuilder/EditorBar";
 import { useTheme } from "@/components/ThemeProvider";
 import type { BlockConfig } from "@shared/schema-types";
@@ -27,6 +32,8 @@ export function BuilderTopBar({
   deviceView,
   setDeviceView,
   blocks,
+  selectedBlockId,
+  onSelectBlock,
   sidebarVisible,
   onToggleSidebar,
   inspectorVisible,
@@ -48,7 +55,9 @@ export function BuilderTopBar({
   isTemplate: boolean;
   deviceView: "desktop" | "tablet" | "mobile";
   setDeviceView: (view: "desktop" | "tablet" | "mobile") => void;
-  blocks: any[];
+  blocks: BlockConfig[];
+  selectedBlockId: string | null;
+  onSelectBlock: (id: string) => void;
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
   inspectorVisible?: boolean;
@@ -70,6 +79,17 @@ export function BuilderTopBar({
   onCreateNewPost?: () => void;
 }) {
   const { isDark, toggleTheme } = useTheme();
+  const deviceHint =
+    deviceView === "mobile"
+      ? "Edits apply on phones only."
+      : deviceView === "tablet"
+        ? "Edits apply on tablets only."
+        : "Edits apply on every screen size.";
+  const blockNames = Object.fromEntries(
+    Object.entries(blockRegistry).map(([name, definition]) => [name, definition.label]),
+  );
+  const blockOptions = topLevelBlockOptions(blocks, blockNames);
+  const shownBlockId = topLevelSelectionId(blocks, selectedBlockId);
   return (
     <div className="bg-npb-surface-base p-4">
       <div className="flex items-center justify-between">
@@ -121,15 +141,41 @@ export function BuilderTopBar({
             >
               <Smartphone className="w-4 h-4" />
             </Button>
-            {deviceView !== "desktop" ? (
-              <span className="text-xs text-npb-text-muted">
-                Style edits apply to {deviceView === "mobile" ? "mobile (<768px)" : "tablet (768+)"} only
-              </span>
-            ) : (
-              <span className="text-xs text-npb-text-muted hidden sm:inline">
-                Desktop (base styles)
-              </span>
-            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  aria-label={deviceHint}
+                >
+                  <Info className="h-4 w-4 text-npb-text-muted" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{deviceHint}</TooltipContent>
+            </Tooltip>
+            {blockOptions.length > 0 && !isPreviewMode ? (
+              <Select
+                value={shownBlockId}
+                onValueChange={(id) => {
+                  onSelectBlock(id);
+                  document
+                    .querySelector(`[data-block-id="${CSS.escape(id)}"]`)
+                    ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+                }}
+              >
+                <SelectTrigger size="sm" aria-label="Blocks on this page" className="h-8 w-44 max-w-[12rem]">
+                  <SelectValue placeholder="Blocks" />
+                </SelectTrigger>
+                <SelectContent position="popper" align="start">
+                  {blockOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
             {onTogglePreviewMode ? (
               <Button
                 variant={isPreviewMode ? "default" : "outline"}

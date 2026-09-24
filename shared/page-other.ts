@@ -7,6 +7,8 @@ import type {
 } from "./schema-types.js";
 import { isPageIconDefaultSet, isReactIconsPrefix } from "./icon-types.js";
 import { isValidMetaTagName } from "./meta-tag-names.js";
+import { readScrollbarSettings } from "./scrollbar-model.js";
+import { readFill } from "./fill-model.js";
 
 /** Page design defaults — same as Page Settings UI initial state. */
 export const DEFAULT_PAGE_DESIGN: PageDesignSettings = {
@@ -60,6 +62,15 @@ const parseDesignSettings = (raw: unknown): PageDesignSettings | undefined => {
 	if (typeof raw.fontFamily === "string") design.fontFamily = raw.fontFamily;
 	if (typeof raw.containerWidth === "string") design.containerWidth = raw.containerWidth;
 	if (typeof raw.padding === "string") design.padding = raw.padding;
+	if (typeof raw.paddingInline === "string") design.paddingInline = raw.paddingInline;
+	if (typeof raw.paddingBlock === "string") design.paddingBlock = raw.paddingBlock;
+	const backgroundFill = readFill(raw.backgroundFill);
+	if (backgroundFill) design.backgroundFill = backgroundFill;
+	const scrollbar = readScrollbarSettings(raw.scrollbar);
+	if (scrollbar) design.scrollbar = scrollbar;
+	if (raw.contentAlign === "left" || raw.contentAlign === "center" || raw.contentAlign === "right") {
+		design.contentAlign = raw.contentAlign;
+	}
 if (isRecord(raw.backgroundColor)) design.backgroundColor = raw.backgroundColor as unknown as PageDesignSettings["backgroundColor"];
 			if (isRecord(raw.textColor)) design.textColor = raw.textColor as unknown as PageDesignSettings["textColor"];
 	return Object.keys(design).length > 0 ? design : undefined;

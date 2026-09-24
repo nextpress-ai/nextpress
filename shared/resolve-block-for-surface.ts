@@ -6,6 +6,8 @@ import { applyResponsiveDefaults, type ResponsiveWarning } from "./render-defaul
 import { deviceViewToTier, type ViewportTier } from "./responsive-scales.js";
 import { resolveTokenMapForSSR } from "./token-resolution.js";
 import { getEntryAnimationAttributes } from "./animation-utils.js";
+import { resolveBlockFills } from "./fill-model.js";
+import { blockExtraCss } from "./block-extra-css.js";
 
 export type RenderSurface = "canvas" | "preview" | "publish";
 
@@ -61,6 +63,9 @@ export function resolveBlockForSurface(params: ResolveBlockForSurfaceParams): Re
 
 	mergedStyles = { ...mergedStyles, ...tokenResult.style };
 
+	const fillResult = resolveBlockFills({ blockId: block.id, fills: block.other?.fills });
+	mergedStyles = { ...mergedStyles, ...fillResult.styles };
+
 	const classNames = [
 		`block-${block.id}`,
 		block.other?.classNames,
@@ -81,6 +86,8 @@ export function resolveBlockForSurface(params: ResolveBlockForSurfaceParams): Re
 
 	const cssFragments: string[] = [];
 	if (tokenResult.modifierCSS) cssFragments.push(tokenResult.modifierCSS);
+	const extraCss = blockExtraCss(block);
+	if (extraCss) cssFragments.push(extraCss);
 
 	if (surface !== "canvas") {
 		const deviceCss = collectBlockDeviceStylesCSS(block);

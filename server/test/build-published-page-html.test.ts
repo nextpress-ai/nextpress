@@ -222,4 +222,53 @@ describe("buildPublishedPageHtml", () => {
 		});
 		expect(html).toContain("hydrate.js");
 	});
+
+	it("publishes the shell's scrollbar look and side padding", () => {
+		const shell = (data: Record<string, unknown>) => ({
+			id: "shell",
+			name: "core/page-shell",
+			type: "container",
+			parentId: null,
+			content: { kind: "structured", data },
+			styles: {},
+			settings: {},
+			children: [
+				{
+					id: "h",
+					name: "core/heading",
+					type: "block",
+					parentId: "shell",
+					content: { kind: "text", value: "Hello" },
+					styles: {},
+					settings: {},
+				},
+			],
+		});
+		const build = (data: Record<string, unknown>) =>
+			buildPublishedPageHtml({
+				page: {
+					id: "page-shell-look",
+					title: "Look",
+					blocks: [shell(data)],
+					other: { seo: {}, design: {} },
+				} as Parameters<typeof buildPublishedPageHtml>[0]["page"],
+				canonicalUrl: "http://localhost:5000/pages/page-shell-look",
+			});
+
+		const html = build({
+			scrollbar: { look: "custom", width: "12px" },
+			paddingInline: "4rem",
+			contentAlign: "left",
+		});
+		expect(html).toContain("html::-webkit-scrollbar{width:12px;height:12px}");
+		expect(html).toContain("@supports not selector(::-webkit-scrollbar)");
+		expect(html).toMatch(/margin-left:\s*4rem/);
+		expect(html).not.toMatch(/padding-left:\s*4rem/);
+
+		const standard = build({});
+		expect(standard).toContain("html::-webkit-scrollbar{width:12px;height:12px}");
+		expect(standard).toContain("border-radius:0");
+		expect(standard).not.toContain("scrollbar-width:thin");
+		expect(standard).not.toContain("scrollbar-color");
+	});
 });

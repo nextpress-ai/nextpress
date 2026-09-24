@@ -249,6 +249,13 @@ describe('float on scroll in the editor canvas', () => {
     expect(within(inspector).getByText('Float on scroll')).toBeInTheDocument();
     expect(within(inspector).queryByText('Stay on scroll')).toBeNull();
   });
+
+  it('says the page already applies its side padding', () => {
+    render(<Builder />);
+    const inspector = screen.getByTestId('inspector');
+    expect(within(inspector).queryByRole('switch', { name: 'Match page padding' })).toBeNull();
+    expect(within(inspector).getByText(/page's side padding already applies/i)).toBeInTheDocument();
+  });
 });
 
 describe('two-target colour control in the header buttons', () => {

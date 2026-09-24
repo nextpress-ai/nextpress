@@ -43,6 +43,12 @@ UUID PKs everywhere except sessions.sid.
 
 ## Decision records
 
+### 2026-09-24 — Scrollbar can return to Standard, and the header can line up with the page
+- **Standard is a normal scrollbar, a little smaller, with square corners.** It saves `{ look: "default" }` and paints a 12px bar with no corner radius. `scrollbar-width: thin` was the wrong look (that one is skinny). A cleared setting elsewhere is saved as `null`, which the page tree treats as "remove this" (`undefined` is skipped). Same path fixes "Reset scrolled look" on a floating header. Side padding is the space from the page edge, and the column fills the rest. A narrower content width does not add a second empty band (that band stayed huge and barely moved when the padding changed). Top padding is only above the first block and bottom padding only under the last. The page shell keeps a thin gray edge drawn inside the page (the canvas clips anything outside it) and a strip along that edge selects the page. Opening the editor with the page name loads the page, not only the id. The device label in the top bar is an info icon; the list beside it is the page shell and the blocks placed directly on it.
+- The header sits on the page, not outside it. The page's side padding applies to the header the same way it applies to the text. The page frame is drawn on top of the header so the header stays inside that box.
+- Selecting the page puts its toolbar **above** the header (toolbar layer 60, header 40, page ring 50). Before that the bar sat under the header and the buttons could not be reached.
+- Ctrl+S "changed elsewhere" was a stale version: the editor opened by the page name kept the old version after a save (cache key was the id). Save now sends the live editor version, writes the id and the name into the query cache, and reloads the server copy when the versions still do not match.
+
 ### 2026-09-20 — Block settings: preset + Custom everywhere, and closed until clicked
 - **One control for sizes and looks:** `DimensionPresetField` = preset chips, a trailing Custom chip, one input. A saved value that matches no preset opens Custom by itself. Fields with no Auto/None chip get a Reset. `kind` says how the box tidies input: `length` (bare `18` becomes `18px`), `number`, or `text` (aspect ratio, font weight). Use it instead of a chip group plus a loose input.
 - The Custom box keeps a local draft while typing. Some owners (the header) swap an empty value for a default; without the draft the box refills mid-edit.

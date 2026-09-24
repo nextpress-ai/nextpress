@@ -152,3 +152,101 @@ describe("stack integration", () => {
 		expect(signature.children[0]?.wrapper.flexBasis).toBe("240px");
 	});
 });
+
+const image = (styles: Record<string, unknown> = {}, content: Record<string, unknown> = {}) => ({
+	name: "core/image",
+	styles,
+	content: { kind: "media", mediaType: "image", url: "/a.png", ...content },
+});
+const heading = (styles: Record<string, unknown> = {}) => ({ name: "core/heading", styles, content: {} });
+const overlayContent = structured({ stackType: "overlay" });
+
+describe("overlay stack hugs a first-layer image", () => {
+	it("fixed-size image first: column hugs it, left by default", () => {
+		const result = buildStackShellStyles({
+			styles: {},
+			content: overlayContent,
+			children: [image({ width: "240px" }), heading()],
+		});
+		expect(result.overlayHugsBase).toBe(true);
+		expect(result.innerStackStyle.justifyContent).toBe("start");
+	});
+
+	it("follows the image's own centre / right pin", () => {
+		const centre = buildStackShellStyles({
+			styles: {},
+			content: overlayContent,
+			children: [image({ contentAlignHorizontal: "center" }), heading()],
+		});
+		const right = buildStackShellStyles({
+			styles: {},
+			content: overlayContent,
+			children: [image({}, { align: "right" }), heading()],
+		});
+		expect(centre.innerStackStyle.justifyContent).toBe("center");
+		expect(right.innerStackStyle.justifyContent).toBe("end");
+	});
+
+	it("keeps filling the stack for full / wide / percentage-width images", () => {
+		for (const child of [
+			image({}, { align: "full" }),
+			image({}, { align: "wide" }),
+			image({ width: "100%" }),
+			image({}, { width: "80%" }),
+		]) {
+			const result = buildStackShellStyles({
+				styles: {},
+				content: overlayContent,
+				children: [child, heading()],
+			});
+			expect(result.overlayHugsBase).toBe(false);
+			expect(result.innerStackStyle.justifyContent).toBeUndefined();
+		}
+	});
+
+	it("does nothing when the first layer is not an image", () => {
+		const result = buildStackShellStyles({
+			styles: {},
+			content: overlayContent,
+			children: [heading(), image({ width: "240px" })],
+		});
+		expect(result.overlayHugsBase).toBe(false);
+	});
+
+	it("vertical stacks never hug", () => {
+		const result = buildStackShellStyles({
+			styles: {},
+			content: structured({ stackType: "vertical" }),
+			children: [image({ width: "240px" }), heading()],
+		});
+		expect(result.overlayHugsBase).toBe(false);
+	});
+});
+
+describe("overlay layers held to the image width", () => {
+	it("adds no width of its own to the column", () => {
+		const styles = getOverlayChildItemStyles({}, { heldToBase: true });
+		expect(styles.contain).toBe("inline-size");
+		expect(styles.justifySelf).toBeUndefined();
+	});
+
+	it("moves a centre / right pin inside the column instead of shrinking the layer", () => {
+		const centre = getOverlayChildItemStyles({ contentAlignHorizontal: "center" }, { heldToBase: true });
+		const right = getOverlayChildItemStyles({ contentAlignHorizontal: "right" }, { heldToBase: true });
+		expect(centre.display).toBe("flex");
+		expect(centre.justifyContent).toBe("center");
+		expect(right.justifyContent).toBe("flex-end");
+		expect(centre.justifySelf).toBeUndefined();
+	});
+
+	it("still honors vertical pins", () => {
+		const styles = getOverlayChildItemStyles({ contentAlignVertical: "bottom" }, { heldToBase: true });
+		expect(styles.alignSelf).toBe("end");
+	});
+
+	it("leaves other overlays exactly as before", () => {
+		const styles = getOverlayChildItemStyles({ contentAlignHorizontal: "center" });
+		expect(styles.contain).toBeUndefined();
+		expect(styles.justifySelf).toBe("center");
+	});
+});

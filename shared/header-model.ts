@@ -1,6 +1,7 @@
 import type { BlockContent, TokenEntry } from "./schema-types.js";
 import { BORDER_RADIUS_PRESETS, isCssLength } from "./dimension-presets.js";
 import { unwrapStructured } from "./page-shell-model.js";
+import { readHeaderScrollLook, type HeaderScrollLook } from "./header-scroll-model.js";
 
 export const HEADER_BLOCK_NAME = "core/header";
 
@@ -206,6 +207,10 @@ export type HeaderContent = {
 	actions: HeaderAction[];
 	actionsSlot: HeaderSlot;
 	sticky: boolean;
+	/** How the bar looks once the page has scrolled under it. Only used while `sticky` is on. */
+	onScroll?: HeaderScrollLook;
+	/** When on, the bar follows the page column so it lines up with the content. Off stays edge to edge. */
+	matchPagePadding?: boolean;
 };
 
 export const HEADER_VARIANT_OPTIONS: readonly {
@@ -293,6 +298,7 @@ export const DEFAULT_HEADER_CONTENT: HeaderContent = {
 	],
 	actionsSlot: "right",
 	sticky: false,
+	matchPagePadding: false,
 };
 
 export function createHeaderNavItem(id: string): HeaderNavItem {
@@ -370,6 +376,7 @@ export function normalizeHeaderContent(partial: HeaderContent): HeaderContent {
 				radius: readHeaderActionRadius(action.radius),
 			}),
 		),
+		matchPagePadding: partial.matchPagePadding === true,
 	};
 }
 
@@ -516,6 +523,8 @@ export function readHeaderContent(content: BlockContent | undefined): HeaderCont
 		actions,
 		actionsSlot: isSlot(data.actionsSlot) ? data.actionsSlot : slots.actionsSlot,
 		sticky: data.sticky === true,
+		onScroll: readHeaderScrollLook(data.onScroll),
+		matchPagePadding: data.matchPagePadding === true,
 	};
 }
 
@@ -543,12 +552,19 @@ export function visibleHeaderSlots(content: HeaderContent): {
 export function headerBarClassName({
 	sticky,
 	variant,
+	matchPagePadding,
 }: {
 	sticky: boolean;
 	variant?: HeaderVariant;
+	matchPagePadding?: boolean;
 }): string {
 	const noMenu = variant !== undefined && !headerCollapsesToMenu(variant);
-	return ["wp-block-header", sticky ? "is-sticky" : "", noMenu ? "is-no-menu" : ""]
+	return [
+		"wp-block-header",
+		sticky ? "is-sticky" : "",
+		noMenu ? "is-no-menu" : "",
+		matchPagePadding ? "is-page-inset" : "",
+	]
 		.filter(Boolean)
 		.join(" ");
 }

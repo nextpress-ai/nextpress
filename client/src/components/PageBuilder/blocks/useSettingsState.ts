@@ -5,6 +5,21 @@ import { getBlockStateAccessor } from "./blockStateRegistry";
 import { defaultParseContent, defaultSerializeContent } from "./createBlockDefinition";
 
 /**
+ * A cleared field arrives as `undefined`. The page tree deep-merges updates and
+ * skips `undefined`, so the old value would stay (Standard scrollbar, a reset
+ * scrolled look). `null` is the clear the tree understands.
+ */
+function withNullsForClearedKeys<T>(updates: Partial<T>): Partial<T> {
+  const source = updates as Record<string, T[keyof T] | null | undefined>;
+  const next: Record<string, T[keyof T] | null> = {};
+  for (const key of Object.keys(source)) {
+    const value = source[key];
+    next[key] = value === undefined ? null : value;
+  }
+  return next as Partial<T>;
+}
+
+/**
  * Unifies the settings-panel state boilerplate that every block's settings
  * component repeats: resolve the live accessor, read content/styles/settings,
  * and write updates through the accessor (with a local force-render so the
@@ -53,15 +68,16 @@ export function useSettingsState<TContent>(args: {
   const settings = accessor ? accessor.getSettings?.() : block.settings;
 
   const updateContent = (updates: Partial<TContent>) => {
+    const patch = withNullsForClearedKeys(updates);
     if (accessor) {
       accessor.setContent((prev) => {
         const current = (prev ?? {}) as Record<string, unknown>;
-        return { ...current, ...updates } as TContent;
+        return { ...current, ...patch } as TContent;
       });
       rerender();
     } else if (onUpdate) {
       const parsed = parse(block.content);
-      const merged = { ...parsed, ...updates };
+      const merged = { ...parsed, ...patch };
       onUpdate({ content: serialize(merged as TContent) });
     }
   };

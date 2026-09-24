@@ -6,6 +6,7 @@ import {
 	headerHasBlocksSlot,
 	type HeaderContent,
 } from "@shared/header-model";
+import { useHeaderScroll } from "@shared/use-header-scroll";
 import { ContainerChildren } from "../../BlockRenderer";
 
 /** Room for an empty drop area so there is something to aim at while the row has no blocks yet. */
@@ -27,6 +28,12 @@ export function HeaderCanvas({
 	onNestedBlockChange?: (updated: BlockConfig) => void;
 }) {
 	const children = hostBlock?.children ?? [];
+	const containerRef = React.useRef<HTMLDivElement>(null);
+	useHeaderScroll({
+		containerRef,
+		enabled: content.sticky && content.onScroll !== undefined,
+		refreshKey: content,
+	});
 	const blocks =
 		hostBlock && headerHasBlocksSlot(content.variant) ? (
 			<div style={{ minWidth: children.length === 0 && !isPreview ? EMPTY_DROP_MIN_WIDTH : undefined }}>
@@ -43,5 +50,9 @@ export function HeaderCanvas({
 			</div>
 		) : undefined;
 
-	return <HeaderBar content={content} disableLinks={true} blocks={blocks} />;
+	return (
+		<div ref={containerRef} style={{ display: "contents" }}>
+			<HeaderBar content={content} disableLinks={true} blocks={blocks} />
+		</div>
+	);
 }

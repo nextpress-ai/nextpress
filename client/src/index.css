@@ -1053,6 +1053,69 @@
   outline-offset: 0;
 }
 
+/* Page shell stays visible as a thin gray edge inside the page, so the canvas clip does not hide it. */
+.npb-page-shell-guide {
+  outline: none;
+  box-shadow: none;
+}
+
+.npb-page-shell-ring {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  border: 1px solid rgb(113 113 122 / 0.8);
+}
+
+.npb-page-shell-guide.npb-canvas-block-selected > .npb-page-shell-ring,
+.npb-page-shell-guide.npb-canvas-block-editing > .npb-page-shell-ring {
+  border-width: 2px;
+  border-color: var(--npb-accent, #3b82f6);
+}
+
+/* The edge is the click target. The middle stays open so blocks on the page still select themselves. */
+.npb-page-shell-edges {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.npb-page-shell-edge {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.npb-page-shell-edge.is-top,
+.npb-page-shell-edge.is-bottom {
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.npb-page-shell-edge.is-top {
+  top: 0;
+}
+
+.npb-page-shell-edge.is-bottom {
+  bottom: 0;
+}
+
+.npb-page-shell-edge.is-left,
+.npb-page-shell-edge.is-right {
+  top: 0;
+  bottom: 0;
+  width: 16px;
+}
+
+.npb-page-shell-edge.is-left {
+  left: 0;
+}
+
+.npb-page-shell-edge.is-right {
+  right: 0;
+}
+
 .npb-canvas-block-selected {
   outline-color: color-mix(in srgb, var(--npb-accent, #3b82f6) 40%, transparent);
 }
@@ -1434,13 +1497,18 @@
   color: var(--npb-text-primary);
 }
 
+/* Header paints at 40, page ring at 50. This layer stays above both so the bar stays clickable. */
+.npb-canvas-toolbar-layer {
+  z-index: 60;
+}
+
 .npb-canvas-toolbar {
   background-color: var(--npb-canvas-block-toolbar-bg);
   border-bottom: 1px solid var(--npb-canvas-block-toolbar-border);
   border-radius: var(--npb-radius-input) var(--npb-radius-input) 0 0;
   box-shadow: var(--npb-shadow-surface);
   position: relative;
-  z-index: 30;
+  z-index: 60;
   opacity: 0;
   transform: translateY(-4px);
   pointer-events: none;

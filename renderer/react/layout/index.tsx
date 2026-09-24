@@ -206,10 +206,10 @@ export function StackBlock(block: BlockConfig) {
 
 	const mergedClassName = ["wp-block-stack", className].filter(Boolean).join(" ");
 	const childBlocks = block.children ?? [];
-	const { outerStyle, innerStackStyle, isHorizontal, isOverlay } = buildStackShellStyles({
+	const { outerStyle, innerStackStyle, isHorizontal, isOverlay, overlayHugsBase } = buildStackShellStyles({
 		styles: style,
 		content: block.content,
-		children: childBlocks.map((child) => ({ styles: child.styles })),
+		children: childBlocks.map((child) => ({ name: child.name, styles: child.styles, content: child.content })),
 	});
 
 	const renderChild = (child: BlockConfig): React.ReactNode => {
@@ -219,7 +219,9 @@ export function StackBlock(block: BlockConfig) {
 		}
 		const wrapper = isOverlay
 			? {
-					...getOverlayChildItemStyles(child.styles),
+					...getOverlayChildItemStyles(child.styles, {
+						heldToBase: overlayHugsBase && child !== childBlocks[0],
+					}),
 					...getBlockStackLayerWrapperStyles(child),
 					...headerOverlayPaintStyles(child),
 				}

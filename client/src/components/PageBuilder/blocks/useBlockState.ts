@@ -8,6 +8,7 @@ import {
 } from "./blockStateRegistry";
 import { useDeviceView } from "../device-view-context";
 import { resolveBlockForSurface } from "@shared/resolve-block-for-surface";
+import { usePageColumnInset } from "@shared/page-column-context";
 import {
 	readBlockDeviceStyles,
 	type BlockDeviceStyles,
@@ -105,11 +106,20 @@ export function useBlockState<TContent>({
 	const content = parseContent
 		? parseContent(value.content) ?? getDefaultContent()
 		: (value.content as TContent) ?? getDefaultContent();
-	const styles = resolveBlockForSurface({
+	const inPageColumn = usePageColumnInset() != null;
+	const resolvedStyles = resolveBlockForSurface({
 		block: value,
 		surface: "canvas",
 		deviceView,
 	}).inlineStyles;
+	// A paragraph's default measure is 65 characters. Inside the page column that
+	// leaves a wide empty band beside the words, so the words use the column.
+	const styles =
+		inPageColumn &&
+		(value.name === "core/paragraph" || value.name === "post/excerpt") &&
+		value.styles?.maxWidth == null
+			? { ...resolvedStyles, maxWidth: "100%", width: "100%" }
+			: resolvedStyles;
 	const settings = value.settings;
 
 	// Refs for stable callback identity.

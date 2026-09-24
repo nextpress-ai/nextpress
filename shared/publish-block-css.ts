@@ -60,11 +60,15 @@ ${FLUID_HEADING_CSS}
   text-align: left;
 }
 
-/* Prose readability */
+/* Prose readability. Inside the page column the words follow that column, or a 65-character cap leaves a wide empty side. */
 .wp-block-paragraph {
   max-width: 65ch;
   overflow-wrap: break-word;
   word-break: break-word;
+}
+.wp-block-page-shell .wp-block-paragraph {
+  max-width: 100%;
+  width: 100%;
 }
 
 /* Reset UA figure margins (1em 40px) so blocks stay within the content column */
@@ -196,6 +200,15 @@ figure.wp-block-embed {
   width: 100%;
   min-height: 100%;
   box-sizing: border-box;
+}
+
+/* The shell's own background fills the page even when the content is short. */
+#main-content.has-page-shell {
+  display: flex;
+  flex-direction: column;
+}
+#main-content.has-page-shell > .wp-block-page-shell {
+  flex: 1 0 auto;
 }
 
 .wp-block-header {
@@ -530,6 +543,36 @@ figure.wp-block-embed {
   .wp-block-header__burger::before,
   .wp-block-header__burger::after {
     transition: none;
+  }
+}
+
+/* Match page padding: the bar follows the page column (width, position, side padding) so the
+   header lines up with the content. The header itself stays full width, so its background
+   still reaches the edges. */
+.wp-block-header__frame {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.wp-block-header.is-page-inset .wp-block-header__frame {
+  max-width: var(--np-page-max-width, none);
+  margin-left: var(--np-page-margin-left, auto);
+  margin-right: var(--np-page-margin-right, auto);
+}
+
+.wp-block-header.is-page-inset .wp-block-header__bar,
+.wp-block-header.is-page-inset .wp-block-header__mobile-body {
+  padding-left: var(--np-page-pad-left, 1.25rem);
+  padding-right: var(--np-page-pad-right, 1.25rem);
+}
+
+@container np-header (max-width: 767px) {
+  .wp-block-header.is-page-inset:not(.is-no-menu) .wp-block-header__bar {
+    padding-right: calc(var(--np-page-pad-right, 1.25rem) + 1.75rem) !important;
+  }
+  .wp-block-header.is-page-inset .wp-block-header__mobile-toggle {
+    right: var(--np-page-pad-right, 1.25rem);
   }
 }
 

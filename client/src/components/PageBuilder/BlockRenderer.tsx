@@ -23,6 +23,8 @@ import {
   stackNeedsVerticalPlacementRoom,
 } from "@shared/block-container-placement";
 import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
+import { readOverlayFit } from "@shared/overlay-stack-fit";
+import { blockExtraCss } from "@shared/block-extra-css";
 import { resolveSpacingSides, spacingOverlayLength, hasNonZeroSpacing } from '@/lib/resolve-spacing-sides';
 import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
 import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
@@ -42,6 +44,7 @@ import {
   truncateWithEllipsis,
 } from '@/lib/truncate-with-ellipsis';
 import { headerFloatWrapperStyles, headerOverlayPaintStyles } from '@shared/header-model';
+import { usePageColumnInset } from '@shared/page-column-context';
 import { useCanvasBlockToolbar } from './use-canvas-block-toolbar';
 import {
   type CanvasChromeMode,
@@ -89,8 +92,14 @@ export function ContainerChildren({
   const siblingStackDirection = getContainerSiblingStackDirection(layout);
   const isHorizontal = !overlay && siblingStackDirection === 'row';
   const dropDirection = isHorizontal ? 'horizontal' : 'vertical';
+  const overlayFit = overlay ? readOverlayFit(children) : null;
   const childrenStackStyle = overlay
-    ? { display: 'grid', width: '100%', minWidth: 0 }
+    ? {
+        display: 'grid',
+        width: '100%',
+        minWidth: 0,
+        ...(overlayFit?.hugs ? { justifyContent: overlayFit.justifyContent } : {}),
+      }
     : getContainerChildrenStackStyle(layout, {
         shellStyles: block.styles,
         children,
@@ -99,7 +108,9 @@ export function ContainerChildren({
   const childWrapperStyles = (child: BlockConfig): React.CSSProperties => ({
     ...(overlay
       ? {
-          ...getOverlayChildItemStyles(child.styles),
+          ...getOverlayChildItemStyles(child.styles, {
+            heldToBase: overlayFit?.hugs === true && child !== children[0],
+          }),
           ...getBlockStackLayerWrapperStyles(child),
           ...headerOverlayPaintStyles(child),
         }
@@ -455,12 +466,14 @@ export default function BlockRenderer({
   onBlockChange,
 }: BlockRendererProps) {
   const actions = useBlockActions();
+  const inPageColumn = usePageColumnInset() != null;
   const effectiveSelected = isSelected || actions?.selectedBlockId === block.id;
   const isEditing = !isPreview && actions?.editingBlockId === block.id;
   const [editorChromeMode, setEditorChromeMode] = useState<CanvasChromeMode>(() =>
-    defaultCanvasChromeMode(block.name),
+    inPageColumn && block.name === "core/paragraph" ? "span" : defaultCanvasChromeMode(block.name),
   );
-  const chromeMode: CanvasChromeMode = isPreview ? "span" : editorChromeMode;
+  const chromeMode: CanvasChromeMode =
+    isPreview || (inPageColumn && block.name === "core/paragraph") ? "span" : editorChromeMode;
   const chromeAlign = readCanvasChromeAlign({
     styles: block.styles,
     content:
@@ -540,7 +553,7 @@ export default function BlockRenderer({
       : "";
 
   // Combined CSS to inject
-  const injectedCSS = [modifierCSS, animationCSS].filter(Boolean).join("\n");
+  const injectedCSS = [modifierCSS, animationCSS, blockExtraCss(block)].filter(Boolean).join("\n");
 
   const renderContent = () => {
     if (import.meta.env.DEBUG_BUILDER) {
@@ -650,14 +663,30 @@ export default function BlockRenderer({
   const showEditingChrome = !isPreview && isEditing;
   const showSelectedChrome = !isPreview && effectiveSelected && !showEditingChrome;
 
+  const isPageShellGuide = !isPreview && block.name === "core/page-shell";
+  const pageShellStretch = isPageShellGuide ? "flex min-h-full flex-1 flex-col" : "";
   const blockChromeClasses = [
     `block-${block.id}`,
     showSelectedChrome ? 'npb-canvas-block-selected' : '',
     showEditingChrome ? 'npb-canvas-block-editing' : '',
+    isPageShellGuide ? "npb-page-shell-guide" : "",
+    pageShellStretch,
     'relative',
   ]
     .filter(Boolean)
     .join(' ');
+
+  const selectThisBlock = (event: React.MouseEvent) => {
+    if (isPreview) return;
+    event.stopPropagation();
+    onBlockInteract();
+    actions?.onSelect(block.id);
+  };
+  const editThisBlock = (event: React.MouseEvent) => {
+    if (isPreview) return;
+    event.stopPropagation();
+    actions?.onStartEditing?.(block.id);
+  };
 
   const toolbarPanelProps = {
     label: blockToolbarLabel,
@@ -677,38 +706,33 @@ export default function BlockRenderer({
 
   return (
     <div
-      className="relative group"
+      className={`relative group ${pageShellStretch}`}
       {...(isPreview || !listenForHover || useTopToolbarHoverStrip
         ? {}
         : pointerHoverHandlers)}
-      onClick={(e) => {
-        if (!isPreview) {
-          e.stopPropagation();
-          onBlockInteract();
-          actions?.onSelect(block.id);
-        }
-      }}
-      onDoubleClick={(e) => {
-        if (!isPreview) {
-          e.stopPropagation();
-          actions?.onStartEditing?.(block.id);
-        }
-      }}>
-      <div style={chromeSlotStyle}>
+      onClick={isPageShellGuide ? selectThisBlock : undefined}
+      onDoubleClick={isPageShellGuide ? editThisBlock : undefined}>
+      <div className={pageShellStretch} style={chromeSlotStyle}>
         <div
-          className="relative"
+          className={`relative ${pageShellStretch}`}
           data-span={chromeMode === "span" ? "true" : "false"}
-          style={chromeFrameStyle}
+          style={
+            isPageShellGuide
+              ? { ...chromeFrameStyle, display: "flex", flexDirection: "column", flex: 1, minHeight: "100%" }
+              : chromeFrameStyle
+          }
+          onClick={isPageShellGuide ? undefined : selectThisBlock}
+          onDoubleClick={isPageShellGuide ? undefined : editThisBlock}
         >
           {!isPreview && !useTopToolbarHoverStrip && paintToolbar && (
             <BlockEditorToolbarPanel
               {...toolbarPanelProps}
-              className={`absolute top-0 left-0 right-0 z-30 ${toolbarPanelClass}`}
+              className={`absolute top-0 left-0 right-0 npb-canvas-toolbar-layer ${toolbarPanelClass}`}
             />
           )}
           {!isPreview && useTopToolbarHoverStrip && paintToolbar && (
             <div
-              className="absolute top-0 left-0 right-0 z-30 flex flex-col"
+              className="absolute top-0 left-0 right-0 npb-canvas-toolbar-layer flex flex-col"
               {...pointerHoverHandlers}>
               <BlockEditorToolbarPanel
                 {...toolbarPanelProps}
@@ -717,7 +741,7 @@ export default function BlockRenderer({
             </div>
           )}
 
-          <div className={!isPreview ? 'cursor-pointer' : ''}>
+          <div className={`${!isPreview ? "cursor-pointer" : ""} ${pageShellStretch}`}>
             <div
               data-block-id={block.id}
               data-chrome={!isPreview && showSelectedChrome && toolbarOpen ? 'true' : 'false'}
@@ -774,8 +798,19 @@ export default function BlockRenderer({
                 }}
               />
             ) : null}
+            {isPageShellGuide ? (
+              <>
+                <div className="npb-page-shell-ring" aria-hidden="true" />
+                <div className="npb-page-shell-edges" aria-hidden="true">
+                  <span className="npb-page-shell-edge is-top" />
+                  <span className="npb-page-shell-edge is-right" />
+                  <span className="npb-page-shell-edge is-bottom" />
+                  <span className="npb-page-shell-edge is-left" />
+                </div>
+              </>
+            ) : null}
             <div
-              className={entryPreviewClassName || undefined}
+              className={[entryPreviewClassName, pageShellStretch].filter(Boolean).join(" ") || undefined}
               style={{
                 ...chromeInnerStyle,
                 ...(entryPreview

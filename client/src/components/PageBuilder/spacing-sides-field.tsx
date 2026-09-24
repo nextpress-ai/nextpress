@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { SettingsChipGroup } from "./settings-chip-group";
 import { SettingsLabel } from "./shared";
 import { SPACING_PRESETS } from "@shared/dimension-presets";
 import { DimensionPresetField } from "./dimension-preset-field";
@@ -28,9 +28,23 @@ const SIDE_ROWS = [
 	["Left", "left"],
 ] as const;
 
+type SidesMode = "all" | "axes" | "each";
+
+const MODE_OPTIONS = [
+	{ value: "all", label: "All sides" },
+	{ value: "axes", label: "Horiz. & vert." },
+	{ value: "each", label: "Each side" },
+];
+
+/** Starts in the simplest mode that can show every side exactly, so mixed values are never hidden. */
+const startingMode = (sides: SpacingSideQuad): SidesMode => {
+	if (spacingSidesMatch(sides)) return "all";
+	return sides.top === sides.bottom && sides.left === sides.right ? "axes" : "each";
+};
+
 /**
- * Padding or margin: presets + one Custom box for all sides, and separate per-side boxes on
- * request. Starts linked only when all four sides already agree, so mixed values are never hidden.
+ * Padding or margin: presets + one Custom box for all sides, a left-and-right / top-and-bottom
+ * pair, or a box per side. Every mode writes the same four physical side keys.
  */
 export function SpacingSidesField({
 	label,
@@ -39,9 +53,10 @@ export function SpacingSidesField({
 	onHoverArea,
 	onCommit,
 }: SpacingSidesFieldProps) {
-	const allMatch = spacingSidesMatch(sides);
-	const [linked, setLinked] = useState(allMatch);
+	const [mode, setMode] = useState<SidesMode>(() => startingMode(sides));
 	const allKeys = spacingSideKeys(kind);
+	const keyOf = (suffix: string) => `${kind}${suffix}` as SpacingSideKey;
+	const sameOrUndefined = (a: string, b: string) => (a && a === b ? a : undefined);
 
 	return (
 		<div
@@ -49,20 +64,44 @@ export function SpacingSidesField({
 			onMouseEnter={() => onHoverArea?.(kind)}
 			onMouseLeave={() => onHoverArea?.(null)}
 		>
-			{linked ? (
+			<SettingsChipGroup
+				label=""
+				ariaLabel={`${label} sides`}
+				options={MODE_OPTIONS}
+				value={mode}
+				onChange={(next) => setMode(next as SidesMode)}
+			/>
+			{mode === "all" ? (
 				<DimensionPresetField
 					label={label}
 					presets={SPACING_PRESETS}
-					value={allMatch && sides.top ? sides.top : undefined}
+					value={spacingSidesMatch(sides) && sides.top ? sides.top : undefined}
 					onChange={(next) => onCommit(allKeys, next ?? null)}
 					customPlaceholder="e.g. 24px, 2rem, auto"
 				/>
+			) : mode === "axes" ? (
+				<div className="space-y-3">
+					<DimensionPresetField
+						label={`${label} left and right`}
+						presets={SPACING_PRESETS}
+						value={sameOrUndefined(sides.left, sides.right)}
+						onChange={(next) => onCommit([keyOf("Left"), keyOf("Right")], next ?? null)}
+						customPlaceholder="e.g. 24px, 2rem, auto"
+					/>
+					<DimensionPresetField
+						label={`${label} top and bottom`}
+						presets={SPACING_PRESETS}
+						value={sameOrUndefined(sides.top, sides.bottom)}
+						onChange={(next) => onCommit([keyOf("Top"), keyOf("Bottom")], next ?? null)}
+						customPlaceholder="e.g. 24px, 2rem, auto"
+					/>
+				</div>
 			) : (
 				<div className="space-y-3">
 					<SettingsLabel>{label}</SettingsLabel>
 					<div className="grid grid-cols-2 gap-3">
 						{SIDE_ROWS.map(([suffix, side]) => {
-							const key = `${kind}${suffix}` as SpacingSideKey;
+							const key = keyOf(suffix);
 							return (
 								<FreeformSpacingSideRow
 									key={key}
@@ -77,15 +116,6 @@ export function SpacingSidesField({
 					</div>
 				</div>
 			)}
-			<Button
-				type="button"
-				variant="ghost"
-				size="sm"
-				className="h-7 px-2 text-xs"
-				onClick={() => setLinked((current) => !current)}
-			>
-				{linked ? "Edit sides separately" : "Link all sides"}
-			</Button>
 		</div>
 	);
 }

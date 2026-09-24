@@ -3,6 +3,8 @@ import type { BlockConfig } from "@shared/schema-types";
 import { sanitizeHtml } from "@shared/sanitize-html";
 import { splitButtonBlockStyles, mapButtonTextAlignToJustifyContent } from "@shared/button-block-styles";
 import { getRenderProps, parseTextContent, parseStructuredContent } from "../render-helpers";
+import { usePageColumnInset } from "@shared/page-column-context";
+import { PROSE_MAX_WIDTH } from "@shared/responsive-scales";
 import {
 	effectiveIconGlyphColor,
 } from "@shared/icon-block-visuals";
@@ -141,6 +143,7 @@ export function HeadingBlock(block: BlockConfig) {
  */
 export function ParagraphBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
+	const inPageColumn = usePageColumnInset() != null;
 	const content = parseTextContent(block.content);
 	const text = (content.value as string) || "";
 	const textAlign = content.textAlign as string | undefined;
@@ -162,6 +165,9 @@ export function ParagraphBlock(block: BlockConfig) {
 	const mergedStyle: React.CSSProperties = {
 		color: "var(--npb-text-primary)",
 		...style,
+		...(inPageColumn && (style?.maxWidth == null || style.maxWidth === PROSE_MAX_WIDTH)
+			? { maxWidth: "100%", width: "100%" }
+			: {}),
 		...(effectiveTextAlign
 			? { textAlign: effectiveTextAlign as React.CSSProperties["textAlign"] }
 			: {}),

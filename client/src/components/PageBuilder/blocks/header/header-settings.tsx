@@ -39,6 +39,7 @@ import {
 	type HeaderVariant,
 } from "@shared/header-model";
 import { HeaderVariantPicker } from "./header-variant-picker";
+import { HeaderScrollSettings } from "./header-scroll-settings";
 
 const nextId = (prefix: string): string =>
 	`${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -155,7 +156,19 @@ export function HeaderSettings({
 						onCheckedChange={(checked) => updateContent({ sticky: checked })}
 					/>
 				</div>
+				<p className="npb-settings-hint-muted mt-1.5 text-xs">
+					This header sits on the page, so the page's side padding already applies.
+				</p>
 			</CollapsibleCard>
+
+			{content.sticky ? (
+				<CollapsibleCard title="When scrolled" defaultOpen={content.onScroll !== undefined}>
+					<HeaderScrollSettings
+						value={content.onScroll}
+						onChange={(next) => updateContent({ onScroll: next })}
+					/>
+				</CollapsibleCard>
+			) : null}
 
 			<CollapsibleCard title="Brand" defaultOpen={true}>
 				<SettingsChipGroup

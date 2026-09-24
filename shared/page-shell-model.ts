@@ -1,5 +1,7 @@
 import type { BlockConfig, BlockContent, PageDesignSettings, TokenEntry } from "./schema-types.js";
 import { DEFAULT_PAGE_DESIGN } from "./page-other.js";
+import { readScrollbarSettings, type ScrollbarSettings } from "./scrollbar-model.js";
+import { readFill, type Fill } from "./fill-model.js";
 
 export const PAGE_SHELL_BLOCK_NAME = "core/page-shell";
 
@@ -11,10 +13,30 @@ export const PAGE_SHELL_WIDTH_OPTIONS = [
 	{ value: "100%", label: "Full width" },
 ] as const;
 
+export const PAGE_CONTENT_ALIGN_VALUES = ["left", "center", "right"] as const;
+export type PageContentAlign = (typeof PAGE_CONTENT_ALIGN_VALUES)[number];
+
+export const PAGE_CONTENT_ALIGN_OPTIONS = [
+	{ value: "left", label: "Left" },
+	{ value: "center", label: "Center" },
+	{ value: "right", label: "Right" },
+] as const;
+
 export type PageShellContent = {
 	fontFamily: string;
 	containerWidth: string;
+	/** The original one-box padding. Older pages only have this. */
 	padding: string;
+	/** Left and right padding. Wins over `padding` on that axis when set. */
+	paddingInline?: string;
+	/** Top and bottom padding. Wins over `padding` on that axis when set. */
+	paddingBlock?: string;
+	/** Where the content column sits when it is narrower than the page. Centered when missing. */
+	contentAlign?: PageContentAlign;
+	/** How the page's scrollbar looks. Missing means Standard: a little smaller than a normal bar, square corners. */
+	scrollbar?: ScrollbarSettings;
+	/** A gradient or picture behind the page. Paints over `backgroundColor` when set. */
+	backgroundFill?: Fill;
 	backgroundColor?: TokenEntry;
 	textColor?: TokenEntry;
 };
@@ -27,6 +49,13 @@ export const DEFAULT_PAGE_SHELL_CONTENT: PageShellContent = {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readOptionalText = (value: unknown): string | undefined =>
+	typeof value === "string" && value.trim() ? value : undefined;
+
+/** The position when `value` is one of left / center / right, else nothing. */
+export const readContentAlign = (value: unknown): PageContentAlign | undefined =>
+	PAGE_CONTENT_ALIGN_VALUES.find((option) => option === value);
 
 const readToken = (value: unknown): TokenEntry | undefined => {
 	if (!isRecord(value)) return undefined;
@@ -50,6 +79,11 @@ export function readPageShellContent(content: BlockContent | undefined): PageShe
 			typeof data.padding === "string" && data.padding
 				? data.padding
 				: DEFAULT_PAGE_SHELL_CONTENT.padding,
+		paddingInline: readOptionalText(data.paddingInline),
+		paddingBlock: readOptionalText(data.paddingBlock),
+		contentAlign: readContentAlign(data.contentAlign),
+		scrollbar: readScrollbarSettings(data.scrollbar),
+		backgroundFill: readFill(data.backgroundFill),
 		backgroundColor: readToken(data.backgroundColor),
 		textColor: readToken(data.textColor),
 	};
@@ -79,6 +113,11 @@ export function readPageDesign({ blocks }: { blocks: BlockConfig[] }): PageDesig
 		fontFamily: content.fontFamily,
 		containerWidth: content.containerWidth,
 		padding: content.padding,
+		paddingInline: content.paddingInline,
+		paddingBlock: content.paddingBlock,
+		contentAlign: content.contentAlign,
+		scrollbar: content.scrollbar,
+		backgroundFill: content.backgroundFill,
 		backgroundColor: content.backgroundColor,
 		textColor: content.textColor,
 	};
@@ -93,6 +132,11 @@ function designToShellContent(design: PageDesignSettings | undefined): PageShell
 		fontFamily: design?.fontFamily || DEFAULT_PAGE_SHELL_CONTENT.fontFamily,
 		containerWidth: design?.containerWidth || DEFAULT_PAGE_SHELL_CONTENT.containerWidth,
 		padding: design?.padding || DEFAULT_PAGE_SHELL_CONTENT.padding,
+		paddingInline: design?.paddingInline,
+		paddingBlock: design?.paddingBlock,
+		contentAlign: design?.contentAlign,
+		scrollbar: design?.scrollbar,
+		backgroundFill: design?.backgroundFill,
 		backgroundColor: design?.backgroundColor,
 		textColor: design?.textColor,
 	};

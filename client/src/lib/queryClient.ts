@@ -1,23 +1,41 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+/** Reads the fields the editor needs from a failed API body. */
+export function readApiFailure(text: string): {
+  message: string;
+  code?: string;
+  remoteVersion?: number;
+} {
+  let message = text;
+  let code: string | undefined;
+  let remoteVersion: number | undefined;
+  try {
+    const parsed = JSON.parse(text) as {
+      message?: string;
+      code?: string;
+      remoteVersion?: number;
+    };
+    if (typeof parsed.message === "string" && parsed.message.trim() !== "") {
+      message = parsed.message;
+    }
+    if (typeof parsed.code === "string" && parsed.code.trim() !== "") {
+      code = parsed.code;
+    }
+    if (typeof parsed.remoteVersion === "number") {
+      remoteVersion = parsed.remoteVersion;
+    }
+  } catch {
+    /* body is plain text */
+  }
+  return { message, code, remoteVersion };
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    let message = text;
-    let code: string | undefined;
-    try {
-      const parsed = JSON.parse(text) as { message?: string; code?: string };
-      if (typeof parsed.message === "string" && parsed.message.trim() !== "") {
-        message = parsed.message;
-      }
-      if (typeof parsed.code === "string" && parsed.code.trim() !== "") {
-        code = parsed.code;
-      }
-    } catch {
-      /* body is plain text */
-    }
+    const { message, code, remoteVersion } = readApiFailure(text);
     const error = new Error(message);
-    Object.assign(error, { status: res.status, code });
+    Object.assign(error, { status: res.status, code, remoteVersion });
     throw error;
   }
 }

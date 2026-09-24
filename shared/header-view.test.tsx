@@ -9,6 +9,18 @@ const markup = (variant: HeaderVariant, blocks?: React.ReactNode): string =>
 		<HeaderBar content={applyHeaderVariant(DEFAULT_HEADER_CONTENT, variant)} blocks={blocks} />,
 	);
 
+describe("HeaderBar page padding", () => {
+	it("does not add a second inset on the bar; the page already insets the header", () => {
+		const plain = renderToStaticMarkup(<HeaderBar content={DEFAULT_HEADER_CONTENT} />);
+		expect(plain).toContain("wp-block-header__frame");
+		expect(plain).not.toContain("is-page-inset");
+		const inset = renderToStaticMarkup(
+			<HeaderBar content={{ ...DEFAULT_HEADER_CONTENT, matchPagePadding: true }} />,
+		);
+		expect(inset).not.toContain("is-page-inset");
+	});
+});
+
 describe("HeaderBar menu button", () => {
 	it("keeps the menu for layouts with links", () => {
 		for (const variant of ["links-and-actions", "links-only", "split"] as const) {

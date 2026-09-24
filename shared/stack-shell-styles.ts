@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { BlockContent } from "./schema-types";
 import { readStackTypeFromContent, type StackType } from "./stack-model";
+import { readOverlayFit, type OverlayChildInfo } from "./overlay-stack-fit";
 import {
 	getContainerChildrenStackStyle,
 	getContainerOuterShellStyle,
@@ -10,7 +11,7 @@ import {
 type StackShellParams = {
 	styles?: CSSProperties;
 	content: BlockContent | undefined;
-	children?: { styles?: CSSProperties }[];
+	children?: OverlayChildInfo[];
 };
 
 type StackShellResult = {
@@ -19,6 +20,8 @@ type StackShellResult = {
 	stackType: StackType;
 	isHorizontal: boolean;
 	isOverlay: boolean;
+	/** Overlay only: the column is as wide as the first-layer image, other layers are held to it. */
+	overlayHugsBase: boolean;
 };
 
 const readExplicitStyle = (styles: CSSProperties | undefined, key: string): string | undefined => {
@@ -48,16 +51,19 @@ export function buildStackShellStyles({
 
 	if (isOverlay) {
 		// Single shared cell: gap never applies between overlapping children.
+		const fit = readOverlayFit(children);
 		return {
 			outerStyle,
 			innerStackStyle: {
 				display: "grid",
 				width: "100%",
 				minWidth: 0,
+				...(fit.hugs ? { justifyContent: fit.justifyContent } : {}),
 			},
 			stackType,
 			isHorizontal: false,
 			isOverlay: true,
+			overlayHugsBase: fit.hugs,
 		};
 	}
 
@@ -84,5 +90,5 @@ export function buildStackShellStyles({
 		children,
 	});
 
-	return { outerStyle, innerStackStyle, stackType, isHorizontal, isOverlay };
+	return { outerStyle, innerStackStyle, stackType, isHorizontal, isOverlay, overlayHugsBase: false };
 }

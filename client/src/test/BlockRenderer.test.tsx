@@ -52,6 +52,14 @@ const mockBlockRegistry = vi.hoisted(() => ({
     ),
     isContainer: false,
   },
+  'core/page-shell': {
+    id: 'core/page-shell',
+    name: 'Page shell',
+    label: 'Page shell',
+    component: () => <div className="wp-block-page-shell">Page</div>,
+    isContainer: true,
+    handlesOwnChildren: true,
+  },
 }));
 
 // Mock the block registry using the resolved module path
@@ -258,9 +266,7 @@ describe('BlockRenderer', () => {
         />
       )
 
-      const paragraphElement = document.querySelector('.wp-block-paragraph')
-      const blockElement = paragraphElement?.closest('.relative.group')
-      fireEvent.click(blockElement!)
+      fireEvent.click(document.querySelector('.wp-block-paragraph') as Element)
       
       expect(mockActions.onSelect).toHaveBeenCalledWith('test-block')
     })
@@ -281,9 +287,7 @@ describe('BlockRenderer', () => {
         </div>
       )
 
-      const paragraphElement = document.querySelector('.wp-block-paragraph')
-      const blockElement = paragraphElement?.closest('.relative.group')
-      fireEvent.click(blockElement!)
+      fireEvent.click(document.querySelector('.wp-block-paragraph') as Element)
 
       expect(mockActions.onSelect).toHaveBeenCalledWith('test-block')
       expect(onCanvasClick).not.toHaveBeenCalled()
@@ -478,9 +482,7 @@ describe('BlockRenderer', () => {
       )
 
       // Click on first child block
-      const firstChild = screen.getByText('Content for child-1')
-      const firstChildBlock = firstChild.closest('.relative.group')
-      fireEvent.click(firstChildBlock!)
+      fireEvent.click(screen.getByText('Content for child-1'))
       
       // Should select the child block, not the container
       expect(mockActions.onSelect).toHaveBeenCalledWith('child-1')
@@ -501,8 +503,7 @@ describe('BlockRenderer', () => {
         />
       )
 
-      const childBlock = screen.getByText('Content for child-1').closest('.relative.group')
-      fireEvent.click(childBlock!)
+      fireEvent.click(screen.getByText('Content for child-1'))
       
       // Should only call onSelect once for the child, not the container
       expect(mockActions.onSelect).toHaveBeenCalledTimes(1)
@@ -554,6 +555,78 @@ describe('BlockRenderer', () => {
       const paragraphElement = document.querySelector('.wp-block-paragraph')
       const blockElement = paragraphElement?.closest('.relative.group')
       expect(blockElement).toBeInTheDocument()
+    })
+
+    it('gives the page shell a gray edge that selects the page', () => {
+      const block = createMockBlock('shell-1', 'core/page-shell')
+      renderWithProviders(
+        <BlockRenderer
+          block={block}
+          isSelected={false}
+          isPreview={false}
+          onDuplicate={() => {}}
+          onDelete={() => {}}
+        />
+      )
+
+      const guide = document.querySelector('[data-block-id="shell-1"]')
+      expect(guide).toHaveClass('npb-page-shell-guide')
+      expect(guide?.querySelector('.npb-page-shell-ring')).toBeTruthy()
+      expect(document.querySelector('[data-span="true"]')).toHaveStyle({ display: 'flex' })
+
+      fireEvent.click(document.querySelector('.npb-page-shell-edge.is-left') as Element)
+      expect(mockActions.onSelect).toHaveBeenCalledWith('shell-1')
+    })
+
+    it('keeps the page toolbar above the header', () => {
+      const block = createMockBlock('shell-1', 'core/page-shell')
+      renderWithProviders(
+        <BlockRenderer
+          block={block}
+          isSelected={true}
+          isPreview={false}
+          onDuplicate={() => {}}
+          onDelete={() => {}}
+        />
+      )
+
+      const toolbar = document.querySelector('.npb-canvas-toolbar')
+      expect(toolbar).toBeInTheDocument()
+      expect(toolbar?.closest('.npb-canvas-toolbar-layer')).toBeTruthy()
+    })
+
+    it('lights the page shell edge when that page is selected', () => {
+      const block = createMockBlock('shell-1', 'core/page-shell')
+      renderWithProviders(
+        <BlockRenderer
+          block={block}
+          isSelected={true}
+          isPreview={false}
+          onDuplicate={() => {}}
+          onDelete={() => {}}
+        />
+      )
+
+      const guide = document.querySelector('[data-block-id="shell-1"]')
+      expect(guide).toHaveClass('npb-page-shell-guide')
+      expect(guide).toHaveClass('npb-canvas-block-selected')
+    })
+
+    it('does not take the empty slot beside a hugged block', () => {
+      const block = createMockBlock('heading-1', 'core/paragraph')
+      renderWithProviders(
+        <BlockRenderer
+          block={block}
+          isSelected={false}
+          isPreview={false}
+          onDuplicate={() => {}}
+          onDelete={() => {}}
+        />
+      )
+
+      const frame = document.querySelector('[data-span]')
+      fireEvent.click(frame?.parentElement as Element)
+      expect(mockActions.onSelect).not.toHaveBeenCalled()
     })
   })
 })

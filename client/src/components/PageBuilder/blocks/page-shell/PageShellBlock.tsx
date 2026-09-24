@@ -8,8 +8,13 @@ import {
 	readPageShellContent,
 	type PageShellContent,
 } from "./page-shell-model";
-import { buildPageShellOuterStyle, getPageShellChildItemStyle } from "@shared/page-shell-styles";
+import { buildPageShellOuterStyle, getPageShellChildItemStyle, readPageColumnInset } from "@shared/page-shell-styles";
+import { PageColumnProvider } from "@shared/page-column-context";
 import { PageShellSettings } from "./page-shell-settings";
+import { buildScrollbarCss } from "@shared/scrollbar-model";
+
+/** The editor's scrolling area, so the page's scrollbar look shows while you edit. */
+const CANVAS_SCROLLER_SELECTOR = "[data-npb-canvas-scroller]";
 
 function PageShellRenderer({
 	hostBlock,
@@ -29,15 +34,29 @@ function PageShellRenderer({
 		children: hostBlock.children ?? [],
 	};
 
+	const scrollbarCss = buildScrollbarCss({ selector: CANVAS_SCROLLER_SELECTOR, settings: resolved.scrollbar });
+
 	return (
-		<div className="wp-block-page-shell" style={buildPageShellOuterStyle({ content: resolved })}>
-			<ContainerChildren
-				block={blockForChildren}
-				isPreview={isPreview ?? false}
-				stackClassName="wp-block-page-shell__inner"
-				onBlockChange={onNestedBlockChange}
-				itemStyle={(child) => getPageShellChildItemStyle({ child, content: resolved })}
-			/>
+		<div
+			className={`wp-block-page-shell ${isPreview ? "" : "min-h-full flex-1"}`}
+			style={buildPageShellOuterStyle({ content: resolved })}
+		>
+			{scrollbarCss ? <style dangerouslySetInnerHTML={{ __html: scrollbarCss }} /> : null}
+			<PageColumnProvider value={readPageColumnInset(resolved)}>
+				<ContainerChildren
+					block={blockForChildren}
+					isPreview={isPreview ?? false}
+					stackClassName="wp-block-page-shell__inner"
+					onBlockChange={onNestedBlockChange}
+					itemStyle={(child) =>
+						getPageShellChildItemStyle({
+							child,
+							content: resolved,
+							siblings: blockForChildren.children,
+						})
+					}
+				/>
+			</PageColumnProvider>
 		</div>
 	);
 }

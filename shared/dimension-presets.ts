@@ -154,10 +154,20 @@ export function findPreset(
 	return presets.find((preset) => preset.value === text);
 }
 
-/** Page shell padding, written as "top-and-bottom left-and-right". */
-export const PAGE_PADDING_PRESETS: readonly DimensionPreset[] = [
+/** Page shell padding on the left and right of the content column. */
+export const PAGE_SIDE_PADDING_PRESETS: readonly DimensionPreset[] = [
 	{ value: "0", label: "None" },
-	{ value: "1rem 0.75rem", label: "Tight" },
-	{ value: "2rem 1rem", label: "Normal" },
-	{ value: "4rem 2rem", label: "Roomy" },
+	{ value: "0.75rem", label: "Tight" },
+	{ value: "1rem", label: "Normal" },
+	{ value: "2rem", label: "Roomy" },
+	{ value: "3rem", label: "Wide" },
+] as const;
+
+/** Page shell padding above and below the content column. */
+export const PAGE_TOP_BOTTOM_PADDING_PRESETS: readonly DimensionPreset[] = [
+	{ value: "0", label: "None" },
+	{ value: "1rem", label: "Tight" },
+	{ value: "2rem", label: "Normal" },
+	{ value: "3rem", label: "Roomy" },
+	{ value: "4rem", label: "Wide" },
 ] as const;

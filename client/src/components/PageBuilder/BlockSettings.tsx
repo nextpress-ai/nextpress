@@ -43,6 +43,8 @@ import { VariablePicker } from "@/components/Templates/VariablePicker";
 import { getBlockStateAccessor } from "./blocks/blockStateRegistry";
 import type { CSSProperties } from "react";
 import ColorField, { type ColorTarget } from "./ColorField";
+import { FillField, type FillTarget } from "./fill/fill-field";
+import { readBlockFills, type Fill } from "@shared/fill-model";
 import { ButtonLookCard } from "./blocks/button/button-look-card";
 import TokenColorPicker from "./TokenColorPicker"
 import AnimationPicker from "./AnimationPicker"
@@ -233,6 +235,27 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
     },
   ];
 
+  /** The colour targets plus the gradient or picture each one holds now. */
+  const fillTargets = (): FillTarget[] => {
+    const fills = readBlockFills(block.other?.fills);
+    return colorTargets().map((target) => ({
+      ...target,
+      fill: target.property === 'color' ? fills.text : fills.background,
+    }));
+  };
+
+  /** Saves or clears one fill. Cleared as `null`, because a deep merge skips `undefined`. */
+  const updateFill = (target: ColorTarget, fill: Fill | undefined) => {
+    const currentOther = block.other || {};
+    const slot = target.property === 'color' ? 'text' : 'background';
+    onUpdate({
+      other: {
+        ...currentOther,
+        fills: { ...(currentOther.fills || {}), [slot]: fill ?? null } as typeof currentOther.fills,
+      },
+    });
+  };
+
   /** Sets or removes several colour tokens in one update (`null` removes one). */
   const setTokens = (tokens: Record<string, TokenEntry | null>) => {
     const currentOther = block.other || {};
@@ -383,7 +406,8 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
     const hasColors =
       hasHoverColors ||
       anyTokenSet({ tokenMap, properties: colorProps }) ||
-      anyStyleSet({ styles: styleNow, keys: colorProps });
+      anyStyleSet({ styles: styleNow, keys: colorProps }) ||
+      Object.keys(readBlockFills(block.other?.fills)).length > 0;
     const marginKeys = spacingSideKeys("margin");
     const hasMargin = anyStyleSet({ styles: styleNow, keys: ["margin", ...marginKeys], keepAuto: true });
     const hasSpacing =
@@ -532,11 +556,12 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
         {/* Colors — page shell paints these from Content, not block.styles */}
         {!ownsOwnLook && (
         <CollapsibleCard title="Colors" icon={Palette} defaultOpen={hasColors}>
-          <ColorField
+          <FillField
             ariaLabel="Color"
             defaultProperty={prefersTextColor ? 'color' : 'backgroundColor'}
-            targets={colorTargets()}
-            onChange={updateTokenEntry}
+            targets={fillTargets()}
+            onColorChange={updateTokenEntry}
+            onFillChange={updateFill}
             onTheme={clearColor}
           />
           <SettingsDisclosure title="Hover colors" defaultOpen={hasHoverColors}>

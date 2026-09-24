@@ -110,6 +110,32 @@ describe('float on scroll on the published page', () => {
     expect(wrapperOfHeader(html)).toBeTruthy();
   });
 
+  it('lines a matching header up with the page column', () => {
+    const page: BlockConfig = {
+      ...shell(false),
+      content: {
+        kind: 'structured',
+        data: { ...DEFAULT_PAGE_SHELL_CONTENT, containerWidth: '960px', paddingInline: '4rem', contentAlign: 'left' },
+      } as BlockConfig['content'],
+      children: [
+        {
+          ...header('links-and-actions'),
+          parentId: 'shell-1',
+          content: {
+            kind: 'structured',
+            data: { ...DEFAULT_HEADER_CONTENT, matchPagePadding: true },
+          } as BlockConfig['content'],
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(<PageShellBlock {...page} />);
+    const wrapper = html.slice(0, html.indexOf('<header'));
+    expect(wrapper).toContain('margin-left:4rem');
+    expect(wrapper).toContain('margin-right:4rem');
+    const bar = html.slice(html.indexOf('wp-block-header__bar'), html.indexOf('wp-block-header__slot'));
+    expect(bar).not.toContain('padding-left:4rem');
+  });
+
   it('adds no sticky styling when the header does not float', () => {
     const html = renderToStaticMarkup(<PageShellBlock {...shell(false)} />);
     expect(html).not.toContain('position:sticky');

@@ -823,6 +823,16 @@ export default function PageBuilder({
                 deviceView={deviceView}
                 setDeviceView={setDeviceView}
                 blocks={blocks}
+                selectedBlockId={selectedBlockId}
+                onSelectBlock={(id) => {
+                  setSelectedBlockId(id);
+                  if (id !== editingBlockIdRef.current) {
+                    setEditingBlockId(null);
+                  }
+                  if (!isWideLayout) {
+                    setActiveTab('settings');
+                  }
+                }}
                 sidebarVisible={sidebarVisible}
                 onToggleSidebar={toggleSidebar}
                 inspectorVisible={isWideLayout ? inspectorVisible : undefined}

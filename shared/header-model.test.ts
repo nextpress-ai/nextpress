@@ -290,6 +290,19 @@ describe("header blocks layout and menu rules", () => {
 		});
 	});
 
+	it("follows the page padding only when that is turned on", () => {
+		expect(readHeaderContent({ kind: "structured", data: {} }).matchPagePadding).toBe(false);
+		expect(
+			readHeaderContent({ kind: "structured", data: { matchPagePadding: true } }).matchPagePadding,
+		).toBe(true);
+		expect(headerBarClassName({ sticky: false, matchPagePadding: true })).toBe(
+			"wp-block-header is-page-inset",
+		);
+		expect(headerBarClassName({ sticky: true, variant: "actions-only", matchPagePadding: true })).toBe(
+			"wp-block-header is-sticky is-no-menu is-page-inset",
+		);
+	});
+
 	it("marks no-menu layouts in the class name and leaves the rest alone", () => {
 		expect(headerBarClassName({ sticky: false, variant: "actions-only" })).toBe(
 			"wp-block-header is-no-menu",

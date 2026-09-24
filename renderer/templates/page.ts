@@ -15,6 +15,8 @@ export interface PageRenderOptions {
   noIndex?: boolean;
   customMeta?: Array<{ name: string; content: string }>;
   hasPageShell?: boolean;
+  /** Ready-to-write CSS for the page's scrollbar (already safe; see `buildScrollbarCss`). */
+  scrollbarCss?: string;
 }
 
 export const PageTemplate = (
@@ -132,6 +134,7 @@ export const PageTemplate = (
         }
         
         ${PUBLISH_BLOCK_CSS}
+        ${options.scrollbarCss ?? ''}
       </style>
   
       ${headScripts}

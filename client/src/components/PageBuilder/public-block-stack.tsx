@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
-import { prepareVisitorPageBlocks } from "@shared/page-shell-model";
+import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
+import { buildScrollbarCss } from "@shared/scrollbar-model";
 import { PAGE_BLOCK_STACK_GAP } from "@shared/block-container-placement";
 import { resolveBlockTreeForSurface } from "@shared/resolve-block-for-surface";
 import {
@@ -67,6 +68,11 @@ export function PublicBlockStack({
     deviceView,
   });
 
+  // The page scrolls at the browser window; a device-sized frame inside the editor must not restyle it.
+  const scrollbarCss = deviceView
+    ? ""
+    : buildScrollbarCss({ selector: "html", settings: readPageDesign({ blocks: preparedBlocks }).scrollbar });
+
   const postDocument: PostDocumentValue | null = boundPost?.id
     ? {
         contentType: "post",
@@ -95,6 +101,7 @@ export function PublicBlockStack({
         }}
       >
         <PublishBlockStyles />
+        {scrollbarCss ? <style dangerouslySetInnerHTML={{ __html: scrollbarCss }} /> : null}
         {deviceAndTokenCss ? (
           <style dangerouslySetInnerHTML={{ __html: deviceAndTokenCss }} />
         ) : null}

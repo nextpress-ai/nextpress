@@ -2,7 +2,8 @@ import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { getRenderProps, getBlockComponent } from "../render-helpers";
 import { readPageShellContent } from "@shared/page-shell-model";
-import { buildPageShellOuterStyle, getPageShellChildItemStyle } from "@shared/page-shell-styles";
+import { buildPageShellOuterStyle, getPageShellChildItemStyle, readPageColumnInset } from "@shared/page-shell-styles";
+import { PageColumnProvider } from "@shared/page-column-context";
 import { headerFloatWrapperStyles } from "@shared/header-model";
 
 export function PageShellBlock(block: BlockConfig) {
@@ -14,21 +15,26 @@ export function PageShellBlock(block: BlockConfig) {
 	return (
 		<div
 			className={mergedClassName || undefined}
-			style={buildPageShellOuterStyle({ content })}
 			{...attributes}
+			style={buildPageShellOuterStyle({ content })}
 		>
-			{childBlocks.map((child) => {
-				const ChildComponent = getBlockComponent(child.name);
-				if (!ChildComponent) return null;
-				return (
-					<div
-						key={child.id}
-						style={{ ...getPageShellChildItemStyle({ child, content }), ...headerFloatWrapperStyles(child) }}
-					>
-						<ChildComponent {...child} />
-					</div>
-				);
-			})}
+			<PageColumnProvider value={readPageColumnInset(content)}>
+				{childBlocks.map((child) => {
+					const ChildComponent = getBlockComponent(child.name);
+					if (!ChildComponent) return null;
+					return (
+						<div
+							key={child.id}
+							style={{
+								...getPageShellChildItemStyle({ child, content, siblings: childBlocks }),
+								...headerFloatWrapperStyles(child),
+							}}
+						>
+							<ChildComponent {...child} />
+						</div>
+					);
+				})}
+			</PageColumnProvider>
 		</div>
 	);
 }

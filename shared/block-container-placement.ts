@@ -192,9 +192,14 @@ export function getBlockStackLayerWrapperStyles(block: {
  *
  * Pins map to grid-native alignment; unpinned children stretch to fill the cell.
  * `left` and no vertical pin keep the grid default `stretch`, matching flex-stack behavior.
+ *
+ * `heldToBase` is for the layers above an image the column hugs: they add nothing to the column's
+ * width (so long text cannot push past the picture) and a left/center/right pin moves the content
+ * inside the column instead of shrinking the layer.
  */
 export function getOverlayChildItemStyles(
 	rawStyles: CSSProperties | Record<string, unknown> | undefined,
+	options?: { heldToBase?: boolean },
 ): CSSProperties {
 	const { h, v } = readPlacement(rawStyles);
 	const out: CSSProperties = {
@@ -202,7 +207,13 @@ export function getOverlayChildItemStyles(
 		minWidth: 0,
 	};
 
-	if (h === "center") out.justifySelf = "center";
+	if (options?.heldToBase) {
+		out.contain = "inline-size";
+		if (h === "center" || h === "right") {
+			out.display = "flex";
+			out.justifyContent = h === "center" ? "center" : "flex-end";
+		}
+	} else if (h === "center") out.justifySelf = "center";
 	else if (h === "right") out.justifySelf = "end";
 
 	if (v === "top") out.alignSelf = "start";

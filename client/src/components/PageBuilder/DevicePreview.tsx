@@ -42,11 +42,12 @@ export default function DevicePreview({ device, children }: DevicePreviewProps) 
           containerType: 'inline-size',
           containerName: 'npb-canvas',
         }}
-        className="transition-all duration-300 ease-in-out"
+        className="flex flex-col transition-all duration-300 ease-in-out"
       >
         <PublishBlockStyles />
         <style dangerouslySetInnerHTML={{ __html: EDITOR_CANVAS_CONTAINER_CSS }} />
         <div
+          className="flex min-h-full flex-1 flex-col"
           style={{
             width: '100%',
             minWidth: 0,

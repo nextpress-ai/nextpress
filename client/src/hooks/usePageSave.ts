@@ -4,6 +4,10 @@ import type { BlockConfig, Page, Post } from "@shared/schema-types";
 import { VERSION_STALE } from "@shared/content-version";
 import { savePageDraft } from "@/lib/pageDraftStorage";
 import { saveEditorBlocks } from "@/lib/save-editor-blocks";
+import {
+	listEditorEntityQueryKeys,
+	writeEditorEntityCache,
+} from "@/lib/editor-entity-cache";
 
 type SaveContentType = "page" | "post";
 
@@ -51,6 +55,22 @@ export function usePageSave({
 		},
 		onSuccess: (updatedData) => {
 			const isPage = !isTemplate && contentType === "page";
+			if (updatedData?.id) {
+				const base = isTemplate
+					? "/api/templates"
+					: contentType === "post"
+						? "/api/posts"
+						: "/api/pages";
+				writeEditorEntityCache({
+					queryClient,
+					keys: listEditorEntityQueryKeys({
+						apiBase: base,
+						id: updatedData.id,
+						slug: "slug" in updatedData ? updatedData.slug : undefined,
+					}),
+					entity: updatedData,
+				});
+			}
 			if (isPage && updatedData?.id) {
 				savePageDraft(updatedData.id, updatedData as Page);
 			}

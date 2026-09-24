@@ -8,6 +8,7 @@ import {
 	getBlockStackLayerWrapperStyles,
 } from "@shared/block-container-placement";
 import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
+import { useHeaderScroll } from "@shared/use-header-scroll";
 
 /**
  * Header for preview, publish, and server render. In the blocks layout the child blocks are
@@ -18,6 +19,12 @@ export function HeaderBlock(block: BlockConfig) {
 	const { className, attributes } = getRenderProps(block);
 	const content = readHeaderContent(block.content);
 	const childBlocks = block.children ?? [];
+	const containerRef = React.useRef<HTMLDivElement>(null);
+	useHeaderScroll({
+		containerRef,
+		enabled: content.sticky && content.onScroll !== undefined,
+		refreshKey: block.content,
+	});
 
 	const blocks = headerHasBlocksSlot(content.variant) ? (
 		<div className="wp-block-header__blocks">
@@ -46,7 +53,7 @@ export function HeaderBlock(block: BlockConfig) {
 	) : undefined;
 
 	return (
-		<div className={className || undefined} {...attributes}>
+		<div ref={containerRef} className={className || undefined} {...attributes}>
 			<HeaderBar content={content} blocks={blocks} />
 		</div>
 	);

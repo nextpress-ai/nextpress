@@ -165,7 +165,10 @@ export function HeaderBar({
 	const hasMenu = headerCollapsesToMenu(content.variant);
 	return (
 		<header
-			className={headerBarClassName({ sticky: content.sticky, variant: content.variant })}
+			className={headerBarClassName({
+				sticky: content.sticky,
+				variant: content.variant,
+			})}
 			onClick={(event) => {
 				if (!disableLinks) return;
 				const target = event.target;
@@ -173,34 +176,36 @@ export function HeaderBar({
 				if (target.closest("a")) event.preventDefault();
 			}}
 		>
-			<div className="wp-block-header__bar">
-				<div className="wp-block-header__slot is-left">
-					<SlotParts names={slots.left} content={content} blocks={blocks} />
-				</div>
-				<div className="wp-block-header__desktop">
-					{slots.middle.length > 0 ? (
-						<div className="wp-block-header__slot is-middle">
-							<SlotParts names={slots.middle} content={content} blocks={blocks} />
-						</div>
-					) : null}
-					{slots.right.length > 0 ? (
-						<div className="wp-block-header__slot is-right">
-							<SlotParts names={slots.right} content={content} blocks={blocks} />
-						</div>
-					) : null}
-				</div>
-			</div>
-			{hasMenu ? (
-				<details className="wp-block-header__mobile-panel">
-					<summary className="wp-block-header__mobile-toggle" aria-label="Open menu">
-						<span className="wp-block-header__burger" aria-hidden="true" />
-					</summary>
-					<div className="wp-block-header__mobile-body">
-						<NavLinks items={content.nav} />
-						<ActionButtons actions={content.actions} />
+			<div className="wp-block-header__frame">
+				<div className="wp-block-header__bar">
+					<div className="wp-block-header__slot is-left">
+						<SlotParts names={slots.left} content={content} blocks={blocks} />
 					</div>
-				</details>
-			) : null}
+					<div className="wp-block-header__desktop">
+						{slots.middle.length > 0 ? (
+							<div className="wp-block-header__slot is-middle">
+								<SlotParts names={slots.middle} content={content} blocks={blocks} />
+							</div>
+						) : null}
+						{slots.right.length > 0 ? (
+							<div className="wp-block-header__slot is-right">
+								<SlotParts names={slots.right} content={content} blocks={blocks} />
+							</div>
+						) : null}
+					</div>
+				</div>
+				{hasMenu ? (
+					<details className="wp-block-header__mobile-panel">
+						<summary className="wp-block-header__mobile-toggle" aria-label="Open menu">
+							<span className="wp-block-header__burger" aria-hidden="true" />
+						</summary>
+						<div className="wp-block-header__mobile-body">
+							<NavLinks items={content.nav} />
+							<ActionButtons actions={content.actions} />
+						</div>
+					</details>
+				) : null}
+			</div>
 		</header>
 	);
 }
