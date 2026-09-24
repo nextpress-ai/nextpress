@@ -11,12 +11,11 @@ import { resolveSiteThemeSettings } from './shared/resolve-site-theme-settings';
 import { asyncHandler } from './shared/async-handler';
 
 /**
- * Creates themes, plugins and hooks routes
- * Handles theme management, plugin listing, and WordPress hook debugging
- * 
+ * Creates themes and hooks routes.
+ * Plugin inventory lives in `plugins.routes.ts`.
+ *
  * Note: This router is mounted at /api and handles:
  * - /api/themes/* - Theme management
- * - /api/plugins - Plugin listing
  * - /api/hooks - Hook debugging
  */
 export function createThemesRoutes(deps: Deps) {
@@ -261,21 +260,6 @@ export function createThemesRoutes(deps: Deps) {
       });
     }),
   );
-
-  /**
-   * GET /api/plugins
-   * List all plugins
-   * Auth: Required
-   */
-  router.get('/plugins', requireAuth, async (_req, res) => {
-    try {
-      const plugins = await models.plugins.findMany();
-      res.json(plugins);
-    } catch (error) {
-      console.error('Error fetching plugins:', error);
-      res.status(500).json({ message: 'Failed to fetch plugins' });
-    }
-  });
 
   /**
    * GET /api/hooks

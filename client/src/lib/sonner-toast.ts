@@ -55,3 +55,21 @@ export function resolveDuplicatePageError(error: unknown): string {
 	if (raw) return raw;
 	return "Could not duplicate the page. Please try again.";
 }
+
+/** Maps plugin API failures to a clear next step. */
+export function resolvePluginError(error: unknown): string {
+	const err = error as ApiError;
+	const raw = typeof err?.message === "string" ? err.message.trim() : "";
+
+	if (err?.status === 404) {
+		return "That plugin is gone. Refresh the list and try again.";
+	}
+	if (err?.status === 401) {
+		return "You must be signed in to manage plugins.";
+	}
+	if (err?.status === 409 || err?.code === "PLUGIN_NAME_EXISTS") {
+		return "A plugin with that name already exists. Choose a different name.";
+	}
+	if (raw) return raw;
+	return "Could not update plugins. Please try again.";
+}

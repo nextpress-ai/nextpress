@@ -15,6 +15,7 @@ import { createCommentsRoutes } from './comments.routes';
 import { createMediaRoutes } from './media.routes';
 import { createTemplatesRoutes } from './templates.routes';
 import { createThemesRoutes } from './themes.routes';
+import { createPluginsRoutes } from './plugins.routes';
 import { createOptionsRoutes } from './options.routes';
 import { createSettingsRoutes } from './settings.routes';
 import { createSiteRoutes } from './site.routes';
@@ -103,8 +104,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/media', createMediaRoutes(deps));
 
   app.use('/api/templates', createTemplatesRoutes(deps));
-  // Mount themes routes at /api to handle /themes, /plugins, and /hooks
+  // Mount themes routes at /api to handle /themes and /hooks
   app.use('/api', createThemesRoutes(deps));
+  app.use('/api', createPluginsRoutes(deps));
 
   app.use('/api/options', createOptionsRoutes(deps));
   app.use('/api/settings', createSettingsRoutes(deps));

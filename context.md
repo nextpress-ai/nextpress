@@ -43,6 +43,11 @@ UUID PKs everywhere except sessions.sid.
 
 ## Decision records
 
+### 2026-09-24 — Plugins admin is a real list
+- The only admin screen that said "coming soon" was Plugins. The table, list route, on/off helpers, and hook names were already there.
+- People can add a plugin by name, turn it on or off, and remove it. A plugin starts off. Turning it on fires `activate_plugin` and does not load outside code.
+- Spec: `docs/internal/plugins-admin.md`.
+
 ### 2026-09-24 — Duplicate a page, remember colours, header fills
 - **Pages list:** Duplicate sits next to Edit. A popup asks for the new name (starts as "Copy of …"). The copy is a draft with new block ids and a free URL. It is never the homepage and never a second blog landing page. After it is created the editor opens on the copy.
 - **Colour control:** Recent picks sit at the top (solids and gradients). Unique colours already on the canvas sit under "On this page". Recents live in the browser (`npb:recent-colors`). The canvas list is walked from the current blocks.

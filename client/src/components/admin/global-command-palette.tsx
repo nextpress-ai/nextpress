@@ -8,6 +8,7 @@ import {
   Image,
   LayoutDashboard,
   Palette,
+  Plug,
   Plus,
   Settings,
   Loader,
@@ -47,6 +48,7 @@ const NAVIGATION_ACTIONS: NavigationAction[] = [
   { label: 'Pages', path: '/admin/pages', icon: File },
   { label: 'Media library', path: '/admin/media', icon: Image },
   { label: 'Themes', path: '/admin/themes', icon: Palette },
+  { label: 'Plugins', path: '/admin/plugins', icon: Plug },
   { label: 'Settings', path: '/admin/settings', icon: Settings },
   { label: 'View site', path: '/', icon: Compass },
 ];

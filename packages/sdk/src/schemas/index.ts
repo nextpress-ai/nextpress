@@ -208,6 +208,15 @@ export const duplicatePageSchema = z.object({
 	title: z.string().min(1),
 });
 
+export const pluginRunsWhenSchema = z.enum(["rendering", "admin", "always"]);
+
+export const createPluginSchema = z.object({
+	name: z.string().trim().min(1).max(120),
+	description: z.string().trim().max(500).optional(),
+	version: z.string().trim().min(1).max(32).optional(),
+	runsWhen: pluginRunsWhenSchema.optional(),
+});
+
 export const listBlogsQuerySchema = paginationSchema.extend({
 	status: contentStatusSchema.optional(),
 	siteId: z.string().uuid().optional(),

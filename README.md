@@ -211,7 +211,8 @@ Built-in tools for search engine optimization:
 
 Built to grow with your needs:
 
-- [ ] WordPress-style action and filter hooks for plugins
+- [x] WordPress-style action and filter hooks
+- [x] Plugins admin: add, turn on or off, and remove (no outside-code loader yet)
 - [ ] Theme system with template overrides
 - [x] Template system for creating reusable layouts
 - [x] Public REST API for headless usage

@@ -5,6 +5,7 @@ import type {
 	createCommentSchema,
 	createPageSchema,
 	createPostSchema,
+	createPluginSchema,
 	duplicatePageSchema,
 	createSiteSchema,
 	createTemplateSchema,
@@ -43,6 +44,7 @@ export type ListPagesQuery = z.infer<typeof listPagesQuerySchema>;
 export type CreatePageInput = z.infer<typeof createPageSchema>;
 export type UpdatePageInput = z.infer<typeof updatePageSchema>;
 export type DuplicatePageInput = z.infer<typeof duplicatePageSchema>;
+export type CreatePluginInput = z.infer<typeof createPluginSchema>;
 
 export type ListTemplatesQuery = z.infer<typeof listTemplatesQuerySchema>;
 export type CreateTemplateInput = z.infer<typeof createTemplateSchema>;
