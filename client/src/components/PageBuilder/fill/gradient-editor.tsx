@@ -16,6 +16,7 @@ import {
 	type GradientStop,
 } from "@shared/fill-model";
 import { GRADIENT_PRESETS } from "@shared/gradient-presets";
+import { rememberRecentColor } from "@/lib/recent-color-store";
 import { SettingsChipGroup } from "../settings-chip-group";
 import { SettingsLabel } from "../shared";
 
@@ -141,12 +142,17 @@ export function GradientEditor({ value, onChange, ariaLabel }: GradientEditorPro
 						title={preset.label}
 						aria-label={preset.label}
 						aria-pressed={sameFill(preset.fill, value)}
-						onClick={() => onChange(preset.fill)}
+						onClick={() => {
+							rememberRecentColor({ kind: "gradient", fill: preset.fill });
+							onChange(preset.fill);
+						}}
 						className={cn(
-							"h-6 w-full border border-npb-border-default transition-all",
+							"h-6 w-full border border-npb-border-default",
+							"transition-[transform,border-color,box-shadow] duration-150 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]",
+							"active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
 							sameFill(preset.fill, value)
 								? "z-10 ring-2 ring-npb-focus ring-offset-1"
-								: "hover:scale-110 hover:border-npb-border-strong",
+								: "[@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.04] [@media(hover:hover)_and_(pointer:fine)]:hover:border-npb-border-strong motion-reduce:hover:scale-100",
 						)}
 						style={{ backgroundImage: fillToImageValue(preset.fill) }}
 					/>

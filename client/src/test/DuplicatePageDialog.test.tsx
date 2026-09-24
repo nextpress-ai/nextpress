@@ -18,6 +18,7 @@ vi.mock("wouter", () => ({
 vi.mock("@/lib/sonner-toast", () => ({
 	showSuccessToast: vi.fn(),
 	showErrorToast: vi.fn(),
+	resolveDuplicatePageError: () => "Could not duplicate the page. Please try again.",
 }));
 
 function renderDialog() {

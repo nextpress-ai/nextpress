@@ -82,6 +82,7 @@ function DuplicatePageForm({
 		>
 			<form
 				className="contents"
+				aria-busy={duplicateMutation.isPending || undefined}
 				onSubmit={(event) => {
 					event.preventDefault();
 					submit();

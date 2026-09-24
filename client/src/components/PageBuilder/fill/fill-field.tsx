@@ -27,6 +27,11 @@ type FillFieldProps = {
 	onTheme?: (target: ColorTarget) => void;
 	defaultProperty?: string;
 	ariaLabel?: string;
+	/**
+	 * False when a parent already paints Recent / On this page (header Colors above
+	 * the scrolled-look card).
+	 */
+	showMemory?: boolean;
 };
 
 const ALL_KINDS = ["gradient", "image"] as const;
@@ -47,6 +52,7 @@ export function FillField({
 	onTheme,
 	defaultProperty,
 	ariaLabel = "Fill",
+	showMemory = true,
 }: FillFieldProps): JSX.Element {
 	const [activeKey, setActiveKey] = useState(() => targetKey(targets.find((t) => t.property === defaultProperty) ?? targets[0]!));
 	const [pendingImage, setPendingImage] = useState<string | null>(null);
@@ -92,12 +98,14 @@ export function FillField({
 
 	return (
 		<div className="space-y-3" role="group" aria-label={ariaLabel}>
-			<ColorMemorySwatches
-				onPickSolid={applySolid}
-				onPickGradient={kinds.includes("gradient") ? applyGradient : undefined}
-				currentSolid={active.styleValue}
-				currentFill={active.fill?.kind === "gradient" ? active.fill : undefined}
-			/>
+			{showMemory ? (
+				<ColorMemorySwatches
+					onPickSolid={applySolid}
+					onPickGradient={kinds.includes("gradient") ? applyGradient : undefined}
+					currentSolid={active.styleValue}
+					currentFill={active.fill?.kind === "gradient" ? active.fill : undefined}
+				/>
+			) : null}
 			{targets.length > 1 ? (
 				<div className="flex items-stretch" role="group" aria-label={`${ariaLabel} target`}>
 					{targets.map((target, index) => {

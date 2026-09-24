@@ -162,10 +162,7 @@ export function HeaderSettings({
 				</p>
 			</CollapsibleCard>
 
-			<CollapsibleCard
-				title="Colors"
-				defaultOpen={Boolean(content.backgroundColor || content.textColor || content.backgroundFill)}
-			>
+			<CollapsibleCard title="Colors" defaultOpen={true}>
 				<FillField
 					ariaLabel="Header color"
 					defaultProperty="backgroundColor"

@@ -43,6 +43,7 @@ describe("collectCanvasColors", () => {
 			heading({
 				customCss: ".x { color: #ff0000 }",
 				content: { kind: "media", url: "https://example.com/#ff00aa", mediaType: "image" },
+				other: { src: "https://cdn.example.com/photo.jpg?bg=#00ffaa" },
 			}),
 		]);
 		expect(items).toEqual([]);

@@ -55,6 +55,7 @@ describe('FillField', () => {
   });
 
   it('Gradient starts from a ready-made one and a preset swaps it', async () => {
+    resetRecentColors();
     const user = userEvent.setup();
     const onFill = vi.fn();
     render(<Harness onFill={onFill} />);
@@ -63,6 +64,7 @@ describe('FillField', () => {
     expect(screen.getByRole('img', { name: 'Gradient preview' })).toBeInTheDocument();
     await user.click(within(screen.getByRole('group', { name: 'Ready-made gradients' })).getByRole('button', { name: 'Sunset' }));
     expect(onFill).toHaveBeenLastCalledWith('background', GRADIENT_PRESETS.find((preset) => preset.id === 'sunset')!.fill);
+    expect(screen.getByRole('group', { name: 'Recent' })).toBeInTheDocument();
   });
 
   it('edits type, direction, colors and positions, keeping 2 to 4 colors', async () => {

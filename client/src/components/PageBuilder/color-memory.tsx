@@ -64,10 +64,10 @@ function MemorySwatch({
 			className={cn(
 				"h-6 w-6 shrink-0 border border-npb-border-default",
 				"transition-[transform,border-color,box-shadow] duration-150 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]",
-				"active:scale-[0.97]",
+				"active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
 				selected
 					? "z-10 ring-2 ring-npb-focus ring-offset-1"
-					: "[@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.04] [@media(hover:hover)_and_(pointer:fine)]:hover:border-npb-border-strong",
+					: "[@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.04] [@media(hover:hover)_and_(pointer:fine)]:hover:border-npb-border-strong motion-reduce:hover:scale-100",
 			)}
 			style={style}
 		/>

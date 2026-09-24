@@ -75,6 +75,7 @@ export function HeaderScrollSettings({ value, onChange }: HeaderScrollSettingsPr
 		<div className="space-y-4">
 			<FillField
 				ariaLabel="Header color when scrolled"
+				showMemory={false}
 				defaultProperty="backgroundColor"
 				targets={[
 					{

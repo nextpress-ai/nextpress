@@ -1,5 +1,4 @@
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { HeaderSettings } from "@/components/PageBuilder/blocks/header/header-settings";
 import { DEFAULT_HEADER_CONTENT } from "@shared/header-model";
@@ -19,10 +18,9 @@ const headerBlock = (): BlockConfig => ({
 });
 
 describe("header Colors", () => {
-	it("offers Color, Gradient and Image on the bar", async () => {
-		const user = userEvent.setup();
+	it("offers Color, Gradient and Image on the bar", () => {
 		render(<HeaderSettings block={headerBlock()} onUpdate={() => undefined} />);
-		await user.click(screen.getByRole("button", { name: /^Colors/ }));
+		expect(screen.getByRole("button", { name: /^Colors/ })).toHaveAttribute("aria-expanded", "true");
 		const types = within(screen.getByRole("radiogroup", { name: "Background fill type" }));
 		expect(types.getByRole("radio", { name: "Color" })).toBeInTheDocument();
 		expect(types.getByRole("radio", { name: "Gradient" })).toBeInTheDocument();
