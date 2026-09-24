@@ -6,7 +6,9 @@ import { tokenColors, propertyAliasMap } from '@/lib/tailwind-tokens';
 import { normalizeHexColor, resolveTailwindColorToken } from '@/lib/resolve-tailwind-color-token';
 import { describeTokenColor } from '@/lib/describe-token-color';
 import { isValidCssColor } from '@/lib/is-valid-css-color';
+import { rememberRecentColor } from '@/lib/recent-color-store';
 import { SettingsDisclosure } from './shared';
+import { ColorMemorySwatches } from './color-memory';
 
 /** One colour a field can set — e.g. a block's background, or its text. */
 export type ColorTarget = {
@@ -35,6 +37,11 @@ type ColorFieldProps = {
   /** Which target is showing first. Defaults to the first one. */
   defaultProperty?: string;
   ariaLabel?: string;
+  /**
+   * False when a parent already paints Recent / On this page (FillField).
+   * Defaults to true so a standalone colour row still shows them.
+   */
+  showMemory?: boolean;
 };
 
 type Swatch = { family: string; shade: string | null };
@@ -133,6 +140,7 @@ export default function ColorField({
   onTheme,
   defaultProperty,
   ariaLabel = 'Color',
+  showMemory = true,
 }: ColorFieldProps): JSX.Element {
   const [activeKey, setActiveKey] = useState<string>(
     () => (targets.find((target) => target.property === defaultProperty) ?? targets[0]!) && targetKey(
@@ -157,8 +165,13 @@ export default function ColorField({
   const isTheme = active.followsTheme ?? !summary.isSet;
   const isCustom = summary.isSet && selection === null && !isTheme;
 
+  const rememberSolid = (color: string): void => {
+    rememberRecentColor({ kind: 'solid', color });
+  };
+
   const pick = (swatch: Swatch, hex: string): void => {
     setDraft(null);
+    rememberSolid(hex);
     onChange({
       property: active.property,
       value: swatch.family,
@@ -169,7 +182,8 @@ export default function ColorField({
     });
   };
 
-  const setCustom = (color: string): void => {
+  const setCustom = (color: string, remember = true): void => {
+    if (remember) rememberSolid(color);
     onChange({
       property: active.property,
       value: '',
@@ -182,7 +196,7 @@ export default function ColorField({
 
   const handleText = (text: string): void => {
     setDraft(text);
-    if (isValidCssColor(text)) setCustom(text.trim());
+    if (isValidCssColor(text)) setCustom(text.trim(), false);
   };
 
   const shownText = draft ?? (isTheme ? '' : (summary.swatch ?? ''));
@@ -191,6 +205,7 @@ export default function ColorField({
 
   return (
     <div className="space-y-2" role="group" aria-label={ariaLabel}>
+      {showMemory ? <ColorMemorySwatches onPickSolid={setCustom} /> : null}
       {showHeader ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           {targets.length > 1 ? (
@@ -293,7 +308,10 @@ export default function ColorField({
           ref={inputRef}
           value={shownText}
           onChange={(event) => handleText(event.target.value)}
-          onBlur={() => setDraft(null)}
+          onBlur={() => {
+            if (draft !== null && isValidCssColor(draft)) rememberSolid(draft.trim());
+            setDraft(null);
+          }}
           placeholder="#3b82f6"
           spellCheck={false}
           autoComplete="off"

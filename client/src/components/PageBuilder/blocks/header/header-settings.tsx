@@ -11,6 +11,7 @@ import { DimensionPresetField } from "../../dimension-preset-field";
 import { SettingsDisclosure, SettingsLabel } from "../../shared";
 import { MediaUrlField } from "../shared/media-url-field";
 import ColorField from "../../ColorField";
+import { FillField } from "../../fill/fill-field";
 import {
 	applyHeaderBrandKind,
 	applyHeaderVariant,
@@ -159,6 +160,45 @@ export function HeaderSettings({
 				<p className="npb-settings-hint-muted mt-1.5 text-xs">
 					This header sits on the page, so the page's side padding already applies.
 				</p>
+			</CollapsibleCard>
+
+			<CollapsibleCard
+				title="Colors"
+				defaultOpen={Boolean(content.backgroundColor || content.textColor || content.backgroundFill)}
+			>
+				<FillField
+					ariaLabel="Header color"
+					defaultProperty="backgroundColor"
+					targets={[
+						{
+							property: "backgroundColor",
+							label: "Background",
+							entry: content.backgroundColor,
+							styleValue: content.backgroundColor?.style,
+							fill: content.backgroundFill,
+						},
+						{
+							property: "color",
+							label: "Text",
+							entry: content.textColor,
+							styleValue: content.textColor?.style,
+							fillKinds: [],
+						},
+					]}
+					onColorChange={(entry: TokenEntry) =>
+						updateContent(
+							entry.property === "color" ? { textColor: entry } : { backgroundColor: entry },
+						)
+					}
+					onFillChange={(_target, fill) => updateContent({ backgroundFill: fill })}
+					onTheme={(target) =>
+						updateContent(
+							target.property === "color"
+								? { textColor: undefined }
+								: { backgroundColor: undefined, backgroundFill: undefined },
+						)
+					}
+				/>
 			</CollapsibleCard>
 
 			{content.sticky ? (

@@ -1,5 +1,6 @@
 import type { TokenEntry } from "./schema-types.js";
 import { safeCssColor } from "./css-safe.js";
+import { fillToBackgroundStyles, readFill, type Fill } from "./fill-model.js";
 
 export const HEADER_SHADOW_OPTIONS = [
 	{ value: "none", label: "None" },
@@ -29,6 +30,8 @@ export type HeaderScrollLook = {
 	textColor?: TokenEntry;
 	/** A thin line along the bottom edge. */
 	line?: boolean;
+	/** A gradient or picture once scrolled. Paints over `background` when set. */
+	backgroundFill?: Fill;
 };
 
 const SHADOW_CSS: Record<Exclude<HeaderScrollShadow, "none">, string> = {
@@ -64,6 +67,7 @@ export function readHeaderScrollLook(raw: unknown): HeaderScrollLook | undefined
 		shadow: HEADER_SHADOW_OPTIONS.find((option) => option.value === raw.shadow)?.value,
 		textColor: readEntry(raw.textColor),
 		line: raw.line === true ? true : undefined,
+		backgroundFill: readFill(raw.backgroundFill),
 	};
 	return Object.values(look).some((value) => value !== undefined) ? look : undefined;
 }
@@ -80,9 +84,24 @@ export function buildHeaderScrollCss({ blockId, look }: { blockId: string; look:
 
 	const colour = safeCssColor(look.background?.style);
 	const opacity = look.opacity ?? 100;
-	if (colour || opacity < 100) {
+	const fade = (color: string): string =>
+		opacity < 100 ? `color-mix(in srgb, ${color} ${opacity}%, transparent)` : color;
+	let fillLayer = "";
+	if (look.backgroundFill) {
+		const paint = fillToBackgroundStyles(look.backgroundFill);
+		const paintDecls = Object.entries(paint)
+			.filter(([, value]) => value !== undefined && value !== null && value !== false && value !== "")
+			.map(([name, value]) => `${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}:${String(value)}`)
+			.join(";");
+		if (opacity < 100) {
+			// Own layer so the slider can fade the fill without fading the words on the bar.
+			fillLayer = `${bar}.is-scrolled::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:${opacity / 100};${paintDecls}}`;
+		} else if (paintDecls) {
+			rules.push(paintDecls);
+		}
+	} else if (colour || opacity < 100) {
 		const base = colour ?? NORMAL_BACKGROUND;
-		rules.push(`background-color:${opacity < 100 ? `color-mix(in srgb, ${base} ${opacity}%, transparent)` : base}`);
+		rules.push(`background-color:${fade(base)}`);
 	}
 
 	if (look.blur !== undefined) {
@@ -100,10 +119,13 @@ export function buildHeaderScrollCss({ blockId, look }: { blockId: string; look:
 	const text = safeCssColor(look.textColor?.style);
 	if (text) rules.push(`color:${text}`);
 
-	if (rules.length === 0) return "";
+	if (rules.length === 0 && !fillLayer) return "";
 	return [
-		`${bar}{transition:background-color .25s ease,box-shadow .25s ease,color .25s ease,backdrop-filter .25s ease}`,
-		`${bar}.is-scrolled{${rules.join(";")}}`,
+		`${bar}{transition:background-color .25s ease,background-image .25s ease,box-shadow .25s ease,color .25s ease,backdrop-filter .25s ease}`,
+		rules.length > 0 ? `${bar}.is-scrolled{${rules.join(";")}}` : "",
+		fillLayer,
 		`@media (prefers-reduced-motion:reduce){${bar}{transition:none}}`,
-	].join("\n");
+	]
+		.filter(Boolean)
+		.join("\n");
 }

@@ -42,6 +42,7 @@ import { CreatePostDialog } from '@/components/posts/CreatePostDialog';
 import { runParentOwnedSave } from '@/lib/run-parent-save';
 import { SkipLink } from '@/components/a11y/skip-link';
 import { MotionSidebarPanel } from '@/components/motion/motion-primitives';
+import { EditorColorMemoryProvider } from './color-memory';
 
 function useMountEffect(effect: () => void | (() => void)) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -735,6 +736,7 @@ export default function PageBuilder({
     <div className="npb-editor-shell flex h-full min-h-0 flex-col bg-npb-canvas-bg">
       <SkipLink href="#builder-canvas">Skip to canvas</SkipLink>
       <PageProvider pageOther={data?.other as any} postDocument={postDocument}>
+        <EditorColorMemoryProvider blocks={blocks}>
         <DeviceViewProvider device={deviceView}>
         <BlockActionsProvider
         value={{
@@ -897,6 +899,7 @@ export default function PageBuilder({
         </div>
       </BlockActionsProvider>
         </DeviceViewProvider>
+        </EditorColorMemoryProvider>
       </PageProvider>
     </div>
   );

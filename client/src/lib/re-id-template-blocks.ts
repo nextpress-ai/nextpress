@@ -1,4 +1,5 @@
 import type { BlockConfig } from "@shared/schema-types";
+import { reIdBlocks } from "@shared/re-id-blocks";
 import { generateBlockId } from "@/components/PageBuilder/utils";
 
 /**
@@ -6,12 +7,5 @@ import { generateBlockId } from "@/components/PageBuilder/utils";
  * without colliding with existing canvas blocks.
  */
 export function reIdTemplateBlocks(blocks: BlockConfig[]): BlockConfig[] {
-	const reId = (items: BlockConfig[]): BlockConfig[] =>
-		items.map((block) => ({
-			...block,
-			id: generateBlockId(),
-			children: block.children ? reId(block.children) : undefined,
-		}));
-
-	return reId(blocks);
+	return reIdBlocks({ blocks, generateId: generateBlockId });
 }

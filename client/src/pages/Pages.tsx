@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Eye, Pencil, Home, ListTree } from "lucide-react";
+import { Plus, Trash2, Eye, Pencil, Home, ListTree, Copy } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/components/admin/content-list";
 import { ContentStatusSelect } from "@/components/admin/content-status-select";
 import { CreatePageModal } from "@/components/Pages/CreatePageModal";
+import { DuplicatePageDialog } from "@/components/Pages/DuplicatePageDialog";
 import { PageSiteMenuDialog } from "@/components/Pages/PageSiteMenuDialog";
 import { apiRequest } from "@/lib/queryClient";
 import { pageEditorPath } from "@/lib/admin-content-routes";
@@ -77,6 +78,7 @@ function PagesList({
   const [order, setOrder] = useState<ContentListSortOrder>(DEFAULT_PAGE_LIST_SORT.order);
   const { viewMode, setViewMode } = useAdminListViewMode("pages");
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [duplicatePage, setDuplicatePage] = useState<Page | null>(null);
   const [page, setPage] = useState(1);
   const [location, setLocation] = useLocation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -347,6 +349,15 @@ function PagesList({
                       <Button variant="ghost" size="sm" onClick={() => handlePageBuilder(item.id)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDuplicatePage(item)}
+                        aria-label={`Duplicate ${item.title}`}
+                        title="Duplicate page"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleView(item)}>
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -461,6 +472,15 @@ function PagesList({
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => setDuplicatePage(page)}
+                              aria-label={`Duplicate ${page.title}`}
+                              title="Duplicate page"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleSetHomepage(page)}
                               aria-label={
                                 page.status === 'publish'
@@ -520,6 +540,13 @@ function PagesList({
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
         initialTitle={new URLSearchParams(window.location.search).get('title') || ''}
+      />
+      <DuplicatePageDialog
+        page={duplicatePage}
+        open={duplicatePage !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setDuplicatePage(null);
+        }}
       />
       <PageSiteMenuDialog
         open={siteMenuOpen}

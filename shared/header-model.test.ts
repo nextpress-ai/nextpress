@@ -14,6 +14,8 @@ import {
 	HEADER_VARIANT_OPTIONS,
 	headerLogoMarkStyle,
 	nextHeaderActionStyle,
+	buildHeaderLookCss,
+	headerBarLookStyles,
 	readHeaderContent,
 	resolveHeaderHref,
 	slotsForHeaderVariant,
@@ -55,6 +57,48 @@ describe("header content", () => {
 		expect(parsed.nav.length).toBeGreaterThan(0);
 		expect(parsed.sticky).toBe(false);
 		expect(headerBarClassName({ sticky: true })).toBe("wp-block-header is-sticky");
+	});
+
+	it("reads a bar fill and paints it, a fill winning over a plain colour", () => {
+		const parsed = readHeaderContent({
+			kind: "structured",
+			data: {
+				backgroundColor: {
+					property: "backgroundColor",
+					value: "",
+					variant: null,
+					alias: "bg",
+					style: "#111111",
+				},
+				textColor: {
+					property: "color",
+					value: "",
+					variant: null,
+					alias: "text",
+					style: "#ffffff",
+				},
+				backgroundFill: {
+					kind: "gradient",
+					shape: "linear",
+					angle: 180,
+					stops: [
+						{ color: "#ff0000", position: 0 },
+						{ color: "#0000ff", position: 100 },
+					],
+				},
+			},
+		});
+		expect(parsed.backgroundColor?.style).toBe("#111111");
+		expect(parsed.textColor?.style).toBe("#ffffff");
+		expect(parsed.backgroundFill?.kind).toBe("gradient");
+		expect(headerBarLookStyles(parsed)).toMatchObject({
+			backgroundImage: "linear-gradient(180deg, #ff0000 0%, #0000ff 100%)",
+			color: "#ffffff",
+		});
+		expect(headerBarLookStyles(parsed).backgroundColor).toBeUndefined();
+		expect(buildHeaderLookCss({ blockId: "hdr", content: parsed })).toContain(
+			".block-hdr .wp-block-header{",
+		);
 	});
 
 	it("raises overlay paint so an open menu sits above later siblings", () => {

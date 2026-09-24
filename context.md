@@ -43,6 +43,11 @@ UUID PKs everywhere except sessions.sid.
 
 ## Decision records
 
+### 2026-09-24 — Duplicate a page, remember colours, header fills
+- **Pages list:** Duplicate sits next to Edit. A popup asks for the new name (starts as "Copy of …"). The copy is a draft with new block ids and a free URL. It is never the homepage and never a second blog landing page. After it is created the editor opens on the copy.
+- **Colour control:** Recent picks sit at the top (solids and gradients). Unique colours already on the canvas sit under "On this page". Recents live in the browser (`npb:recent-colors`). The canvas list is walked from the current blocks.
+- **Header:** Style colours stay hidden (the header owns its look). Content now has a Colors card with Color / Gradient / Image, same as the page. The bar paints `backgroundColor` / `textColor` / `backgroundFill`. The scrolled look can take a fill too.
+
 ### 2026-09-24 — Scrollbar can return to Standard, and the header can line up with the page
 - **Standard is a normal scrollbar, a little smaller, with square corners.** It saves `{ look: "default" }` and paints a 12px bar with no corner radius. `scrollbar-width: thin` was the wrong look (that one is skinny). A cleared setting elsewhere is saved as `null`, which the page tree treats as "remove this" (`undefined` is skipped). Same path fixes "Reset scrolled look" on a floating header. Side padding is the space from the page edge, and the column fills the rest. A narrower content width does not add a second empty band (that band stayed huge and barely moved when the padding changed). Top padding is only above the first block and bottom padding only under the last. The page shell keeps a thin gray edge drawn inside the page (the canvas clips anything outside it) and a strip along that edge selects the page. Opening the editor with the page name loads the page, not only the id. The device label in the top bar is an info icon; the list beside it is the page shell and the blocks placed directly on it.
 - The header sits on the page, not outside it. The page's side padding applies to the header the same way it applies to the text. The page frame is drawn on top of the header so the header stays inside that box.

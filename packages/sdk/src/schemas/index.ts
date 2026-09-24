@@ -204,6 +204,10 @@ export const updatePageSchema = z
 	})
 	.merge(createPageSchema.partial());
 
+export const duplicatePageSchema = z.object({
+	title: z.string().min(1),
+});
+
 export const listBlogsQuerySchema = paginationSchema.extend({
 	status: contentStatusSchema.optional(),
 	siteId: z.string().uuid().optional(),

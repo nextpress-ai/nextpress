@@ -1,13 +1,52 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { applyHeaderVariant, DEFAULT_HEADER_CONTENT, type HeaderVariant } from "./header-model";
+import {
+	applyHeaderVariant,
+	buildHeaderLookCss,
+	DEFAULT_HEADER_CONTENT,
+	type HeaderVariant,
+} from "./header-model";
 import { HeaderBar } from "./header-view";
 
 const markup = (variant: HeaderVariant, blocks?: React.ReactNode): string =>
 	renderToStaticMarkup(
 		<HeaderBar content={applyHeaderVariant(DEFAULT_HEADER_CONTENT, variant)} blocks={blocks} />,
 	);
+
+describe("HeaderBar look", () => {
+	it("writes the resting colour as CSS so a scrolled look can replace it", () => {
+		const css = buildHeaderLookCss({
+			blockId: "hdr",
+			content: {
+				...DEFAULT_HEADER_CONTENT,
+				backgroundColor: {
+					property: "backgroundColor",
+					value: "",
+					variant: null,
+					alias: "bg",
+					style: "#123456",
+				},
+			},
+		});
+		expect(css).toBe(".block-hdr .wp-block-header{background-color:#123456}");
+		const html = renderToStaticMarkup(
+			<HeaderBar
+				content={{
+					...DEFAULT_HEADER_CONTENT,
+					backgroundColor: {
+						property: "backgroundColor",
+						value: "",
+						variant: null,
+						alias: "bg",
+						style: "#123456",
+					},
+				}}
+			/>,
+		);
+		expect(html).not.toContain("background-color:#123456");
+	});
+});
 
 describe("HeaderBar page padding", () => {
 	it("does not add a second inset on the bar; the page already insets the header", () => {

@@ -2,7 +2,10 @@ import { useRef, useState, type JSX } from "react";
 import type { TokenEntry } from "@shared/schema-types";
 import type { Fill, GradientFill, ImageFill } from "@shared/fill-model";
 import { DEFAULT_GRADIENT_FILL } from "@shared/gradient-presets";
+import { propertyAliasMap } from "@/lib/tailwind-tokens";
+import { rememberRecentColor } from "@/lib/recent-color-store";
 import ColorField, { type ColorTarget } from "../ColorField";
+import { ColorMemorySwatches } from "../color-memory";
 import { SettingsChipGroup } from "../settings-chip-group";
 import { GradientEditor } from "./gradient-editor";
 import { ImageFillEditor } from "./image-fill-editor";
@@ -69,8 +72,30 @@ export function FillField({
 
 	const options = (["color", ...kinds] as FillKind[]).map((value) => ({ value, label: KIND_LABELS[value] }));
 
+	const applySolid = (color: string): void => {
+		rememberRecentColor({ kind: "solid", color });
+		onColorChange({
+			property: active.property,
+			value: "",
+			variant: null,
+			alias: propertyAliasMap[active.property] || "bg",
+			modifier: active.modifier,
+			style: color,
+		});
+		if (active.fill) onFillChange(active, undefined);
+	};
+
+	const applyGradient = (fill: GradientFill): void => {
+		rememberRecentColor({ kind: "gradient", fill });
+		onFillChange(active, fill);
+	};
+
 	return (
 		<div className="space-y-3" role="group" aria-label={ariaLabel}>
+			<ColorMemorySwatches
+				onPickSolid={applySolid}
+				onPickGradient={kinds.includes("gradient") ? applyGradient : undefined}
+			/>
 			{targets.length > 1 ? (
 				<div className="flex items-stretch" role="group" aria-label={`${ariaLabel} target`}>
 					{targets.map((target, index) => {
@@ -129,6 +154,7 @@ export function FillField({
 					targets={[active]}
 					onChange={onColorChange}
 					onTheme={onTheme}
+					showMemory={false}
 				/>
 			) : null}
 

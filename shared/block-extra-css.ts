@@ -1,6 +1,6 @@
 import type { BlockConfig } from "./schema-types.js";
 import { resolveBlockFills } from "./fill-model.js";
-import { HEADER_BLOCK_NAME, readHeaderContent } from "./header-model.js";
+import { buildHeaderLookCss, HEADER_BLOCK_NAME, readHeaderContent } from "./header-model.js";
 import { buildHeaderScrollCss } from "./header-scroll-model.js";
 
 /** True when the block is a floating header that has a scrolled look to apply. */
@@ -16,8 +16,12 @@ export function headerHasScrollLook(block: Pick<BlockConfig, "name" | "content">
  */
 export function blockExtraCss(block: BlockConfig): string {
 	const fills = resolveBlockFills({ blockId: block.id, fills: block.other?.fills }).css;
-	const header = headerHasScrollLook(block)
-		? buildHeaderScrollCss({ blockId: block.id, look: readHeaderContent(block.content).onScroll })
-		: "";
-	return [fills, header].filter(Boolean).join("\n");
+	if (block.name !== HEADER_BLOCK_NAME) return fills;
+	const content = readHeaderContent(block.content);
+	const look = buildHeaderLookCss({ blockId: block.id, content });
+	const scrolled =
+		content.sticky && content.onScroll
+			? buildHeaderScrollCss({ blockId: block.id, look: content.onScroll })
+			: "";
+	return [fills, look, scrolled].filter(Boolean).join("\n");
 }

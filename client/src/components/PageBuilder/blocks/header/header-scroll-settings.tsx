@@ -10,7 +10,7 @@ import {
 	type HeaderScrollLook,
 	type HeaderScrollShadow,
 } from "@shared/header-scroll-model";
-import ColorField from "../../ColorField";
+import { FillField } from "../../fill/fill-field";
 import { SettingsChipGroup } from "../../settings-chip-group";
 import { SettingsLabel } from "../../shared";
 
@@ -73,7 +73,7 @@ export function HeaderScrollSettings({ value, onChange }: HeaderScrollSettingsPr
 
 	return (
 		<div className="space-y-4">
-			<ColorField
+			<FillField
 				ariaLabel="Header color when scrolled"
 				defaultProperty="backgroundColor"
 				targets={[
@@ -82,16 +82,27 @@ export function HeaderScrollSettings({ value, onChange }: HeaderScrollSettingsPr
 						label: "Background",
 						entry: value?.background,
 						styleValue: value?.background?.style,
+						fill: value?.backgroundFill,
 					},
 					{
 						property: "color",
 						label: "Text",
 						entry: value?.textColor,
 						styleValue: value?.textColor?.style,
+						fillKinds: [],
 					},
 				]}
-				onChange={(entry: TokenEntry) => update(entry.property === "color" ? { textColor: entry } : { background: entry })}
-				onTheme={(target) => update(target.property === "color" ? { textColor: undefined } : { background: undefined })}
+				onColorChange={(entry: TokenEntry) =>
+					update(entry.property === "color" ? { textColor: entry } : { background: entry })
+				}
+				onFillChange={(_target, fill) => update({ backgroundFill: fill })}
+				onTheme={(target) =>
+					update(
+						target.property === "color"
+							? { textColor: undefined }
+							: { background: undefined, backgroundFill: undefined },
+					)
+				}
 			/>
 
 			<SliderRow

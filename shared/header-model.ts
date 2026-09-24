@@ -1,5 +1,8 @@
+import type { CSSProperties } from "react";
 import type { BlockContent, TokenEntry } from "./schema-types.js";
 import { BORDER_RADIUS_PRESETS, isCssLength } from "./dimension-presets.js";
+import { fillToBackgroundStyles, readFill, type Fill } from "./fill-model.js";
+import { safeCssColor } from "./css-safe.js";
 import { unwrapStructured } from "./page-shell-model.js";
 import { readHeaderScrollLook, type HeaderScrollLook } from "./header-scroll-model.js";
 
@@ -211,6 +214,10 @@ export type HeaderContent = {
 	onScroll?: HeaderScrollLook;
 	/** When on, the bar follows the page column so it lines up with the content. Off stays edge to edge. */
 	matchPagePadding?: boolean;
+	backgroundColor?: TokenEntry;
+	textColor?: TokenEntry;
+	/** A gradient or picture behind the bar. Paints over `backgroundColor` when set. */
+	backgroundFill?: Fill;
 };
 
 export const HEADER_VARIANT_OPTIONS: readonly {
@@ -525,7 +532,49 @@ export function readHeaderContent(content: BlockContent | undefined): HeaderCont
 		sticky: data.sticky === true,
 		onScroll: readHeaderScrollLook(data.onScroll),
 		matchPagePadding: data.matchPagePadding === true,
+		backgroundColor: readHeaderActionColor(data.backgroundColor),
+		textColor: readHeaderActionColor(data.textColor),
+		backgroundFill: readFill(data.backgroundFill),
 	};
+}
+
+/**
+ * Paint for the bar itself: a fill wins over a plain colour, then optional text colour.
+ * Empty when nothing is set so the usual page-canvas background still shows.
+ */
+export function headerBarLookStyles(content: HeaderContent): CSSProperties {
+	const fromFill = content.backgroundFill ? fillToBackgroundStyles(content.backgroundFill) : {};
+	const backgroundColor = fromFill.backgroundImage
+		? undefined
+		: safeCssColor(content.backgroundColor?.style);
+	const color = safeCssColor(content.textColor?.style);
+	return {
+		...fromFill,
+		...(backgroundColor ? { backgroundColor } : {}),
+		...(color ? { color } : {}),
+	};
+}
+
+const toCssDecls = (styles: CSSProperties): string =>
+	Object.entries(styles)
+		.filter(([, value]) => value !== undefined && value !== null && value !== false && value !== "")
+		.map(([name, value]) => `${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}:${String(value)}`)
+		.join(";");
+
+/**
+ * Resting bar look as a stylesheet rule. Lives in CSS so `.is-scrolled` can replace it —
+ * an inline style on the header would win over the scrolled look.
+ */
+export function buildHeaderLookCss({
+	blockId,
+	content,
+}: {
+	blockId: string;
+	content: HeaderContent;
+}): string {
+	const decls = toCssDecls(headerBarLookStyles(content));
+	if (!decls) return "";
+	return `.block-${blockId} .wp-block-header{${decls}}`;
 }
 
 export function visibleHeaderSlots(content: HeaderContent): {

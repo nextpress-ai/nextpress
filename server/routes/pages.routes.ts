@@ -34,6 +34,9 @@ import { buildTitleSearchFilters } from '../lib/content-list-filters';
 import { deletePageWithDependencies, PageDeleteError } from '../lib/delete-page';
 import type { Filter } from '@shared/create-models';
 import { z } from 'zod';
+import { reIdBlocks } from '@shared/re-id-blocks';
+import { ContentAccessError } from '../lib/content-access';
+import { leftoverDesignForDuplicate, otherForDuplicatedPage, uniquePageSlug } from './shared/duplicate-page';
 
 /**
  * Validates that a slug is unique (application-level check before insert).
@@ -74,6 +77,7 @@ async function validateSlugUniqueness(
  * - GET /api/pages - List pages with pagination and status filter
  * - GET /api/pages/:id - Get single page by ID
  * - POST /api/pages - Create new page (requires auth)
+ * - POST /api/pages/:id/duplicate - Copy a page under a new name (requires auth)
  * - PUT /api/pages/:id - Update page (requires auth)
  * - DELETE /api/pages/:id - Delete page (requires auth)
  * 
@@ -456,6 +460,125 @@ export function createPagesRoutes(deps: Deps): Router {
 
       if (!result) {
         return res.status(500).json({ message: 'Failed to create page. Please try again.' });
+      }
+
+      res.status(201).json(enrichPageForApi(result));
+    })
+  );
+
+  /**
+   * POST /api/pages/:id/duplicate - Copy a page. The copy is a draft with new block ids
+   * and a free URL from the name. It is never the homepage and never a blog landing page.
+   */
+  router.post(
+    '/:id/duplicate',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const { err, result } = await safeTryAsync(async () => {
+        const userId = authService.getCurrentUserId(req);
+        if (!userId) {
+          throw new Error('User not authenticated');
+        }
+
+        const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+        if (!title) {
+          const titleError = new Error('Title is required');
+          Object.assign(titleError, { statusCode: 400, code: 'PAGE_TITLE_REQUIRED' });
+          throw titleError;
+        }
+
+        const source = await models.pages.findById(req.params.id);
+        if (!source) {
+          const missing = new Error('Page not found');
+          Object.assign(missing, { statusCode: 404 });
+          throw missing;
+        }
+
+        await assertAuthenticatedSiteAccess({
+          req,
+          models,
+          siteId: String(source.siteId),
+        });
+
+        const slug = await uniquePageSlug({
+          title,
+          isTaken: async (candidate) => {
+            const existing = await models.pages.findBySiteAndSlug(String(source.siteId), candidate);
+            return Boolean(existing);
+          },
+        });
+
+        const sourceBlocks = Array.isArray(source.blocks) ? (source.blocks as BlockConfig[]) : [];
+        const blocks = reIdBlocks({ blocks: sourceBlocks, generateId: randomUUID });
+        const other = otherForDuplicatedPage(source.other);
+        const contentValidation = validateContentForSave({
+          blocks,
+          other,
+          contentType: 'page',
+        });
+        if (!contentValidation.ok) {
+          const validationError = new Error(contentValidation.error.message);
+          Object.assign(validationError, {
+            statusCode: 400,
+            code: contentValidation.error.code,
+          });
+          throw validationError;
+        }
+
+        const page = await models.pages.create({
+          title,
+          slug,
+          siteId: source.siteId,
+          authorId: userId,
+          status: CONFIG.STATUS.DRAFT,
+          featuredImage: source.featuredImage,
+          allowComments: source.allowComments ?? true,
+          parentId: source.parentId,
+          menuOrder: source.menuOrder ?? 0,
+          templateId: source.templateId,
+          blocks: ensureRootPageShell({
+            blocks: Array.isArray(contentValidation.blocks)
+              ? (contentValidation.blocks as BlockConfig[])
+              : [],
+            leftoverDesign: leftoverDesignForDuplicate(other),
+            shellId: randomUUID(),
+          }).blocks,
+          other: contentValidation.other,
+        });
+        hooks.doAction('save_post', page);
+        return page;
+      });
+
+      if (err) {
+        console.error('Error duplicating page:', err);
+        if (err instanceof ContentAccessError) {
+          return res.status(err.statusCode).json({ message: err.message });
+        }
+        const message = err instanceof Error ? err.message : 'Failed to duplicate page';
+        const statusCode = (err as { statusCode?: number }).statusCode;
+        if (statusCode === 404) {
+          return res.status(404).json({ message: 'Page not found' });
+        }
+        if (statusCode === 400) {
+          return res.status(400).json({
+            message,
+            code: (err as { code?: string }).code,
+          });
+        }
+        if (isPageSlugConflictError(err)) {
+          return res.status(409).json({
+            message: 'This page already exists. Choose a different name.',
+            code: 'PAGE_SLUG_EXISTS',
+          });
+        }
+        if (message.includes('not authenticated')) {
+          return res.status(401).json({ message: 'You must be signed in to duplicate pages.' });
+        }
+        return res.status(500).json({ message: 'Failed to duplicate the page. Please try again.' });
+      }
+
+      if (!result) {
+        return res.status(500).json({ message: 'Failed to duplicate the page. Please try again.' });
       }
 
       res.status(201).json(enrichPageForApi(result));

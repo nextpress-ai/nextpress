@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fireEvent } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BlockConfig, TokenEntry } from '@shared/schema-types';
 import BlockSettings from '@/components/PageBuilder/BlockSettings';
 import { PageShellSettings } from '@/components/PageBuilder/blocks/page-shell/page-shell-settings';
 import type { Fill } from '@shared/fill-model';
 import { GRADIENT_PRESETS } from '@shared/gradient-presets';
 import { FillField, type FillTarget } from '@/components/PageBuilder/fill/fill-field';
+import { describeColorSwatch, EditorColorMemoryProvider } from '@/components/PageBuilder/color-memory';
+import ColorField from '@/components/PageBuilder/ColorField';
+import { resetRecentColors } from '@/lib/recent-color-store';
 
 vi.setConfig({ testTimeout: 20000 });
 
@@ -232,5 +235,72 @@ describe('where fills are saved', () => {
     expect(saved.backgroundFill?.kind).toBe('gradient');
     await user.click(within(screen.getByRole('group', { name: 'Page color target' })).getByRole('button', { name: 'Text' }));
     expect(screen.queryByRole('radiogroup', { name: 'Text fill type' })).toBeNull();
+  });
+});
+
+describe('recent and canvas colours', () => {
+  beforeEach(() => {
+    resetRecentColors();
+  });
+
+  it('offers a colour already on the canvas, and a picked colour becomes Recent', async () => {
+    const user = userEvent.setup();
+    const onColor = vi.fn();
+    const onFill = vi.fn();
+    const canvasBlock: BlockConfig = {
+      id: 'h-canvas',
+      name: 'core/heading',
+      type: 'block',
+      label: 'Heading',
+      category: 'basic',
+      content: { kind: 'text', value: 'Hello' } as BlockConfig['content'],
+      styles: { color: '#abcdef' },
+      settings: {},
+      parentId: null,
+    };
+    render(
+      <EditorColorMemoryProvider blocks={[canvasBlock]}>
+        <FillField
+          ariaLabel="Color"
+          targets={targets()}
+          onColorChange={onColor}
+          onFillChange={(_target, fill) => onFill(fill)}
+        />
+      </EditorColorMemoryProvider>,
+    );
+    expect(screen.getByRole('group', { name: 'On this page' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '#abcdef' }));
+    expect(onColor).toHaveBeenCalledWith(expect.objectContaining({ style: '#abcdef' }));
+    expect(screen.getByRole('group', { name: 'Recent' })).toBeInTheDocument();
+  });
+
+  it('names each gradient by its colours so two are not both called Gradient', () => {
+    expect(
+      describeColorSwatch({
+        kind: 'gradient',
+        fill: {
+          kind: 'gradient',
+          shape: 'linear',
+          angle: 90,
+          stops: [
+            { color: '#111111', position: 0 },
+            { color: '#eeeeee', position: 100 },
+          ],
+        },
+      }),
+    ).toBe('linear gradient #111111 to #eeeeee');
+  });
+
+  it('remembers a palette pick on a standalone colour field', async () => {
+    const user = userEvent.setup();
+    render(
+      <ColorField
+        ariaLabel="Color"
+        targets={[{ property: 'color', label: 'Text' }]}
+        onChange={() => undefined}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'black' }));
+    expect(screen.getByRole('group', { name: 'Recent' })).toBeInTheDocument();
   });
 });

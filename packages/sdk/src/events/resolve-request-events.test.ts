@@ -46,6 +46,33 @@ describe("resolveRequestEvents", () => {
 		]);
 	});
 
+	it("maps page duplicate to page-duplicated, not template-duplicated", () => {
+		const page = {
+			id: "page-2",
+			title: "Copy of Home",
+			slug: "copy-of-home",
+			status: "draft",
+			siteId: "site-1",
+		};
+
+		const events = resolveRequestEvents({
+			method: "POST",
+			path: "/api/pages/page-1/duplicate",
+			body: { title: "Copy of Home" },
+			result: page,
+		});
+
+		expect(events.map((entry) => entry.event)).toEqual([
+			"page-duplicated",
+			"page-saved",
+			"page-created",
+		]);
+		expect(events[0]).toEqual({
+			event: "page-duplicated",
+			payload: { page, sourceId: "page-1" },
+		});
+	});
+
 	it("maps page restore to page-version-restored", () => {
 		const page = {
 			id: "page-1",

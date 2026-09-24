@@ -34,6 +34,7 @@ export type NextpressEventMap = {
 	"page-published": { page: Page };
 	"page-unpublished": { page: Page };
 	"page-version-restored": { page: Page; version: number };
+	"page-duplicated": { page: Page; sourceId: string };
 
 	"template-saved": { template: Template; action: SavedAction };
 	"template-created": { template: Template };

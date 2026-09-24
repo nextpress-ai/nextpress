@@ -199,6 +199,14 @@ export function resolveRequestEvents({
 	if (method === "DELETE" && path.startsWith("/api/pages/")) {
 		return deletedEvent("page", path, result);
 	}
+	if (method === "POST" && path.startsWith("/api/pages/") && path.endsWith("/duplicate")) {
+		const page = result as Page;
+		const sourceId = path.split("/")[3] ?? "";
+		return [
+			{ event: "page-duplicated", payload: { page, sourceId } },
+			...savedEvents("page", "created", page, body),
+		];
+	}
 	if (method === "POST" && path.endsWith("/restore")) {
 		const page = result as Page;
 		const version = isRecord(body) && typeof body.version === "number" ? body.version : 0;
@@ -214,7 +222,7 @@ export function resolveRequestEvents({
 	if (method === "DELETE" && path.startsWith("/api/templates/")) {
 		return deletedEvent("template", path, result);
 	}
-	if (method === "POST" && path.includes("/duplicate")) {
+	if (method === "POST" && path.startsWith("/api/templates/") && path.endsWith("/duplicate")) {
 		const template = result as Template;
 		const sourceId = path.split("/")[3] ?? "";
 		return [

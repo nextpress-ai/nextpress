@@ -10,13 +10,14 @@ import {
 } from "../blocks/run-patch-blocks.js";
 import {
 	createPageSchema,
+	duplicatePageSchema,
 	idParamSchema,
 	listPagesQuerySchema,
 	restorePageVersionSchema,
 	updatePageSchema,
 } from "../schemas/index.js";
 import type { DeleteMessage, Page, PageHistoryResponse, PaginatedResponse } from "../types/domain.js";
-import type { CreatePageInput, ListPagesQuery, UpdatePageInput } from "../types/inputs.js";
+import type { CreatePageInput, DuplicatePageInput, ListPagesQuery, UpdatePageInput } from "../types/inputs.js";
 import { mergePageOtherOnWrite } from "../types/page-other.js";
 
 export type PagesResource = {
@@ -26,6 +27,8 @@ export type PagesResource = {
 	get: (params: { id: string }) => Promise<Page>;
 	/** Seed a new page with optional blocks for the page builder. */
 	create: (input: CreatePageInput) => Promise<SdkResult<Page>>;
+	/** Copy a page under a new name. The copy is a draft with new block ids. */
+	duplicate: (params: { id: string } & DuplicatePageInput) => Promise<SdkResult<Page>>;
 	/** Persist page metadata and block tree — requires expectedVersion from a prior get(). */
 	update: (params: { id: string } & UpdatePageInput) => Promise<SdkResult<Page>>;
 	/**
@@ -80,6 +83,19 @@ export function createPagesResource({ http }: { http: HttpClient }): PagesResour
 				label: "pages.create input",
 			});
 			return safeHttpRequest(http, "/api/pages", { method: "POST", body });
+		},
+
+		duplicate: async ({
+			id,
+			...input
+		}: { id: string } & DuplicatePageInput): Promise<SdkResult<Page>> => {
+			parseInput({ schema: idParamSchema, input: { id }, label: "pages.duplicate id" });
+			const body = parseInput({
+				schema: duplicatePageSchema,
+				input,
+				label: "pages.duplicate input",
+			});
+			return safeHttpRequest(http, `/api/pages/${id}/duplicate`, { method: "POST", body });
 		},
 
 		update,
