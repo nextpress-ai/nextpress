@@ -116,11 +116,13 @@ function SwatchButton({
       aria-pressed={selected}
       onClick={() => onPick(swatch, hex)}
       className={cn(
-        'flex items-center justify-center border border-npb-border-default transition-all',
+        'flex items-center justify-center border border-npb-border-default',
+        'transition-[transform,border-color,box-shadow] duration-150 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]',
+        'active:scale-[0.97]',
         size === 'preset' ? 'h-6 w-full' : 'h-4 w-4 flex-shrink-0 border-0',
         selected
           ? 'z-10 ring-2 ring-npb-focus ring-offset-1'
-          : 'hover:scale-110 hover:border-npb-border-strong',
+          : '[@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.04] [@media(hover:hover)_and_(pointer:fine)]:hover:border-npb-border-strong',
       )}
       style={{ backgroundColor: hex === 'transparent' ? undefined : hex }}
     >
@@ -205,7 +207,9 @@ export default function ColorField({
 
   return (
     <div className="space-y-2" role="group" aria-label={ariaLabel}>
-      {showMemory ? <ColorMemorySwatches onPickSolid={setCustom} /> : null}
+      {showMemory ? (
+        <ColorMemorySwatches onPickSolid={setCustom} currentSolid={summary.swatch ?? undefined} />
+      ) : null}
       {showHeader ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           {targets.length > 1 ? (

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveCreatePageError } from "@/lib/sonner-toast";
+import { resolveCreatePageError, resolveDuplicatePageError } from "@/lib/sonner-toast";
 
 describe("resolveCreatePageError", () => {
 	it("maps duplicate slug API responses to a clear message", () => {
@@ -22,5 +22,22 @@ describe("resolveCreatePageError", () => {
 		expect(resolveCreatePageError(error)).toBe(
 			"This page already exists. Choose a different URL slug.",
 		);
+	});
+});
+
+describe("resolveDuplicatePageError", () => {
+	it("asks for a different name when that URL is taken", () => {
+		const error = Object.assign(new Error("Slug taken"), {
+			status: 409,
+			code: "PAGE_SLUG_EXISTS",
+		});
+		expect(resolveDuplicatePageError(error)).toBe(
+			"A page with that name already exists. Choose a different name.",
+		);
+	});
+
+	it("says the page is gone on 404", () => {
+		const error = Object.assign(new Error("Page not found"), { status: 404 });
+		expect(resolveDuplicatePageError(error)).toBe("That page is gone. Refresh the list and try again.");
 	});
 });

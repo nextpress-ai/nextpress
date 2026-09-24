@@ -95,6 +95,8 @@ export function FillField({
 			<ColorMemorySwatches
 				onPickSolid={applySolid}
 				onPickGradient={kinds.includes("gradient") ? applyGradient : undefined}
+				currentSolid={active.styleValue}
+				currentFill={active.fill?.kind === "gradient" ? active.fill : undefined}
 			/>
 			{targets.length > 1 ? (
 				<div className="flex items-stretch" role="group" aria-label={`${ariaLabel} target`}>

@@ -38,6 +38,16 @@ describe("collectCanvasColors", () => {
 		expect(colorSwatchKey(gradients[0]!).startsWith("g:")).toBe(true);
 	});
 
+	it("ignores a hex that only lives in custom CSS or a URL", () => {
+		const items = collectCanvasColors([
+			heading({
+				customCss: ".x { color: #ff0000 }",
+				content: { kind: "media", url: "https://example.com/#ff00aa", mediaType: "image" },
+			}),
+		]);
+		expect(items).toEqual([]);
+	});
+
 	it("treats the same hex in different case as one colour", () => {
 		const items = collectCanvasColors([
 			heading({ styles: { color: "#FFF", backgroundColor: "#fff" } }),

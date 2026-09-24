@@ -37,3 +37,21 @@ export function resolveCreatePageError(error: unknown): string {
 
 	return "Could not create the page. Please try again.";
 }
+
+/** Maps duplicate-page API failures to a clear next step. */
+export function resolveDuplicatePageError(error: unknown): string {
+	const err = error as ApiError;
+	const raw = typeof err?.message === "string" ? err.message.trim() : "";
+
+	if (err?.status === 404) {
+		return "That page is gone. Refresh the list and try again.";
+	}
+	if (err?.status === 401) {
+		return "You must be signed in to duplicate pages.";
+	}
+	if (err?.status === 409 || err?.code === "PAGE_SLUG_EXISTS") {
+		return "A page with that name already exists. Choose a different name.";
+	}
+	if (raw) return raw;
+	return "Could not duplicate the page. Please try again.";
+}

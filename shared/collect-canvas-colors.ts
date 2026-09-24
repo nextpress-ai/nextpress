@@ -10,6 +10,25 @@ export type ColorSwatchItem =
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
 
+/** Keys that can hold a hex by accident (ids, URLs, custom CSS) and are not paint. */
+const SKIP_KEYS = new Set([
+	"id",
+	"name",
+	"parentId",
+	"label",
+	"category",
+	"type",
+	"href",
+	"url",
+	"logoUrl",
+	"customCss",
+	"js",
+	"html",
+	"css",
+	"classNames",
+	"requires",
+]);
+
 /** Same hex written two ways (`#FFF` / `#fff`) is one colour. */
 export function normalizeSwatchColor(color: string): string {
 	const trimmed = color.trim();
@@ -60,7 +79,10 @@ function collectFromValue(
 		return;
 	}
 	if (typeof value.style === "string") addSolid(value.style, solids);
-	for (const nested of Object.values(value)) collectFromValue(nested, solids, gradients);
+	for (const [key, nested] of Object.entries(value)) {
+		if (SKIP_KEYS.has(key)) continue;
+		collectFromValue(nested, solids, gradients);
+	}
 }
 
 /**

@@ -550,7 +550,11 @@ export function createPagesRoutes(deps: Deps): Router {
       });
 
       if (err) {
-        console.error('Error duplicating page:', err);
+        console.error('Error duplicating page:', {
+          atFunction: 'pages.duplicate',
+          pageId: req.params.id,
+          error: err,
+        });
         if (err instanceof ContentAccessError) {
           return res.status(err.statusCode).json({ message: err.message });
         }

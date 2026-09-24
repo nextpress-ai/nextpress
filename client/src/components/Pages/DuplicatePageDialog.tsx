@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
 import { pageEditorPath } from "@/lib/admin-content-routes";
-import { showErrorToast, showSuccessToast } from "@/lib/sonner-toast";
+import { resolveDuplicatePageError, showErrorToast, showSuccessToast } from "@/lib/sonner-toast";
 import type { Page } from "@shared/schema-types";
 
 type DuplicatePageDialogProps = {
@@ -52,11 +52,11 @@ function DuplicatePageForm({
 			showSuccessToast("Page duplicated");
 			queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
 			onClose();
+			if (!created.id) return;
 			setLocation(`${pageEditorPath(created.id)}?mode=builder`);
 		},
 		onError: (error: unknown) => {
-			const message = error instanceof Error && error.message.trim() ? error.message : "";
-			showErrorToast(message || "Could not duplicate the page. Please try again.");
+			showErrorToast(resolveDuplicatePageError(error));
 		},
 	});
 
@@ -70,53 +70,64 @@ function DuplicatePageForm({
 	};
 
 	return (
-		<DialogContent className="max-w-md">
-			<DialogHeader>
-				<DialogTitle className="flex items-center gap-2 text-xl">
-					<Copy className="h-5 w-5" />
-					Duplicate page
-				</DialogTitle>
-				<DialogDescription>
-					The copy starts as a draft. You can change the name before it is created.
-				</DialogDescription>
-			</DialogHeader>
-			<div className="grid gap-2 py-2">
-				<Label htmlFor="duplicate-page-title">
-					Name <span className="text-red-500">*</span>
-				</Label>
-				<Input
-					id="duplicate-page-title"
-					value={title}
-					onChange={(event) => setTitle(event.target.value)}
-					onKeyDown={(event) => {
-						if (event.key === "Enter" && title.trim()) {
-							event.preventDefault();
-							submit();
-						}
-					}}
-					autoFocus
-					disabled={duplicateMutation.isPending}
-				/>
-				<p className="text-xs text-npb-text-muted">
-					The copy uses this name. The URL is made from it.
-				</p>
-			</div>
-			<DialogFooter>
-				<Button variant="outline" onClick={onClose} disabled={duplicateMutation.isPending}>
-					Cancel
-				</Button>
-				<Button
-					onClick={submit}
-					disabled={!title.trim() || duplicateMutation.isPending}
-					title={!title.trim() ? "Enter a name to duplicate" : undefined}
-				>
-					{duplicateMutation.isPending
-						? "Duplicating..."
-						: !title.trim()
-							? "Enter a name"
-							: "Duplicate"}
-				</Button>
-			</DialogFooter>
+		<DialogContent
+			className="max-w-md"
+			showCloseButton={!duplicateMutation.isPending}
+			onPointerDownOutside={(event) => {
+				if (duplicateMutation.isPending) event.preventDefault();
+			}}
+			onEscapeKeyDown={(event) => {
+				if (duplicateMutation.isPending) event.preventDefault();
+			}}
+		>
+			<form
+				className="contents"
+				onSubmit={(event) => {
+					event.preventDefault();
+					submit();
+				}}
+			>
+				<DialogHeader>
+					<DialogTitle className="flex items-center gap-2 text-xl">
+						<Copy className="h-5 w-5" />
+						Duplicate page
+					</DialogTitle>
+					<DialogDescription>
+						The copy starts as a draft. You can change the name before it is created.
+					</DialogDescription>
+				</DialogHeader>
+				<div className="grid gap-2 py-2">
+					<Label htmlFor="duplicate-page-title">
+						Name <span className="text-red-500">*</span>
+					</Label>
+					<Input
+						id="duplicate-page-title"
+						value={title}
+						onChange={(event) => setTitle(event.target.value)}
+						autoFocus
+						disabled={duplicateMutation.isPending}
+					/>
+					<p className="text-xs text-npb-text-muted">
+						The copy uses this name. The URL is made from it.
+					</p>
+				</div>
+				<DialogFooter>
+					<Button type="button" variant="outline" onClick={onClose} disabled={duplicateMutation.isPending}>
+						Cancel
+					</Button>
+					<Button
+						type="submit"
+						disabled={!title.trim() || duplicateMutation.isPending}
+						title={!title.trim() ? "Enter a name to duplicate" : undefined}
+					>
+						{duplicateMutation.isPending
+							? "Duplicating..."
+							: !title.trim()
+								? "Enter a name"
+								: "Duplicate"}
+					</Button>
+				</DialogFooter>
+			</form>
 		</DialogContent>
 	);
 }

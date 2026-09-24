@@ -3,6 +3,7 @@ import type { BlockConfig } from "@shared/schema-types";
 import {
 	collectCanvasColors,
 	colorSwatchKey,
+	normalizeSwatchColor,
 	type ColorSwatchItem,
 } from "@shared/collect-canvas-colors";
 import { fillToBackgroundStyles, type GradientFill } from "@shared/fill-model";
@@ -34,9 +35,11 @@ export function describeColorSwatch(item: ColorSwatchItem): string {
 
 function MemorySwatch({
 	item,
+	selected,
 	onPick,
 }: {
 	item: ColorSwatchItem;
+	selected: boolean;
 	onPick: (item: ColorSwatchItem) => void;
 }): JSX.Element {
 	const label = describeColorSwatch(item);
@@ -45,7 +48,7 @@ function MemorySwatch({
 	const style = clear
 		? {
 				backgroundImage:
-					"conic-gradient(#d4d4d8 0 25%, #fafafa 0 50%, #d4d4d8 0 75%, #fafafa 0)",
+					"conic-gradient(var(--npb-border-strong) 0 25%, var(--npb-surface-base) 0 50%, var(--npb-border-strong) 0 75%, var(--npb-surface-base) 0)",
 				backgroundSize: "8px 8px",
 			}
 		: item.kind === "solid"
@@ -56,13 +59,15 @@ function MemorySwatch({
 			type="button"
 			title={label}
 			aria-label={label}
+			aria-pressed={selected}
 			onClick={() => onPick(item)}
 			className={cn(
 				"h-6 w-6 shrink-0 border border-npb-border-default",
-				"transition-[transform,border-color] duration-150 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]",
+				"transition-[transform,border-color,box-shadow] duration-150 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]",
 				"active:scale-[0.97]",
-				"[@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.04]",
-				"[@media(hover:hover)_and_(pointer:fine)]:hover:border-npb-border-strong",
+				selected
+					? "z-10 ring-2 ring-npb-focus ring-offset-1"
+					: "[@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.04] [@media(hover:hover)_and_(pointer:fine)]:hover:border-npb-border-strong",
 			)}
 			style={style}
 		/>
@@ -72,19 +77,26 @@ function MemorySwatch({
 function MemoryRow({
 	label,
 	items,
+	currentKey,
 	onPick,
 }: {
 	label: string;
 	items: readonly ColorSwatchItem[];
+	currentKey: string | undefined;
 	onPick: (item: ColorSwatchItem) => void;
 }): JSX.Element | null {
 	if (items.length === 0) return null;
 	return (
 		<div className="space-y-1.5">
-			<p className="text-xs font-medium text-npb-text-muted">{label}</p>
+			<p className="text-sm font-medium text-npb-text-secondary">{label}</p>
 			<div className="flex flex-wrap gap-1.5" role="group" aria-label={label}>
 				{items.map((item) => (
-					<MemorySwatch key={colorSwatchKey(item)} item={item} onPick={onPick} />
+					<MemorySwatch
+						key={colorSwatchKey(item)}
+						item={item}
+						selected={currentKey === colorSwatchKey(item)}
+						onPick={onPick}
+					/>
 				))}
 			</div>
 		</div>
@@ -94,6 +106,8 @@ function MemoryRow({
 type ColorMemorySwatchesProps = {
 	onPickSolid: (color: string) => void;
 	onPickGradient?: (fill: GradientFill) => void;
+	currentSolid?: string;
+	currentFill?: GradientFill;
 };
 
 /**
@@ -103,6 +117,8 @@ type ColorMemorySwatchesProps = {
 export function ColorMemorySwatches({
 	onPickSolid,
 	onPickGradient,
+	currentSolid,
+	currentFill,
 }: ColorMemorySwatchesProps): JSX.Element | null {
 	const recent = useRecentColors();
 	const canvas = useContext(CanvasColorsContext);
@@ -117,6 +133,12 @@ export function ColorMemorySwatches({
 
 	if (recentVisible.length === 0 && canvasVisible.length === 0) return null;
 
+	const currentKey = currentFill
+		? colorSwatchKey({ kind: "gradient", fill: currentFill })
+		: currentSolid
+			? colorSwatchKey({ kind: "solid", color: normalizeSwatchColor(currentSolid) })
+			: undefined;
+
 	const pick = (item: ColorSwatchItem): void => {
 		rememberRecentColor(item);
 		if (item.kind === "solid") {
@@ -128,8 +150,8 @@ export function ColorMemorySwatches({
 
 	return (
 		<div className="space-y-2">
-			<MemoryRow label="Recent" items={recentVisible} onPick={pick} />
-			<MemoryRow label="On this page" items={canvasVisible} onPick={pick} />
+			<MemoryRow label="Recent" items={recentVisible} currentKey={currentKey} onPick={pick} />
+			<MemoryRow label="On this page" items={canvasVisible} currentKey={currentKey} onPick={pick} />
 		</div>
 	);
 }
