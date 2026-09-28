@@ -93,7 +93,7 @@ export function PublicBlockStack({
   return (
     <PageProvider postDocument={postDocument}>
       <div
-        className="np-public-block-stack has-page-shell mx-auto flex w-full min-w-0 flex-col items-stretch overflow-x-clip"
+        className="np-public-block-stack has-page-shell mx-auto flex w-full min-h-0 min-w-0 flex-1 flex-col items-stretch overflow-x-clip"
         data-testid={testId}
         style={{
           ...themeCssVars,

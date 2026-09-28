@@ -89,7 +89,10 @@ vi.mock("../components/PageBuilder/PageBuilder", () => {
 		onSave = () => {},
 	}: {
 		blocks?: BlockConfig[];
-		onBlocksChange?: (blocks: BlockConfig[]) => void;
+		onBlocksChange?: (
+			blocks: BlockConfig[],
+			change?: { cause?: "edit" | "delete" },
+		) => void;
 		onSave?: () => void;
 	}) => {
 		const [stateBlocks, setStateBlocks] = useState<BlockConfig[]>(blocks);
@@ -98,9 +101,12 @@ vi.mock("../components/PageBuilder/PageBuilder", () => {
 			"desktop",
 		);
 
-		const updateBlocks = (next: BlockConfig[]) => {
+		const updateBlocks = (
+			next: BlockConfig[],
+			cause: "edit" | "delete" = "edit",
+		) => {
 			setStateBlocks(next);
-			onBlocksChange(next);
+			onBlocksChange(next, { cause });
 		};
 
 		const handleSelect = (id: string) => setSelectedId(id);
@@ -117,7 +123,10 @@ vi.mock("../components/PageBuilder/PageBuilder", () => {
 		};
 
 		const handleDelete = (id: string) => {
-			updateBlocks(stateBlocks.filter((b) => b.id !== id));
+			updateBlocks(
+				stateBlocks.filter((b) => b.id !== id),
+				"delete",
+			);
 			if (selectedId === id) setSelectedId(null);
 		};
 
@@ -414,12 +423,17 @@ describe("PageBuilder Integration", () => {
 				fireEvent.mouseEnter(blockWrapper);
 			}
 
-			// Try to find delete button
 			const deleteButton = container.querySelector('button[aria-label*="elete"], button[aria-label*="rash"]');
 			if (deleteButton) {
 				fireEvent.click(deleteButton);
-				expect(onBlocksChange).toHaveBeenCalled();
+			} else {
+				fireEvent.keyDown(window, { key: "Delete" });
 			}
+
+			expect(onBlocksChange).toHaveBeenCalled();
+			const lastCall =
+				onBlocksChange.mock.calls[onBlocksChange.mock.calls.length - 1];
+			expect(lastCall[1]).toEqual({ cause: "delete" });
 		});
 	});
 

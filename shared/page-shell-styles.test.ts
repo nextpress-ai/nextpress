@@ -93,6 +93,7 @@ describe("page shell styles", () => {
 			padding: "2rem 1rem",
 		};
 		expect(buildPageShellOuterStyle({ content }).fontFamily).toBe("Inter, sans-serif");
+		expect(buildPageShellOuterStyle({ content }).minHeight).toBeUndefined();
 		const inset = buildPageShellOuterStyle({
 			content: {
 				...content,

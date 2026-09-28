@@ -18,6 +18,10 @@ import { parsePostOther } from '@shared/posts/post-other';
 import type { AuthorDisplay } from '@shared/author-display';
 import { savePageDraftWithHistory } from '@/lib/pageDraftStorage';
 import {
+  DELETE_DRAFT_SAVE_MS,
+  type DraftSaveCause,
+} from '@/lib/draft-save-delay';
+import {
   findBlock,
   updateBlockDeep,
   deleteBlockDeep,
@@ -80,7 +84,7 @@ interface PageBuilderProps {
   post?: Page;
   template?: never;
   blocks?: BlockConfig[];
-  onBlocksChange?: (blocks: BlockConfig[]) => void;
+  onBlocksChange?: (blocks: BlockConfig[], change?: { cause?: DraftSaveCause }) => void;
   onSave?: (updatedData: Page | Post | Template) => void;
   onSettingsUpdate?: (updatedData: Page | Post | Template) => void;
   onSaveRequest?: (blocks: BlockConfig[]) => void | Promise<boolean | Page | Post | Template>;
@@ -234,7 +238,10 @@ export default function PageBuilder({
    * Canvas always receives fresh state immediately via pushState/replaceCurrentState.
    */
   const commitBlocks = useCallback(
-    (next: BlockConfig[] | ((prev: BlockConfig[]) => BlockConfig[])) => {
+    (
+      next: BlockConfig[] | ((prev: BlockConfig[]) => BlockConfig[]),
+      change?: { cause?: DraftSaveCause },
+    ) => {
       const current = currentStateRef.current;
       const resolved =
         typeof next === 'function'
@@ -254,9 +261,8 @@ export default function PageBuilder({
         pushState(resolved);
       }
 
-      // Notify parent immediately
       lastEmittedRef.current = resolved;
-      onBlocksChangeRef.current?.(resolved);
+      onBlocksChangeRef.current?.(resolved, { cause: change?.cause ?? 'edit' });
 
       // Enter/extend coalesce window: subsequent edits within 300ms
       // replace the current entry instead of creating new undo steps
@@ -372,8 +378,22 @@ export default function PageBuilder({
   }, [blocks, commitBlocks, responsiveHealthIssueKey, toast]);
 
   const handleTogglePreviewMode = useCallback(() => {
+    if (!isPreviewMode && data?.id) {
+      writePreviewSession({
+        contentType: previewContentType,
+        contentId: data.id,
+        payload: {
+          blocks: currentStateRef.current,
+          title: isTemplate
+            ? (data as { name?: string }).name
+            : (data as Page).title,
+          design: readPageDesign({ blocks: currentStateRef.current }),
+          savedAt: Date.now(),
+        },
+      });
+    }
     setIsPreviewMode((prev) => !prev);
-  }, []);
+  }, [data, isPreviewMode, isTemplate, previewContentType]);
 
   // Parent notification is now done procedurally in commitBlocks
 
@@ -432,11 +452,39 @@ export default function PageBuilder({
   const handleSaveRef = useRef(handleSave);
   handleSaveRef.current = handleSave;
 
-  const undoRef = useRef(undo);
-  undoRef.current = undo;
+  /**
+   * Undo/redo only move the canvas history. Save and Preview read the parent copy,
+   * so the restored tree has to be emitted in the same click or those stay on the deleted tree.
+   */
+  const undoAndSync = useCallback(() => {
+    isCoalescingRef.current = false;
+    if (coalesceTimerRef.current !== null) {
+      clearTimeout(coalesceTimerRef.current);
+      coalesceTimerRef.current = null;
+    }
+    const next = undo();
+    if (!next) return;
+    lastEmittedRef.current = next;
+    onBlocksChangeRef.current?.(next, { cause: 'edit' });
+  }, [undo]);
 
-  const redoRef = useRef(redo);
-  redoRef.current = redo;
+  const redoAndSync = useCallback(() => {
+    isCoalescingRef.current = false;
+    if (coalesceTimerRef.current !== null) {
+      clearTimeout(coalesceTimerRef.current);
+      coalesceTimerRef.current = null;
+    }
+    const next = redo();
+    if (!next) return;
+    lastEmittedRef.current = next;
+    onBlocksChangeRef.current?.(next, { cause: 'edit' });
+  }, [redo]);
+
+  const undoRef = useRef(undoAndSync);
+  undoRef.current = undoAndSync;
+
+  const redoRef = useRef(redoAndSync);
+  redoRef.current = redoAndSync;
 
   // Refs for block-level shortcut handlers (defined later in the component).
   // Assigned below their definitions so the mount-only listener stays stable.
@@ -614,9 +662,6 @@ export default function PageBuilder({
 
   const handleDelete = useCallback(
     (id: string) => {
-      const deletedBlock = findBlock(blocks, id);
-      const blockLabel =
-        blockRegistry[deletedBlock?.name ?? '']?.label ?? deletedBlock?.name ?? 'Block';
       const shouldClearSelection =
         selectedBlockId === id ||
         (selectedBlockId != null && isDescendant(blocks, id, selectedBlockId));
@@ -624,7 +669,7 @@ export default function PageBuilder({
       commitBlocks((prev) => {
         const { next } = deleteBlockDeep(prev, id);
         return next;
-      });
+      }, { cause: 'delete' });
 
       if (shouldClearSelection) {
         setSelectedBlockId(null);
@@ -638,14 +683,15 @@ export default function PageBuilder({
       pendingDeleteUndoRef.current = undoGeneration;
 
       toast({
-        title: 'Block deleted',
-        description: `${blockLabel} removed from the page.`,
+        title: 'Block removed',
+        description: 'Not saved yet. Undo, or Save to keep it off the page.',
+        duration: DELETE_DRAFT_SAVE_MS,
         action: (
           <ToastAction
-            altText="Undo delete"
+            altText="Undo remove"
             onClick={() => {
               if (pendingDeleteUndoRef.current !== undoGeneration) return;
-              undo();
+              undoAndSync();
               pendingDeleteUndoRef.current = null;
             }}
           >
@@ -654,7 +700,7 @@ export default function PageBuilder({
         ),
       });
     },
-    [blocks, commitBlocks, selectedBlockId, setActiveTab, toast, undo],
+    [blocks, commitBlocks, selectedBlockId, setActiveTab, toast, undoAndSync],
   );
 
   // Keep keyboard-shortcut refs current (handlers defined above the listener)
@@ -686,7 +732,7 @@ export default function PageBuilder({
   const handleApplyTemplateFromDesign = useCallback(
     ({ blocks }: { templateId: string; blocks: BlockConfig[] }) => {
       resetState(blocks);
-      onBlocksChange?.(blocks);
+      onBlocksChange?.(blocks, { cause: 'edit' });
       setSelectedBlockId(null);
       if (!isWideLayout) {
         setActiveTab('blocks');
@@ -839,8 +885,8 @@ export default function PageBuilder({
                 onToggleSidebar={toggleSidebar}
                 inspectorVisible={isWideLayout ? inspectorVisible : undefined}
                 onToggleInspector={isWideLayout ? toggleInspector : undefined}
-                onUndo={undo}
-                onRedo={redo}
+                onUndo={undoAndSync}
+                onRedo={redoAndSync}
                 canUndo={canUndo}
                 canRedo={canRedo}
                 onPageSettingsClick={() => setPageSettingsOpen(true)}

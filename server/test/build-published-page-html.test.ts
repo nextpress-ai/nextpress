@@ -43,6 +43,8 @@ describe("buildPublishedPageHtml", () => {
 		expect(html).toContain("<!DOCTYPE html>");
 		expect(html).toContain('id="main-content" class="has-page-shell"');
 		expect(html).toContain("max-width: none");
+		expect(html).toContain("min-height: 100dvh");
+		expect(html).toContain(".np-public-block-stack.has-page-shell > .wp-block-page-shell");
 		expect(html).toContain("Heading level 1");
 		expect(html).toContain(".wp-block-image img");
 		expect(html).toContain("is-stacked-on-mobile");

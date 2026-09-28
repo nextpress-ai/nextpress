@@ -43,6 +43,25 @@ UUID PKs everywhere except sessions.sid.
 
 ## Decision records
 
+### 2026-09-28 — Page shell background fills the window
+- Preview and the public page kept the page shell as tall as its blocks. With few blocks the fill stopped halfway and the rest of the window showed the site white. `min-height: 100%` does not grow against a parent that is only `min-height`.
+- Visitor preview/public and published pages now size the shell to the window (`100dvh`). The editor canvas still uses `min-height: 100%` inside the scroller. Live preview inside an iframe (`min-h-full`) is not forced to the browser window height.
+
+- Typing and layout still write the browser copy after 300ms. Removing a block waits 10 seconds, and leaving the editor during that wait keeps the last stored copy. Save or Preview is how a removal becomes lasting. Another edit before the wait ends writes on the short delay (the person confirmed the new tree).
+- Toast after remove: "Block removed" / "Not saved yet. Undo, or Save to keep it off the page." It stays up for those 10 seconds with Undo.
+- Helper: `client/src/lib/draft-save-delay.ts`. Do not drive this against walkableca; that page is already an emptied draft.
+
+### 2026-09-28 — Undo must tell Save and Preview
+- Deleting blocks and undoing restored the canvas only. Save and Preview still used the emptied tree, so the published/preview page looked wrong after save.
+- Undo/redo now emit the restored tree to the editor copy. Save writes the preview handoff from the tree that was stored. Preview `?live=1` uses the server copy when it is newer than the leftover browser copy, so a removed block does not keep showing after Save.
+- Open preview tabs now re-read that handoff when it changes (BroadcastChannel + storage). Removing a block writes the handoff immediately; Preview adds a fresh `at=` so a leftover tab is not reused. The in-editor Live preview writes the current tree when turned on.
+- walkableca already saved as page-shell + empty header (draft). In-editor undo history is gone after reload. Local draft history only has a 2026-09-24 copy (8 blocks). Do not overwrite later work with that snapshot unless the owner asks.
+
+### 2026-09-28 — Next plugins work is specified, not built
+- Inventory stays as shipped (add / on-off / remove). On/off still does not change pages.
+- Next: extras that run (WordPress-shaped activate, hooks, filters at real content seams) then a catalog to browse and install. Spec: `docs/internal/plugins-marketplace.md` (local `docs/` is gitignored; read it on this machine).
+- Do not load unsigned outside code. Owner must pick the security model in that spec before any loader. `applyFilters` exists but is not called on render/content yet. `findActivePlugins` is tests-only.
+
 ### 2026-09-24 — Plugins admin is a real list
 - The only admin screen that said "coming soon" was Plugins. The table, list route, on/off helpers, and hook names were already there.
 - People can add a plugin by name, turn it on or off, and remove it. A plugin starts off. Turning it on fires `activate_plugin` and does not load outside code.
@@ -84,7 +103,7 @@ UUID PKs everywhere except sessions.sid.
 - **No menu button without links:** `headerCollapsesToMenu(variant)` = the layout has nav. Buttons and Blocks layouts render no mobile panel/burger at all and carry `is-no-menu`; CSS keeps their right side in view at narrow widths and lets it wrap under the brand (`publish-block-css.ts`). Layouts with links still fold into the menu below a 767px header width.
 - One drop-area shape everywhere: `HeaderBar` takes a `blocks` node. Editor passes `ContainerChildren` (row styles from `HEADER_BLOCKS_ROW_STYLES`, min width 14rem while empty so there is something to aim at); preview/publish/SSR pass rendered children from `renderer/react/layout/header.tsx` with the same per-child wrapper the Stack uses.
 - Settings show only what the layout paints: Links card only if the layout has links, Buttons card only if it has built-in buttons. The Blocks layout adds one hint line ("Drop any block on the header's right side, on the canvas.").
-- **Editor drafts are local and automatic.** `PageBuilderEditor` writes the page to `localStorage` on every change (key `page-builder:page:<id>`) and restores it on load when newer than the server copy. Testing in a shared browser profile therefore edits the person's real draft even though nothing was Saved. Do not drive the live builder with edits on someone's page; use jsdom tests, or snapshot and restore the draft. (This bit us: a test left a wide logo on a 20px circle crop, and a test button on a custom size. Restored by hand.)
+- **Editor drafts are local and automatic.** `PageBuilderEditor` writes the page to `localStorage` on typing and layout (key `page-builder:page:<id>`, 300ms) and restores it on load when newer than the server copy. Removals wait 10 seconds and are not flushed on leave; Save or Preview makes them lasting. Testing in a shared browser profile therefore edits the person's real draft even though nothing was Saved. Do not drive the live builder with edits on someone's page; use jsdom tests, or snapshot and restore the draft. (This bit us: a test left a wide logo on a 20px circle crop, and a test button on a custom size. Restored by hand.)
 - Test gotcha: `renderer/react` header/page-shell/block table import each other; import `render-helpers` first in tests or `BLOCK_COMPONENTS['core/header']` reads `undefined`.
 
 ### 2026-09-20 — One group for every custom value, one control for colour, and button parity with the header

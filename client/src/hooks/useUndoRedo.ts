@@ -75,20 +75,26 @@ export function useUndoRedo<T>(initialState: T) {
 
   /**
    * Moves to the previous state in history (undo).
+   * Returns that snapshot so callers can sync it out (save/preview) in the same click.
    */
-  const undo = () => {
-    if (canUndo) {
-      setCurrentIndex((prev) => prev - 1);
-    }
+  const undo = (): T | undefined => {
+    if (currentIndex <= 0) return undefined;
+    const nextIndex = currentIndex - 1;
+    const nextState = history[nextIndex];
+    setCurrentIndex(nextIndex);
+    return nextState;
   };
 
   /**
    * Moves to the next state in history (redo).
+   * Returns that snapshot so callers can sync it out in the same click.
    */
-  const redo = () => {
-    if (canRedo) {
-      setCurrentIndex((prev) => prev + 1);
-    }
+  const redo = (): T | undefined => {
+    if (currentIndex >= history.length - 1) return undefined;
+    const nextIndex = currentIndex + 1;
+    const nextState = history[nextIndex];
+    setCurrentIndex(nextIndex);
+    return nextState;
   };
 
   /**

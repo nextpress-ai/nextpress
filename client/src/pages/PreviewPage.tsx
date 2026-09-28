@@ -8,7 +8,8 @@ import type { BlockConfig, PageOther } from "@shared/schema-types";
 import type { AuthorDisplay } from "@shared/author-display";
 import type { BindablePostDocument } from "@shared/bind-post-blocks";
 import { PublicBlockStack } from "@/components/PageBuilder/public-block-stack";
-import { readPreviewSession } from "@shared/preview-session";
+import { resolveLivePreviewBlocks } from "@shared/preview-session";
+import { useLivePreviewSession } from "@/lib/use-live-preview-session";
 import { useActiveSite } from "@/hooks/useActiveSite";
 import { useSiteThemeSettings } from "@/hooks/use-site-theme-settings";
 import { buildVisitorDocumentStyle } from "@/lib/visitor-theme-style";
@@ -56,6 +57,12 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
     return new URLSearchParams(window.location.search).get('embed') === '1';
   }, []);
 
+  const liveSession = useLivePreviewSession({
+    contentType,
+    contentId,
+    enabled: Boolean(useLiveEditorBlocks && contentId),
+  });
+
   const previewPath =
     shareToken && contentId
       ? `/api/preview/shared/${contentType}/${contentId}?token=${encodeURIComponent(shareToken)}`
@@ -69,7 +76,9 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
       : '';
 
   const previewQuery = useQuery({
-    queryKey: [previewPath],
+    queryKey: useLiveEditorBlocks
+      ? [previewPath, liveSession?.savedAt ?? 0]
+      : [previewPath],
     enabled: !!contentId,
   });
   const postFallbackQuery = useQuery({
@@ -84,11 +93,6 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
   const error = postFallbackPath && previewQuery.isError
     ? postFallbackQuery.error
     : previewQuery.error;
-
-  const liveSession =
-    useLiveEditorBlocks && contentId
-      ? readPreviewSession({ contentType, contentId })
-      : null;
 
   if (isLoading && !liveSession) {
     return <AppLoadingShell label="Loading preview…" />;
@@ -118,23 +122,30 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
     );
   }
 
-  let blocks: BlockConfig[] = liveSession?.blocks ?? [];
-  let title = liveSession?.title ?? '';
+  const pageOther = (data as { other?: PageOther } | undefined)?.other;
+  const apiUpdatedAt = (data as { updatedAt?: string | Date } | undefined)?.updatedAt;
+  const apiBlocks: BlockConfig[] =
+    contentType === "template"
+      ? ((data as Template | undefined)?.blocks as BlockConfig[]) || []
+      : (((data as PreviewPost | undefined)?.blocks ??
+          (data as PreviewPost | undefined)?.builderData ??
+          []) as BlockConfig[]);
+
+  let blocks = resolveLivePreviewBlocks({
+    liveSession,
+    apiBlocks,
+    apiUpdatedAt,
+  });
+  let title = liveSession?.title ?? "";
   let bindablePost: BindablePostDocument | undefined;
 
-  if (contentType === 'template') {
+  if (contentType === "template") {
     const template = data as Template | undefined;
-    if (blocks.length === 0) {
-      blocks = (template?.blocks as BlockConfig[]) || [];
-    }
-    if (!title) title = template?.name ?? '';
+    if (!title) title = template?.name ?? "";
   } else {
     const item = data as PreviewPost | undefined;
-    if (blocks.length === 0) {
-      blocks = (item?.blocks ?? item?.builderData ?? []) as BlockConfig[];
-    }
-    if (!title) title = item?.title ?? '';
-    if (contentType === 'post' && (item || contentId)) {
+    if (!title) title = item?.title ?? "";
+    if (contentType === "post" && (item || contentId)) {
       bindablePost = {
         id: item?.id ?? contentId,
         authorId: item?.authorId,
@@ -164,7 +175,6 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
     }
   }
 
-  const pageOther = (data as { other?: PageOther } | undefined)?.other;
   blocks = prepareVisitorPageBlocks({
     blocks,
     leftoverDesign: liveSession?.design ?? pageOther?.design,
@@ -177,12 +187,12 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
 
   return (
     <div
-      className={`np-visitor-document ${isEmbedPreview ? 'min-h-full' : 'min-h-screen'}`}
+      className={`np-visitor-document flex flex-col ${isEmbedPreview ? 'min-h-full' : 'min-h-screen'}`}
       style={visitorStyle}
     >
       {!isEmbedPreview ? <title>{title}</title> : null}
       
-      <div className="w-full">
+      <div className="flex w-full min-h-0 flex-1 flex-col">
         {blocks.length === 0 ? (
           <div className="flex min-h-[400px] items-center justify-center">
             <div className="text-center">
@@ -200,7 +210,7 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
             blocks={blocks}
             design={design}
             themeCssVars={themeCssVars}
-            animationContentKey={`${contentType}-${contentId}-${blocks.length}`}
+            animationContentKey={`${contentType}-${contentId}-${liveSession?.savedAt ?? 0}-${blocks.length}`}
             testId="preview-page-builder-content"
             post={bindablePost}
           />

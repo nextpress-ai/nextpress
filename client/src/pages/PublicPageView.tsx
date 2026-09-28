@@ -149,7 +149,7 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
 
   return (
     <div 
-      className="np-visitor-document min-h-screen" 
+      className="np-visitor-document flex min-h-screen flex-col" 
       data-testid={`public-${type}-view`}
       style={visitorStyle}
     >
@@ -185,7 +185,7 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
       </Helmet>
 
       {/* Page content */}
-      <main id="main-content" className="has-page-shell w-full" tabIndex={-1}>
+      <main id="main-content" className="has-page-shell flex w-full min-h-0 flex-1 flex-col" tabIndex={-1}>
         {/* Handle pages with traditional content (non-page builder) */}
         {!data.usePageBuilder && data.content ? (
           <div 

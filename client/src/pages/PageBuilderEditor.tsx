@@ -25,6 +25,11 @@ import {
   savePageDraftWithHistory,
 } from '@/lib/pageDraftStorage';
 import {
+  type DraftSaveCause,
+  draftSaveDelayMs,
+  shouldFlushDraftOnLeave,
+} from '@/lib/draft-save-delay';
+import {
   clearPostDraft,
   loadPostDraft,
   savePostDraft,
@@ -43,6 +48,7 @@ import {
   readEditorSaveVersion,
   writeEditorEntityCache,
 } from '@/lib/editor-entity-cache';
+import { livePreviewHref, writePreviewSession } from '@shared/preview-session';
 
 type PageState = {
   blocks: BlockConfig[];
@@ -214,6 +220,8 @@ export default function PageBuilderEditor({
     tags: [] as string[],
   });
   const draftSaveRef = useRef<NodeJS.Timeout | null>(null);
+  const previewHandoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDeleteDraftRef = useRef(false);
   const parentSaveInFlightRef = useRef(false);
   const latestPageStateRef = useRef<PageState>(initialPageState);
   const hasUnsavedServerChangesRef = useRef(false);
@@ -274,7 +282,13 @@ export default function PageBuilderEditor({
     setPrevId(currentId);
     if (draftSaveRef.current) {
       clearTimeout(draftSaveRef.current);
+      draftSaveRef.current = null;
     }
+    if (previewHandoffTimerRef.current) {
+      clearTimeout(previewHandoffTimerRef.current);
+      previewHandoffTimerRef.current = null;
+    }
+    pendingDeleteDraftRef.current = false;
     hasUnsavedServerChangesRef.current = false;
     dispatchPageState({ type: 'RESET' });
     latestPageStateRef.current = initialPageState;
@@ -477,6 +491,7 @@ export default function PageBuilderEditor({
 
   const queueDraftSave = (
     override?: Partial<typeof latestPageStateRef.current>,
+    cause: DraftSaveCause = 'edit',
   ) => {
     if (!data?.id) return;
     const next = {
@@ -490,10 +505,49 @@ export default function PageBuilderEditor({
     if (isTemplate) return;
 
     if (draftSaveRef.current) clearTimeout(draftSaveRef.current);
+    pendingDeleteDraftRef.current = cause === 'delete';
     draftSaveRef.current = setTimeout(() => {
       draftSaveRef.current = null;
+      pendingDeleteDraftRef.current = false;
       writeDraftRef.current?.(latestPageStateRef.current);
-    }, 300);
+    }, draftSaveDelayMs(cause));
+  };
+
+  const writeLivePreviewHandoff = (blocks: BlockConfig[]) => {
+    const previewContentId = inlinePostId ?? data?.id;
+    if (!previewContentId) return;
+    const previewContentType = inlinePostId
+      ? 'post'
+      : isTemplate
+        ? 'template'
+        : isPost
+          ? 'post'
+          : 'page';
+    writePreviewSession({
+      contentType: previewContentType,
+      contentId: previewContentId,
+      payload: {
+        blocks,
+        title: latestPageStateRef.current.title,
+        design: readPageDesign({ blocks }),
+        savedAt: Date.now(),
+      },
+    });
+  };
+
+  const queuePreviewHandoff = (blocks: BlockConfig[], cause: DraftSaveCause) => {
+    if (previewHandoffTimerRef.current) {
+      clearTimeout(previewHandoffTimerRef.current);
+      previewHandoffTimerRef.current = null;
+    }
+    if (cause === 'delete') {
+      writeLivePreviewHandoff(blocks);
+      return;
+    }
+    previewHandoffTimerRef.current = setTimeout(() => {
+      previewHandoffTimerRef.current = null;
+      writeLivePreviewHandoff(latestPageStateRef.current.blocks);
+    }, 400);
   };
 
   // Flush pending draft on unmount and warn before leaving with unsaved changes
@@ -509,7 +563,14 @@ export default function PageBuilderEditor({
       if (draftSaveRef.current) {
         clearTimeout(draftSaveRef.current);
         draftSaveRef.current = null;
-        writeDraftRef.current?.(latestPageStateRef.current);
+        if (
+          shouldFlushDraftOnLeave({
+            pendingDelete: pendingDeleteDraftRef.current,
+          })
+        ) {
+          writeDraftRef.current?.(latestPageStateRef.current);
+        }
+        pendingDeleteDraftRef.current = false;
       }
     };
   });
@@ -606,9 +667,13 @@ latestPageStateRef.current = {
     }
   }, [data, apiBase, queryClient]);
 
-  const handleBlocksChange = (nextBlocks: BlockConfig[]) => {
+  const handleBlocksChange = (
+    nextBlocks: BlockConfig[],
+    change?: { cause?: DraftSaveCause },
+  ) => {
     dispatchPageState({ type: 'LOAD', payload: { ...pageState, blocks: nextBlocks } });
-    queueDraftSave({ blocks: nextBlocks });
+    queueDraftSave({ blocks: nextBlocks }, change?.cause ?? 'edit');
+    queuePreviewHandoff(nextBlocks, change?.cause ?? 'edit');
   };
 
   const handleTitleChange = (value: string) => {
@@ -802,6 +867,16 @@ latestPageStateRef.current = {
   ): Promise<Page | Post | Template | false> => {
     if (!data) return false;
 
+    if (draftSaveRef.current) {
+      clearTimeout(draftSaveRef.current);
+      draftSaveRef.current = null;
+    }
+    if (previewHandoffTimerRef.current) {
+      clearTimeout(previewHandoffTimerRef.current);
+      previewHandoffTimerRef.current = null;
+    }
+    pendingDeleteDraftRef.current = false;
+
     setIsSaving(true);
     try {
       const editorContentType = inlinePostId
@@ -812,7 +887,15 @@ latestPageStateRef.current = {
             ? 'post'
             : 'page';
 
-      const saveBlocks = Array.isArray(blocksOverride) ? blocksOverride : pageState.blocks;
+      const saveBlocks = Array.isArray(blocksOverride)
+        ? blocksOverride
+        : latestPageStateRef.current.blocks;
+      if (Array.isArray(blocksOverride)) {
+        latestPageStateRef.current = {
+          ...latestPageStateRef.current,
+          blocks: blocksOverride,
+        };
+      }
       const fromBlocks = collectPostFieldsFromBlocks(saveBlocks);
       const existingOther =
         ((inlinePostData ?? data) as { other?: Record<string, unknown> } | undefined)?.other ?? {};
@@ -843,6 +926,22 @@ latestPageStateRef.current = {
 
       handleRemoteEntityUpdate(updated);
       clearPersistedDraft();
+
+      const previewContentType = editorContentType;
+      const previewContentId = inlinePostId ?? data.id;
+      writePreviewSession({
+        contentType: previewContentType,
+        contentId: previewContentId,
+        payload: {
+          blocks: saveBlocks,
+          title: fromBlocks.title || pageState.title,
+          design: readPageDesign({ blocks: saveBlocks }),
+          savedAt: Date.now(),
+        },
+      });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/preview/${previewContentType}/${previewContentId}`],
+      });
 
       const label = isTemplate ? 'Template' : isPost || inlinePostId ? 'Post' : 'Page';
       toast({
@@ -920,17 +1019,19 @@ latestPageStateRef.current = {
   const handlePreview = async () => {
     if (isTemplate) {
       if (!data?.id) return;
-      const { writePreviewSession } = await import('@shared/preview-session');
       writePreviewSession({
         contentType: 'template',
         contentId: data.id,
         payload: {
-          blocks: pageState.blocks,
+          blocks: latestPageStateRef.current.blocks,
           title: pageState.title,
           savedAt: Date.now(),
         },
       });
-      window.open(`/preview/template/${data.id}?live=1`, '_blank');
+      window.open(
+        livePreviewHref({ contentType: 'template', contentId: data.id }),
+        '_blank',
+      );
       return;
     }
 
@@ -941,23 +1042,25 @@ latestPageStateRef.current = {
     const previewContentId = inlinePostId ?? data?.id;
     if (!previewContentId) return;
 
-    const { writePreviewSession } = await import('@shared/preview-session');
+    const previewBlocks = latestPageStateRef.current.blocks;
     writePreviewSession({
       contentType: previewContentType,
       contentId: previewContentId,
       payload: {
-        blocks: pageState.blocks,
+        blocks: previewBlocks,
         title: pageState.title,
-        design: readPageDesign({ blocks: pageState.blocks }),
+        design: readPageDesign({ blocks: previewBlocks }),
         savedAt: Date.now(),
       },
     });
 
-    const previewPath =
-      previewContentType === 'post'
-        ? `/preview/post/${previewContentId}?live=1`
-        : `/preview/page/${previewContentId}?live=1`;
-    window.open(previewPath, '_blank');
+    window.open(
+      livePreviewHref({
+        contentType: previewContentType,
+        contentId: previewContentId,
+      }),
+      '_blank',
+    );
   };
 
   const handleBackToList = () => {

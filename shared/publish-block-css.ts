@@ -202,13 +202,29 @@ figure.wp-block-embed {
   box-sizing: border-box;
 }
 
-/* The shell's own background fills the page even when the content is short. */
-#main-content.has-page-shell {
+/*
+ * The shell's own background fills the page even when the content is short.
+ * Percentage min-height does not resolve against a parent that is only min-height
+ * (preview and the public SPA), so stretch the chain and size the shell to the viewport.
+ */
+.np-visitor-document {
   display: flex;
   flex-direction: column;
 }
-#main-content.has-page-shell > .wp-block-page-shell {
+#main-content.has-page-shell,
+.np-public-block-stack.has-page-shell {
+  display: flex;
+  flex-direction: column;
   flex: 1 0 auto;
+}
+#main-content.has-page-shell > .wp-block-page-shell,
+.np-public-block-stack.has-page-shell > .wp-block-page-shell {
+  flex: 1 0 auto;
+}
+.np-visitor-document.min-h-screen .wp-block-page-shell,
+#page .wp-block-page-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .wp-block-header {
