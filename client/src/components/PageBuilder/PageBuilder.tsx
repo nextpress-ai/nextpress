@@ -3,6 +3,7 @@ import type { BlockConfig, Page, PageOther, Post, Template } from '@shared/schem
 import { DragDropContext } from '@/lib/dnd';
 import type { DropResult as DndDropResult } from '@/lib/dnd';
 import { generateBlockId } from './utils';
+import { usePageTransfer } from './use-page-transfer';
 import { useDragAndDropHandler } from '../../hooks/useDragAndDropHandler';
 import { usePageSave } from '../../hooks/usePageSave';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
@@ -492,7 +493,6 @@ export default function PageBuilder({
   const handleDeleteRef = useRef<(id: string) => void>(() => {});
   const handleDuplicateRef = useRef<(id: string) => void>(() => {});
   const handleCopyRef = useRef<(id: string) => void>(() => {});
-  const handlePasteRef = useRef<() => void>(() => {});
 
   useMountEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -567,10 +567,8 @@ export default function PageBuilder({
       } else if (isMod && key === 'c') {
         e.preventDefault();
         handleCopyRef.current(selectedId);
-      } else if (isMod && key === 'v') {
-        e.preventDefault();
-        handlePasteRef.current();
       }
+      // Ctrl+V is handled by the paste event in usePageTransfer, which needs no clipboard permission.
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -614,18 +612,8 @@ export default function PageBuilder({
     [commitBlocks, setActiveTab],
   );
 
-  const handleCopy = useCallback(
-    (id: string) => {
-      const block = findBlock(blocks, id);
-      if (block) copyBlockToClipboard({ block });
-    },
-    [blocks],
-  );
-
-  const handlePaste = useCallback(() => {
-    const clip = readBlockFromClipboard();
-    if (!clip) return;
-
+  /** Puts one block after the selected block (or at the end) with fresh ids, then selects it. */
+  const insertBlockAtSelection = useCallback((clip: BlockConfig) => {
     const selectedId = selectedBlockIdRef.current;
     let insertedId: string | undefined;
 
@@ -660,6 +648,38 @@ export default function PageBuilder({
       setActiveTab('settings');
     }
   }, [commitBlocks, setActiveTab]);
+
+  const pasteFromBuilderCopy = useCallback(() => {
+    const clip = readBlockFromClipboard();
+    if (clip) insertBlockAtSelection(clip);
+  }, [insertBlockAtSelection]);
+
+  const pageTransfer = usePageTransfer({
+    blocks,
+    commitBlocks,
+    insertBlockAtSelection,
+    pasteFromBuilderCopy,
+    canPasteHere: () => selectedBlockIdRef.current != null && editingBlockIdRef.current == null,
+    generateId: generateBlockId,
+    page:
+      !isTemplate && resolvedContentType === 'page' && data?.id
+        ? { id: String(data.id), title: String((data as Page).title ?? '') }
+        : null,
+  });
+
+  const handleCopy = useCallback(
+    (id: string) => {
+      const block = findBlock(blocks, id);
+      if (!block) return;
+      copyBlockToClipboard({ block });
+      void pageTransfer.copyBlock(block);
+    },
+    [blocks, pageTransfer],
+  );
+
+  const handlePaste = useCallback(() => {
+    void pageTransfer.paste();
+  }, [pageTransfer]);
 
   const handleDelete = useCallback(
     (id: string) => {
@@ -708,7 +728,6 @@ export default function PageBuilder({
   handleDeleteRef.current = handleDelete;
   handleDuplicateRef.current = handleDuplicate;
   handleCopyRef.current = handleCopy;
-  handlePasteRef.current = handlePaste;
 
   const toggleSidebar = () => {
     setSidebarVisible(!sidebarVisible);
@@ -897,7 +916,13 @@ export default function PageBuilder({
                 onApplyResponsiveDefaults={handleApplyResponsiveDefaults}
                 onCreateNewPage={() => setShowCreatePageModal(true)}
                 onCreateNewPost={() => setShowCreatePostModal(true)}
+                pageTransfer={{
+                  onCopyAllBlocks: () => void pageTransfer.copyAllBlocks(),
+                  onPasteBlocks: handlePaste,
+                  onExportPage: pageTransfer.openExport,
+                }}
               />
+              {pageTransfer.dialogs}
               <div className="flex min-h-0 flex-1">
                 <BuilderCanvas
                   blocks={blocks}

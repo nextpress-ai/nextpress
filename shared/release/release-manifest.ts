@@ -4,8 +4,14 @@ import type { ReleaseHighlight } from "./release-highlight-meta";
 /** In-app release notes. Consumer-facing copy only. Keep in sync with package.json on release. */
 export const RELEASE_MANIFEST = {
 	version: NEXTPRESS_CONFIG.version,
-	releaseDate: "2026-09-29",
+	releaseDate: "2026-09-30",
 	highlights: [
+		{
+			kind: "update",
+			title: "Move pages between sites",
+			description:
+				"Export a page with its images and theme, then import it on another NextPress site as a draft. Or copy and paste blocks between sites.",
+		},
 		{
 			kind: "update",
 			title: "New layout blocks",
@@ -72,7 +78,7 @@ export const RELEASE_MANIFEST = {
 			description: "Older sites upgrade without getting stuck.",
 		},
 	] satisfies ReleaseHighlight[],
-	supportedUpgradeFrom: ["1.0.12", "1.3.2", "1.3.3", "1.3.4", "1.3.5", "1.3.6", "1.3.7"],
+	supportedUpgradeFrom: ["1.0.12", "1.3.2", "1.3.3", "1.3.4", "1.3.5", "1.3.6", "1.3.7", "1.3.8"],
 } as const;
 
 export type { ReleaseHighlight, ReleaseHighlightKind } from "./release-highlight-meta";

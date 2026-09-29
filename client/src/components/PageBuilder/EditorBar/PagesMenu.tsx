@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
-import { FileText, Plus, Search, Settings2, Smartphone } from "lucide-react";
+import { ClipboardCopy, ClipboardPaste, Download, FileText, Plus, Search, Settings2, Smartphone } from "lucide-react";
 import { BiPencil } from "react-icons/bi";
 import {
   DropdownMenu,
@@ -23,6 +23,13 @@ import { pageEditorPath } from "@/lib/admin-content-routes";
 import { formatContentStatus } from "@/lib/format-content-status";
 import { Badge } from "@/components/ui/badge";
 
+/** Moving blocks between NextPress sites. Each action shows only when provided. */
+export type PageTransferActions = {
+  onCopyAllBlocks?: () => void;
+  onPasteBlocks?: () => void;
+  onExportPage?: () => void;
+};
+
 interface PagesMenuProps {
   children: ReactNode;
   currentPageId?: string;
@@ -31,6 +38,7 @@ interface PagesMenuProps {
   onApplyResponsiveDefaults?: () => void;
   /** Opens in-builder create page modal instead of navigating away */
   onCreateNewPage?: () => void;
+  pageTransfer?: PageTransferActions;
 }
 
 /**
@@ -43,6 +51,7 @@ export function PagesMenu({
   onPageSettingsClick,
   onApplyResponsiveDefaults,
   onCreateNewPage,
+  pageTransfer,
 }: PagesMenuProps) {
   const [, setLocation] = useLocation();
   const [showCommand, setShowCommand] = useState(false);
@@ -97,6 +106,29 @@ export function PagesMenu({
                 <Smartphone className="w-4 h-4" />
                 Apply mobile-friendly defaults
               </DropdownMenuItem>
+            </>
+          ) : null}
+          {pageTransfer?.onCopyAllBlocks || pageTransfer?.onPasteBlocks || pageTransfer?.onExportPage ? (
+            <>
+              <DropdownMenuSeparator />
+              {pageTransfer.onCopyAllBlocks ? (
+                <DropdownMenuItem onClick={pageTransfer.onCopyAllBlocks}>
+                  <ClipboardCopy className="w-4 h-4" />
+                  Copy all blocks
+                </DropdownMenuItem>
+              ) : null}
+              {pageTransfer.onPasteBlocks ? (
+                <DropdownMenuItem onClick={pageTransfer.onPasteBlocks}>
+                  <ClipboardPaste className="w-4 h-4" />
+                  Paste blocks
+                </DropdownMenuItem>
+              ) : null}
+              {pageTransfer.onExportPage ? (
+                <DropdownMenuItem onClick={pageTransfer.onExportPage}>
+                  <Download className="w-4 h-4" />
+                  Export page…
+                </DropdownMenuItem>
+              ) : null}
             </>
           ) : null}
           {onPageSettingsClick ? (

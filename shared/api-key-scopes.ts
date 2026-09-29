@@ -368,6 +368,16 @@ const SCOPE_RULES: ScopeRule[] = [
 			writeOrReadScope({ method, read: "sites:read", write: "sites:write" }),
 	},
 	{
+		// Moving pages between sites reads or writes both the page and its files.
+		matches: ({ path }) => path.startsWith("/api/page-transfer"),
+		scopes: ({ method, path }) =>
+			path === "/api/page-transfer/files"
+				? ["media:write"]
+				: WRITE_METHODS.has(method)
+					? ["pages:write", "media:write"]
+					: ["pages:read", "media:read"],
+	},
+	{
 		matches: ({ path }) => path.startsWith("/api/system") || path.startsWith("/api/import"),
 		scopes: ({ method }) =>
 			writeOrReadScope({ method, read: "system:read", write: "system:write" }),

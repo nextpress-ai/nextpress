@@ -218,4 +218,17 @@ describe("resolveRequiredApiKeyScopes", () => {
 			resolveRequiredApiKeyScopes({ method: "GET", path: "/admin/settings" }),
 		).toBeNull();
 	});
+
+	it("guards page moves with page and media permissions", () => {
+		expect(
+			resolveRequiredApiKeyScopes({ method: "GET", path: "/api/page-transfer/pages/p1/export" }),
+		).toEqual(["pages:read", "media:read"]);
+		expect(resolveRequiredApiKeyScopes({ method: "POST", path: "/api/page-transfer/import" })).toEqual([
+			"pages:write",
+			"media:write",
+		]);
+		expect(resolveRequiredApiKeyScopes({ method: "POST", path: "/api/page-transfer/files" })).toEqual([
+			"media:write",
+		]);
+	});
 });

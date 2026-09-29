@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Eye, Pencil, Home, ListTree, Copy } from "lucide-react";
+import { Plus, Trash2, Eye, Pencil, Home, ListTree, Copy, Download, FileUp } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
 import {
@@ -19,6 +19,8 @@ import {
 import { ContentStatusSelect } from "@/components/admin/content-status-select";
 import { CreatePageModal } from "@/components/Pages/CreatePageModal";
 import { DuplicatePageDialog } from "@/components/Pages/DuplicatePageDialog";
+import { ExportPageDialog } from "@/components/PageTransfer/ExportPageDialog";
+import { ImportPageDialog } from "@/components/PageTransfer/ImportPageDialog";
 import { PageSiteMenuDialog } from "@/components/Pages/PageSiteMenuDialog";
 import { apiRequest } from "@/lib/queryClient";
 import { pageEditorPath } from "@/lib/admin-content-routes";
@@ -79,6 +81,8 @@ function PagesList({
   const { viewMode, setViewMode } = useAdminListViewMode("pages");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [duplicatePage, setDuplicatePage] = useState<Page | null>(null);
+  const [exportPage, setExportPage] = useState<Page | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [location, setLocation] = useLocation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -286,6 +290,10 @@ function PagesList({
             <ListTree className="mr-2 h-4 w-4" />
             Site menu
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <FileUp className="mr-2 h-4 w-4" />
+            Import page
+          </Button>
           <Button className="npb-btn-accent" onClick={handleNewPage}>
             <Plus className="w-4 h-4 mr-2" />
             Add New Page
@@ -357,6 +365,15 @@ function PagesList({
                         title="Duplicate page"
                       >
                         <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExportPage(item)}
+                        aria-label={`Export ${item.title}`}
+                        title="Export page"
+                      >
+                        <Download className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleView(item)}>
                         <Eye className="w-4 h-4" />
@@ -481,6 +498,15 @@ function PagesList({
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => setExportPage(page)}
+                              aria-label={`Export ${page.title}`}
+                              title="Export page"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleSetHomepage(page)}
                               aria-label={
                                 page.status === 'publish'
@@ -548,6 +574,14 @@ function PagesList({
           if (!isOpen) setDuplicatePage(null);
         }}
       />
+      <ExportPageDialog
+        page={exportPage}
+        open={exportPage !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setExportPage(null);
+        }}
+      />
+      <ImportPageDialog open={importOpen} onOpenChange={setImportOpen} siteId={activeSiteId ?? undefined} />
       <PageSiteMenuDialog
         open={siteMenuOpen}
         onOpenChange={setSiteMenuOpen}

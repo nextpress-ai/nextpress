@@ -22,7 +22,7 @@ import { blockRegistry } from "@/components/PageBuilder/blocks";
 import { topLevelBlockOptions, topLevelSelectionId } from "@/components/PageBuilder/top-level-blocks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { PagesMenu, BlogMenu, DesignMenu } from "@/components/PageBuilder/EditorBar";
+import { PagesMenu, BlogMenu, DesignMenu, type PageTransferActions } from "@/components/PageBuilder/EditorBar";
 import { useTheme } from "@/components/ThemeProvider";
 import type { BlockConfig } from "@shared/schema-types";
 
@@ -50,6 +50,7 @@ export function BuilderTopBar({
   onApplyResponsiveDefaults,
   onCreateNewPage,
   onCreateNewPost,
+  pageTransfer,
 }: {
   data: any;
   isTemplate: boolean;
@@ -77,6 +78,8 @@ export function BuilderTopBar({
   onApplyResponsiveDefaults?: () => void;
   onCreateNewPage?: () => void;
   onCreateNewPost?: () => void;
+  /** Copy / paste / export for moving blocks between NextPress sites. */
+  pageTransfer?: PageTransferActions;
 }) {
   const { isDark, toggleTheme } = useTheme();
   const deviceHint =
@@ -272,6 +275,7 @@ export function BuilderTopBar({
               onPageSettingsClick={onPageSettingsClick}
               onApplyResponsiveDefaults={onApplyResponsiveDefaults}
               onCreateNewPage={onCreateNewPage}
+              pageTransfer={pageTransfer}
             >
               <Button
                 type="button"
