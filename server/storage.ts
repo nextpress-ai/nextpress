@@ -15,6 +15,7 @@ import {
 	posts,
 	comments,
 	media,
+	formSubmissions,
 	sessions,
 } from "@shared/schema";
 
@@ -546,6 +547,7 @@ export const models = {
 	// Basic models
 	blogs: createModel(blogs, db),
 	sessions: createModel(sessions, db),
+	formSubmissions: createModel(formSubmissions, db),
 
 	// Specialized models
 	users: createUserModel(),

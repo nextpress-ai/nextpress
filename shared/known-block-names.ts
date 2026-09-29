@@ -22,6 +22,7 @@ export const KNOWN_BLOCK_NAMES = [
 	"core/accordion",
 	"core/accordion-item",
 	"core/popup",
+	"core/form",
 	"core/quote",
 	"core/list",
 	"core/media-text",

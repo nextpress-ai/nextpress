@@ -252,7 +252,7 @@ figure.wp-block-embed {
   justify-content: space-between;
   gap: 1rem;
   width: 100%;
-  padding: 0.75rem 1.25rem;
+  padding: var(--np-header-pad-block, 0.75rem) var(--np-header-pad-inline, 1.25rem);
   box-sizing: border-box;
   position: relative;
 }
@@ -481,7 +481,7 @@ figure.wp-block-embed {
 
 @container np-header (max-width: 767px) {
   .wp-block-header__bar {
-    padding-right: 3rem;
+    padding-right: calc(var(--np-header-pad-inline, 1.25rem) + 1.75rem);
   }
   .wp-block-header__desktop {
     display: none;
@@ -491,8 +491,8 @@ figure.wp-block-embed {
   }
   .wp-block-header__mobile-toggle {
     position: absolute;
-    top: 0.75rem;
-    right: 1.25rem;
+    top: var(--np-header-pad-block, 0.75rem);
+    right: var(--np-header-pad-inline, 1.25rem);
     z-index: 2;
   }
   .wp-block-header__mobile-panel[open] .wp-block-header__burger {
@@ -568,6 +568,9 @@ figure.wp-block-embed {
 .wp-block-header__frame {
   position: relative;
   width: 100%;
+  max-width: var(--np-header-max-width, none);
+  margin-left: auto;
+  margin-right: auto;
   box-sizing: border-box;
 }
 
@@ -590,6 +593,58 @@ figure.wp-block-embed {
   .wp-block-header.is-page-inset .wp-block-header__mobile-toggle {
     right: var(--np-page-pad-right, 1.25rem);
   }
+}
+
+/* Form block: labels above fields, a trap field bots fill (never shown), the answer line, and a
+   sent state where the answer takes the fields' place. */
+.wp-block-input__control,
+.wp-block-textarea__control,
+.wp-block-select__control {
+  font-family: inherit;
+}
+.wp-block-field__label {
+  display: block;
+  margin: 0 0 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.8;
+}
+.wp-block-field__required {
+  color: #b42318;
+}
+.wp-block-form__trap {
+  position: absolute !important;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.wp-block-form__status:empty {
+  display: none;
+}
+.wp-block-form__status {
+  margin: 0.75rem 0 0;
+  font-size: 0.9375rem;
+}
+.wp-block-form__status.is-error {
+  color: #b42318;
+}
+.wp-block-form.is-sent > :not(.wp-block-form__status) {
+  display: none;
+}
+.wp-block-form.is-sent .wp-block-form__status {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+button.wp-block-button__link {
+  font: inherit;
+  border: 0;
+  cursor: pointer;
+}
+button.wp-block-button__link:disabled {
+  opacity: 0.6;
+  cursor: progress;
 }
 
 .wp-block-gallery,

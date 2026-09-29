@@ -76,13 +76,26 @@ export function getEntryAnimationAttributes(entry: EntryAnimation): Record<strin
 	return attrs;
 }
 
+/** Set on `<html>` of a published page while its entry script is on the way. */
+export const ENTRY_ANIMATION_WAIT_CLASS = "np-entry-wait";
+
 /**
  * Hides entry-animated blocks until the scroll observer triggers them. People who asked for less
  * motion never wait for a scroll: their blocks simply show.
+ * `onlyWhileWaiting` (published pages): hide only while `<html>` has the wait class, so a page
+ * whose entry script never arrives still shows everything.
  */
-export function getEntryAnimationBaseCSS(): string {
-	return motionAllowed(`[data-np-entry]:not(.${ENTRY_ANIMATION_PLAYED_CLASS}){opacity:0;}`);
+export function getEntryAnimationBaseCSS({ onlyWhileWaiting = false }: { onlyWhileWaiting?: boolean } = {}): string {
+	const scope = onlyWhileWaiting ? `.${ENTRY_ANIMATION_WAIT_CLASS} ` : "";
+	return motionAllowed(`${scope}[data-np-entry]:not(.${ENTRY_ANIMATION_PLAYED_CLASS}){opacity:0;}`);
 }
+
+/**
+ * Inline head script for published pages: hide entry blocks while the entry script loads, and show
+ * them anyway if it has not started after a few seconds (missing file, blocked, offline).
+ * WHY: a 404 on the script once left whole sections of a live page invisible.
+ */
+export const ENTRY_ANIMATION_WAIT_SCRIPT = `(function(d){var c="${ENTRY_ANIMATION_WAIT_CLASS}";d.documentElement.classList.add(c);setTimeout(function(){if(!window.npEntryReady)d.documentElement.classList.remove(c)},3000)})(document);`;
 
 /**
  * CSS for a hover animation: Animate.css keyframes, or a Nextpress look (Lift / Grow) that eases

@@ -1,6 +1,7 @@
 import React from "react";
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { SettingsLabel } from '../../shared';
 import { MousePointer, Type, Link, Smile, X } from "lucide-react";
@@ -17,7 +18,10 @@ import {
   NPB_ICON_REFERENCE_ROW_MAX_CHARS,
   truncateWithEllipsis,
 } from "@/lib/truncate-with-ellipsis";
-import { splitButtonBlockStyles, mapButtonTextAlignToJustifyContent } from "@shared/button-block-styles";import {
+import { splitButtonBlockStyles, mapButtonTextAlignToJustifyContent } from "@shared/button-block-styles";
+import { BUTTON_ICON_SIZE_PRESETS, DEFAULT_BUTTON_ICON_SIZE } from "@shared/dimension-presets";
+import { DimensionPresetField } from "../../dimension-preset-field";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -38,6 +42,10 @@ type ButtonContent = BlockContent & {
   icon?: IconReference;
   iconPosition?: 'left' | 'right';
   iconOnly?: boolean;
+  /** CSS size of the icon, e.g. `20px` or `1.2em`. Older buttons use the icon's own size (16px). */
+  iconSize?: string;
+  /** `submit`: inside a Form block this button sends the form instead of following a link. */
+  action?: 'link' | 'submit';
 };
 
 const DEFAULT_CONTENT: ButtonContent = {
@@ -61,6 +69,27 @@ interface ButtonRendererProps {
   isEditing?: boolean;
   onUpdateContent?: (updates: Partial<ButtonContent>) => void;
   blockId?: string;
+}
+
+/** A link, or (for a form's send button, outside the editor) a real submit button with the same look. */
+function ButtonElement({
+  isSubmit,
+  href,
+  target,
+  rel,
+  ...shared
+}: {
+  isSubmit: boolean;
+  href?: string;
+  target?: string;
+  rel?: string;
+  title?: string;
+  style: React.CSSProperties;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (isSubmit) return <button type="submit" {...shared} />;
+  return <a href={href} target={target} rel={rel} {...shared} />;
 }
 
 function ButtonRenderer({
@@ -97,7 +126,7 @@ function ButtonRenderer({
   const iconElement = icon ? (
     <IconRenderer
       icon={icon}
-      size={icon.size || 16}
+      size={content?.iconSize?.trim() || icon.size || 16}
       color="currentColor"
       strokeWidth={icon.strokeWidth || 2}
       style={{ flexShrink: 0 }}
@@ -125,7 +154,8 @@ function ButtonRenderer({
       role="presentation"
       onClick={(e) => (isPreview ? undefined : e.preventDefault())}
     >
-      <a
+      <ButtonElement
+        isSubmit={content?.action === 'submit' && Boolean(isPreview)}
         href={url}
         target={linkTarget}
         rel={rel}
@@ -153,7 +183,7 @@ function ButtonRenderer({
           !iconOnly && textContent
         )}
         {iconElement && iconPosition === 'right' && iconElement}
-      </a>
+      </ButtonElement>
     </BlockShell>
   );
 }
@@ -206,17 +236,31 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
             />
           </div>
           
-          <div>
-            <SettingsLabel htmlFor="button-url">Link URL</SettingsLabel>
-            <Input
-              id="button-url"
-              value={content?.url || ''}
-              onChange={(e) => updateContent({ url: e.target.value })}
-              placeholder="https://example.com"
-              className="mt-1 h-9"
+          <div className="flex items-center justify-between gap-3">
+            <SettingsLabel htmlFor="button-submits-form">Sends the form</SettingsLabel>
+            <Switch
+              id="button-submits-form"
+              checked={content?.action === 'submit'}
+              onCheckedChange={(checked) => updateContent({ action: checked ? 'submit' : 'link' })}
             />
-            <PopupLinkPicker id="button-popup" value={content?.url} onChange={(url) => updateContent({ url })} />
           </div>
+          {content?.action === 'submit' ? (
+            <p className="npb-settings-hint-muted -mt-2 text-xs">
+              Inside a Form block, this button sends what visitors typed.
+            </p>
+          ) : (
+            <div>
+              <SettingsLabel htmlFor="button-url">Link URL</SettingsLabel>
+              <Input
+                id="button-url"
+                value={content?.url || ''}
+                onChange={(e) => updateContent({ url: e.target.value })}
+                placeholder="https://example.com"
+                className="mt-1 h-9"
+              />
+              <PopupLinkPicker id="button-popup" value={content?.url} onChange={(url) => updateContent({ url })} />
+            </div>
+          )}
         </div>
       </CollapsibleCard>
 
@@ -272,6 +316,14 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
 
           {currentIcon && (
             <>
+              <DimensionPresetField
+                label="Icon size"
+                presets={BUTTON_ICON_SIZE_PRESETS}
+                value={content?.iconSize ?? (currentIcon.size ? `${currentIcon.size}px` : DEFAULT_BUTTON_ICON_SIZE)}
+                defaultValue={DEFAULT_BUTTON_ICON_SIZE}
+                customPlaceholder="e.g. 18px or 1.2em"
+                onChange={(next) => updateContent({ iconSize: next ?? DEFAULT_BUTTON_ICON_SIZE })}
+              />
               <div>
                 <SettingsLabel>Position</SettingsLabel>
                 <div className="flex gap-2 mt-1">

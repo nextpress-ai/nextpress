@@ -11,6 +11,7 @@ import {
 import {
 	generateBlockAnimationCSS,
 	getEntryAnimationBaseCSS,
+	ENTRY_ANIMATION_WAIT_SCRIPT,
 	usesAnimateCss,
 } from "@shared/animation-utils";
 import { collectBlockModifierCSS } from "@shared/token-resolution";
@@ -34,6 +35,7 @@ import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-mod
 import { buildScrollbarCss } from "@shared/scrollbar-model";
 import { collectBlockExtraCss, treeHasScrollingHeader } from "@shared/collect-block-extra-css";
 import { POPUP_BLOCK_NAME } from "@shared/popup-model";
+import { FORM_BLOCK_NAME } from "@shared/form-model";
 
 /** Every block in the tree, parents before children. */
 const listAllBlocks = (list: BlockConfig[]): BlockConfig[] =>
@@ -121,14 +123,15 @@ export function buildPublishedPageHtml({
 	if (extraCss) headParts.push(`<style>${extraCss}</style>`);
 	if (needsAnimateCss) headParts.push(`<link rel="stylesheet" href="/vendor/animate.min.css">`);
 	if (hasEntryAnimations) {
-		headParts.push(`<style>${getEntryAnimationBaseCSS()}</style>`);
+		headParts.push(`<style>${getEntryAnimationBaseCSS({ onlyWhileWaiting: true })}</style>`);
+		headParts.push(`<script>${ENTRY_ANIMATION_WAIT_SCRIPT}</script>`);
 	}
 	const headScripts = headParts.filter(Boolean).join("\n");
 
 	const bodyParts: string[] = [];
 	if (hasEntryAnimations) {
 		bodyParts.push(`<script src="/vendor/entry-animations.js"></script>`);
-		bodyParts.push(`<script>initEntryAnimations();</script>`);
+		bodyParts.push(`<script>window.initEntryAnimations && window.initEntryAnimations();</script>`);
 	}
 	if (treeHasScrollingHeader(blocks)) {
 		bodyParts.push(`<script src="/vendor/header-scroll.js"></script>`);
@@ -136,6 +139,9 @@ export function buildPublishedPageHtml({
 	const blockJsScripts = collectBlockJsScripts(blocks);
 	if (blockJsScripts) {
 		bodyParts.push(blockJsScripts);
+	}
+	if (allBlocks.some((b) => b.name === FORM_BLOCK_NAME)) {
+		bodyParts.push(`<script src="/vendor/form.js"></script>`);
 	}
 	if (allBlocks.some((b) => b.name === POPUP_BLOCK_NAME)) {
 		bodyParts.push(`<script src="/vendor/popup.js"></script>`);

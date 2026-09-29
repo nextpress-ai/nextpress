@@ -23,7 +23,7 @@ import {
 
 type IconData = Record<string, unknown> | undefined;
 
-function renderSsrIcon(icon: IconData, overrides?: { size?: number; color?: string }): React.ReactNode {
+function renderSsrIcon(icon: IconData, overrides?: { size?: number | string; color?: string }): React.ReactNode {
 	if (!icon || typeof icon !== "object") return null;
 	const iconSet = (icon.iconSet as string) || "lucide";
 	const iconName = (icon.iconName as string) || "";
@@ -228,7 +228,8 @@ export function ButtonBlock(block: BlockConfig) {
 	const iconPosition = (content.iconPosition as string) || "left";
 	const iconOnly = content.iconOnly as boolean | undefined;
 
-	const iconElement = renderSsrIcon(icon, { size: (icon?.size as number) || 16, color: "currentColor" });
+	const iconSize = typeof content.iconSize === "string" && content.iconSize.trim() ? content.iconSize.trim() : undefined;
+	const iconElement = renderSsrIcon(icon, { size: iconSize ?? ((icon?.size as number) || 16), color: "currentColor" });
 	const hasIcon = iconElement !== null;
 
 	const buttonClassName = [
@@ -263,6 +264,17 @@ export function ButtonBlock(block: BlockConfig) {
 	);
 
 	const shellClassName = "wp-block-button";
+
+	// A form's send button: a real submit button with the same look, so the form posts.
+	if (content.action === "submit") {
+		return (
+			<div className={shellClassName} style={shellStyles}>
+				<button type="submit" className={buttonClassName || undefined} style={buttonStyle}>
+					{buttonChildren}
+				</button>
+			</div>
+		);
+	}
 
 	if (link && link !== "#" && link.trim() !== "") {
 		return (

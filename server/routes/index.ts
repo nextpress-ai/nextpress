@@ -11,6 +11,7 @@ import { createUsersRoutes } from './users.routes';
 import { createPostsRoutes } from './posts.routes';
 import { createPagesRoutes } from './pages.routes';
 import { createPageTransferRoutes } from './page-transfer.routes';
+import { createFormsRoutes } from './forms.routes';
 import { createBlogsRoutes } from './blogs.routes';
 import { createCommentsRoutes } from './comments.routes';
 import { createMediaRoutes } from './media.routes';
@@ -100,6 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/posts', createPostsRoutes(deps));
   app.use('/api/pages', createPagesRoutes(deps));
   app.use('/api/page-transfer', createPageTransferRoutes(deps));
+  app.use('/api/forms', createFormsRoutes(deps));
   app.use('/api/blogs', createBlogsRoutes(deps));
 
   app.use('/api/comments', createCommentsRoutes(deps));
@@ -125,30 +127,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/', createRenderRoutes(deps));
 
   // Vendor files for published pages (animation libraries, etc.)
+  // In the image the server runs as dist/index.js, so the built files sit next to it in
+  // dist/public/vendor. That spot comes first: when it was missing, /vendor/* returned 404 in
+  // production and entry-faded sections of live pages never appeared.
+  const vendorCandidates = (filename: string, ...extra: string[]): string[] => [
+    path.join(__dirname, 'public/vendor', filename),
+    path.join(process.cwd(), 'dist/public/vendor', filename),
+    path.join(__dirname, '../../dist/public/vendor', filename),
+    path.join(process.cwd(), 'client/public/vendor', filename),
+    ...extra,
+  ];
   const vendorFileSources: Record<string, string[]> = {
-    'animate.min.css': [
-      path.join(__dirname, '../../dist/public/vendor/animate.min.css'),
+    'animate.min.css': vendorCandidates(
+      'animate.min.css',
       path.join(process.cwd(), 'client/src/lib/animate.min.css'),
       path.join(process.cwd(), 'node_modules/animate.css/animate.min.css'),
-    ],
-    'entry-animations.js': [
-      path.join(__dirname, '../../dist/public/vendor/entry-animations.js'),
-      path.join(process.cwd(), 'client/public/vendor/entry-animations.js'),
-    ],
-    'header-scroll.js': [
-      path.join(__dirname, '../../dist/public/vendor/header-scroll.js'),
-      path.join(process.cwd(), 'client/public/vendor/header-scroll.js'),
-    ],
-    'popup.js': [
-      path.join(__dirname, '../../dist/public/vendor/popup.js'),
-      path.join(process.cwd(), 'client/public/vendor/popup.js'),
-    ],
+    ),
+    'entry-animations.js': vendorCandidates('entry-animations.js'),
+    'header-scroll.js': vendorCandidates('header-scroll.js'),
+    'popup.js': vendorCandidates('popup.js'),
+    'form.js': vendorCandidates('form.js'),
   };
 
   for (const [filename, candidates] of Object.entries(vendorFileSources)) {
     app.get(`/vendor/${filename}`, (_req, res) => {
       const resolved = candidates.find((candidate) => fs.existsSync(candidate));
       if (!resolved) {
+        console.error('[vendor] Published page asset missing', { atFunction: 'serveVendorFile', filename, candidates });
         res.status(404).send('Vendor asset not found');
         return;
       }
@@ -156,10 +161,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
-  app.use(
-    '/vendor',
-    express.static(path.join(__dirname, '../../dist/public/vendor'))
-  );
+  // Everything else in vendor/ (e.g. post-list-overlay.js), from wherever the build put it.
+  [path.join(__dirname, 'public/vendor'), path.join(process.cwd(), 'dist/public/vendor'), path.join(__dirname, '../../dist/public/vendor')]
+    .filter((dir) => fs.existsSync(dir))
+    .forEach((dir) => app.use('/vendor', express.static(dir)));
 
   if (app.get('env') !== 'development') {
     const adminIndexPath = resolveFirstExistingPath([

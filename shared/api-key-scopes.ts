@@ -368,6 +368,11 @@ const SCOPE_RULES: ScopeRule[] = [
 			writeOrReadScope({ method, read: "sites:read", write: "sites:write" }),
 	},
 	{
+		// Form submissions belong with the pages that collect them. The public send needs no key.
+		matches: ({ path }) => path.startsWith("/api/forms/submissions"),
+		scopes: ({ method }) => writeOrReadScope({ method, read: "pages:read", write: "pages:write" }),
+	},
+	{
 		// Moving pages between sites reads or writes both the page and its files.
 		matches: ({ path }) => path.startsWith("/api/page-transfer"),
 		scopes: ({ method, path }) =>

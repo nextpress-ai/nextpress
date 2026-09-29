@@ -5,6 +5,7 @@ import { fillToBackgroundStyles, readFill, type Fill } from "./fill-model.js";
 import { safeCssColor, safeCssLength } from "./css-safe.js";
 import { unwrapStructured } from "./page-shell-model.js";
 import { readHeaderScrollLook, type HeaderScrollLook } from "./header-scroll-model.js";
+import { headerSpacingDecls, readHeaderSpacing, type HeaderSpacing } from "./header-spacing.js";
 
 export const HEADER_BLOCK_NAME = "core/header";
 
@@ -226,7 +227,7 @@ export type HeaderContent = {
 	overFirstSection?: boolean;
 	/** A thin bar on the header's bottom edge that fills as the page is read. Off by default. */
 	progress?: HeaderProgress;
-};
+} & HeaderSpacing;
 
 export type HeaderProgress = {
 	show: boolean;
@@ -565,6 +566,7 @@ export function readHeaderContent(content: BlockContent | undefined): HeaderCont
 		backgroundFill: readFill(data.backgroundFill),
 		overFirstSection: data.overFirstSection === true,
 		progress: readHeaderProgress(data.progress),
+		...readHeaderSpacing(data),
 	};
 }
 
@@ -606,7 +608,8 @@ export function buildHeaderLookCss({
 	const look = headerBarLookStyles(content);
 	// Over the first section with no colour of its own: see-through, so the section shows.
 	const seeThrough = content.overFirstSection && !look.backgroundColor && !look.backgroundImage;
-	const decls = toCssDecls(seeThrough ? { ...look, backgroundColor: "transparent" } : look);
+	const lookDecls = toCssDecls(seeThrough ? { ...look, backgroundColor: "transparent" } : look);
+	const decls = [lookDecls, headerSpacingDecls(content)].filter(Boolean).join(";");
 	return [decls ? `${bar}{${decls}}` : "", buildHeaderProgressCss({ bar, progress: content.progress })]
 		.filter(Boolean)
 		.join("\n");

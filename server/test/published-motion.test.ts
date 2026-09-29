@@ -62,6 +62,16 @@ describe("published pages carry motion for nested blocks", () => {
 		expect(html).toContain('data-np-entry="fadeInUp"');
 	});
 
+	it("never leaves faded blocks hidden when the entry script does not arrive", () => {
+		const html = render([paragraph("fade-2", { animation: { entry: { name: "fadeInUp" } } })]);
+		// Blocks are hidden only while <html> waits for the script…
+		expect(html).toContain(".np-entry-wait [data-np-entry]:not(.np-entry-played){opacity:0;}");
+		expect(html).not.toMatch(/[^ ]\[data-np-entry\]:not\(\.np-entry-played\)\{opacity:0;\}/);
+		// …and the wait ends on its own if the script never starts.
+		expect(html).toContain('classList.add(c);setTimeout(function(){if(!window.npEntryReady)');
+		expect(html).toContain("window.initEntryAnimations && window.initEntryAnimations();");
+	});
+
 	it("keeps a nested block's custom CSS", () => {
 		const html = render([paragraph("styled-1", { css: ".block-styled-1{letter-spacing:2px}" })]);
 		expect(html).toContain(".block-styled-1{letter-spacing:2px}");

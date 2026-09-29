@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ListFilter, Plus, Trash2 } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { FormFieldLabel, formFieldControlId } from "@shared/form-field-label";
 import { BlockShell } from "../shared/block-shell";
 import { SettingsLabel } from "../../shared";
 import {
@@ -15,18 +16,21 @@ import {
 import { FormFieldSettings } from "../form/form-field-settings";
 
 type SelectRendererProps = {
+	blockId: string;
 	content: SelectFieldContent;
 	styles?: React.CSSProperties;
 };
 
-function SelectRenderer({ content, styles }: SelectRendererProps) {
+function SelectRenderer({ content, styles, blockId }: SelectRendererProps) {
 	const name = content?.name || "choice";
 	const ariaLabel = content?.ariaLabel || content?.placeholder || name;
 	const options = content?.options?.length ? content.options : DEFAULT_SELECT_CONTENT.options!;
 
 	return (
 		<BlockShell blockClass="wp-block-select">
+			<FormFieldLabel label={content?.label} htmlFor={formFieldControlId(blockId)} required={content?.required} />
 			<select
+				id={formFieldControlId(blockId)}
 				name={name}
 				defaultValue={content?.defaultValue ?? ""}
 				required={content?.required ?? false}
@@ -144,7 +148,7 @@ const SelectBlock = createBlockDefinition<SelectFieldContent>({
 	defaultStyles: DEFAULT_FORM_FIELD_STYLES,
 	settings: SelectSettings,
 	hasSettings: true,
-	render: ({ content, styles }) => <SelectRenderer content={content} styles={styles} />,
+	render: ({ content, styles, value }) => <SelectRenderer content={content} styles={styles} blockId={value.id} />,
 });
 
 export default SelectBlock;

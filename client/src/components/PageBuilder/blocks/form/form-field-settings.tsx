@@ -43,6 +43,19 @@ export function FormFieldSettings<T extends FormFieldBase>({
 			<CollapsibleCard title="Content" icon={Type} defaultOpen>
 				<div className="space-y-4">
 					<div>
+						<SettingsLabel htmlFor="form-field-label">Label</SettingsLabel>
+						<Input
+							id="form-field-label"
+							value={content?.label ?? ""}
+							onChange={(e) => updateContent({ label: e.target.value } as Partial<T>)}
+							placeholder="e.g. Your email"
+							className="h-9 rounded-none"
+						/>
+						<p className="npb-settings-hint-muted mt-1.5 text-xs">
+							Shown above the field, and names this answer in form submissions.
+						</p>
+					</div>
+					<div>
 						<SettingsLabel htmlFor="form-field-name">Field name</SettingsLabel>
 						<Input
 							id="form-field-name"

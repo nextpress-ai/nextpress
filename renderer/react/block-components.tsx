@@ -8,6 +8,7 @@ import * as LayoutBlocks from "./layout";
 import * as AdvancedBlocks from "./advanced";
 import * as PostBlocks from "./post";
 import * as FormBlocks from "./form";
+import { FormBlock } from "./form/form-block";
 import { AccordionBlock, AccordionItemBlock } from "./layout/accordion";
 import { PopupBlock } from "./layout/popup";
 
@@ -70,6 +71,7 @@ export const BLOCK_COMPONENTS: Record<string, React.FC<BlockConfig>> = {
 	"core/input": FormBlocks.InputBlock,
 	"core/textarea": FormBlocks.TextareaBlock,
 	"core/select": FormBlocks.SelectBlock,
+	"core/form": FormBlock,
 
 	// Post blocks (core component aliases)
 	"post/excerpt": BasicBlocks.ParagraphBlock,

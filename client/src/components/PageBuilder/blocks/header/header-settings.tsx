@@ -42,6 +42,7 @@ import {
 } from "@shared/header-model";
 import { HeaderVariantPicker } from "./header-variant-picker";
 import { HeaderScrollSettings } from "./header-scroll-settings";
+import { HeaderSpacingSettings } from "./header-spacing-settings";
 import { PopupLinkPicker } from "../../popup-links";
 
 const PROGRESS_THICKNESS_PRESETS = [
@@ -183,6 +184,20 @@ export function HeaderSettings({
 						? "The first section runs up under the header. Give it extra top padding so its content clears the header."
 						: "The header takes no room, so a hero's colour or picture shows behind it."}
 				</p>
+			</CollapsibleCard>
+
+			<CollapsibleCard
+				title="Spacing"
+				defaultOpen={Boolean(content.contentWidth || content.paddingInline || content.paddingBlock)}
+			>
+				<HeaderSpacingSettings
+					value={{
+						contentWidth: content.contentWidth,
+						paddingInline: content.paddingInline,
+						paddingBlock: content.paddingBlock,
+					}}
+					onChange={(patch) => updateContent(patch)}
+				/>
 			</CollapsibleCard>
 
 			<CollapsibleCard title="Colors" defaultOpen={true}>

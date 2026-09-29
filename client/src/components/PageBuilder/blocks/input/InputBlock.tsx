@@ -2,6 +2,7 @@ import React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { TextCursorInput } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { FormFieldLabel, formFieldControlId } from "@shared/form-field-label";
 import { BlockShell } from "../shared/block-shell";
 import {
 	DEFAULT_FORM_FIELD_STYLES,
@@ -11,18 +12,21 @@ import {
 import { FormFieldSettings, InputTypeSelect } from "../form/form-field-settings";
 
 type InputRendererProps = {
+	blockId: string;
 	content: InputFieldContent;
 	styles?: React.CSSProperties;
 };
 
-function InputRenderer({ content, styles }: InputRendererProps) {
+function InputRenderer({ content, styles, blockId }: InputRendererProps) {
 	const type = content?.type ?? "text";
 	const name = content?.name || "field";
 	const ariaLabel = content?.ariaLabel || content?.placeholder || name;
 
 	return (
 		<BlockShell blockClass="wp-block-input">
+			<FormFieldLabel label={content?.label} htmlFor={formFieldControlId(blockId)} required={content?.required} />
 			<input
+				id={formFieldControlId(blockId)}
 				type={type}
 				name={name}
 				defaultValue={content?.defaultValue ?? ""}
@@ -72,7 +76,7 @@ const InputBlock = createBlockDefinition<InputFieldContent>({
 	defaultStyles: DEFAULT_FORM_FIELD_STYLES,
 	settings: InputSettings,
 	hasSettings: true,
-	render: ({ content, styles }) => <InputRenderer content={content} styles={styles} />,
+	render: ({ content, styles, value }) => <InputRenderer content={content} styles={styles} blockId={value.id} />,
 });
 
 export default InputBlock;

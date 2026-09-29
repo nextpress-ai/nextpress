@@ -12,6 +12,7 @@ import {
 import PublicBlockRenderer from "./PublicBlockRenderer";
 import { BlockAnimationRuntime } from "./BlockAnimationRuntime";
 import { PopupRuntime } from "./PopupRuntime";
+import { FormRuntime } from "./FormRuntime";
 import { PublishBlockStyles } from "./PublishBlockStyles";
 import { PageProvider, type PostDocumentValue } from "./PageContext";
 
@@ -111,6 +112,7 @@ export function PublicBlockStack({
         ) : null}
         <BlockAnimationRuntime contentKey={animationContentKey} />
         {deviceView ? null : <PopupRuntime contentKey={animationContentKey} />}
+        {deviceView ? null : <FormRuntime contentKey={animationContentKey} />}
         {preparedBlocks.map((block) => (
           <PublicBlockRenderer key={block.id} block={block} deviceView={deviceView} />
         ))}

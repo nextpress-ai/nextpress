@@ -154,6 +154,16 @@ export function findPreset(
 	return presets.find((preset) => preset.value === text);
 }
 
+/** Size of an icon inside a button. MD matches the size buttons have always used. */
+export const BUTTON_ICON_SIZE_PRESETS: readonly DimensionPreset[] = [
+	{ value: "14px", label: "SM" },
+	{ value: "16px", label: "MD" },
+	{ value: "20px", label: "LG" },
+	{ value: "24px", label: "XL" },
+] as const;
+
+export const DEFAULT_BUTTON_ICON_SIZE = "16px";
+
 /** Page shell padding on the left and right of the content column. */
 export const PAGE_SIDE_PADDING_PRESETS: readonly DimensionPreset[] = [
 	{ value: "0", label: "None" },

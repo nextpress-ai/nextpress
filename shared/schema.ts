@@ -368,6 +368,26 @@ export const media = pgTable("media", {
 	updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+/**
+ * What visitors sent through a Form block. One row per send. No IP address or other tracking is
+ * stored; sending is limited in memory instead.
+ */
+export const formSubmissions = pgTable(
+	"form_submissions",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		siteId: uuid("site_id")
+			.references(() => sites.id)
+			.notNull(),
+		pageId: uuid("page_id").references(() => pages.id, { onDelete: "set null" }),
+		formName: varchar("form_name").notNull(),
+		fields: jsonb("fields").notNull(),
+		status: varchar("status").notNull().default("new"), // new, read
+		createdAt: timestamp("created_at").defaultNow(),
+	},
+	(table) => [index("form_submissions_site_created_idx").on(table.siteId, table.createdAt)],
+);
+
 // Todo: add relations and set them with drizzle relations
 export const usersRelations = relations(users, ({ many }) => ({
 	posts: many(posts),

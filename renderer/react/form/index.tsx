@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { getRenderProps } from "../render-helpers";
+import { FormFieldLabel, formFieldControlId } from "@shared/form-field-label";
 import {
 	DEFAULT_FORM_FIELD_STYLES,
 	DEFAULT_INPUT_CONTENT,
@@ -24,7 +25,9 @@ export function InputBlock(block: BlockConfig) {
 
 	return (
 		<div className={["wp-block-input", className].filter(Boolean).join(" ")} {...attributes}>
+			<FormFieldLabel label={content.label} htmlFor={formFieldControlId(block.id)} required={content.required} />
 			<input
+				id={formFieldControlId(block.id)}
 				type={type}
 				name={name}
 				defaultValue={content.defaultValue ?? ""}
@@ -51,7 +54,9 @@ export function TextareaBlock(block: BlockConfig) {
 
 	return (
 		<div className={["wp-block-textarea", className].filter(Boolean).join(" ")} {...attributes}>
+			<FormFieldLabel label={content.label} htmlFor={formFieldControlId(block.id)} required={content.required} />
 			<textarea
+				id={formFieldControlId(block.id)}
 				name={name}
 				rows={rows}
 				defaultValue={content.defaultValue ?? ""}
@@ -83,7 +88,9 @@ export function SelectBlock(block: BlockConfig) {
 
 	return (
 		<div className={["wp-block-select", className].filter(Boolean).join(" ")} {...attributes}>
+			<FormFieldLabel label={content.label} htmlFor={formFieldControlId(block.id)} required={content.required} />
 			<select
+				id={formFieldControlId(block.id)}
 				name={name}
 				defaultValue={content.defaultValue ?? ""}
 				required={content.required ?? false}

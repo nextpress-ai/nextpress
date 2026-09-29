@@ -1,4 +1,6 @@
 (function () {
+  // Tells the page's wait guard the script arrived, so it keeps blocks hidden for their entrance.
+  window.npEntryReady = true;
   var PLAYED = "np-entry-played";
   var OFFSET = 120;
 

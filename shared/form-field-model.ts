@@ -3,6 +3,8 @@ import type { BlockContent } from '@shared/schema-types';
 /** Shared content shape for form field blocks (input, textarea, select). */
 export type FormFieldBase = {
 	name?: string;
+	/** Visible text above the field, and the name of this answer in form submissions. */
+	label?: string;
 	placeholder?: string;
 	defaultValue?: string;
 	required?: boolean;

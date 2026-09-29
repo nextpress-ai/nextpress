@@ -22,6 +22,7 @@ import HeaderBlock from './header/HeaderBlock';
 import AccordionBlock from './accordion/AccordionBlock';
 import AccordionItemBlock from './accordion/AccordionItemBlock';
 import PopupBlock from './popup/PopupBlock';
+import FormBlock from './form/FormBlock';
 import ButtonsBlock from './buttons/ButtonsBlock';
 import GalleryBlock from './gallery/GalleryBlock';
 import CoverBlock from './cover/CoverBlock';
@@ -121,6 +122,7 @@ export const blockRegistry: Record<string, BlockDefinition> = {
   'core/accordion': AccordionBlock,
   'core/accordion-item': AccordionItemBlock,
   'core/popup': PopupBlock,
+  'core/form': FormBlock,
   'core/quote': QuoteBlock,
   'core/list': ListBlock,
   'core/media-text': MediaTextBlock,

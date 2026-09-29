@@ -3,6 +3,7 @@ import type { BlockConfig } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { AlignLeft } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
+import { FormFieldLabel, formFieldControlId } from "@shared/form-field-label";
 import { BlockShell } from "../shared/block-shell";
 import { SettingsLabel } from "../../shared";
 import {
@@ -13,18 +14,21 @@ import {
 import { FormFieldSettings } from "../form/form-field-settings";
 
 type TextareaRendererProps = {
+	blockId: string;
 	content: TextareaFieldContent;
 	styles?: React.CSSProperties;
 };
 
-function TextareaRenderer({ content, styles }: TextareaRendererProps) {
+function TextareaRenderer({ content, styles, blockId }: TextareaRendererProps) {
 	const name = content?.name || "message";
 	const ariaLabel = content?.ariaLabel || content?.placeholder || name;
 	const rows = content?.rows ?? 4;
 
 	return (
 		<BlockShell blockClass="wp-block-textarea">
+			<FormFieldLabel label={content?.label} htmlFor={formFieldControlId(blockId)} required={content?.required} />
 			<textarea
+				id={formFieldControlId(blockId)}
 				name={name}
 				rows={rows}
 				defaultValue={content?.defaultValue ?? ""}
@@ -86,7 +90,7 @@ const TextareaBlock = createBlockDefinition<TextareaFieldContent>({
 	defaultStyles: DEFAULT_FORM_FIELD_STYLES,
 	settings: TextareaSettings,
 	hasSettings: true,
-	render: ({ content, styles }) => <TextareaRenderer content={content} styles={styles} />,
+	render: ({ content, styles, value }) => <TextareaRenderer content={content} styles={styles} blockId={value.id} />,
 });
 
 export default TextareaBlock;
