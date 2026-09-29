@@ -202,13 +202,13 @@ print_success "Working tree is clean"
 if [[ "$SKIP_RELEASE" == true ]]; then
   print_warning "Skipped version bump (--skip-release; using current version)"
 elif [[ -n "$DEPLOY_VERSION" ]]; then
-  if ! pnpm -s version:bump --set "$DEPLOY_VERSION"; then
+  if ! pnpm --reporter=silent version:bump --set "$DEPLOY_VERSION"; then
     print_error "Version set failed"
     exit 1
   fi
   print_success "Version set to ${DEPLOY_VERSION} (beta-v${DEPLOY_VERSION})"
 else
-  if ! pnpm -s version:bump; then
+  if ! pnpm --reporter=silent version:bump; then
     print_error "Version bump failed"
     exit 1
   fi
