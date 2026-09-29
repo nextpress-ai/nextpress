@@ -11,6 +11,7 @@ import {
 } from "@shared/bind-post-blocks";
 import PublicBlockRenderer from "./PublicBlockRenderer";
 import { BlockAnimationRuntime } from "./BlockAnimationRuntime";
+import { PopupRuntime } from "./PopupRuntime";
 import { PublishBlockStyles } from "./PublishBlockStyles";
 import { PageProvider, type PostDocumentValue } from "./PageContext";
 
@@ -109,6 +110,7 @@ export function PublicBlockStack({
           <h1 className="sr-only">{pageTitle}</h1>
         ) : null}
         <BlockAnimationRuntime contentKey={animationContentKey} />
+        {deviceView ? null : <PopupRuntime contentKey={animationContentKey} />}
         {preparedBlocks.map((block) => (
           <PublicBlockRenderer key={block.id} block={block} deviceView={deviceView} />
         ))}

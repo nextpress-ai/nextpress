@@ -47,6 +47,7 @@ import { runParentOwnedSave } from '@/lib/run-parent-save';
 import { SkipLink } from '@/components/a11y/skip-link';
 import { MotionSidebarPanel } from '@/components/motion/motion-primitives';
 import { EditorColorMemoryProvider } from './color-memory';
+import { EditorPopupsProvider } from './popup-links';
 
 function useMountEffect(effect: () => void | (() => void)) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -783,6 +784,7 @@ export default function PageBuilder({
       <SkipLink href="#builder-canvas">Skip to canvas</SkipLink>
       <PageProvider pageOther={data?.other as any} postDocument={postDocument}>
         <EditorColorMemoryProvider blocks={blocks}>
+        <EditorPopupsProvider blocks={blocks}>
         <DeviceViewProvider device={deviceView}>
         <BlockActionsProvider
         value={{
@@ -945,6 +947,7 @@ export default function PageBuilder({
         </div>
       </BlockActionsProvider>
         </DeviceViewProvider>
+        </EditorPopupsProvider>
         </EditorColorMemoryProvider>
       </PageProvider>
     </div>

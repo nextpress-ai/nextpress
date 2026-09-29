@@ -11,11 +11,16 @@ const TABLET_MAX = "1023px";
 
 type CssPropertyRecord = Record<string, string | number | null | undefined>;
 
-/** Serializes CSSProperties to a CSS rule body, skipping null/undefined. */
+/**
+ * Serializes CSSProperties to a CSS rule body, skipping null/undefined.
+ * `!important` because visitor pages paint a block's base styles inline, and an inline style
+ * beats any stylesheet rule — without it a phone override (say, a smaller heading) never showed.
+ * The rule only applies inside its screen-size query, so desktop is untouched.
+ */
 function stylesToRuleBody(styles: CssPropertyRecord): string {
 	return Object.entries(styles)
 		.filter(([, v]) => v != null && v !== "")
-		.map(([key, value]) => `${camelToKebab(key)}: ${value};`)
+		.map(([key, value]) => `${camelToKebab(key)}: ${value} !important;`)
 		.join(" ");
 }
 

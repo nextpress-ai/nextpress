@@ -34,6 +34,7 @@ export interface IconReference {
    * - lucide: kebab-case → "arrow-right", "search"
    * - react-icons: prefixed → "lu:LuSearch", "tb:TbArrowLeft", "fa6:FaHouse"
    * - svgl: slug → "github", "react", "vercel"
+   * - custom: the uploaded file's name
    */
   iconName: string;
 
@@ -48,6 +49,14 @@ export interface IconReference {
   strokeWidth?: number;   // lucide stroke magnitude, default 2
   /** Unit for stroke width (`px` when omitted — matches historical number-only stroke). */
   strokeWidthUnit?: NpbNumericLengthUnit;
+  /** react-icons: the drawing saved when picked, so published pages need no icon library. */
+  svg?: string;
+  /** svgl / custom: the picture in this site's media library. */
+  url?: string;
+  /** Name read out by screen readers when the icon stands alone. */
+  label?: string;
+  /** Paint a one-colour picture in the icon colour instead of its own colours. */
+  tint?: boolean;
 }
 
 /** Metadata for an icon set shown in the picker */
@@ -70,7 +79,8 @@ export const ICON_SETS: IconSetMeta[] = [
   { id: 'react-icons', label: 'Bootstrap', prefix: 'bs', iconCount: 2716 },
   { id: 'react-icons', label: 'Ionicons', prefix: 'io5', iconCount: 1332 },
   { id: 'react-icons', label: 'Radix', prefix: 'rx', iconCount: 318 },
-  { id: 'svgl', label: 'Brands (SVGL)', prefix: 'svgl', iconCount: 100 },
+  { id: 'svgl', label: 'Brand logos', prefix: 'svgl', iconCount: 0 },
+  { id: 'custom', label: 'Your icons', prefix: 'custom', iconCount: 0 },
 ];
 
 /** Get the storage key for an icon set entry */
@@ -83,12 +93,18 @@ export function getIconSetStorageKey(set: IconSetMeta): string {
  * Single-line label for narrow rows (settings, canvas toolbar). Pair with
  * `truncateWithEllipsis` (`NPB_ICON_REFERENCE_ROW_MAX_CHARS`) and a tooltip/`title` for the full string.
  */
+const ICON_SET_READABLE: Partial<Record<IconSetId, string>> = {
+  svgl: 'Brand logo',
+  custom: 'Your icon',
+};
+
 export function formatIconReferenceLabel(icon: IconReference): string {
-  return `${icon.iconSet} / ${icon.iconName}`;
+  const set = ICON_SET_READABLE[icon.iconSet] ?? icon.iconSet;
+  return `${set} / ${icon.label || icon.iconName}`;
 }
 
 function isIconSetId(value: unknown): value is IconReference['iconSet'] {
-  return value === 'lucide' || value === 'react-icons' || value === 'svgl';
+  return value === 'lucide' || value === 'react-icons' || value === 'svgl' || value === 'custom';
 }
 
 /**
@@ -119,5 +135,9 @@ export function extractIconReferenceFromBlockContent(content: unknown): IconRefe
     strokeWidthUnit: isNumericLengthUnit(o.strokeWidthUnit)
       ? o.strokeWidthUnit
       : undefined,
+    ...(typeof o.svg === 'string' ? { svg: o.svg } : {}),
+    ...(typeof o.url === 'string' ? { url: o.url } : {}),
+    ...(typeof o.label === 'string' ? { label: o.label } : {}),
+    ...(typeof o.tint === 'boolean' ? { tint: o.tint } : {}),
   };
 }

@@ -5,7 +5,22 @@ import { Slider } from "@/components/ui/slider"
 import { SettingsDisclosure } from "./shared/settings-disclosure"
 import { Eye } from 'lucide-react'
 import type { BlockAnimation, EntryAnimation, HoverAnimation, LoopAnimation } from "@shared/schema-types"
-import { entryPresets, hoverPresets, loopPresets, type AnimationPreset } from "@/lib/animation-presets"
+import { entryPresets, hoverPresets, loopPresets, isNextpressMotion, type AnimationPreset } from "@/lib/animation-presets"
+import { Switch } from "@/components/ui/switch"
+import { SettingsLabel } from "./shared"
+import { DimensionPresetField } from "./dimension-preset-field"
+import { useCanvasMotionPaused } from "@/lib/canvas-motion-pause"
+
+const ORBIT_RADIUS_PRESETS = [
+  { value: "80px", label: "S" },
+  { value: "140px", label: "M" },
+  { value: "200px", label: "L" },
+  { value: "280px", label: "XL" },
+]
+
+/** Seconds for one round: Nextpress moves are slow, Animate.css presets are quick. */
+const loopSecondsRange = (name: string) =>
+  isNextpressMotion(name) ? { min: 1, max: 60, step: 1, fallback: name === "np-float" ? 4 : name === "np-spin" ? 12 : 24 } : { min: 0.3, max: 5, step: 0.1, fallback: 1 }
 import {
   triggerEntryAnimationPreview,
   clearEntryAnimationPreview,
@@ -26,6 +41,7 @@ interface AnimationPickerProps {
  * Users select from curated Animate.css presets.
  */
 export default function AnimationPicker({ animation, blockId, onChange }: AnimationPickerProps) {
+  const [motionPaused, setMotionPaused] = useCanvasMotionPaused()
 
   const updateAnimation = useCallback((updates: Partial<BlockAnimation>) => {
     // Use null instead of undefined for cleared categories so deepMerge properly removes them
@@ -229,7 +245,10 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
               updateAnimation({ hover: { name } })
             }
           },
-          (name) => previewHoverOrLoopAnimation(name)
+          (name) => {
+            // Lift / Grow show on the canvas by hovering the block itself.
+            if (!isNextpressMotion(name)) previewHoverOrLoopAnimation(name)
+          }
         )}
       </SettingsDisclosure>
 
@@ -243,11 +262,92 @@ export default function AnimationPicker({ animation, blockId, onChange }: Animat
               updateAnimation({ loop: undefined })
               stopPreview()
             } else {
-              updateAnimation({ loop: { name } })
-              previewHoverOrLoopAnimation(name, true)
+              // Keep the speed only while staying in the same family (seconds mean different things).
+              const keep = animation?.loop && isNextpressMotion(animation.loop.name) === isNextpressMotion(name)
+              updateAnimation({
+                loop: {
+                  name,
+                  ...(keep && animation?.loop?.durationMs ? { durationMs: animation.loop.durationMs } : {}),
+                  ...(animation?.loop?.reverse ? { reverse: true } : {}),
+                  ...(name === "np-orbit"
+                    ? { orbitRadius: animation?.loop?.orbitRadius ?? "140px", orbitStart: animation?.loop?.orbitStart ?? 0 }
+                    : {}),
+                },
+              })
+              if (!isNextpressMotion(name)) previewHoverOrLoopAnimation(name, true)
             }
           }
         )}
+
+        {animation?.loop ? (() => {
+          const loop = animation.loop
+          const range = loopSecondsRange(loop.name)
+          const seconds = loop.durationMs ? loop.durationMs / 1000 : range.fallback
+          return (
+            <div className="space-y-3 mt-3 pt-3 border-t border-npb-border-default">
+              <div>
+                <Label className="text-xs text-npb-text-secondary">One round: {seconds.toFixed(isNextpressMotion(loop.name) ? 0 : 1)}s</Label>
+                <Slider
+                  value={[seconds]}
+                  onValueChange={([v]) => updateAnimation({ loop: { ...loop, durationMs: Math.round((v ?? range.fallback) * 1000) } })}
+                  min={range.min}
+                  max={range.max}
+                  step={range.step}
+                  className="mt-1"
+                  aria-label="Seconds for one round"
+                />
+              </div>
+
+              {loop.name === "np-orbit" ? (
+                <>
+                  <DimensionPresetField
+                    label="Distance from centre"
+                    presets={ORBIT_RADIUS_PRESETS}
+                    value={loop.orbitRadius ?? "140px"}
+                    onChange={(next) => updateAnimation({ loop: { ...loop, orbitRadius: next || "140px" } })}
+                    customPlaceholder="e.g. 160px, 30%"
+                  />
+                  <div>
+                    <Label className="text-xs text-npb-text-secondary">Start on the circle: {loop.orbitStart ?? 0}°</Label>
+                    <Slider
+                      value={[loop.orbitStart ?? 0]}
+                      onValueChange={([v]) => updateAnimation({ loop: { ...loop, orbitStart: v ?? 0 } })}
+                      min={0}
+                      max={359}
+                      step={15}
+                      className="mt-1"
+                      aria-label="Start angle on the circle"
+                    />
+                  </div>
+                  <p className="npb-settings-hint-muted text-xs">
+                    Circles the centre of its parent. For a ring of icons, put them in an overlay
+                    stack, pin each to the middle, give them the same speed and spread their start
+                    (for 6 icons: 0°, 60°, 120°…).
+                  </p>
+                </>
+              ) : null}
+
+              <div className="flex items-center justify-between gap-3">
+                <SettingsLabel htmlFor={`loop-reverse-${blockId}`}>
+                  {loop.name === "np-orbit" || loop.name === "np-spin" ? "Turn the other way" : "Play backwards"}
+                </SettingsLabel>
+                <Switch
+                  id={`loop-reverse-${blockId}`}
+                  checked={loop.reverse === true}
+                  onCheckedChange={(checked) => updateAnimation({ loop: { ...loop, reverse: checked } })}
+                />
+              </div>
+            </div>
+          )
+        })() : null}
+
+        <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-npb-border-default">
+          <div className="min-w-0">
+            <SettingsLabel htmlFor="canvas-motion-pause">Pause motion on the canvas</SettingsLabel>
+            <p className="npb-settings-hint-muted text-xs">Only while editing. Preview and the live page still move.</p>
+          </div>
+          <Switch id="canvas-motion-pause" checked={motionPaused} onCheckedChange={setMotionPaused} />
+        </div>
       </SettingsDisclosure>
     </div>
   )

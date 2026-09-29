@@ -17,6 +17,8 @@ export type FillTarget = ColorTarget & {
 	fill?: Fill;
 	/** Fill types this target accepts besides a plain colour. Leave out for both; `[]` for colour only. */
 	fillKinds?: readonly ("gradient" | "image")[];
+	/** True where a gradient can drift (block backgrounds). Page shell and header paint fills their own way. */
+	allowMotion?: boolean;
 };
 
 type FillFieldProps = {
@@ -141,6 +143,7 @@ export function FillField({
 			{kind === "gradient" && active.fill?.kind === "gradient" ? (
 				<GradientEditor
 					ariaLabel={`${active.label} gradient`}
+					allowMotion={active.allowMotion === true}
 					value={active.fill}
 					onChange={(fill) => onFillChange(active, fill)}
 				/>

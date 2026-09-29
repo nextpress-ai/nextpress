@@ -25,7 +25,7 @@ describe('Animation Presets', () => {
     });
 
     it('hoverPresets should have 13 items with valid structure', () => {
-      expect(hoverPresets).toHaveLength(13);
+      expect(hoverPresets).toHaveLength(15); // 13 Animate.css + Lift, Grow
       hoverPresets.forEach((preset) => {
         expect(typeof preset.name).toBe('string');
         expect(typeof preset.label).toBe('string');
@@ -37,7 +37,7 @@ describe('Animation Presets', () => {
     });
 
     it('loopPresets should have 11 items with valid structure', () => {
-      expect(loopPresets).toHaveLength(11);
+      expect(loopPresets).toHaveLength(14); // 11 Animate.css + Orbit, Float, Spin
       loopPresets.forEach((preset) => {
         expect(typeof preset.name).toBe('string');
         expect(typeof preset.label).toBe('string');
@@ -53,7 +53,7 @@ describe('Animation Presets', () => {
     it('should generate correct hover CSS', () => {
       const hover: HoverAnimation = { name: 'pulse' };
       const result = generateHoverAnimationCSS('123', hover);
-      expect(result).toBe('.block-123:hover { animation: pulse 1s both; }');
+      expect(result).toBe('@media (prefers-reduced-motion: no-preference){.block-123:hover{animation:pulse 1s both}}');
     });
   });
 
@@ -61,13 +61,13 @@ describe('Animation Presets', () => {
     it('should generate loop CSS without entry', () => {
       const loop: LoopAnimation = { name: 'bounce' };
       const result = generateLoopAnimationCSS('456', loop, false);
-      expect(result).toBe('.block-456 { animation: bounce 1s infinite both; }');
+      expect(result).toBe('@media (prefers-reduced-motion: no-preference){.block-456{animation:bounce 1000ms ease infinite normal both}}');
     });
 
     it('should generate loop CSS with entry', () => {
       const loop: LoopAnimation = { name: 'bounce' };
       const result = generateLoopAnimationCSS('456', loop, true);
-      expect(result).toBe('.block-456.np-entry-played { animation: bounce 1s infinite both; }');
+      expect(result).toBe('@media (prefers-reduced-motion: no-preference){.block-456.np-entry-played{animation:bounce 1000ms ease infinite normal both}}');
     });
   });
 
@@ -75,19 +75,19 @@ describe('Animation Presets', () => {
     it('should generate hover only', () => {
       const animation: BlockAnimation = { hover: { name: 'pulse' } };
       const result = generateBlockAnimationCSS('789', animation);
-      expect(result).toBe('.block-789:hover { animation: pulse 1s both; }');
+      expect(result).toBe('@media (prefers-reduced-motion: no-preference){.block-789:hover{animation:pulse 1s both}}');
     });
 
     it('should generate loop only without entry', () => {
       const animation: BlockAnimation = { loop: { name: 'bounce' } };
       const result = generateBlockAnimationCSS('789', animation);
-      expect(result).toBe('.block-789 { animation: bounce 1s infinite both; }');
+      expect(result).toBe('@media (prefers-reduced-motion: no-preference){.block-789{animation:bounce 1000ms ease infinite normal both}}');
     });
 
     it('should generate hover and loop', () => {
       const animation: BlockAnimation = { hover: { name: 'pulse' }, loop: { name: 'bounce' } };
       const result = generateBlockAnimationCSS('789', animation);
-      expect(result).toBe('.block-789:hover { animation: pulse 1s both; }\n.block-789 { animation: bounce 1s infinite both; }');
+      expect(result).toBe('@media (prefers-reduced-motion: no-preference){.block-789:hover{animation:pulse 1s both}}\n@media (prefers-reduced-motion: no-preference){.block-789{animation:bounce 1000ms ease infinite normal both}}');
     });
 
     it('should return empty string for entry only', () => {
@@ -105,7 +105,7 @@ describe('Animation Presets', () => {
     it('should generate hover and loop with entry', () => {
       const animation: BlockAnimation = { entry: { name: 'fadeIn' }, hover: { name: 'pulse' }, loop: { name: 'bounce' } };
       const result = generateBlockAnimationCSS('789', animation);
-      expect(result).toBe('.block-789:hover { animation: pulse 1s both; }\n.block-789.np-entry-played { animation: bounce 1s infinite both; }');
+      expect(result).toBe('@media (prefers-reduced-motion: no-preference){.block-789:hover{animation:pulse 1s both}}\n@media (prefers-reduced-motion: no-preference){.block-789.np-entry-played{animation:bounce 1000ms ease infinite normal both}}');
     });
   });
 

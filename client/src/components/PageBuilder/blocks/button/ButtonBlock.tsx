@@ -12,6 +12,7 @@ import { LinkTargetChips } from "../shared/link-settings";
 import { IconRenderer } from "../shared/IconRenderer";
 import { IconPickerButton } from "../../IconPicker/IconPickerButton";
 import { formatIconReferenceLabel, type IconReference } from "@/lib/icon-indexes";
+import { PopupLinkPicker } from "../../popup-links";
 import {
   NPB_ICON_REFERENCE_ROW_MAX_CHARS,
   truncateWithEllipsis,
@@ -214,6 +215,7 @@ function ButtonSettings({ block, onUpdate }: ButtonSettingsProps) {
               placeholder="https://example.com"
               className="mt-1 h-9"
             />
+            <PopupLinkPicker id="button-popup" value={content?.url} onChange={(url) => updateContent({ url })} />
           </div>
         </div>
       </CollapsibleCard>

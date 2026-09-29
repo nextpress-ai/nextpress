@@ -206,6 +206,7 @@ export function HeaderBar({
 					</details>
 				) : null}
 			</div>
+			{content.progress?.show ? <div className="wp-block-header__progress" aria-hidden="true" /> : null}
 		</header>
 	);
 }

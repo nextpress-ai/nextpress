@@ -67,6 +67,21 @@ describe('HeadingBlock', () => {
       
       const heading = screen.getByRole('heading')
       expect(heading).toHaveClass('has-text-align-center')
+      expect(heading).toHaveStyle({ textAlign: 'center' })
+    })
+
+    it('lets the Style tab alignment win over an old content value', () => {
+      const block = {
+        ...createHeadingBlock({ kind: 'text', value: 'Styled', level: 2, textAlign: 'left' }),
+        styles: { textAlign: 'center' as const },
+      }
+      const Component = HeadingBlock.component as React.ComponentType<any>
+
+      render(<Component value={block} onChange={mockOnChange} />)
+
+      const heading = screen.getByRole('heading')
+      expect(heading).toHaveClass('has-text-align-center')
+      expect(heading).toHaveStyle({ textAlign: 'center' })
     })
 
     it('should apply custom anchor ID', () => {
@@ -242,7 +257,6 @@ describe('HeadingBlock', () => {
         kind: 'text',
         value: 'Your heading here',
         level: 2,
-        textAlign: 'left',
         anchor: '',
         className: '',
       })

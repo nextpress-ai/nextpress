@@ -16,6 +16,9 @@ export const BLOCK_NAMES = [
 	"core/stack",
 	"core/page-shell",
 	"core/header",
+	"core/accordion",
+	"core/accordion-item",
+	"core/popup",
 	"core/quote",
 	"core/list",
 	"core/media-text",
@@ -317,6 +320,38 @@ export const BLOCK_DEFINITIONS: Record<BlockName, BlockDefinitionMeta> = {
 			padding: "0px",
 			margin: "0px",
 		},
+	},
+	"core/accordion": {
+		name: "core/accordion",
+		label: "Accordion",
+		// Children are `core/accordion-item` blocks (a title, and any blocks as the answer).
+		type: "container",
+		category: "layout",
+		defaultContent: () =>
+			structured({
+				openMode: "one",
+				firstOpen: true,
+				look: "cards",
+				icon: { preset: "plus-minus", position: "start", size: "18px" },
+				faqSchema: false,
+			}),
+		defaultStyles: { width: "100%" },
+	},
+	"core/accordion-item": {
+		name: "core/accordion-item",
+		label: "Accordion item",
+		type: "container",
+		category: "layout",
+		defaultContent: () => structured({ title: "Question", open: false }),
+	},
+	"core/popup": {
+		name: "core/popup",
+		label: "Popup",
+		// Any blocks inside. A link to `#popup-<slug>` opens it.
+		type: "container",
+		category: "layout",
+		defaultContent: () => structured({ name: "Popup", slug: "popup", size: "md", closeButton: true, closeOnBackdrop: true }),
+		defaultStyles: { padding: "0", margin: "0" },
 	},
 	"core/quote": {
 		name: "core/quote",

@@ -2,9 +2,18 @@
   var PLAYED = "np-entry-played";
   var OFFSET = 120;
 
+  var reducedMotion =
+    window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   function playEntry(el) {
     var name = el.getAttribute("data-np-entry");
     if (!name || el.classList.contains(PLAYED)) return;
+
+    // Less motion asked for: show the block as it is, without the entrance.
+    if (reducedMotion) {
+      el.classList.add(PLAYED);
+      return;
+    }
 
     var duration = Number(el.getAttribute("data-np-entry-duration") || 1000);
     var delay = Number(el.getAttribute("data-np-entry-delay") || 0);

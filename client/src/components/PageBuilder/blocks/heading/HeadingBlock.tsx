@@ -12,6 +12,7 @@ import { BlockShell } from "../shared/block-shell";
 import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "@shared/sanitize-html";
+import { readTextAlign } from "@shared/text-align";
 
 // ============================================================================
 // TYPES
@@ -21,6 +22,7 @@ type HeadingContent = BlockContent & {
   level?: number;
   anchor?: string;
   className?: string;
+  /** Old saves only. Alignment lives on `styles.textAlign` (shared/text-align.ts). */
   textAlign?: "left" | "center" | "right" | "justify";
 };
 
@@ -32,7 +34,6 @@ const DEFAULT_CONTENT: HeadingContent = {
   kind: "text",
   value: "Your heading here",
   level: 2,
-  textAlign: "left",
   anchor: "",
   className: "",
 };
@@ -95,16 +96,18 @@ function HeadingRenderer({
   const textContent = getTextContent(content);
   const level = content.level || 2;
   const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+  const textAlign = readTextAlign({ styles, content });
   const mergedStyles: React.CSSProperties = {
     color: "var(--npb-text-primary)",
     fontSize: HEADING_FONT_SIZES[level],
     fontWeight: HEADING_FONT_WEIGHTS[level],
     ...styles,
+    ...(textAlign ? { textAlign } : {}),
   };
 
   const sharedClassName =
     [
-      content.textAlign ? `has-text-align-${content.textAlign}` : "",
+      textAlign ? `has-text-align-${textAlign}` : "",
       content.className,
     ]
       .filter(Boolean)

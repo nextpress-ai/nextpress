@@ -17,6 +17,8 @@ export type VideoContent = BlockContent & {
   muted?: boolean;
   playsInline?: boolean;
   preload?: string;
+  /** `cover` fills the box and crops; `contain` shows the whole frame (shared/video-playback.ts). */
+  objectFit?: 'cover' | 'contain';
   align?: 'default' | 'wide' | 'full';
   caption?: string;
   anchor?: string;

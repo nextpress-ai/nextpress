@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SettingsLabel } from "../../shared";
+import { PopupLinkPicker } from "../../popup-links";
 
 export type LinkTargetValue = "_self" | "_blank";
 
@@ -46,6 +47,7 @@ export function LinkUrlField({
         onChange={(e) => onChange({ url: e.target.value })}
         placeholder={placeholder}
       />
+      <PopupLinkPicker id={`${id}-popup`} value={value} onChange={(url) => onChange({ url })} />
     </div>
   );
 };

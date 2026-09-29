@@ -241,6 +241,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
     return colorTargets().map((target) => ({
       ...target,
       fill: target.property === 'color' ? fills.text : fills.background,
+      allowMotion: target.property !== 'color',
     }));
   };
 
@@ -608,6 +609,26 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
             }
             onChange={(patch) => updateStyles(patch)}
           />
+        ) : null}
+
+        {parentBlock?.name === "core/stack" &&
+        readStackTypeFromContent(parentBlock.content) === "overlay" ? (
+          <CollapsibleCard title="Layer size" icon={Layers} defaultOpen={block.settings?.stackFillBehind === true}>
+            <SettingsChipGroup
+              label="Size"
+              ariaLabel="Layer size"
+              options={[
+                { value: "sets", label: "Sets the size" },
+                { value: "behind", label: "Fills behind" },
+              ]}
+              value={block.settings?.stackFillBehind === true ? "behind" : "sets"}
+              onChange={(value) => updateSettings({ stackFillBehind: value === "behind" })}
+            />
+            <p className="npb-settings-hint-muted mt-2 text-xs">
+              Fills behind: this layer covers the space the other layers make, and never makes it
+              bigger. Use it for a background video, picture or moving fill.
+            </p>
+          </CollapsibleCard>
         ) : null}
 
         {(() => {

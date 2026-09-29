@@ -16,6 +16,7 @@ import {
   getBlockSiblingFlexItemStyles,
   getBlockStackLayerWrapperStyles,
   getOverlayChildItemStyles,
+  isOverlayFillBehind,
   readContainerLayoutFromBlock,
   getContainerSiblingStackDirection,
   getContainerChildrenStackStyle,
@@ -98,6 +99,8 @@ export function ContainerChildren({
         display: 'grid',
         width: '100%',
         minWidth: 0,
+        // Same as the published stack: a sized stack's shared cell fills it (stack-shell-styles.ts).
+        ...(hasContainerShellSizing(block.styles) ? { flex: 1, minHeight: 0, alignSelf: 'stretch' as const } : {}),
         ...(overlayFit?.hugs ? { justifyContent: overlayFit.justifyContent } : {}),
       }
     : getContainerChildrenStackStyle(layout, {
@@ -110,6 +113,7 @@ export function ContainerChildren({
       ? {
           ...getOverlayChildItemStyles(child.styles, {
             heldToBase: overlayFit?.hugs === true && child !== children[0],
+            fillsBehind: isOverlayFillBehind(child),
           }),
           ...getBlockStackLayerWrapperStyles(child),
           ...headerOverlayPaintStyles(child),

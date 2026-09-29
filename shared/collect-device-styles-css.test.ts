@@ -22,9 +22,9 @@ describe("collectDeviceStylesCSS", () => {
 		const css = collectBlockDeviceStylesCSS(blockWithDeviceStyles());
 		expect(css).toContain("@media (max-width: 767px)");
 		expect(css).toContain(".block-abc123");
-		expect(css).toContain("padding: 8px");
+		expect(css).toContain("padding: 8px !important");
 		expect(css).toContain("@media (min-width: 768px) and (max-width: 1023px)");
-		expect(css).toContain("padding: 12px");
+		expect(css).toContain("padding: 12px !important");
 	});
 
 	it("walks nested children in the block tree", () => {

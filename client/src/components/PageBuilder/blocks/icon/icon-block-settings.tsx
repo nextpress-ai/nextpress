@@ -31,6 +31,13 @@ import {
   DEFAULT_ICON_CONTENT,
 } from "./icon-block-model";
 import { LinkUrlField, LinkTargetChips } from "../shared/link-settings";
+import { SettingsChipGroup } from "../../settings-chip-group";
+import { ICON_FILE_SETS } from "@shared/icon-drawing";
+
+const PICTURE_COLOUR_OPTIONS = [
+  { value: "own", label: "Own colours" },
+  { value: "tint", label: "Icon colour" },
+];
 
 function settingsChipClass(selected: boolean): string {
   return cn(
@@ -250,6 +257,22 @@ export function IconBlockSettings({ block, onUpdate }: IconBlockSettingsProps) {
               });
             }}
           />
+
+          {ICON_FILE_SETS.has(currentIcon.iconSet) && currentIcon.url ? (
+            <div className="space-y-2">
+              <SettingsChipGroup
+                label="Picture colours"
+                ariaLabel="Picture colours"
+                options={PICTURE_COLOUR_OPTIONS}
+                value={currentIcon.tint ? "tint" : "own"}
+                onChange={(value) => updateContent({ icon: { ...currentIcon, tint: value === "tint" } })}
+              />
+              <p className="npb-settings-hint-muted text-xs">
+                Icon colour paints the picture's shape in the colour below. Best for one-colour icons;
+                brand logos usually keep their own colours.
+              </p>
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             <Label className="npb-settings-label text-sm font-medium">Colors</Label>

@@ -2,7 +2,11 @@ import type { IconSetId } from "./icon-types.js";
 import { ICON_SET_IDS, isReactIconsPrefix } from "./icon-types.js";
 import { LUCIDE_ICONS } from "./icons/lucide-icons.js";
 import { REACT_ICONS_SETS } from "./icons/react-icons-index.js";
-import { SVGL_ICONS } from "./icons/svgl-icons.js";
+import {
+	ICON_SVG_MAX_CHARS,
+	isCleanSvgMarkup,
+	isLocalIconFileUrl,
+} from "./icon-drawing.js";
 
 export type ValidatedIconReference = {
 	iconSet: IconSetId;
@@ -10,6 +14,14 @@ export type ValidatedIconReference = {
 	size?: number;
 	color?: string;
 	strokeWidth?: number;
+	/** react-icons: the drawing saved when it was picked (see shared/icon-drawing.ts). */
+	svg?: string;
+	/** svgl / custom: the picture in this site's media library. */
+	url?: string;
+	/** Name read out by screen readers when the icon stands alone. */
+	label?: string;
+	/** Paint a one-colour picture in the icon colour instead of its own colours. */
+	tint?: boolean;
 };
 
 export type IconValidationResult =
@@ -17,7 +29,9 @@ export type IconValidationResult =
 	| { ok: false; message: string };
 
 const lucideSet = new Set(LUCIDE_ICONS);
-const svglSet = new Set(SVGL_ICONS);
+
+const ICON_NAME_MAX_CHARS = 120;
+const ICON_LABEL_MAX_CHARS = 120;
 
 /** Lucide index uses kebab-case; SDK/editor may send PascalCase. */
 const normalizeLucideIconName = (name: string): string =>
@@ -69,18 +83,32 @@ export function validateIconReference(raw: unknown): IconValidationResult {
 		};
 	}
 
-	if (iconSet === "svgl") {
-		const slug = iconNameRaw.toLowerCase();
-		if (!svglSet.has(slug)) {
-			return { ok: false, message: `Unknown SVGL icon: ${iconNameRaw}` };
+	if (iconNameRaw.length > ICON_NAME_MAX_CHARS) {
+		return { ok: false, message: "iconName is too long" };
+	}
+
+	const extras = readIconExtras(raw);
+	if (!extras.ok) return extras;
+
+	if (iconSet === "svgl" || iconSet === "custom") {
+		// Brand logos saved before logos were real files have no url; they keep painting a placeholder.
+		if (iconSet === "custom" && !extras.value.url) {
+			return { ok: false, message: "An uploaded icon needs its picture (url)" };
+		}
+		if (extras.value.url && !isLocalIconFileUrl(extras.value.url, iconSet === "svgl" ? [".svg"] : undefined)) {
+			return { ok: false, message: "Icon picture must be an svg, png or webp in this site's uploads" };
+		}
+		if (extras.value.svg) {
+			return { ok: false, message: "Only react-icons carry an inline drawing" };
 		}
 		return {
 			ok: true,
 			value: {
 				iconSet,
-				iconName: slug,
+				iconName: iconSet === "svgl" ? iconNameRaw.toLowerCase() : iconNameRaw,
 				size: typeof raw.size === "number" ? raw.size : undefined,
 				color: typeof raw.color === "string" ? raw.color : undefined,
+				...extras.value,
 			},
 		};
 	}
@@ -114,6 +142,45 @@ export function validateIconReference(raw: unknown): IconValidationResult {
 			size: typeof raw.size === "number" ? raw.size : undefined,
 			color: typeof raw.color === "string" ? raw.color : undefined,
 			strokeWidth: typeof raw.strokeWidth === "number" ? raw.strokeWidth : undefined,
+			...extras.value,
 		},
 	};
+}
+
+type IconExtras = Pick<ValidatedIconReference, "svg" | "url" | "label" | "tint">;
+
+/** Reads and checks the optional drawing / picture / label fields shared by every set. */
+function readIconExtras(
+	raw: Record<string, unknown>,
+): { ok: true; value: IconExtras } | { ok: false; message: string } {
+	const value: IconExtras = {};
+
+	if (raw.svg !== undefined && raw.svg !== null) {
+		if (typeof raw.svg !== "string" || raw.svg.length > ICON_SVG_MAX_CHARS) {
+			return { ok: false, message: "Icon drawing is not valid" };
+		}
+		if (!isCleanSvgMarkup(raw.svg)) {
+			return { ok: false, message: "Icon drawing contains markup that is not allowed" };
+		}
+		value.svg = raw.svg.trim();
+	}
+
+	if (raw.url !== undefined && raw.url !== null) {
+		if (typeof raw.url !== "string") return { ok: false, message: "Icon url must be text" };
+		value.url = raw.url;
+	}
+
+	if (raw.label !== undefined && raw.label !== null) {
+		if (typeof raw.label !== "string" || raw.label.length > ICON_LABEL_MAX_CHARS) {
+			return { ok: false, message: "Icon label is not valid" };
+		}
+		value.label = raw.label;
+	}
+
+	if (raw.tint !== undefined && raw.tint !== null) {
+		if (typeof raw.tint !== "boolean") return { ok: false, message: "Icon tint must be on or off" };
+		value.tint = raw.tint;
+	}
+
+	return { ok: true, value };
 }

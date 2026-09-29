@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import type { DeviceView } from "@shared/block-device-styles";
 import { resolveBlockForSurface } from "@shared/resolve-block-for-surface";
-import { generateBlockAnimationCSS, getEntryAnimationAttributes } from "@shared/animation-utils";
+import { getEntryAnimationAttributes } from "@shared/animation-utils";
 import {
 	getBlockSiblingFlexItemStyles,
 	getBlockStackLayerWrapperStyles,
@@ -38,9 +38,8 @@ function getPublicBlockStyles(block: BlockConfig, deviceView?: DeviceView) {
 	});
 
 	const styles = stripBlockContainerPlacementStyles(resolved.inlineStyles);
+	// Animation CSS for every block (nested ones too) comes from resolveBlockTreeForSurface.
 	const cssParts = [...resolved.cssFragments].filter(Boolean);
-	const animationCSS = block.other?.animation ? generateBlockAnimationCSS(block.id, block.other.animation) : "";
-	if (animationCSS) cssParts.push(animationCSS);
 
 	return {
 		css: cssParts.join("\n"),

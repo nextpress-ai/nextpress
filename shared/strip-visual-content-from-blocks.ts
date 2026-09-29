@@ -1,4 +1,5 @@
 import type { BlockConfig, BlockContent } from "@shared/schema-types";
+import { moveTextAlignToStyles } from "@shared/text-align";
 
 /** Layout CSS keys that must not persist on group `content.data`. */
 export const GROUP_LAYOUT_CONTENT_KEYS = [
@@ -68,20 +69,11 @@ const stripColumnsContent = (block: BlockConfig): BlockConfig => {
 	return { ...block, content: { ...content, data } };
 };
 
-const stripPullquoteContent = (block: BlockConfig): BlockConfig => {
-	if (block.name !== "core/pullquote") return block;
-	const content = block.content;
-	if (!content || typeof content !== "object" || !("kind" in content)) return block;
-	if (content.kind !== "text") return block;
-	const { textAlign: _removed, ...rest } = content as Record<string, unknown>;
-	return { ...block, content: rest as BlockContent };
-};
-
 /** Removes visual CSS fields mistakenly stored on semantic content before save. */
 export const stripVisualContentFromBlock = (block: BlockConfig): BlockConfig => {
 	let next = stripGroupContent(block);
 	next = stripColumnsContent(next);
-	next = stripPullquoteContent(next);
+	next = moveTextAlignToStyles(next);
 	if (next.children?.length) {
 		next = {
 			...next,

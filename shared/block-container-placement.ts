@@ -187,6 +187,24 @@ export function getBlockStackLayerWrapperStyles(block: {
 }
 
 /**
+ * A layer that fills behind the others (a background video, picture or moving fill). `contain:
+ * size` makes it add nothing to the stack's size, so the other layers decide the height and this
+ * one stretches to cover exactly that. Without it a video's own height pushes the section open.
+ */
+export const OVERLAY_FILL_BEHIND_STYLES: CSSProperties = {
+	gridArea: "1 / 1",
+	minWidth: 0,
+	contain: "size",
+	alignSelf: "stretch",
+	justifySelf: "stretch",
+	overflow: "hidden",
+};
+
+/** True when this overlay stack child is marked "Fill behind" (`settings.stackFillBehind`). */
+export const isOverlayFillBehind = (block: { settings?: Record<string, unknown> }): boolean =>
+	block.settings?.stackFillBehind === true;
+
+/**
  * Grid-item placement for a child of an overlay (AB) stack: every child shares grid cell 1/1,
  * so paint order (child order / stackLayer) decides what covers what.
  *
@@ -199,8 +217,9 @@ export function getBlockStackLayerWrapperStyles(block: {
  */
 export function getOverlayChildItemStyles(
 	rawStyles: CSSProperties | Record<string, unknown> | undefined,
-	options?: { heldToBase?: boolean },
+	options?: { heldToBase?: boolean; fillsBehind?: boolean },
 ): CSSProperties {
+	if (options?.fillsBehind) return OVERLAY_FILL_BEHIND_STYLES;
 	const { h, v } = readPlacement(rawStyles);
 	const out: CSSProperties = {
 		gridArea: "1 / 1",

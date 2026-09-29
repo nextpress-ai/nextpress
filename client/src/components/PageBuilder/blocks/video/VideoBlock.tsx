@@ -9,6 +9,7 @@ import {
   buildYouTubeEmbedUrl,
 } from "./video-model";
 import { VideoSettings } from "./video-settings";
+import { readVideoPlayback, videoElementStyle } from "@shared/video-playback";
 
 // ============================================================================
 // RENDERER
@@ -24,14 +25,10 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
     ? content.url
     : '';
 
+  const playback = readVideoPlayback(content);
+  const { controls, autoplay, loop, muted, playsInline, preload } = playback;
   const {
     poster,
-    controls = true,
-    autoplay = false,
-    loop = false,
-    muted = false,
-    playsInline = true,
-    preload = 'metadata',
     align,
     caption,
     anchor,
@@ -118,7 +115,7 @@ function VideoRenderer({ content, styles }: VideoRendererProps) {
         muted={muted}
         playsInline={playsInline}
         preload={preload}
-        style={{ display: 'block', width: '100%', height: styles?.height ? '100%' : 'auto' }}
+        style={videoElementStyle({ hasHeight: Boolean(styles?.height), objectFit: playback.objectFit })}
       >
         {Array.isArray(sources) && sources.map((s: any, i: number) => (
           <source key={s.src || `source-${i}`} src={s.src} type={s.type} />

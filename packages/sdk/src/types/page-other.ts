@@ -1,5 +1,5 @@
-/** Block-level icon set identifiers (icon + button blocks). */
-export const ICON_SET_IDS = ["lucide", "react-icons", "svgl"] as const;
+/** Block-level icon set identifiers (icon + button blocks). `custom` = an icon uploaded to the media library. */
+export const ICON_SET_IDS = ["lucide", "react-icons", "svgl", "custom"] as const;
 export type IconSetId = (typeof ICON_SET_IDS)[number];
 
 /** Page-level default icon set (includes picker mode). */

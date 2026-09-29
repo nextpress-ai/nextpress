@@ -38,10 +38,36 @@ UUID PKs everywhere except sessions.sid.
 ## Conventions
 
 - See `AGENTS.md` (source of truth): factories not classes, `safeTry`, named params `{ name, email }`, plain words over jargon, domain folders with barrel `index.ts`, no cross-domain barrel re-exports.
-- UI work: read `docs/internal/design-system-v2.md` first (if present).
+- UI work: read `docs/design-system.md` first.
 - Boundaries: never start servers, no DB commands, no git, no `.env` — ask owner. Backups to `/backup` before >10-line changes; deletes go to `/trash`.
 
 ## Decision records
+
+### 2026-09-29 — walkableca rebuild and the features it needed (task.md has the full log)
+- **Text alignment has one home: `styles.textAlign`** (`shared/text-align.ts`). `content.textAlign` is only read as an old fallback and is moved into styles on every save (client cleanup + server `validateContentForSave`, which covers SDK/API). Bug it fixed: published headings let content "left" beat a Style-tab centre.
+- **Icons on published pages never load react-icons.**
+  - A react-icons pick saves its SVG drawing (`svg`).
+  - Brand logos (`svgl`) are searched live in the picker; the server copies only the picked file into Media (`POST /api/media/svgl`, svgl.app only, rate limited). Your own uploads are `custom`.
+  - All SVG is cleaned (`sanitizeSvgMarkup`) on upload, logo copy and WP import.
+  - The published HTML block now uses the same cleaning as the editor.
+- **Published pages dropped nested blocks' animation, hover-colour and custom CSS** (read from the top level, which is only the page shell). SSR and the SPA now collect from the whole tree. Device overrides now carry `!important`, since they never beat the inline base styles before.
+- **Motion:** Orbit / Float / Spin loops with speed, Lift / Grow hover, drifting gradient fills, and reduced motion respected everywhere. Popup and accordion follow the design guide §22.
+- **Video:** muted / playsInline reach the published player. Overlay-stack layers can "Fill behind" (`contain: size`). An overlay stack with its own height now stretches its shared cell (pins meant the middle of the content before).
+- **New blocks:**
+  - `core/accordion` / `core/accordion-item` (native details). Two side by side for columns.
+  - `core/popup` (native dialog, `#popup-<slug>` links). Its close handling watches the `open` attribute, because the `close` event can arrive late and left the page unable to scroll.
+- **Header:** `overFirstSection` (zero-height wrapper, see-through until scrolled) and `progress` (reading bar; CSS scroll timeline, with a script fallback).
+- **walkableca v42** (draft, built on the owner's v41):
+  - The header sits over the hero, and "Get updates" opens a popup (logo + Telegram/WhatsApp).
+  - The AI section is an overlay stack: a drifting dark glow, two orbiting logo rings (`min(…, vw)` radius shrinks on phones) and the mark on top.
+  - The FAQ is two accordions. Entry fades and hover lift are added, plus a footer with © 2026.
+  - Built with a script in an app tab using the editor's own block defaults (the Brave window was behind others, so typing and clicks did not reach it). Checked in preview, in a 390px frame and in the editor.
+- **Testing gotcha (Brave behind other windows):** `IntersectionObserver` never fires, lazy images don't load, timers slow down and tabs can freeze. The header's scrolled look and entry fades can't be seen live that way; look with the window in front. A same-origin iframe of the preview at 390px is a good phone check, because resizing a background window may do nothing.
+- **Owner decisions:**
+  - No paid fonts for now (Montserrat + Inter).
+  - FAQ structured data is available but off on walkableca: two accordions would add two FAQ blocks, and search engines expect one per page.
+  - No timed or exit-intent popups.
+
 
 ### 2026-09-28 — Page shell background fills the window
 - Preview and the public page kept the page shell as tall as its blocks. With few blocks the fill stopped halfway and the rest of the window showed the site white. `min-height: 100%` does not grow against a parent that is only `min-height`.

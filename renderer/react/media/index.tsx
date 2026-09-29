@@ -3,6 +3,7 @@ import type { BlockConfig } from "@shared/schema-types";
 import { buildGalleryRenderModel } from "@shared/gallery-render";
 import { sanitizeHtml } from "@shared/sanitize-html";
 import { isYouTubeUrl, buildYouTubeEmbedUrl } from "@shared/video-embed";
+import { readVideoPlayback, videoElementStyle } from "@shared/video-playback";
 import { getRenderProps, parseMediaContent, parseStructuredContent, renderChildBlocks } from "../render-helpers";
 
 /**
@@ -107,10 +108,8 @@ export function VideoBlock(block: BlockConfig) {
 	const url = content.url as string;
 	const alt = (content.alt as string) || "";
 	const caption = content.caption as string | undefined;
-	const autoplay = content.autoplay as boolean | undefined;
-	const loop = content.loop as boolean | undefined;
-	const controls = content.controls as boolean | undefined;
-	const muted = content.muted as boolean | undefined;
+	const playback = readVideoPlayback(block.content);
+	const { autoplay, loop, controls, muted } = playback;
 	const poster = content.poster as string | undefined;
 
 	if (!url) {
@@ -180,15 +179,21 @@ export function VideoBlock(block: BlockConfig) {
 		.filter(Boolean)
 		.join(" ");
 
+	// Same player as the editor canvas. The block's styles and attributes stay on the wrapper only.
 	const video = (
 		<video
 			src={url}
-			controls={controls !== false}
+			controls={controls}
 			autoPlay={autoplay}
 			loop={loop}
+			muted={muted}
+			playsInline={playback.playsInline}
+			preload={playback.preload}
 			poster={poster}
-			style={style}
-			{...attributes}
+			style={videoElementStyle({
+				hasHeight: typeof style.height === "string" && style.height !== "",
+				objectFit: playback.objectFit,
+			})}
 		>
 			{alt && <track kind="captions" label={alt} />}
 		</video>
@@ -196,7 +201,7 @@ export function VideoBlock(block: BlockConfig) {
 
 	if (caption) {
 		return (
-			<figure className={mergedClassName || undefined}>
+			<figure className={mergedClassName || undefined} style={style} {...attributes}>
 				{video}
 				<figcaption className="wp-element-caption">{caption}</figcaption>
 			</figure>

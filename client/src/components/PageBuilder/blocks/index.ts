@@ -1,5 +1,6 @@
 import type { BlockDefinition } from './types';
 import type { BlockConfig } from '@shared/schema-types';
+import { generateBlockId } from '../utils';
 import HeadingBlock from './heading/HeadingBlock';
 import TextBlock from './text/TextBlock';
 import ButtonBlock from './button/ButtonBlock';
@@ -18,6 +19,9 @@ import ContainerBlock from './container/ContainerBlock';
 import StackBlock from './stack/StackBlock';
 import PageShellBlock from './page-shell/PageShellBlock';
 import HeaderBlock from './header/HeaderBlock';
+import AccordionBlock from './accordion/AccordionBlock';
+import AccordionItemBlock from './accordion/AccordionItemBlock';
+import PopupBlock from './popup/PopupBlock';
 import ButtonsBlock from './buttons/ButtonsBlock';
 import GalleryBlock from './gallery/GalleryBlock';
 import CoverBlock from './cover/CoverBlock';
@@ -114,6 +118,9 @@ export const blockRegistry: Record<string, BlockDefinition> = {
   'core/stack': StackBlock,
   'core/page-shell': PageShellBlock,
   'core/header': HeaderBlock,
+  'core/accordion': AccordionBlock,
+  'core/accordion-item': AccordionItemBlock,
+  'core/popup': PopupBlock,
   'core/quote': QuoteBlock,
   'core/list': ListBlock,
   'core/media-text': MediaTextBlock,
@@ -173,7 +180,9 @@ export function getDefaultBlock(type: string, id: string): BlockConfig | null {
 
   // Only add children array for containers
   if (def.isContainer) {
-    block.children = [];
+    block.children = def.defaultChildren
+      ? def.defaultChildren({ parentId: id, newId: generateBlockId })
+      : [];
   }
 
   return block;

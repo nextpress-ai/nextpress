@@ -29,6 +29,8 @@ export interface BlockDefinition {
   isContainer?: boolean; // identifies blocks that can contain children
   handlesOwnChildren?: boolean; // renderer manages its own children
   hasSettings?: boolean; // indicates if the block has settings UI
+  /** Blocks a new container starts with (e.g. an accordion's first items). Ids come from `newId`. */
+  defaultChildren?: (params: { parentId: string; newId: () => string }) => BlockConfig[];
 
   /** Parse persisted BlockContent into the editor model. Unwraps `kind: "structured"` by default. */
   parseContent?: (raw: BlockConfig["content"]) => unknown;

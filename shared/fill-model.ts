@@ -32,12 +32,24 @@ export const IMAGE_TINT_TONES = ["dark", "light"] as const;
 /** One colour on the gradient line, `position` in percent (0 = start, 100 = end). */
 export type GradientStop = { color: string; position: number };
 
+export const FILL_MOTION_MIN_SECONDS = 8;
+export const FILL_MOTION_MAX_SECONDS = 120;
+export const FILL_MOTION_DEFAULT_SECONDS = 30;
+
+/**
+ * A slow drift for a gradient background: the gradient glides in a small circle behind the block,
+ * one lap every `seconds`, keeping the colours exactly as set.
+ */
+export type FillMotion = { kind: "drift"; seconds: number };
+
 export type GradientFill = {
 	kind: "gradient";
 	shape: GradientShape;
 	/** Degrees. Linear: 90 points right, 180 points down. Conic: where the sweep starts. */
 	angle: number;
 	stops: GradientStop[];
+	/** `null` switches a saved drift off (saving deep-merges, so a missing key would keep it). */
+	motion?: FillMotion | null;
 };
 
 /** A darker or lighter wash over the picture so text on top stays readable. `strength` is percent. */
@@ -95,6 +107,14 @@ function readStops(raw: unknown): GradientStop[] {
 		.sort((a, b) => a.position - b.position);
 }
 
+function readMotion(raw: unknown): FillMotion | undefined {
+	if (!isRecord(raw) || raw.kind !== "drift") return undefined;
+	return {
+		kind: "drift",
+		seconds: readNumber(raw.seconds, FILL_MOTION_DEFAULT_SECONDS, FILL_MOTION_MIN_SECONDS, FILL_MOTION_MAX_SECONDS),
+	};
+}
+
 function readTint(raw: unknown): ImageTint | undefined {
 	if (!isRecord(raw)) return undefined;
 	const strength = readNumber(raw.strength, 0, 0, 90);
@@ -107,11 +127,13 @@ export function readFill(raw: unknown): Fill | undefined {
 	if (raw.kind === "gradient") {
 		const stops = readStops(raw.stops);
 		if (stops.length < MIN_GRADIENT_STOPS) return undefined;
+		const motion = readMotion(raw.motion);
 		return {
 			kind: "gradient",
 			shape: pickOption(GRADIENT_SHAPES, raw.shape, "linear"),
 			angle: readNumber(raw.angle, 180, 0, 360),
 			stops,
+			...(motion ? { motion } : {}),
 		};
 	}
 	if (raw.kind === "image") {
@@ -193,8 +215,36 @@ export function buildTextFillCss({ selector, fill }: { selector: string; fill: F
 }
 
 /**
+ * CSS for a drifting gradient background. The gradient sits on a layer just larger than the block
+ * (15% extra each side) drawn behind its content (`isolation` keeps it inside the block), and
+ * glides in a small circle. Keeping the layer close to the block's size keeps the gradient looking
+ * exactly as set — an oversized layer only showed its centre (a dark radial glow read as light
+ * slate). The block clips the layer, and it holds still for people who ask for less motion.
+ */
+export function buildMovingFillCss({ selector, fill }: { selector: string; fill: GradientFill }): string {
+	const seconds = fill.motion?.seconds ?? FILL_MOTION_DEFAULT_SECONDS;
+	const layer = [
+		'content:""',
+		"position:absolute",
+		"inset:-15%",
+		"z-index:-1",
+		"pointer-events:none",
+		`background-image:${fillToImageValue(fill)}`,
+		"background-repeat:no-repeat",
+	].join(";");
+	return [
+		`${selector}{position:relative;isolation:isolate;overflow:hidden}`,
+		`${selector}::before{${layer}}`,
+		// A circle of 8% of the layer: well inside the 15% spare, so no edge ever shows.
+		"@keyframes np-fill-drift{from{transform:rotate(0deg) translateX(8%) rotate(0deg)}to{transform:rotate(360deg) translateX(8%) rotate(-360deg)}}",
+		`@media (prefers-reduced-motion: no-preference){${selector}::before{animation:np-fill-drift ${seconds}s linear infinite}}`,
+	].join("\n");
+}
+
+/**
  * What a block's fills add on top of its other styles. A text fill uses the block's own
  * background to paint the letters, so when there is one the background fill is left out.
+ * A moving gradient is painted by CSS on a layer behind the block, not inline.
  */
 export function resolveBlockFills({ blockId, fills }: { blockId: string; fills: unknown }): {
 	styles: CSSProperties;
@@ -202,5 +252,8 @@ export function resolveBlockFills({ blockId, fills }: { blockId: string; fills: 
 } {
 	const { background, text } = readBlockFills(fills);
 	if (text) return { styles: {}, css: buildTextFillCss({ selector: `.block-${blockId}`, fill: text }) };
+	if (background?.kind === "gradient" && background.motion) {
+		return { styles: {}, css: buildMovingFillCss({ selector: `.block-${blockId}`, fill: background }) };
+	}
 	return { styles: background ? fillToBackgroundStyles(background) : {}, css: "" };
 }

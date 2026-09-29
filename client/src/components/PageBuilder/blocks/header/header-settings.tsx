@@ -31,6 +31,7 @@ import {
 	HEADER_PLACEHOLDERS,
 	nextHeaderActionStyle,
 	normalizeHeaderContent,
+	DEFAULT_HEADER_PROGRESS,
 	readHeaderContent,
 	slotsForHeaderVariant,
 	type HeaderAction,
@@ -41,6 +42,14 @@ import {
 } from "@shared/header-model";
 import { HeaderVariantPicker } from "./header-variant-picker";
 import { HeaderScrollSettings } from "./header-scroll-settings";
+import { PopupLinkPicker } from "../../popup-links";
+
+const PROGRESS_THICKNESS_PRESETS = [
+	{ value: "2px", label: "Thin" },
+	{ value: "3px", label: "MD" },
+	{ value: "4px", label: "LG" },
+	{ value: "6px", label: "XL" },
+];
 
 const nextId = (prefix: string): string =>
 	`${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -101,6 +110,7 @@ export function HeaderSettings({
 		parseContent: readHeaderContent,
 	});
 	const content = normalizeHeaderContent(rawContent);
+	const progress = { ...DEFAULT_HEADER_PROGRESS, ...content.progress };
 	// Show only the groups the chosen layout actually paints.
 	const shows = slotsForHeaderVariant(content.variant);
 
@@ -160,6 +170,19 @@ export function HeaderSettings({
 				<p className="npb-settings-hint-muted mt-1.5 text-xs">
 					This header sits on the page, so the page's side padding already applies.
 				</p>
+				<div className="mt-3 flex items-center justify-between gap-3">
+					<SettingsLabel htmlFor="header-over-first">Sit over the first section</SettingsLabel>
+					<Switch
+						id="header-over-first"
+						checked={content.overFirstSection === true}
+						onCheckedChange={(checked) => updateContent({ overFirstSection: checked })}
+					/>
+				</div>
+				<p className="npb-settings-hint-muted mt-1.5 text-xs">
+					{content.overFirstSection
+						? "The first section runs up under the header. Give it extra top padding so its content clears the header."
+						: "The header takes no room, so a hero's colour or picture shows behind it."}
+				</p>
 			</CollapsibleCard>
 
 			<CollapsibleCard title="Colors" defaultOpen={true}>
@@ -206,6 +229,41 @@ export function HeaderSettings({
 					/>
 				</CollapsibleCard>
 			) : null}
+
+			<CollapsibleCard title="Reading progress" defaultOpen={content.progress?.show === true}>
+				<div className="space-y-4">
+					<div className="flex items-center justify-between gap-3">
+						<div className="min-w-0">
+							<SettingsLabel htmlFor="header-progress">Show reading progress</SettingsLabel>
+							<p className="npb-settings-hint-muted text-xs">A thin bar on the header's edge fills as visitors read. Handy on posts.</p>
+						</div>
+						<Switch
+							id="header-progress"
+							checked={content.progress?.show === true}
+							onCheckedChange={(show) => updateContent({ progress: { ...progress, show } })}
+						/>
+					</div>
+					{content.progress?.show ? (
+						<>
+							<div className="space-y-2">
+								<SettingsLabel>Bar color</SettingsLabel>
+								<ColorField
+									ariaLabel="Reading progress color"
+									targets={[{ property: "color", label: "Bar", styleValue: content.progress.color ?? undefined }]}
+									onChange={(entry: TokenEntry) => updateContent({ progress: { ...progress, color: entry.style } })}
+									onTheme={() => updateContent({ progress: { ...progress, color: null } })}
+								/>
+							</div>
+							<DimensionPresetField
+								label="Thickness"
+								presets={PROGRESS_THICKNESS_PRESETS}
+								value={content.progress.height}
+								onChange={(next) => updateContent({ progress: { ...progress, height: next || "3px" } })}
+							/>
+						</>
+					) : null}
+				</div>
+			</CollapsibleCard>
 
 			<CollapsibleCard title="Brand" defaultOpen={true}>
 				<SettingsChipGroup
@@ -439,6 +497,11 @@ export function HeaderSettings({
 								label="URL"
 								value={item.href}
 								placeholder={HEADER_PLACEHOLDERS.buttonHref}
+								onChange={(href) => updateAction(index, { href })}
+							/>
+							<PopupLinkPicker
+								id={`${item.id}-popup`}
+								value={item.href}
 								onChange={(href) => updateAction(index, { href })}
 							/>
 							<div className="space-y-3">

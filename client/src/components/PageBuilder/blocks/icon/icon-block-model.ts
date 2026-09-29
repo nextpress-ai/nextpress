@@ -39,6 +39,11 @@ function parseIconReference(raw: unknown): IconReference {
     color: typeof r.color === "string" ? r.color : "currentColor",
     strokeWidth: typeof r.strokeWidth === "number" ? r.strokeWidth : 2,
     strokeWidthUnit,
+    // Saved drawing (react-icons) or picture file (brand logo / upload): see shared/icon-drawing.ts.
+    ...(typeof r.svg === "string" ? { svg: r.svg } : {}),
+    ...(typeof r.url === "string" ? { url: r.url } : {}),
+    ...(typeof r.label === "string" ? { label: r.label } : {}),
+    ...(typeof r.tint === "boolean" ? { tint: r.tint } : {}),
   };
 }
 

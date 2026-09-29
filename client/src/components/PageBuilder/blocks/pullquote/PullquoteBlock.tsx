@@ -9,6 +9,7 @@ import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
 import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
+import { readTextAlign } from "@shared/text-align";
 import { sanitizeHtml } from "../../utils";
 
 // ============================================================================
@@ -59,10 +60,7 @@ function PullquoteRenderer({
 }: PullquoteRendererProps) {
   const value = content?.value || '';
   const citation = content?.citation || '';
-  const textAlign =
-    (typeof styles?.textAlign === "string" ? styles.textAlign : undefined) ??
-    content?.textAlign ??
-    "center";
+  const textAlign = readTextAlign({ styles, content }) ?? "center";
   
   return (
     <BlockShell

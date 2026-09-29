@@ -11,6 +11,7 @@ import {
 import {
 	generateBlockAnimationCSS,
 	getEntryAnimationBaseCSS,
+	usesAnimateCss,
 } from "@shared/animation-utils";
 import { collectBlockModifierCSS } from "@shared/token-resolution";
 import { collectDeviceStylesCSS } from "@shared/collect-device-styles-css";
@@ -32,6 +33,11 @@ import { resolveVisitorDesign } from "@shared/theme-to-page-design";
 import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
 import { buildScrollbarCss } from "@shared/scrollbar-model";
 import { collectBlockExtraCss, treeHasScrollingHeader } from "@shared/collect-block-extra-css";
+import { POPUP_BLOCK_NAME } from "@shared/popup-model";
+
+/** Every block in the tree, parents before children. */
+const listAllBlocks = (list: BlockConfig[]): BlockConfig[] =>
+	list.flatMap((block) => [block, ...listAllBlocks(block.children ?? [])]);
 
 type PublishedDocument = {
 	id: string;
@@ -70,14 +76,18 @@ export function buildPublishedPageHtml({
 		leftoverDesign,
 	});
 	const blockContentHtml = renderBlocksToHtml(blocks);
+	// Pages always sit inside one page shell, so per-block CSS must be read from the whole tree —
+	// reading only the top level silently dropped every nested block's animation, hover colours
+	// and custom CSS on published pages.
+	const allBlocks = listAllBlocks(blocks);
 
-	const allCustomCss = collectBlockCustomCss(blocks);
-	const animationCssRules = blocks
+	const allCustomCss = collectBlockCustomCss(allBlocks);
+	const animationCssRules = allBlocks
 		.filter((b) => b.other?.animation)
 		.map((b) => generateBlockAnimationCSS(b.id, b.other!.animation!))
 		.filter(Boolean)
 		.join("\n");
-	const modifierCssRules = blocks
+	const modifierCssRules = allBlocks
 		.map((b) =>
 			collectBlockModifierCSS(b, {
 				modifierSelector:
@@ -90,8 +100,8 @@ export function buildPublishedPageHtml({
 	const deviceStylesCss = collectDeviceStylesCSS(blocks);
 	const extraCss = collectBlockExtraCss(blocks);
 
-	const hasAnimations = blocks.some((b) => b.other?.animation);
-	const hasEntryAnimations = blocks.some((b) => b.other?.animation?.entry);
+	const needsAnimateCss = allBlocks.some((b) => usesAnimateCss(b.other?.animation));
+	const hasEntryAnimations = allBlocks.some((b) => b.other?.animation?.entry);
 
 	const pageOther = pageOtherEarly;
 	const design = resolveVisitorDesign({
@@ -109,7 +119,7 @@ export function buildPublishedPageHtml({
 	if (modifierCssRules) headParts.push(`<style>${modifierCssRules}</style>`);
 	if (deviceStylesCss) headParts.push(`<style>${deviceStylesCss}</style>`);
 	if (extraCss) headParts.push(`<style>${extraCss}</style>`);
-	if (hasAnimations) headParts.push(`<link rel="stylesheet" href="/vendor/animate.min.css">`);
+	if (needsAnimateCss) headParts.push(`<link rel="stylesheet" href="/vendor/animate.min.css">`);
 	if (hasEntryAnimations) {
 		headParts.push(`<style>${getEntryAnimationBaseCSS()}</style>`);
 	}
@@ -126,6 +136,9 @@ export function buildPublishedPageHtml({
 	const blockJsScripts = collectBlockJsScripts(blocks);
 	if (blockJsScripts) {
 		bodyParts.push(blockJsScripts);
+	}
+	if (allBlocks.some((b) => b.name === POPUP_BLOCK_NAME)) {
+		bodyParts.push(`<script src="/vendor/popup.js"></script>`);
 	}
 	if (documentHasBlockName({ blocks, name: "post/list" })) {
 		bodyParts.push(`<script src="/vendor/post-list-overlay.js"></script>`);

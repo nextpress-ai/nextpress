@@ -40,6 +40,9 @@ export const entryPresets: AnimationPreset[] = [
 
 /** Hover presets — attention seekers that play on mouse hover */
 export const hoverPresets: AnimationPreset[] = [
+  // Nextpress looks: a short ease in and out, only on devices with a mouse.
+  { name: "np-lift", label: "Lift" },
+  { name: "np-grow", label: "Grow" },
   { name: "pulse", label: "Pulse" },
   { name: "rubberBand", label: "Rubber Band" },
   { name: "tada", label: "Tada" },
@@ -57,6 +60,10 @@ export const hoverPresets: AnimationPreset[] = [
 
 /** Loop presets — continuous/repeating attention animations */
 export const loopPresets: AnimationPreset[] = [
+  // Nextpress moves: slow and smooth, with speed (and radius for Orbit) in the panel.
+  { name: "np-orbit", label: "Orbit" },
+  { name: "np-float", label: "Float" },
+  { name: "np-spin", label: "Spin" },
   { name: "pulse", label: "Pulse" },
   { name: "bounce", label: "Bounce" },
   { name: "flash", label: "Flash" },
@@ -71,6 +78,9 @@ export const loopPresets: AnimationPreset[] = [
 ]
 
 export { getEntryAnimationAttributes, generateBlockAnimationCSS, generateHoverAnimationCSS, generateLoopAnimationCSS } from "@shared/animation-utils";
+
+/** True for Nextpress's own moves and looks (their preview comes from the block's CSS, not Animate.css). */
+export const isNextpressMotion = (name: string): boolean => name.startsWith("np-");
 
 
 

@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import type { BlockContent, TokenEntry } from "./schema-types.js";
 import { BORDER_RADIUS_PRESETS, isCssLength } from "./dimension-presets.js";
 import { fillToBackgroundStyles, readFill, type Fill } from "./fill-model.js";
-import { safeCssColor } from "./css-safe.js";
+import { safeCssColor, safeCssLength } from "./css-safe.js";
 import { unwrapStructured } from "./page-shell-model.js";
 import { readHeaderScrollLook, type HeaderScrollLook } from "./header-scroll-model.js";
 
@@ -218,7 +218,35 @@ export type HeaderContent = {
 	textColor?: TokenEntry;
 	/** A gradient or picture behind the bar. Paints over `backgroundColor` when set. */
 	backgroundFill?: Fill;
+	/**
+	 * "Sit over the first section": the header takes no room, so the first section (a hero's
+	 * colour or picture) runs up under it. With no colour of its own the bar is see-through
+	 * until the scrolled look takes over. Off by default.
+	 */
+	overFirstSection?: boolean;
+	/** A thin bar on the header's bottom edge that fills as the page is read. Off by default. */
+	progress?: HeaderProgress;
 };
+
+export type HeaderProgress = {
+	show: boolean;
+	/** Bar colour; the page accent when unset. `null` clears a saved colour (saves deep-merge). */
+	color?: string | null;
+	/** Thickness as a CSS length. */
+	height: string;
+};
+
+export const DEFAULT_HEADER_PROGRESS: HeaderProgress = { show: false, height: "3px" };
+
+function readHeaderProgress(raw: unknown): HeaderProgress {
+	if (!raw || typeof raw !== "object") return { ...DEFAULT_HEADER_PROGRESS };
+	const value = raw as Record<string, unknown>;
+	return {
+		show: value.show === true,
+		color: safeCssColor(value.color),
+		height: safeCssLength(value.height) ?? DEFAULT_HEADER_PROGRESS.height,
+	};
+}
 
 export const HEADER_VARIANT_OPTIONS: readonly {
 	value: HeaderVariant;
@@ -535,6 +563,8 @@ export function readHeaderContent(content: BlockContent | undefined): HeaderCont
 		backgroundColor: readHeaderActionColor(data.backgroundColor),
 		textColor: readHeaderActionColor(data.textColor),
 		backgroundFill: readFill(data.backgroundFill),
+		overFirstSection: data.overFirstSection === true,
+		progress: readHeaderProgress(data.progress),
 	};
 }
 
@@ -572,9 +602,34 @@ export function buildHeaderLookCss({
 	blockId: string;
 	content: HeaderContent;
 }): string {
-	const decls = toCssDecls(headerBarLookStyles(content));
-	if (!decls) return "";
-	return `.block-${blockId} .wp-block-header{${decls}}`;
+	const bar = `.block-${blockId} .wp-block-header`;
+	const look = headerBarLookStyles(content);
+	// Over the first section with no colour of its own: see-through, so the section shows.
+	const seeThrough = content.overFirstSection && !look.backgroundColor && !look.backgroundImage;
+	const decls = toCssDecls(seeThrough ? { ...look, backgroundColor: "transparent" } : look);
+	return [decls ? `${bar}{${decls}}` : "", buildHeaderProgressCss({ bar, progress: content.progress })]
+		.filter(Boolean)
+		.join("\n");
+}
+
+/**
+ * The reading-progress bar. Where the browser can tie an animation to page scrolling, CSS alone
+ * fills it; elsewhere `--np-read-progress` is set by the header script (published) or the
+ * header hook (app). On the editor canvas it follows the canvas scroll the same way.
+ */
+export function buildHeaderProgressCss({ bar, progress }: { bar: string; progress: HeaderProgress | undefined }): string {
+	if (!progress?.show) return "";
+	const color = progress.color ?? "var(--npb-accent, #2563eb)";
+	return [
+		`${bar} .wp-block-header__progress{position:absolute;left:0;right:0;bottom:0;height:${progress.height};background:${color};transform-origin:0 50%;transform:scaleX(var(--np-read-progress,0));pointer-events:none;z-index:1}`,
+		"@keyframes np-read-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}",
+		`@supports (animation-timeline: scroll()){${bar} .wp-block-header__progress{animation:np-read-progress linear both;animation-timeline:scroll(root)}}`,
+	].join("\n");
+}
+
+/** True when a header needs the header script (a scrolled look, or a progress bar to fill). */
+export function headerNeedsScript(content: HeaderContent): boolean {
+	return (content.sticky && content.onScroll !== undefined) || content.progress?.show === true;
 }
 
 export function visibleHeaderSlots(content: HeaderContent): {
@@ -639,10 +694,19 @@ export function headerOverlayPaintStyles(block: { name?: string }): {
  * child of the tall page column — is the element that has to stick.
  */
 export function headerFloatWrapperStyles(block: { name?: string; content?: BlockContent }): {
-	position?: "sticky";
+	position?: "sticky" | "relative";
 	top?: number;
 	zIndex?: number;
+	height?: number;
+	overflow?: "visible";
 } {
 	if (block.name !== HEADER_BLOCK_NAME) return {};
-	return readHeaderContent(block.content).sticky ? { position: "sticky", top: 0, zIndex: 40 } : {};
+	const content = readHeaderContent(block.content);
+	const float = content.sticky ? { position: "sticky" as const, top: 0, zIndex: 40 } : {};
+	// "Sit over the first section": a zero-height wrapper takes no room; the header hangs out of
+	// it over whatever comes next. It still floats when "Float on scroll" is on.
+	if (content.overFirstSection) {
+		return { position: "relative", zIndex: 40, ...float, height: 0, overflow: "visible" };
+	}
+	return float;
 }

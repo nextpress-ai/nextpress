@@ -11,6 +11,8 @@ import { pageEnterVariants, MOTION_PAGE } from '@/lib/motion-presets';
 import type { BlockConfig } from "@shared/schema-types";
 import { getBlockSiblingFlexItemStyles, PAGE_BLOCK_STACK_GAP } from "@shared/block-container-placement";
 import { blockRegistry } from './blocks';
+// Applies the saved "Pause motion on the canvas" choice as soon as the canvas loads.
+import '@/lib/canvas-motion-pause';
 
 export function BuilderCanvas({
   blocks,

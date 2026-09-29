@@ -11,6 +11,35 @@ import {
   parseContentListSort,
   toModelOrderBy,
 } from '@shared/content-list-query';
+import { sanitizeSvgMarkup, isSvglFileUrl, SVG_FILE_MAX_BYTES } from '@shared/icon-drawing';
+import { sideloadRemoteImage } from '../utils/sideload-remote-image';
+import { createRateLimiter } from '../utils/rate-limit';
+
+const SVG_MIME_TYPES = new Set(['image/svg+xml', 'image/svg']);
+
+/** Thrown for uploads we refuse on purpose; carries the status and the message people see. */
+type RefusedUpload = Error & { statusCode: number; publicMessage: string };
+
+const refuseUpload = ({ publicMessage, cause }: { publicMessage: string; cause: string }): RefusedUpload =>
+  Object.assign(new Error(cause), { statusCode: 400, publicMessage });
+
+const isRefusedUpload = (err: Error): err is RefusedUpload =>
+  typeof (err as Partial<RefusedUpload>).publicMessage === 'string';
+
+/**
+ * Rewrites an uploaded SVG without scripts or outside links. WHY: an SVG in /uploads opened on its
+ * own runs on this site's address, so a hostile drawing could act as the signed-in person.
+ */
+async function cleanUploadedSvg({ filePath }: { filePath: string }): Promise<{ ok: true; size: number } | { ok: false; message: string }> {
+  const raw = await fs.readFile(filePath, 'utf8');
+  if (Buffer.byteLength(raw, 'utf8') > SVG_FILE_MAX_BYTES) {
+    return { ok: false, message: `SVG larger than ${SVG_FILE_MAX_BYTES} bytes` };
+  }
+  const cleaned = sanitizeSvgMarkup(raw);
+  if (!cleaned.ok) return { ok: false, message: cleaned.message };
+  await fs.writeFile(filePath, cleaned.svg, 'utf8');
+  return { ok: true, size: Buffer.byteLength(cleaned.svg, 'utf8') };
+}
 
 /**
  * Creates media routes for file upload and management.
@@ -20,12 +49,14 @@ import {
  * Endpoints:
  * - GET    /api/media        - List media with pagination and mime_type filter
  * - GET    /api/media/:id    - Get single media item
- * - POST   /api/media        - Upload file (auth required, fires wp_handle_upload hook)
+ * - POST   /api/media        - Upload file (auth required, fires wp_handle_upload hook; SVGs are cleaned)
+ * - POST   /api/media/svgl   - Save one svgl.app brand logo into the library (auth required, rate limited)
  * - PUT    /api/media/:id    - Update media metadata (auth required, fires wp_update_attachment_metadata hook)
  * - DELETE /api/media/:id    - Delete media and file (auth required, fires delete_attachment hook)
  */
 export function createMediaRoutes(deps: Deps): Router {
   const router = Router();
+  const checkLogoRateLimit = createRateLimiter();
   const {
     models,
     hooks,
@@ -137,6 +168,21 @@ export function createMediaRoutes(deps: Deps): Router {
 
         const { alt, caption, description } = req.body;
 
+        let fileSize = file.size;
+        if (SVG_MIME_TYPES.has(file.mimetype)) {
+          const cleaned = await cleanUploadedSvg({ filePath: path.join(uploadDir, file.filename) });
+          if (!cleaned.ok) {
+            await fs.unlink(path.join(uploadDir, file.filename)).catch((unlinkError) =>
+              console.error('[media] Could not remove refused SVG', { file: file.filename, userId, unlinkError }),
+            );
+            throw refuseUpload({
+              publicMessage: "This SVG can't be used. Export it again as a plain SVG and try once more.",
+              cause: `SVG refused for user ${userId}, file ${file.originalname}: ${cleaned.message}`,
+            });
+          }
+          fileSize = cleaned.size;
+        }
+
         // Create URL for the uploaded file
         const fileUrl = `/uploads/${file.filename}`;
 
@@ -144,7 +190,7 @@ export function createMediaRoutes(deps: Deps): Router {
           filename: file.filename,
           originalName: file.originalname,
           mimeType: file.mimetype,
-          size: file.size,
+          size: fileSize,
           url: fileUrl,
           alt: alt || '',
           caption: caption || '',
@@ -174,10 +220,81 @@ export function createMediaRoutes(deps: Deps): Router {
 
       if (err) {
         console.error('Error uploading media:', err);
+        if (isRefusedUpload(err)) {
+          return res.status(err.statusCode).json({ message: err.publicMessage });
+        }
         return res.status(500).json({ message: 'Failed to upload media' });
       }
 
       res.status(201).json(result);
+    })
+  );
+
+  // POST /api/media/svgl - Save one brand logo from svgl.app into the media library (auth required)
+  router.post(
+    '/svgl',
+    requireAuth,
+    asyncHandler(async (req: any, res) => {
+      const userId = authService.getCurrentUserId(req);
+      if (!userId) return res.status(401).json({ message: 'Sign in to add brand logos.' });
+
+      const url = typeof req.body?.url === 'string' ? req.body.url.trim() : '';
+      const title = typeof req.body?.title === 'string' ? req.body.title.trim().slice(0, 120) : '';
+      if (!isSvglFileUrl(url)) {
+        return res.status(400).json({ message: 'That logo could not be found. Pick it again from the list.' });
+      }
+      if (!checkLogoRateLimit({ key: `svgl:${userId}`, limit: 30, windowMs: 60_000 })) {
+        return res.status(429).json({ message: 'Too many logos at once. Wait a minute and try again.' });
+      }
+
+      const { err, result } = await safeTryAsync(async () => {
+        const site = await resolveRequestSite({ models, userId, siteId: readRequestSiteId(req) });
+        // One copy per logo per site: picking the same logo again reuses it.
+        const originalName = `svgl-${path.posix.basename(new URL(url).pathname)}`;
+        const [existing] = await models.media.findManyWhere(
+          [
+            { where: 'siteId', equals: site.id },
+            { where: 'originalName', equals: originalName },
+          ],
+          { limit: 1 },
+        );
+        if (existing) return { status: 200, item: existing };
+
+        const saved = await sideloadRemoteImage({
+          imageUrl: url,
+          uploadDir,
+          allowedMimeTypes: ['image/svg+xml'],
+          maxSize: SVG_FILE_MAX_BYTES,
+          filenamePrefix: 'svgl',
+        });
+        if (!saved.ok) {
+          throw Object.assign(new Error(`svgl download failed for ${url}: ${saved.message}`), {
+            statusCode: 502,
+            publicMessage: "That logo couldn't be downloaded right now. Try again in a moment.",
+          });
+        }
+
+        const item = await models.media.create({
+          authorId: String(userId),
+          siteId: String(site.id),
+          filename: saved.filename,
+          originalName,
+          mimeType: saved.mimeType,
+          size: saved.size,
+          url: saved.url,
+          alt: title,
+          description: `Brand logo from svgl.app (${url})`,
+        });
+        hooks.doAction('wp_handle_upload', item);
+        return { status: 201, item };
+      });
+
+      if (err || !result) {
+        console.error('[media] Brand logo save failed', { atFunction: 'POST /api/media/svgl', userId, url, err });
+        if (err && isRefusedUpload(err)) return res.status(err.statusCode).json({ message: err.publicMessage });
+        return res.status(500).json({ message: "That logo couldn't be saved. Try again in a moment." });
+      }
+      return res.status(result.status).json(result.item);
     })
   );
 

@@ -4,6 +4,7 @@ import { asyncHandler } from "./shared/async-handler";
 import { safeTryAsync } from "../utils";
 import { validateExternalUrl } from "../utils/validate-external-url";
 import { sideloadRemoteImage } from "../utils/sideload-remote-image";
+import { createRateLimiter } from "../utils/rate-limit";
 import { enrichPostForApi } from "@shared/posts/post-other";
 import {
 	createWordPressImporter,
@@ -15,25 +16,7 @@ import { resolveRequestSite } from "./shared/resolve-request-site";
 
 const importer = createWordPressImporter();
 
-const rateBuckets = new Map<string, { count: number; resetAt: number }>();
-
-const checkRateLimit = (params: {
-	key: string;
-	limit: number;
-	windowMs: number;
-}): boolean => {
-	const now = Date.now();
-	const bucket = rateBuckets.get(params.key);
-
-	if (!bucket || now > bucket.resetAt) {
-		rateBuckets.set(params.key, { count: 1, resetAt: now + params.windowMs });
-		return true;
-	}
-
-	if (bucket.count >= params.limit) return false;
-	bucket.count += 1;
-	return true;
-};
+const checkRateLimit = createRateLimiter();
 
 const parseFeaturedImageMode = (value: unknown): FeaturedImageMode =>
 	value === "copy" ? "copy" : "reference";

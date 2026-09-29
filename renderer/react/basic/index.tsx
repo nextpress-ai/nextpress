@@ -5,10 +5,17 @@ import { splitButtonBlockStyles, mapButtonTextAlignToJustifyContent } from "@sha
 import { getRenderProps, parseTextContent, parseStructuredContent } from "../render-helpers";
 import { usePageColumnInset } from "@shared/page-column-context";
 import { PROSE_MAX_WIDTH } from "@shared/responsive-scales";
+import { readTextAlign } from "@shared/text-align";
 import {
 	effectiveIconGlyphColor,
 } from "@shared/icon-block-visuals";
 import { LucideGlyph } from "../shared/lucide-glyph";
+import {
+	IconDrawingView,
+	hasIconDrawing,
+	readIconDrawingSource,
+	type IconDrawingInput,
+} from "@shared/icon-drawing-view";
 
 // ─── SSR Icon Placeholder ──────────────────────────────────────────────────
 // Renders a lightweight inline SVG placeholder with data attributes for
@@ -45,6 +52,18 @@ function renderSsrIcon(icon: IconData, overrides?: { size?: number; color?: stri
 	const sizeUnit = typeof icon.sizeUnit === "string" ? icon.sizeUnit : undefined;
 	const strokeUnit = typeof icon.strokeWidthUnit === "string" ? icon.strokeWidthUnit : undefined;
 	const unit = sizeUnit || "px";
+
+	// react-icons paint their saved drawing; brand logos and uploads their picture file.
+	const drawing = readIconDrawingSource(icon as IconDrawingInput);
+	if (hasIconDrawing(drawing)) {
+		return (
+			<IconDrawingView
+				icon={drawing}
+				size={unit === "px" ? resolvedSize : "100%"}
+				color={resolvedColor}
+			/>
+		);
+	}
 	const svgW = unit === "px" ? resolvedSize : "100%";
 	const svgH = svgW;
 	const strokeU = strokeUnit || "px";
@@ -99,7 +118,7 @@ export function HeadingBlock(block: BlockConfig) {
 	const level = (content.level as number) || 2;
 	const text = (content.value as string) || "";
 	const anchor = content.anchor as string | undefined;
-	const textAlign = content.textAlign as string | undefined;
+	const textAlign = readTextAlign({ styles: style, content: block.content });
 
 	const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 	const mergedClassName = ["wp-block-heading", className]
@@ -146,12 +165,8 @@ export function ParagraphBlock(block: BlockConfig) {
 	const inPageColumn = usePageColumnInset() != null;
 	const content = parseTextContent(block.content);
 	const text = (content.value as string) || "";
-	const textAlign = content.textAlign as string | undefined;
 	const dropCap = content.dropCap as boolean | undefined;
-
-	const effectiveTextAlign =
-		(style?.textAlign as React.CSSProperties["textAlign"] | undefined) ??
-		textAlign;
+	const effectiveTextAlign = readTextAlign({ styles: style, content: block.content });
 
 	const mergedClassName = [
 		"wp-block-paragraph",

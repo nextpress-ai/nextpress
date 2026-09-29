@@ -12,6 +12,7 @@ import {
 	getBlockSiblingFlexItemStyles,
 	getBlockStackLayerWrapperStyles,
 	getOverlayChildItemStyles,
+	isOverlayFillBehind,
 	getContainerChildrenStackStyle,
 	getContainerOuterShellStyle,
 	getContainerSiblingStackDirection,
@@ -221,6 +222,7 @@ export function StackBlock(block: BlockConfig) {
 			? {
 					...getOverlayChildItemStyles(child.styles, {
 						heldToBase: overlayHugsBase && child !== childBlocks[0],
+						fillsBehind: isOverlayFillBehind(child),
 					}),
 					...getBlockStackLayerWrapperStyles(child),
 					...headerOverlayPaintStyles(child),

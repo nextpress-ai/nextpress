@@ -34,14 +34,15 @@ describe('Shared Animation Utils', () => {
   });
 
   it('generateHoverAnimationCSS generates correct rule', () => {
+    // Wrapped so it never runs for visitors who ask their device for less motion.
     expect(generateHoverAnimationCSS('x', { name: 'wobble' })).toBe(
-      '.block-x:hover { animation: wobble 1s both; }'
+      '@media (prefers-reduced-motion: no-preference){.block-x:hover{animation:wobble 1s both}}'
     );
   });
 
   it('generateLoopAnimationCSS scopes to np-entry-played when hasEntry', () => {
     expect(generateLoopAnimationCSS('y', { name: 'swing' }, true)).toBe(
-      '.block-y.np-entry-played { animation: swing 1s infinite both; }'
+      '@media (prefers-reduced-motion: no-preference){.block-y.np-entry-played{animation:swing 1000ms ease infinite normal both}}'
     );
   });
 
@@ -53,7 +54,7 @@ describe('Shared Animation Utils', () => {
     const css = generateBlockAnimationCSS('abc', animation, {
       scopeLoopAfterEntry: false,
     });
-    expect(css).toContain('.block-abc { animation: heartBeat 1s infinite both; }');
+    expect(css).toContain('.block-abc{animation:heartBeat 1000ms ease infinite normal both}');
     expect(css).not.toContain('.np-entry-played');
   });
 });

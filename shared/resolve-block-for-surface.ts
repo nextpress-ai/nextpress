@@ -5,7 +5,7 @@ import { collectBlockDeviceStylesCSS } from "./collect-device-styles-css.js";
 import { applyResponsiveDefaults, type ResponsiveWarning } from "./render-defaults.js";
 import { deviceViewToTier, type ViewportTier } from "./responsive-scales.js";
 import { resolveTokenMapForSSR } from "./token-resolution.js";
-import { getEntryAnimationAttributes } from "./animation-utils.js";
+import { generateBlockAnimationCSS, getEntryAnimationAttributes } from "./animation-utils.js";
 import { resolveBlockFills } from "./fill-model.js";
 import { blockExtraCss } from "./block-extra-css.js";
 
@@ -104,7 +104,10 @@ export function resolveBlockForSurface(params: ResolveBlockForSurfaceParams): Re
 	};
 }
 
-/** Walks block tree and aggregates CSS fragments + warnings. */
+/**
+ * Walks block tree and aggregates CSS fragments + warnings, including each block's hover / loop
+ * animation CSS (nested blocks are drawn by their parents, so per-block renderers never see them).
+ */
 export function resolveBlockTreeForSurface({
 	blocks,
 	surface,
@@ -121,6 +124,7 @@ export function resolveBlockTreeForSurface({
 			(acc, block) => {
 				const resolved = resolveBlockForSurface({ block, surface, deviceView, viewportTier });
 				acc.css.push(...resolved.cssFragments);
+				if (block.other?.animation) acc.css.push(generateBlockAnimationCSS(block.id, block.other.animation));
 				acc.warnings.push(...resolved.warnings);
 				if (block.children?.length) {
 					const child = walk(block.children);

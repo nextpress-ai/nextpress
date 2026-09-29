@@ -215,8 +215,61 @@ const mapElement = (el: HTMLElement, opts: HtmlToBlocksOptions): BlockConfig[] =
 	return leaf ? [leaf] : [];
 };
 
-const mapElements = (elements: HTMLElement[], opts: HtmlToBlocksOptions): BlockConfig[] =>
-	elements.flatMap((el) => mapElement(el, opts));
+const isDetails = (el: HTMLElement): boolean => el.rawTagName.toLowerCase() === "details";
+
+const withParent = (block: BlockConfig, parentId: string): BlockConfig => ({ ...block, parentId });
+
+/**
+ * WordPress Details blocks (`<details><summary>`) become one Accordion per run of neighbours.
+ * Each keeps its open state, and several may be open at once, as they were on WordPress.
+ */
+const buildAccordionFromDetails = (run: HTMLElement[], opts: HtmlToBlocksOptions): BlockConfig => {
+	const accordion: BlockConfig = {
+		...baseBlock("core/accordion", "Accordion", "layout", {
+			kind: "structured",
+			data: { openMode: "many", firstOpen: false },
+		}),
+		type: "container",
+	};
+	accordion.children = run.map((details) => {
+		const summary = childElements(details).find((child) => child.rawTagName.toLowerCase() === "summary");
+		const item: BlockConfig = {
+			...baseBlock("core/accordion-item", "Accordion item", "layout", {
+				kind: "structured",
+				data: { title: (summary?.text ?? "").trim() || "Details", open: details.hasAttribute("open") },
+			}),
+			type: "container",
+			parentId: accordion.id,
+		};
+		const answer = childElements(details).filter((child) => child !== summary);
+		item.children = mapElements(answer, opts).map((child) => withParent(child, item.id));
+		return item;
+	});
+	return accordion;
+};
+
+/** Maps nodes in order; neighbouring Details (blank text between them allowed) become one accordion. */
+const mapNodes = (nodes: Node[], opts: HtmlToBlocksOptions): BlockConfig[] => {
+	const out: BlockConfig[] = [];
+	let run: HTMLElement[] = [];
+	const flush = () => {
+		if (run.length) out.push(buildAccordionFromDetails(run, opts));
+		run = [];
+	};
+	for (const node of nodes) {
+		if (isElement(node) && isDetails(node)) {
+			run.push(node);
+			continue;
+		}
+		if (!isElement(node) && !(node.text || "").trim()) continue;
+		flush();
+		out.push(...mapNode(node, opts));
+	}
+	flush();
+	return out;
+};
+
+const mapElements = (elements: HTMLElement[], opts: HtmlToBlocksOptions): BlockConfig[] => mapNodes(elements, opts);
 
 const mapNode = (node: Node, opts: HtmlToBlocksOptions): BlockConfig[] => {
 	if (isElement(node)) return mapElement(node, opts);
@@ -241,7 +294,7 @@ export const htmlToBlocks = (
 	if (!html || !html.trim()) return [];
 
 	const root = parse(html, { comment: false });
-	const blocks = root.childNodes.flatMap((node) => mapNode(node, opts));
+	const blocks = mapNodes(root.childNodes, opts);
 
 	if (blocks.length === 0) {
 		return root.text.trim() ? [buildHtmlFallback(html)] : [];

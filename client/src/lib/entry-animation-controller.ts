@@ -34,6 +34,12 @@ function playEntryAnimation(el: HTMLElement): void {
 	const name = el.getAttribute("data-np-entry");
 	if (!name || el.classList.contains(ENTRY_ANIMATION_PLAYED_CLASS)) return;
 
+	// Less motion asked for: show the block as it is, without the entrance (same as the published script).
+	if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+		el.classList.add(ENTRY_ANIMATION_PLAYED_CLASS);
+		return;
+	}
+
 	const duration = Number(el.getAttribute("data-np-entry-duration") || ENTRY_ANIMATION_DEFAULTS.duration);
 	const delay = Number(el.getAttribute("data-np-entry-delay") || 0);
 

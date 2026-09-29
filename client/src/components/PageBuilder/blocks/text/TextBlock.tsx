@@ -10,12 +10,14 @@ import { BlockShell } from "../shared/block-shell";
 import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
 import { sanitizeHtml } from "@shared/sanitize-html";
+import { readTextAlign } from "@shared/text-align";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 type TextBlockContent = BlockContent & {
+  /** Old saves only. Alignment lives on `styles.textAlign` (shared/text-align.ts). */
   textAlign?: 'left' | 'center' | 'right' | 'justify';
   align?: 'left' | 'center' | 'right' | 'justify';
   anchor?: string;
@@ -26,7 +28,6 @@ type TextBlockContent = BlockContent & {
 const DEFAULT_CONTENT: TextBlockContent = {
   kind: 'text',
   value: 'Add your text content here. You can edit this text and customize its appearance.',
-  textAlign: 'left',
   dropCap: false,
   anchor: '',
   className: '',
@@ -50,12 +51,9 @@ function TextRenderer({
   onUpdateContent,
 }: TextRendererProps) {
   const textContent = content?.kind === "text" ? content.value : "";
-  // Prefer block-level style controls from the sidebar.
-  // `content.textAlign` exists for legacy/compat, but it should not override user styles.
   const align =
-    (styles?.textAlign as string | undefined) ||
-    (content?.textAlign as string) ||
-    (content?.align as string);
+    readTextAlign({ styles, content }) ||
+    (content?.align as string | undefined);
   const anchor = content?.anchor as string | undefined;
   const extraClass = (content?.className as string | undefined) || "";
   const dropCap = Boolean(content?.dropCap);

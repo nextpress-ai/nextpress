@@ -23,9 +23,12 @@ import {
 } from "@/lib/icon-indexes/types";
 import { LUCIDE_ICONS } from "@/lib/icon-indexes/lucide";
 import { REACT_ICONS_SETS } from "@/lib/icon-indexes/react-icons";
-import { SVGL_ICONS } from "@/lib/icon-indexes/svgl";
 import { searchIconNames } from "@/lib/icon-indexes/fuzzy-icon-search";
 import { IconRenderer } from "../blocks/shared/IconRenderer";
+import { withIconDrawing } from "@/lib/icon-drawing-capture";
+import { BrandLogoGrid } from "./brand-logo-grid";
+import { YourIconsGrid } from "./your-icons-grid";
+import { getInitialSearch, getStorageKey, isSameIcon } from "./icon-picker-helpers";
 import {
   NPB_ICON_REFERENCE_ROW_MAX_CHARS,
   truncateWithEllipsis,
@@ -41,6 +44,8 @@ type IconSetOption = {
   iconSet: IconReference["iconSet"];
   prefix?: string;
   names: readonly string[];
+  /** `names`: a built-in list; `brands`: live svgl search; `uploads`: your media library. */
+  kind: "names" | "brands" | "uploads";
 };
 
 const RESULT_LIMIT = 72;
@@ -52,6 +57,7 @@ const ICON_SET_OPTIONS: IconSetOption[] = [
     label: "Lucide",
     iconSet: "lucide",
     names: LUCIDE_ICONS,
+    kind: "names",
   },
   ...ICON_SETS.filter((set) => set.id === "react-icons").map((set) => ({
     storageKey: getIconSetStorageKey(set),
@@ -59,13 +65,10 @@ const ICON_SET_OPTIONS: IconSetOption[] = [
     iconSet: "react-icons" as const,
     prefix: set.prefix,
     names: REACT_ICONS_SETS[set.prefix] ?? [],
+    kind: "names" as const,
   })),
-  {
-    storageKey: "svgl",
-    label: "Brands",
-    iconSet: "svgl",
-    names: SVGL_ICONS,
-  },
+  { storageKey: "svgl", label: "Brand logos", iconSet: "svgl", names: [], kind: "brands" },
+  { storageKey: "custom", label: "Your icons", iconSet: "custom", names: [], kind: "uploads" },
 ];
 
 // ============================================================================
@@ -142,18 +145,29 @@ export function IconPickerDialog({
 
   const handleSelect = useCallback(
     (iconName: string) => {
-      const ref: IconReference = {
+      // react-icons keep their drawing so published pages can paint them without the library.
+      const ref = withIconDrawing({
         iconSet: activeSet.iconSet,
         iconName: activeSet.prefix ? `${activeSet.prefix}:${iconName}` : iconName,
         size: currentIcon?.size ?? 24,
         color: currentIcon?.color ?? "currentColor",
         strokeWidth: currentIcon?.strokeWidth ?? 2,
-      };
+      });
       onSelect(ref);
       onOpenChange(false);
     },
     [activeSet, currentIcon, onSelect, onOpenChange],
   );
+
+  const handlePickReference = useCallback(
+    (ref: IconReference) => {
+      onSelect(ref);
+      onOpenChange(false);
+    },
+    [onSelect, onOpenChange],
+  );
+
+  const isNamedSet = activeSet.kind === "names";
 
   const trimmedSearch = search.trim();
   const hasSearch = trimmedSearch.length > 0;
@@ -164,7 +178,7 @@ export function IconPickerDialog({
         <DialogHeader className="space-y-1 border-b border-npb-border-subtle px-5 py-4">
           <DialogTitle className="text-base font-semibold">Choose icon</DialogTitle>
           <p className="text-xs text-npb-text-muted">
-            Pick from the grid or search by name.
+            Pick from a set, a brand logo, or one of your own icons.
           </p>
         </DialogHeader>
 
@@ -184,9 +198,11 @@ export function IconPickerDialog({
                 {ICON_SET_OPTIONS.map((opt) => (
                   <SelectItem key={opt.storageKey} value={opt.storageKey} className="text-xs">
                     {opt.label}
-                    <span className="ml-1 text-npb-text-muted">
-                      ({opt.names.length.toLocaleString()})
-                    </span>
+                    {opt.kind === "names" ? (
+                      <span className="ml-1 text-npb-text-muted">
+                        ({opt.names.length.toLocaleString()})
+                      </span>
+                    ) : null}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -197,7 +213,7 @@ export function IconPickerDialog({
               <Input
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Type icon name…"
+                placeholder={activeSet.kind === "brands" ? "Search brands…" : "Type icon name…"}
                 className="h-9 pl-9 text-sm"
                 autoFocus={open}
                 aria-label="Search icons by name"
@@ -205,7 +221,13 @@ export function IconPickerDialog({
             </div>
           </div>
 
-          {hasSearch ? (
+          {!isNamedSet ? (
+            <p className="text-xs text-npb-text-muted">
+              {activeSet.kind === "brands"
+                ? "Logos from svgl.app. The one you pick is saved to your media library."
+                : "Upload an svg, png or webp, or reuse one you uploaded before."}
+            </p>
+          ) : hasSearch ? (
             <p className="text-xs text-npb-text-muted">
               {searchHits.length.toLocaleString()} match
               {searchHits.length === 1 ? "" : "es"}
@@ -248,7 +270,11 @@ export function IconPickerDialog({
         </div>
 
         <ScrollArea className="min-h-[280px] flex-1 px-5 py-3">
-          {!hasSearch && browseSlice.length === 0 ? (
+          {activeSet.kind === "brands" ? (
+            <BrandLogoGrid search={search} currentIcon={currentIcon} onPick={handlePickReference} />
+          ) : activeSet.kind === "uploads" ? (
+            <YourIconsGrid search={search} currentIcon={currentIcon} onPick={handlePickReference} />
+          ) : !hasSearch && browseSlice.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
               <p className="text-sm text-npb-text-secondary">This set has no icons yet.</p>
             </div>
@@ -339,38 +365,4 @@ function IconGrid({ iconNames, activeSet, currentIcon, onSelect }: IconGridProps
       })}
     </div>
   );
-}
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-function getStorageKey(icon: IconReference): string {
-  if (icon.iconSet === "lucide") return "lucide";
-  if (icon.iconSet === "svgl") return "svgl";
-  if (icon.iconSet === "react-icons") {
-    const colonIdx = icon.iconName.indexOf(":");
-    if (colonIdx > -1) return `react-icons:${icon.iconName.slice(0, colonIdx)}`;
-  }
-  return "lucide";
-}
-
-function getInitialSearch(icon?: IconReference): string {
-  if (!icon?.iconName) return "";
-  const colonIdx = icon.iconName.indexOf(":");
-  const raw = colonIdx > -1 ? icon.iconName.slice(colonIdx + 1) : icon.iconName;
-  return raw.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-}
-
-function isSameIcon({
-  current,
-  iconSet,
-  storageName,
-}: {
-  current?: IconReference;
-  iconSet: IconReference["iconSet"];
-  storageName: string;
-}): boolean {
-  if (!current) return false;
-  return current.iconSet === iconSet && current.iconName === storageName;
 }

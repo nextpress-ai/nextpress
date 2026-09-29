@@ -1,13 +1,17 @@
 import type { BlockConfig } from "./schema-types.js";
 import { resolveBlockFills } from "./fill-model.js";
-import { buildHeaderLookCss, HEADER_BLOCK_NAME, readHeaderContent } from "./header-model.js";
+import { buildHeaderLookCss, HEADER_BLOCK_NAME, headerNeedsScript, readHeaderContent } from "./header-model.js";
 import { buildHeaderScrollCss } from "./header-scroll-model.js";
+import { ACCORDION_BLOCK_NAME, buildAccordionCss, readAccordionContent } from "./accordion-model.js";
+import { POPUP_BLOCK_NAME, buildPopupCss, readPopupContent } from "./popup-model.js";
 
-/** True when the block is a floating header that has a scrolled look to apply. */
+/**
+ * True when the block is a header that needs the header script: a floating header with a
+ * scrolled look, or a reading-progress bar to fill.
+ */
 export function headerHasScrollLook(block: Pick<BlockConfig, "name" | "content">): boolean {
 	if (block.name !== HEADER_BLOCK_NAME) return false;
-	const content = readHeaderContent(block.content);
-	return content.sticky && content.onScroll !== undefined;
+	return headerNeedsScript(readHeaderContent(block.content));
 }
 
 /**
@@ -16,6 +20,14 @@ export function headerHasScrollLook(block: Pick<BlockConfig, "name" | "content">
  */
 export function blockExtraCss(block: BlockConfig): string {
 	const fills = resolveBlockFills({ blockId: block.id, fills: block.other?.fills }).css;
+	if (block.name === ACCORDION_BLOCK_NAME) {
+		const accordion = buildAccordionCss({ blockId: block.id, content: readAccordionContent(block.content) });
+		return [fills, accordion].filter(Boolean).join("\n");
+	}
+	if (block.name === POPUP_BLOCK_NAME) {
+		const popup = buildPopupCss({ blockId: block.id, content: readPopupContent(block.content) });
+		return [fills, popup].filter(Boolean).join("\n");
+	}
 	if (block.name !== HEADER_BLOCK_NAME) return fills;
 	const content = readHeaderContent(block.content);
 	const look = buildHeaderLookCss({ blockId: block.id, content });

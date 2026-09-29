@@ -8,6 +8,8 @@ import * as LayoutBlocks from "./layout";
 import * as AdvancedBlocks from "./advanced";
 import * as PostBlocks from "./post";
 import * as FormBlocks from "./form";
+import { AccordionBlock, AccordionItemBlock } from "./layout/accordion";
+import { PopupBlock } from "./layout/popup";
 
 /**
  * Counter Block Component (legacy/test component)
@@ -48,6 +50,9 @@ export const BLOCK_COMPONENTS: Record<string, React.FC<BlockConfig>> = {
 	"core/stack": LayoutBlocks.StackBlock,
 	"core/page-shell": LayoutBlocks.PageShellBlock,
 	"core/header": LayoutBlocks.HeaderBlock,
+	"core/accordion": AccordionBlock,
+	"core/accordion-item": AccordionItemBlock,
+	"core/popup": PopupBlock,
 	"core/spacer": LayoutBlocks.SpacerBlock,
 	"core/separator": LayoutBlocks.SeparatorBlock,
 	"core/divider": LayoutBlocks.DividerBlock,

@@ -124,11 +124,9 @@ describe("htmlToBlocks", () => {
 			].join(""),
 		);
 
-		expect(heading.content).toMatchObject({
-			anchor: "section",
-			textAlign: "center",
-		});
-		expect(heading.styles).toMatchObject({ marginTop: "2em" });
+		expect(heading.content).toMatchObject({ anchor: "section" });
+		expect(heading.content).not.toHaveProperty("textAlign");
+		expect(heading.styles).toMatchObject({ marginTop: "2em", textAlign: "center" });
 
 		expect(paragraph.content).toMatchObject({ dropCap: true, className: "is-style-lead" });
 		expect(paragraph.other?.attributes).toMatchObject({ "data-track": "1" });
@@ -176,5 +174,27 @@ describe("collectImageUrls", () => {
 			'<img src="https://x.com/a.jpg"><figure><img src="https://x.com/b.jpg"></figure><img src="https://x.com/a.jpg">',
 		);
 		expect(urls).toEqual(["https://x.com/a.jpg", "https://x.com/b.jpg"]);
+	});
+});
+
+describe("htmlToBlocks — WordPress Details", () => {
+	it("turns neighbouring details into one accordion, keeping titles, answers and open state", () => {
+		const blocks = htmlToBlocks(
+			'<details class="wp-block-details" open><summary>How does it work?</summary><p>In JavaScript.</p></details>\n' +
+				'<details class="wp-block-details"><summary>Is it free?</summary><p>Yes.</p></details>\n<p>After</p>',
+		);
+		expect(blocks.map((b) => b.name)).toEqual(["core/accordion", "core/paragraph"]);
+		const [accordion] = blocks;
+		expect(accordion.children).toHaveLength(2);
+		expect(accordion.children?.[0]).toMatchObject({
+			name: "core/accordion-item",
+			parentId: accordion.id,
+			content: { kind: "structured", data: { title: "How does it work?", open: true } },
+		});
+		expect(accordion.children?.[1].children?.[0]).toMatchObject({
+			name: "core/paragraph",
+			parentId: accordion.children?.[1].id,
+			content: { value: "Yes." },
+		});
 	});
 });

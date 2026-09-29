@@ -18,6 +18,7 @@ import { setParentIds } from '@/lib/handlers/treeUtils';
 import { generateId } from '@/lib/utils';
 import { ensureRootPageShell, readPageDesign } from '@shared/page-shell-model';
 import { apiRequest } from '@/lib/queryClient';
+import { addMissingIconDrawings } from '@/lib/icon-drawing-capture';
 import {
   clearPageDraft,
   loadPageDraft,
@@ -315,10 +316,13 @@ export default function PageBuilderEditor({
     };
     remoteVersion: number;
   }): PageState {
-    const initialBlocks = blocksWithRootShell({
-      blocks: source.blocks,
-      leftoverDesign: (source as { other?: PageOther }).other?.design,
-    });
+    // Older react-icons icons get their saved drawing here, so the next save shows them when published.
+    const initialBlocks = addMissingIconDrawings(
+      blocksWithRootShell({
+        blocks: source.blocks,
+        leftoverDesign: (source as { other?: PageOther }).other?.design,
+      }),
+    );
     const next: PageState = {
       blocks: initialBlocks,
       title: String(source.title || 'Untitled'),

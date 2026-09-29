@@ -10,6 +10,7 @@ import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
 import { InlineTextEditor } from "../shared/inline-text-editor";
 import { useSettingsState } from "../useSettingsState";
+import { readTextAlign } from "@shared/text-align";
 import { sanitizeHtml } from "../../utils";
 
 // ============================================================================
@@ -23,6 +24,7 @@ type QuoteContent = {
   author?: string;
   anchor?: string;
   className?: string;
+  /** Old saves only. Alignment lives on `styles.textAlign` (shared/text-align.ts). */
   textAlign?: 'left' | 'center' | 'right';
   align?: 'wide' | 'full';
 };
@@ -30,7 +32,6 @@ type QuoteContent = {
 const DEFAULT_CONTENT: QuoteContent = {
   value: '<p>Add a quote</p>',
   citation: '',
-  textAlign: undefined,
   align: undefined,
   anchor: '',
   className: '',
@@ -58,7 +59,7 @@ function QuoteRenderer({
   const citation: string | undefined = content?.citation ?? content?.author;
   const anchor: string | undefined = content?.anchor;
   const className: string | undefined = content?.className;
-  const textAlign: 'left' | 'center' | 'right' | undefined = content?.textAlign;
+  const textAlign = readTextAlign({ styles, content });
   const align: 'wide' | 'full' | undefined = content?.align;
 
   const valueHtml = (valueHtmlRaw && valueHtmlRaw.trim().length > 0)
@@ -107,6 +108,7 @@ function QuoteRenderer({
         fontSize: '1.125rem',
         lineHeight: 1.7,
         ...styles,
+        ...(textAlign ? { textAlign } : {}),
       }}
     >
       {isEditing ? (
@@ -153,7 +155,7 @@ interface QuoteSettingsProps {
 }
 
 function QuoteSettings({ block, onUpdate }: QuoteSettingsProps) {
-  const { content, updateContent } = useSettingsState<QuoteContent>({
+  const { content, styles, updateContent, updateStyles } = useSettingsState<QuoteContent>({
     block,
     onUpdate,
     defaultContent: DEFAULT_CONTENT,
@@ -211,8 +213,12 @@ function QuoteSettings({ block, onUpdate }: QuoteSettingsProps) {
           <div>
             <SettingsLabel htmlFor="quote-text-align">Text Align</SettingsLabel>
             <Select
-              value={content?.textAlign ?? 'default'}
-              onValueChange={(value) => updateContent({ textAlign: value === 'default' ? undefined : (value as 'left' | 'center' | 'right') })}
+              value={readTextAlign({ styles, content }) ?? 'default'}
+              onValueChange={(value) => {
+                // Saved on styles, the one home for alignment; clear the old copy on content too.
+                updateStyles({ textAlign: value === 'default' ? undefined : (value as 'left' | 'center' | 'right') });
+                if (content?.textAlign) updateContent({ textAlign: undefined });
+              }}
             >
               <SelectTrigger id="quote-text-align" className="h-9 mt-1">
                 <SelectValue placeholder="Default" />

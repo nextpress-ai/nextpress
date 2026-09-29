@@ -36,5 +36,20 @@ export function safePxLength(value: unknown): string | undefined {
 	return typeof value === "string" && PX_LENGTH.test(value.trim()) ? value.trim() : undefined;
 }
 
+const LENGTH = /^-?(?:\d{1,5})(?:\.\d{1,3})?(?:px|rem|em|%|vw|vh|vmin|vmax|dvh|dvw|ch)$/i;
+
+/** A plain length (`140px`, `30%`, `12rem`), or nothing. No `calc()` or anything that could break out. */
+export function safeCssLength(value: unknown): string | undefined {
+	return typeof value === "string" && LENGTH.test(value.trim()) ? value.trim() : undefined;
+}
+
+/** One to four plain lengths, like CSS padding (`24px`, `20px 24px`, `36px 28px 28px`), or nothing. */
+export function safeCssBox(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const parts = value.trim().split(/\s+/);
+	if (parts.length < 1 || parts.length > 4) return undefined;
+	return parts.every((part) => safeCssLength(part)) ? parts.join(" ") : undefined;
+}
+
 /** The page theme's accent colour, with a fallback for pages that have no theme yet. */
 export const THEME_ACCENT_COLOR = "var(--npb-accent, #007cba)";

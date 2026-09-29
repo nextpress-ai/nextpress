@@ -9,6 +9,12 @@ import {
 import { getRenderProps, parseStructuredContent } from "../../../../../renderer/react/render-helpers";
 import { LucideGlyph } from "../../../../../renderer/react/shared/lucide-glyph";
 import { BlockShell } from "./shared/block-shell";
+import {
+	IconDrawingView,
+	hasIconDrawing,
+	readIconDrawingSource,
+	type IconDrawingInput,
+} from "@shared/icon-drawing-view";
 
 const IconRendererLazy = React.lazy(() =>
 	import("./shared/IconRenderer").then((m) => ({ default: m.IconRenderer })),
@@ -53,8 +59,18 @@ export function ClientIconBlock(block: BlockConfig) {
 		justifyContent: "center",
 	};
 
+	// Brand logos, uploads and react-icons with a saved drawing paint directly — no icon library load.
+	const drawing = readIconDrawingSource(icon as IconDrawingInput);
+
 	const glyph =
-		iconRef.iconSet === "lucide" ? (
+		iconRef.iconSet !== "lucide" && hasIconDrawing(drawing) ? (
+			<IconDrawingView
+				icon={{ ...drawing, label: drawing.label ?? (label || undefined) }}
+				size={sizeUnit === "px" ? iconRef.size : "100%"}
+				color={glyphColor}
+				className="wp-block-icon__glyph"
+			/>
+		) : iconRef.iconSet === "lucide" ? (
 			<LucideGlyph
 				iconName={iconRef.iconName}
 				size={sizeUnit === "px" ? iconRef.size : "100%"}

@@ -7,6 +7,7 @@ import { isKnownBlockName } from "./known-block-names.js";
 import { mergePageOtherWithDefaults, validatePageOtherForSave } from "./page-other.js";
 import type { PageOther } from "./schema-types.js";
 import { validateIconReference } from "./validate-icon-reference.js";
+import { moveTextAlignToStylesInBlocks } from "./text-align.js";
 
 export const INVALID_ICON = "INVALID_ICON" as const;
 export const INVALID_PAGE_OTHER = "INVALID_PAGE_OTHER" as const;
@@ -163,7 +164,8 @@ export const validateContentForSave = (params: {
 
 	return {
 		ok: true,
-		blocks,
+		// Alignment has one home (styles); old saves kept it on content too.
+		blocks: moveTextAlignToStylesInBlocks(blocks),
 		other,
 	};
 };

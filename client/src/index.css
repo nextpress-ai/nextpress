@@ -1717,3 +1717,16 @@
 }
 
 
+
+/* "Pause motion on the canvas" (lib/canvas-motion-pause.ts): loops and drifting fills hold still
+   in the editor so moving blocks stay easy to click. Preview and published pages are untouched. */
+html.npb-motion-paused .npb-canvas-page *,
+html.npb-motion-paused .npb-canvas-page *::before {
+  animation-play-state: paused !important;
+}
+
+/* Header reading progress on the editor canvas: the page itself does not scroll there, so the
+   bar follows the canvas scroll through --np-read-progress (useReadingProgress) instead of CSS. */
+.npb-canvas-page .wp-block-header__progress {
+  animation: none !important;
+}

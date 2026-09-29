@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import type { IconReference } from '@/lib/icon-indexes';
+import { IconDrawingView, hasIconDrawing } from '@shared/icon-drawing-view';
 
 // ---------------------------------------------------------------------------
 // Lucide icons — import full module, resolve by kebab-case name
@@ -71,7 +72,7 @@ function parseReactIconRef(iconName: string): { prefix: string; name: string } |
   };
 }
 
-function resolveReactIcon(iconName: string): React.ComponentType<any> | null {
+export function resolveReactIcon(iconName: string): React.ComponentType<any> | null {
   const parsed = parseReactIconRef(iconName);
   if (!parsed) return null;
   const module = REACT_ICONS_MODULES[parsed.prefix];
@@ -123,7 +124,7 @@ export interface IconRendererProps {
 }
 
 /**
- * Renders an icon from any supported set (lucide, react-icons, svgl).
+ * Renders an icon from any supported set (lucide, react-icons, svgl brand logos, uploads).
  * Resolves the icon component dynamically from the imported modules.
  */
 function resolvePositiveSize(
@@ -202,26 +203,19 @@ export function IconRenderer({
         );
       }
       break;
+  }
 
-    case 'svgl':
-      // SVGL icons are inline SVGs — for now render placeholder
-      // Full SVGL integration loads these as local components
-      return (
-        <span
-          className={className}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: resolvedSize,
-            height: resolvedSize,
-            ...style,
-          }}
-          {...rest}
-        >
-          <PlaceholderIcon size={placeholderPixelSize} color={resolvedColor} />
-        </span>
-      );
+  // Brand logos and uploads are pictures; react-icons without a loaded family use their saved drawing.
+  if (hasIconDrawing(icon)) {
+    return (
+      <IconDrawingView
+        icon={icon}
+        size={resolvedSize}
+        color={resolvedColor}
+        className={cn('shrink-0', className)}
+        style={style}
+      />
+    );
   }
 
   // Fallback: render placeholder

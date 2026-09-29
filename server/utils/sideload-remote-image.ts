@@ -1,6 +1,7 @@
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import { validateExternalUrl } from "./validate-external-url";
+import { sanitizeSvgMarkup } from "@shared/icon-drawing";
 
 const IMAGE_MIME_BY_EXT: Record<string, string> = {
 	".jpg": "image/jpeg",
@@ -22,6 +23,8 @@ export type SideloadRemoteImageParams = {
 	uploadDir: string;
 	allowedMimeTypes: readonly string[];
 	maxSize: number;
+	/** Start of the saved file name. Defaults to `wp-import` (the WordPress importer). */
+	filenamePrefix?: string;
 };
 
 export type SideloadRemoteImageResult =
@@ -36,7 +39,8 @@ export type SideloadRemoteImageResult =
 	| { ok: false; message: string };
 
 /**
- * Downloads a remote image into the uploads directory for WordPress import (copy mode).
+ * Downloads a remote image into the uploads directory (WordPress import copy mode, brand logos).
+ * SVG files are cleaned before they are written, so a downloaded drawing can never run code.
  */
 export const sideloadRemoteImage = async (
 	params: SideloadRemoteImageParams,
@@ -73,18 +77,27 @@ export const sideloadRemoteImage = async (
 			return { ok: false, message: "Image type is not allowed" };
 		}
 
+		let body = buffer;
+		if (mimeType === "image/svg+xml") {
+			const cleaned = sanitizeSvgMarkup(buffer.toString("utf8"));
+			if (!cleaned.ok) {
+				return { ok: false, message: `SVG was refused: ${cleaned.message}` };
+			}
+			body = Buffer.from(cleaned.svg, "utf8");
+		}
+
 		const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-		const filename = `wp-import-${uniqueSuffix}${ext}`;
+		const filename = `${params.filenamePrefix ?? "wp-import"}-${uniqueSuffix}${ext}`;
 		const filePath = path.join(params.uploadDir, filename);
 
-		await fs.writeFile(filePath, buffer);
+		await fs.writeFile(filePath, body);
 
 		return {
 			ok: true,
 			filename,
 			url: `/uploads/${filename}`,
 			mimeType,
-			size: buffer.length,
+			size: body.length,
 			originalName,
 		};
 	} catch (err: unknown) {

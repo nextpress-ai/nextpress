@@ -33,6 +33,7 @@ export type CreateBlockDefinitionConfig<TContent> = {
   defaultStyles?: Record<string, unknown>;
   isContainer?: boolean;
   handlesOwnChildren?: boolean;
+  defaultChildren?: BlockDefinition["defaultChildren"];
   hasSettings?: boolean;
   settings?: BlockDefinition["settings"];
   /** Pure renderer — receives derived state + props, returns the block's JSX. */

@@ -6,7 +6,7 @@ import {
 	headerHasBlocksSlot,
 	type HeaderContent,
 } from "@shared/header-model";
-import { useHeaderScroll } from "@shared/use-header-scroll";
+import { useHeaderScroll, useReadingProgress } from "@shared/use-header-scroll";
 import { ContainerChildren } from "../../BlockRenderer";
 
 /** Room for an empty drop area so there is something to aim at while the row has no blocks yet. */
@@ -34,6 +34,7 @@ export function HeaderCanvas({
 		enabled: content.sticky && content.onScroll !== undefined,
 		refreshKey: content,
 	});
+	useReadingProgress({ containerRef, enabled: content.progress?.show === true, refreshKey: content });
 	const blocks =
 		hostBlock && headerHasBlocksSlot(content.variant) ? (
 			<div style={{ minWidth: children.length === 0 && !isPreview ? EMPTY_DROP_MIN_WIDTH : undefined }}>

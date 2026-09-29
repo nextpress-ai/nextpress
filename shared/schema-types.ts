@@ -233,12 +233,20 @@ export interface EntryAnimation {
 
 /** Hover animation config — CSS :hover rule */
 export interface HoverAnimation {
-  name: string;        // Animate.css name: "pulse", "rubberBand", "tada"
+  name: string;        // Animate.css name ("pulse", "tada"), or a Nextpress look: "np-lift", "np-grow"
 }
 
 /** Loop animation config — continuous CSS animation */
 export interface LoopAnimation {
-  name: string;        // Animate.css name: "bounce", "heartBeat", "swing"
+  name: string;        // Animate.css name ("bounce", "swing"), or a Nextpress move: "np-orbit", "np-float", "np-spin"
+  /** One round, in ms. Unset keeps each move's own default (Animate.css: 1s). */
+  durationMs?: number;
+  /** Plays the move backwards (orbit/spin turn the other way). */
+  reverse?: boolean;
+  /** Orbit only: distance from the parent's centre, as a CSS length ("140px", "30%"). */
+  orbitRadius?: string;
+  /** Orbit only: where on the circle this block starts, in degrees (0 = right, 90 = below). */
+  orbitStart?: number;
 }
 
 /** Block animation configuration — one animation per category max */

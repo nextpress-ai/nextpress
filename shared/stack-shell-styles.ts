@@ -5,6 +5,7 @@ import { readOverlayFit, type OverlayChildInfo } from "./overlay-stack-fit";
 import {
 	getContainerChildrenStackStyle,
 	getContainerOuterShellStyle,
+	hasContainerShellSizing,
 	readContainerLayoutFromBlock,
 } from "./block-container-placement";
 
@@ -58,6 +59,9 @@ export function buildStackShellStyles({
 				display: "grid",
 				width: "100%",
 				minWidth: 0,
+				// A stack with its own height or min height: the shared cell fills it, so "middle"
+				// pins mean the middle of the stack (before, the cell was only as tall as the content).
+				...(hasContainerShellSizing(styles) ? { flex: 1, minHeight: 0, alignSelf: "stretch" } : {}),
 				...(fit.hugs ? { justifyContent: fit.justifyContent } : {}),
 			},
 			stackType,

@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { normalizeHexColor } from "@/lib/resolve-tailwind-color-token";
 import { isSafeCssColor } from "@shared/css-safe";
 import {
+	FILL_MOTION_DEFAULT_SECONDS,
+	FILL_MOTION_MAX_SECONDS,
+	FILL_MOTION_MIN_SECONDS,
 	GRADIENT_SHAPES,
 	MAX_GRADIENT_STOPS,
 	MIN_GRADIENT_STOPS,
@@ -24,7 +27,14 @@ type GradientEditorProps = {
 	value: GradientFill;
 	onChange: (fill: GradientFill) => void;
 	ariaLabel: string;
+	/** Shows Still / Drift. Only where the drift is painted (block backgrounds). */
+	allowMotion?: boolean;
 };
+
+const MOTION_OPTIONS = [
+	{ value: "still", label: "Still" },
+	{ value: "drift", label: "Drift" },
+];
 
 const SHAPE_LABELS: Record<GradientShape, string> = { linear: "Linear", radial: "Radial", conic: "Conic" };
 const SHAPE_OPTIONS = GRADIENT_SHAPES.map((shape) => ({ value: shape, label: SHAPE_LABELS[shape] }));
@@ -120,7 +130,7 @@ function StopRow({
  * Builds a gradient: ready-made ones to start from, then type, angle and 2–4 colors with their
  * positions. Every edit hands back a whole new gradient.
  */
-export function GradientEditor({ value, onChange, ariaLabel }: GradientEditorProps): JSX.Element {
+export function GradientEditor({ value, onChange, ariaLabel, allowMotion = false }: GradientEditorProps): JSX.Element {
 	const hasAngle = value.shape !== "radial";
 	const setStop = (index: number, next: GradientStop): void =>
 		onChange({ ...value, stops: value.stops.map((stop, at) => (at === index ? next : stop)) });
@@ -144,7 +154,8 @@ export function GradientEditor({ value, onChange, ariaLabel }: GradientEditorPro
 						aria-pressed={sameFill(preset.fill, value)}
 						onClick={() => {
 							rememberRecentColor({ kind: "gradient", fill: preset.fill });
-							onChange(preset.fill);
+							// A ready-made gradient keeps the drift you already chose.
+							onChange(value.motion ? { ...preset.fill, motion: value.motion } : preset.fill);
 						}}
 						className={cn(
 							"h-6 w-full border border-npb-border-default",
@@ -219,6 +230,46 @@ export function GradientEditor({ value, onChange, ariaLabel }: GradientEditorPro
 					Add color
 				</Button>
 			</div>
+
+			{allowMotion ? (
+				<div className="space-y-2">
+					<SettingsChipGroup
+						label="Motion"
+						options={MOTION_OPTIONS}
+						value={value.motion ? "drift" : "still"}
+						onChange={(next) =>
+							onChange({
+								...value,
+								motion: next === "drift" ? { kind: "drift", seconds: FILL_MOTION_DEFAULT_SECONDS } : null,
+							})
+						}
+					/>
+					{value.motion ? (
+						<div className="flex items-center gap-3">
+							<SettingsLabel htmlFor="gradient-drift-speed">One turn</SettingsLabel>
+							<Slider
+								id="gradient-drift-speed"
+								aria-label="Seconds for one turn"
+								min={FILL_MOTION_MIN_SECONDS}
+								max={FILL_MOTION_MAX_SECONDS}
+								step={1}
+								value={[value.motion.seconds]}
+								onValueChange={([seconds]) =>
+									onChange({ ...value, motion: { kind: "drift", seconds: seconds ?? FILL_MOTION_DEFAULT_SECONDS } })
+								}
+								className="flex-1"
+							/>
+							<span className="w-12 shrink-0 text-right text-xs tabular-nums text-npb-text-muted">
+								{value.motion.seconds}s
+							</span>
+						</div>
+					) : null}
+					<p className="npb-settings-hint-muted text-xs">
+						Drift slowly moves the gradient behind the block. It holds still for visitors who
+						ask their device for less motion.
+					</p>
+				</div>
+			) : null}
 		</div>
 	);
 }

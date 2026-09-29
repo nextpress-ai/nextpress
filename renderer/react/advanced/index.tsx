@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { sanitizeHtml } from "@shared/sanitize-html";
+import { readTextAlign } from "@shared/text-align";
 import { getRenderProps, parseTextContent, parseStructuredContent, parseHtmlContent, parseMarkdownContent } from "../render-helpers";
 import {
 	effectiveIconGlyphColor,
@@ -8,6 +9,12 @@ import {
 	readIconBoxSizeFromStyles,
 } from "@shared/icon-block-visuals";
 import { LucideGlyph } from "../shared/lucide-glyph";
+import {
+	IconDrawingView,
+	hasIconDrawing,
+	readIconDrawingSource,
+	type IconDrawingInput,
+} from "@shared/icon-drawing-view";
 
 export * from "./MarkdownBlock";
 
@@ -48,6 +55,8 @@ export function QuoteBlock(block: BlockConfig) {
 		fontSize: "1.125rem",
 		lineHeight: 1.7,
 		...style,
+		// Old quotes kept alignment on content; styles win (shared/text-align.ts).
+		textAlign: readTextAlign({ styles: style, content: block.content }),
 	};
 
 	return (
@@ -259,14 +268,8 @@ export function HtmlBlock(block: BlockConfig) {
 		.filter(Boolean)
 		.join(" ");
 
-	// Basic HTML sanitization — remove script tags and dangerous attributes
-	const sanitized = htmlContent
-		? htmlContent
-				.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-				.replace(/on\w+="[^"]*"/gi, "")
-				.replace(/javascript:/gi, "")
-				.replace(/vbscript:/gi, "")
-		: "";
+	// Same cleaning as the editor canvas, so the published page never runs markup the editor removed.
+	const sanitized = sanitizeHtml(htmlContent ?? "");
 
 	// HTML blocks intentionally use dangerouslySetInnerHTML to render raw HTML
 	// eslint-disable-next-line react/no-danger
@@ -304,7 +307,7 @@ export function PullquoteBlock(block: BlockConfig) {
 	return (
 		<figure
 			className={mergedClassName || undefined}
-			style={style}
+			style={{ ...style, textAlign: readTextAlign({ styles: style, content: block.content }) }}
 			{...attributes}
 		>
 			<blockquote>
@@ -495,7 +498,8 @@ export function TableBlock(block: BlockConfig) {
 
 /**
  * Icon Block Component
- * Renders lucide icons inline for publish/preview; other sets use a visible placeholder.
+ * Lucide paints by name; react-icons from their saved drawing; brand logos and uploads from their
+ * picture file. An icon with none of these (saved before drawings existed) shows a quiet placeholder.
  */
 export function IconBlock(block: BlockConfig) {
 	const { style, className, attributes } = getRenderProps(block);
@@ -533,8 +537,25 @@ export function IconBlock(block: BlockConfig) {
 		...style,
 	};
 
+	const drawing = readIconDrawingSource(icon as IconDrawingInput);
+
 	const svgContent =
-		iconSet === "lucide" ? (
+		iconSet !== "lucide" && hasIconDrawing(drawing) ? (
+			<span
+				className={mergedClassName || undefined}
+				style={iconStyle}
+				data-icon-set={iconSet}
+				data-icon-name={iconName}
+				{...attributes}
+			>
+				<IconDrawingView
+					icon={{ ...drawing, label: drawing.label ?? label }}
+					size={sizeUnit === "px" ? iconSize : "100%"}
+					color={glyphColor}
+					className="wp-block-icon__glyph"
+				/>
+			</span>
+		) : iconSet === "lucide" ? (
 			<span
 				className={mergedClassName || undefined}
 				style={iconStyle}

@@ -8,7 +8,7 @@ import {
 	getBlockStackLayerWrapperStyles,
 } from "@shared/block-container-placement";
 import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
-import { useHeaderScroll } from "@shared/use-header-scroll";
+import { useHeaderScroll, useReadingProgress } from "@shared/use-header-scroll";
 
 /**
  * Header for preview, publish, and server render. In the blocks layout the child blocks are
@@ -25,6 +25,7 @@ export function HeaderBlock(block: BlockConfig) {
 		enabled: content.sticky && content.onScroll !== undefined,
 		refreshKey: block.content,
 	});
+	useReadingProgress({ containerRef, enabled: content.progress?.show === true, refreshKey: block.content });
 
 	const blocks = headerHasBlocksSlot(content.variant) ? (
 		<div className="wp-block-header__blocks">

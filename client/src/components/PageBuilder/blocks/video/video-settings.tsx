@@ -9,11 +9,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
-import { Video as VideoIcon, AlignCenter, Maximize, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Video as VideoIcon, AlignCenter, Maximize, Settings, Clapperboard } from "lucide-react";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsLabel } from '../../shared';
 import { MediaUrlField } from "../shared/media-url-field";
 import { type VideoContent, DEFAULT_CONTENT } from "./video-model";
+import { SettingsChipGroup } from "../../settings-chip-group";
+import {
+  BACKGROUND_VIDEO_CONTENT,
+  BACKGROUND_VIDEO_STYLES,
+  readVideoPlayback,
+} from "@shared/video-playback";
+
+const FIT_OPTIONS = [
+  { value: "natural", label: "Natural" },
+  { value: "cover", label: "Fill (crop)" },
+  { value: "contain", label: "Whole video" },
+];
 
 interface VideoSettingsProps {
   block: BlockConfig;
@@ -21,7 +34,7 @@ interface VideoSettingsProps {
 }
 
 export function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
-  const { content, updateContent } = useSettingsState<VideoContent>({
+  const { content, updateContent, updateStyles } = useSettingsState<VideoContent>({
     block,
     onUpdate,
     defaultContent: DEFAULT_CONTENT,
@@ -34,6 +47,7 @@ export function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
   ];
 
   const currentAlign = content?.align || 'default';
+  const playback = readVideoPlayback(content);
   const videoUrl = content?.kind === 'media' ? content.url : '';
 
   return (
@@ -84,13 +98,42 @@ export function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
 
       <CollapsibleCard title="Playback" icon={Settings} defaultOpen={false}>
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={() => {
+                updateContent({ ...BACKGROUND_VIDEO_CONTENT });
+                updateStyles(BACKGROUND_VIDEO_STYLES);
+              }}
+            >
+              <Clapperboard className="h-4 w-4" aria-hidden />
+              Use as background
+            </Button>
+            <p className="npb-settings-hint-muted text-xs">
+              Plays silently on a loop with no controls and fills its space. Put it in an overlay
+              stack and set its layer to Fills behind.
+            </p>
+          </div>
+
+          <SettingsChipGroup
+            label="Fit"
+            ariaLabel="Video fit"
+            options={FIT_OPTIONS}
+            value={playback.objectFit ?? "natural"}
+            onChange={(value) =>
+              updateContent({ objectFit: value === "natural" ? undefined : (value as "cover" | "contain") })
+            }
+          />
+
           {/* Player Controls */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <SettingsLabel htmlFor="video-controls">Show Controls</SettingsLabel>
               <Switch
                 id="video-controls"
-                checked={(content?.controls ?? true) !== false}
+                checked={playback.controls}
                 onCheckedChange={(checked) => updateContent({ controls: checked })}
               />
             </div>
@@ -98,8 +141,10 @@ export function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
               <SettingsLabel htmlFor="video-autoplay">Autoplay</SettingsLabel>
               <Switch
                 id="video-autoplay"
-                checked={Boolean(content?.autoplay)}
-                onCheckedChange={(checked) => updateContent({ autoplay: checked })}
+                checked={playback.autoplay}
+                onCheckedChange={(checked) =>
+                  updateContent(checked ? { autoplay: true, muted: true } : { autoplay: false })
+                }
               />
             </div>
           </div>
@@ -117,9 +162,16 @@ export function VideoSettings({ block, onUpdate }: VideoSettingsProps) {
               <SettingsLabel htmlFor="video-muted">Muted</SettingsLabel>
               <Switch
                 id="video-muted"
-                checked={Boolean(content?.muted)}
+                checked={playback.muted}
+                disabled={playback.autoplay}
+                aria-describedby={playback.autoplay ? "video-muted-hint" : undefined}
                 onCheckedChange={(checked) => updateContent({ muted: checked })}
               />
+              {playback.autoplay ? (
+                <p id="video-muted-hint" className="npb-settings-hint-muted text-xs">
+                  Stays on while Autoplay is on. Browsers only autoplay muted videos.
+                </p>
+              ) : null}
             </div>
           </div>
 

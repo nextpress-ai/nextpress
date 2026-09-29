@@ -137,6 +137,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       path.join(__dirname, '../../dist/public/vendor/header-scroll.js'),
       path.join(process.cwd(), 'client/public/vendor/header-scroll.js'),
     ],
+    'popup.js': [
+      path.join(__dirname, '../../dist/public/vendor/popup.js'),
+      path.join(process.cwd(), 'client/public/vendor/popup.js'),
+    ],
   };
 
   for (const [filename, candidates] of Object.entries(vendorFileSources)) {

@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { HTMLElement } from "node-html-parser";
 import type { BlockConfig } from "../../schema-types";
+import { moveTextAlignToStyles } from "../../text-align";
 
 /** Parsed class tokens and leftover custom classes from a WP/Gutenberg `class` attr. */
 export type ParsedClassTokens = {
@@ -246,7 +247,8 @@ export const attachImportElementMeta = (params: {
 	const hasAttrs = Object.keys(meta.attributes).length > 0;
 	if (!hasContent && !hasStyles && !hasAttrs) return params.block;
 
-	return {
+	// Text alignment from `has-text-align-*` belongs on styles (see shared/text-align.ts).
+	return moveTextAlignToStyles({
 		...params.block,
 		content: hasContent
 			? ({ ...params.block.content, ...meta.contentPatch } as BlockConfig["content"])
@@ -258,5 +260,5 @@ export const attachImportElementMeta = (params: {
 					attributes: { ...meta.attributes, ...params.block.other?.attributes },
 				}
 			: params.block.other,
-	};
+	});
 };

@@ -54,3 +54,35 @@ export function observeFloatingHeader({
 		header.classList.remove(HEADER_SCROLLED_CLASS);
 	};
 }
+
+/** True when the browser can fill the progress bar from page scrolling with CSS alone. */
+export function supportsScrollTimeline(): boolean {
+	return typeof CSS !== "undefined" && typeof CSS.supports === "function" && CSS.supports("animation-timeline: scroll()");
+}
+
+/**
+ * Fills a header's reading-progress bar by setting `--np-read-progress` (0–1) as the page (or,
+ * in the editor, the canvas `root`) scrolls. Skipped for the page itself where CSS already does
+ * it. Updates at most once per frame. Returns a function that stops.
+ */
+export function observeReadingProgress({ bar, root }: { bar: HTMLElement; root?: Element | null }): () => void {
+	if (!root && supportsScrollTimeline()) return () => undefined;
+	const scroller = root ?? document.scrollingElement ?? document.documentElement;
+	const target: Element | Window = root ?? window;
+	let frame = 0;
+	const update = () => {
+		frame = 0;
+		const max = scroller.scrollHeight - scroller.clientHeight;
+		const progress = max > 0 ? Math.min(1, Math.max(0, scroller.scrollTop / max)) : 0;
+		bar.style.setProperty("--np-read-progress", progress.toFixed(4));
+	};
+	const onScroll = () => {
+		if (!frame) frame = requestAnimationFrame(update);
+	};
+	target.addEventListener("scroll", onScroll, { passive: true });
+	update();
+	return () => {
+		target.removeEventListener("scroll", onScroll);
+		if (frame) cancelAnimationFrame(frame);
+	};
+}
