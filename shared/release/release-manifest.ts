@@ -4,84 +4,70 @@ import type { ReleaseHighlight } from "./release-highlight-meta";
 /** In-app release notes. Consumer-facing copy only. Keep in sync with package.json on release. */
 export const RELEASE_MANIFEST = {
 	version: NEXTPRESS_CONFIG.version,
-	releaseDate: "2026-08-19",
+	releaseDate: "2026-09-29",
 	highlights: [
 		{
 			kind: "update",
-			title: "Edit text right on the page",
-			description:
-				"Change headings, paragraphs, quotes, and tables in the canvas without opening the sidebar for every edit.",
+			title: "New layout blocks",
+			description: "Accordion, popup, and a full site header to build richer pages.",
 		},
 		{
 			kind: "update",
-			title: "Site theme editor",
-			description:
-				"Set colors, typography, buttons, and icon defaults. Start from presets, or import and export themes as files.",
+			title: "Icons and brand logos",
+			description: "Use brand logos or upload your own icons.",
 		},
 		{
 			kind: "update",
-			title: "Quick actions with Cmd+K",
-			description:
-				"Jump to pages, posts, media, and settings from anywhere in the admin.",
+			title: "Motion effects",
+			description: "Bring blocks and backgrounds to life with subtle animation.",
 		},
 		{
 			kind: "update",
-			title: "Draft preview while you edit",
-			description:
-				"Open a live preview of work in progress, including drafts.",
+			title: "Duplicate pages",
+			description: "Copy any page and start from there.",
 		},
 		{
-			kind: "fix",
-			title: "Lists work the way you expect",
-			description:
-				"Post titles link to the editor, sorting and pagination are visible, and status can be changed from the list.",
+			kind: "update",
+			title: "Plugins",
+			description: "Add plugins and turn them on or off.",
 		},
 		{
-			kind: "fix",
-			title: "Preview matches your live site",
-			description:
-				"The page builder, preview, and published pages use the same layout and block rendering.",
-		},
-		{
-			kind: "fix",
-			title: "Post blocks show real content",
-			description:
-				"Title, excerpt, image, and author blocks reflect your actual post data when published.",
-		},
-		{
-			kind: "fix",
-			title: "Block selection is clearer",
-			description:
-				"Hover and selection outlines no longer stack on nested blocks.",
-		},
-		{
-			kind: "fix",
-			title: "No more white flash when you navigate",
-			description: "Theme loads before the page paints.",
+			kind: "update",
+			title: "Post lists open in place",
+			description: "Visitors read a post without leaving the page.",
 		},
 		{
 			kind: "improvement",
-			title: "Table or card view for content lists",
-			description: "Switch how Posts, Pages, and Media appear.",
+			title: "Colors everywhere",
+			description: "Background, text, gradients, and theme colors on any block.",
 		},
 		{
 			kind: "improvement",
-			title: "Reorder posts and pages by drag",
-			description: "Sort by menu order, then drag to set the order you want.",
+			title: "Cleaner builder",
+			description: "Simpler settings and one layout panel for groups, containers, and columns.",
 		},
 		{
 			kind: "improvement",
-			title: "Mobile layout check",
-			description:
-				"See overflow warnings in the builder and apply responsive fixes in one click.",
+			title: "Refreshed admin look",
+			description: "More consistent controls that are easier to use on phones.",
 		},
 		{
-			kind: "improvement",
-			title: "Undo when you delete a block",
-			description: "A notification appears with an Undo button.",
+			kind: "fix",
+			title: "Live site matches the editor",
+			description: "What you design is what gets published.",
+		},
+		{
+			kind: "fix",
+			title: "Reliable save and preview",
+			description: "Saving, undo, and preview stay in step with your edits.",
+		},
+		{
+			kind: "fix",
+			title: "Smoother upgrades",
+			description: "Older sites upgrade without getting stuck.",
 		},
 	] satisfies ReleaseHighlight[],
-	supportedUpgradeFrom: ["1.0.12", "1.3.2", "1.3.3", "1.3.4"],
+	supportedUpgradeFrom: ["1.0.12", "1.3.2", "1.3.3", "1.3.4", "1.3.5", "1.3.6"],
 } as const;
 
 export type { ReleaseHighlight, ReleaseHighlightKind } from "./release-highlight-meta";

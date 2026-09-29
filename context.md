@@ -43,6 +43,11 @@ UUID PKs everywhere except sessions.sid.
 
 ## Decision records
 
+### 2026-09-29 — What's New for 1.3.7
+- The in-app What's New popup and the GitHub release notes both read `shared/release/release-manifest.ts`. **Update it before every `./deploy.sh`.** The script bumps only the version, never the notes, so 1.3.6 went out still showing the 1.3.5 list.
+- Owner style for notes: group related work under one plain heading ("New layout blocks: accordion, popup, header") with one short line. No feature-by-feature detail and no internal names.
+- `supportedUpgradeFrom` now includes 1.3.5 and 1.3.6. Nothing enforces it; it is only shown to users.
+
 ### 2026-09-29 — walkableca rebuild and the features it needed (task.md has the full log)
 - **Text alignment has one home: `styles.textAlign`** (`shared/text-align.ts`). `content.textAlign` is only read as an old fallback and is moved into styles on every save (client cleanup + server `validateContentForSave`, which covers SDK/API). Bug it fixed: published headings let content "left" beat a Style-tab centre.
 - **Icons on published pages never load react-icons.**
