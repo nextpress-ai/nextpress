@@ -110,7 +110,6 @@ function CoverRenderer({ content, styles }: CoverRendererProps) {
         style={{
           position: 'relative',
           zIndex: 3,
-          display: 'flex',
           flex: 1,
           width: '100%',
           minHeight: 0,

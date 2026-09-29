@@ -11,7 +11,7 @@ import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
 import { models } from "./storage.js";
-import { pool } from "./db.js";
+import { closeDatabase, pool } from "./db.js";
 import { readInstalledAppVersion } from "./config.js";
 import { createTransferExporter } from "./transfer/export-data.js";
 import { createTransferImporter, IMPORT_ORDER } from "./transfer/import-data.js";
@@ -233,10 +233,11 @@ function isTransferCliEntry(): boolean {
 
 /**
  * Close the DB pool so the process exits promptly instead of lingering on the
- * pg idle timeout. A failure here is logged but never masks the real result —
- * the caller's exit code stands.
+ * pg idle timeout, and close the dev PGlite folder so it is not left half-written.
+ * A failure here is logged but never masks the real result — the caller's exit code stands.
  */
 async function closeDbPool(): Promise<void> {
+	await closeDatabase();
 	if (!pool) return;
 	try {
 		await pool.end();

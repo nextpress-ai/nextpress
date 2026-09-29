@@ -70,7 +70,7 @@ export function useSettingsState<TContent>(args: {
   const updateContent = (updates: Partial<TContent>) => {
     const patch = withNullsForClearedKeys(updates);
     if (accessor) {
-      accessor.setContent((prev) => {
+      accessor.setContent((prev: TContent | undefined) => {
         const current = (prev ?? {}) as Record<string, unknown>;
         return { ...current, ...patch } as TContent;
       });

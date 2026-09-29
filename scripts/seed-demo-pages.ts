@@ -267,21 +267,24 @@ export async function seedDemoPages({
 		return results;
 	}
 
+	const { initDevDatabase, closeDatabase } = await import("../server/db.js").catch(
+		(error: Error) => {
+			throw new Error(
+				`PGlite init failed. Stop pnpm dev and retry, or use --via-api.\nOriginal: ${String(error)}`,
+			);
+		},
+	);
 	try {
-		const { initDevDatabase } = await import("../server/db.js");
 		await initDevDatabase();
-	} catch (error) {
-		throw new Error(
-			`PGlite init failed. Stop pnpm dev and retry, or use --via-api.\nOriginal: ${String(error)}`,
-		);
+		const { siteId, authorId } = await resolveSeedContext();
+		const results: SeedResult[] = [];
+		for (const def of demoPageDefinitions) {
+			results.push(await upsertDemoPageDb({ def, siteId, authorId, baseUrl }));
+		}
+		return results;
+	} finally {
+		await closeDatabase();
 	}
-
-	const { siteId, authorId } = await resolveSeedContext();
-	const results: SeedResult[] = [];
-	for (const def of demoPageDefinitions) {
-		results.push(await upsertDemoPageDb({ def, siteId, authorId, baseUrl }));
-	}
-	return results;
 }
 
 function printResults(results: SeedResult[]): void {

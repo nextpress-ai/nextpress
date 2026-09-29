@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { models } from "./storage.js";
+import { closeDatabase } from "./db.js";
 import { initializeDefaultTemplates } from "./initialize-default-templates.js";
 import { initializeDefaultThemes } from "./themes.js";
 
@@ -49,9 +50,13 @@ function isSeedCliEntry(): boolean {
 
 if (isSeedCliEntry()) {
 	main()
-		.then(() => process.exit(0))
-		.catch((error: unknown) => {
+		.then(async () => {
+			await closeDatabase();
+			process.exit(0);
+		})
+		.catch(async (error: unknown) => {
 			console.error("[seed] Failed:", error);
+			await closeDatabase();
 			process.exit(1);
 		});
 }

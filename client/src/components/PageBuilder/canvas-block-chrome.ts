@@ -20,14 +20,18 @@ export function defaultCanvasChromeMode(blockName: string): CanvasChromeMode {
 export type CanvasChromeAlign = "left" | "center" | "right";
 
 type ChromeStyleSource = CSSProperties & {
-  contentAlignHorizontal?: string;
+  contentAlignHorizontal?: string | null;
 };
 
-type ChromeContentSource = {
-  textAlign?: string;
-};
+/** Any block content; only text-like kinds carry `textAlign`. */
+type ChromeContentSource = object;
 
-function readSideAlign(value: string | undefined): CanvasChromeAlign | null {
+const readContentTextAlign = (content: ChromeContentSource | undefined): string | undefined =>
+  content && "textAlign" in content && typeof content.textAlign === "string"
+    ? content.textAlign
+    : undefined;
+
+function readSideAlign(value: string | null | undefined): CanvasChromeAlign | null {
   if (value === "center" || value === "right" || value === "left") return value;
   return null;
 }
@@ -49,7 +53,7 @@ export function readCanvasChromeAlign({
     typeof styles?.textAlign === "string" ? styles.textAlign : undefined,
   );
   if (fromStyle) return fromStyle;
-  return readSideAlign(content?.textAlign) ?? "left";
+  return readSideAlign(readContentTextAlign(content)) ?? "left";
 }
 
 /** Full-width slot so a hugged frame can still sit left / center / right. */

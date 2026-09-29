@@ -66,7 +66,7 @@ describe('block settings anatomy', () => {
     const { container } = renderSettings(pageShell());
     expect(container.querySelector('[data-npb-collapsible-card]')).toBeNull();
     expect(screen.queryByRole('button', { name: /Page design/ })).toBeNull();
-    for (const label of ['Font', 'Content width', 'Padding', 'Background', 'Text']) {
+    for (const label of ['Font', 'Content width', 'Side padding', 'Top and bottom padding', 'Background', 'Text']) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
@@ -77,18 +77,22 @@ describe('block settings anatomy', () => {
     expect(within(width).getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('Content width custom value')).toHaveValue('1100');
     expect(screen.getByRole('combobox', { name: 'Content width unit' })).toHaveTextContent('px');
-    // Two-part padding cannot be split into one number, so it stays exactly as saved.
-    const padding = screen.getByRole('group', { name: 'Padding' });
-    expect(within(padding).getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByLabelText('Padding custom value')).toHaveValue('3rem 1.5rem');
+    // Saved `3rem 1.5rem` splits into its two axes: 1.5rem sides match no preset, 3rem top and bottom is Roomy.
+    const side = screen.getByRole('group', { name: 'Side padding' });
+    expect(within(side).getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Side padding custom value')).toHaveValue('1.5');
+    const topBottom = screen.getByRole('radiogroup', { name: 'Top and bottom padding' });
+    expect(within(topBottom).getByRole('radio', { name: 'Roomy' })).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('lights the Normal padding preset for the default page padding, with Custom unlit', () => {
+  it('lights the Normal padding presets for the default page padding, with Custom unlit', () => {
     renderSettings(pageShell());
-    const padding = screen.getByRole('radiogroup', { name: 'Padding' });
-    expect(within(padding).getByRole('radio', { name: 'Normal' })).toHaveAttribute('aria-checked', 'true');
-    const group = screen.getByRole('group', { name: 'Padding' });
-    expect(within(group).getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'false');
+    for (const label of ['Side padding', 'Top and bottom padding']) {
+      const presets = screen.getByRole('radiogroup', { name: label });
+      expect(within(presets).getByRole('radio', { name: 'Normal' })).toHaveAttribute('aria-checked', 'true');
+      const group = screen.getByRole('group', { name: label });
+      expect(within(group).getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'false');
+    }
   });
 
   it('never nests one accordion card inside another', async () => {

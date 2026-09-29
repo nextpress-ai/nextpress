@@ -1,24 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { models } from "./storage.js";
 import { ensureRootPageShell } from "@shared/page-shell-model";
-import type { BlockConfig } from "@shared/schema-types";
-
-type StarterBlock = {
-	id: string;
-	name: string;
-	label: string;
-	type: "block" | "container";
-	parentId: string | null;
-	category: string;
-	content: Record<string, unknown>;
-	styles: Record<string, string>;
-	settings: Record<string, unknown>;
-	other: Record<string, unknown>;
-	children?: StarterBlock[];
-};
+import type { BlockConfig, BlockContent } from "@shared/schema-types";
 
 /** Builds a minimal starter layout editors can extend. */
-function buildStarterBlocks({ kind }: { kind: "page" | "post" }): StarterBlock[] {
+function buildStarterBlocks({ kind }: { kind: "page" | "post" }): BlockConfig[] {
 	const headingId = randomUUID();
 	const paragraphId = randomUUID();
 	const buttonId = randomUUID();
@@ -30,7 +16,15 @@ function buildStarterBlocks({ kind }: { kind: "page" | "post" }): StarterBlock[]
 			? "Replace this starter layout with your own blocks, or edit it in place."
 			: "Start writing your post. This layout comes from the default post template.";
 
-	const starter: StarterBlock[] = [
+	// Same shape the button block reads: text content plus its link.
+	const buttonContent: BlockContent & { url: string; linkTarget: "_self" } = {
+		kind: "text",
+		value: kind === "page" ? "Get started" : "Read more",
+		url: "#",
+		linkTarget: "_self",
+	};
+
+	const starter: BlockConfig[] = [
 		{
 			id: headingId,
 			name: "core/heading",
@@ -68,12 +62,7 @@ function buildStarterBlocks({ kind }: { kind: "page" | "post" }): StarterBlock[]
 			type: "block",
 			parentId: null,
 			category: "basic",
-			content: {
-				kind: "text",
-				value: kind === "page" ? "Get started" : "Read more",
-				url: "#",
-				linkTarget: "_self",
-			},
+			content: buttonContent,
 			styles: {
 				padding: "20px",
 				margin: "0px",
@@ -88,9 +77,9 @@ function buildStarterBlocks({ kind }: { kind: "page" | "post" }): StarterBlock[]
 		},
 	];
 	return ensureRootPageShell({
-		blocks: starter as BlockConfig[],
+		blocks: starter,
 		shellId: randomUUID(),
-	}).blocks as StarterBlock[];
+	}).blocks;
 }
 
 /**

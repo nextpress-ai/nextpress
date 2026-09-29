@@ -6,15 +6,15 @@ export function formatMenuPosition(menuOrder: number | null | undefined): number
 }
 
 /** Moves one page to a 1-based menu slot in a local ordered list. */
-export function movePageToMenuPosition({
+export function movePageToMenuPosition<TPage extends Pick<Page, 'id'>>({
   pages,
   pageId,
   targetPosition,
 }: {
-  pages: Page[];
+  pages: TPage[];
   pageId: string;
   targetPosition: number;
-}): Page[] {
+}): TPage[] {
   const fromIndex = pages.findIndex((page) => page.id === pageId);
   if (fromIndex < 0) {
     return pages;

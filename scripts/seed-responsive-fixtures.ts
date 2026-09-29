@@ -1,6 +1,4 @@
 import "dotenv/config";
-import { initDevDatabase } from "../server/db.js";
-import { models } from "../server/storage.js";
 import { validateContentForSave } from "@shared/validate-content-save";
 import { responsiveGoldenFixtures } from "@shared/test/fixtures/responsive/fixtures";
 import type { BlockConfig } from "@shared/schema-types";
@@ -49,6 +47,7 @@ const DEFAULT_SEED_PASSWORD = "TestPass1";
 
 /** Resolves site and author for idempotent fixture seeding via PGlite. */
 async function resolveSeedContext(): Promise<{ siteId: string; authorId: string }> {
+	const { models } = await import("../server/storage.js");
 	const site = await models.sites.findDefaultSite();
 	if (!site?.id) {
 		throw new Error("No default site found. Run setup or seed defaults first.");
@@ -95,6 +94,7 @@ async function upsertFixturePageDb({
 	baseUrl: string;
 }): Promise<SeedResult> {
 	const blocks = validatedBlocks(seed.key);
+	const { models } = await import("../server/storage.js");
 	const existing = await models.pages.findBySiteAndSlug(siteId, seed.slug);
 	const pagePayload = {
 		title: seed.title,
@@ -286,20 +286,24 @@ export async function seedResponsiveFixtures({
 		return seedResponsiveFixturesViaApi(baseUrl);
 	}
 
+	const { initDevDatabase, closeDatabase } = await import("../server/db.js").catch(
+		(error: Error) => {
+			throw new Error(
+				`PGlite init failed (dev server may hold the DB lock). Stop pnpm dev and retry, or use: pnpm seed:responsive-fixtures -- --via-api\nOriginal: ${String(error)}`,
+			);
+		},
+	);
 	try {
 		await initDevDatabase();
-	} catch (error) {
-		throw new Error(
-			`PGlite init failed (dev server may hold the DB lock). Stop pnpm dev and retry, or use: pnpm seed:responsive-fixtures -- --via-api\nOriginal: ${String(error)}`,
-		);
+		const { siteId, authorId } = await resolveSeedContext();
+		const results: SeedResult[] = [];
+		for (const seed of FIXTURE_PAGES) {
+			results.push(await upsertFixturePageDb({ seed, siteId, authorId, baseUrl }));
+		}
+		return results;
+	} finally {
+		await closeDatabase();
 	}
-
-	const { siteId, authorId } = await resolveSeedContext();
-	const results: SeedResult[] = [];
-	for (const seed of FIXTURE_PAGES) {
-		results.push(await upsertFixturePageDb({ seed, siteId, authorId, baseUrl }));
-	}
-	return results;
 }
 
 function printResults(results: SeedResult[]): void {

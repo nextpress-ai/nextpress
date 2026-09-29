@@ -53,6 +53,11 @@ export const RELEASE_MANIFEST = {
 		},
 		{
 			kind: "fix",
+			title: "Theme names can be edited",
+			description: "Typing a theme name or description no longer breaks the theme editor.",
+		},
+		{
+			kind: "fix",
 			title: "Live site matches the editor",
 			description: "What you design is what gets published.",
 		},
@@ -67,7 +72,7 @@ export const RELEASE_MANIFEST = {
 			description: "Older sites upgrade without getting stuck.",
 		},
 	] satisfies ReleaseHighlight[],
-	supportedUpgradeFrom: ["1.0.12", "1.3.2", "1.3.3", "1.3.4", "1.3.5", "1.3.6"],
+	supportedUpgradeFrom: ["1.0.12", "1.3.2", "1.3.3", "1.3.4", "1.3.5", "1.3.6", "1.3.7"],
 } as const;
 
 export type { ReleaseHighlight, ReleaseHighlightKind } from "./release-highlight-meta";

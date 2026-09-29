@@ -19,7 +19,7 @@ import { TableSettings } from "./table-settings";
 // ============================================================================
 
 interface TableRendererProps {
-  content: TableContent;
+  content: TableContent | TableData;
   styles?: React.CSSProperties;
   isEditing?: boolean;
   onUpdateContent?: (updates: Partial<TableData>) => void;
@@ -429,7 +429,7 @@ function TableRenderer({
 // BLOCK DEFINITION
 // ============================================================================
 
-const TableBlock = createBlockDefinition<TableContent>({
+const TableBlock = createBlockDefinition<TableContent | TableData>({
   id: "core/table",
   label: "Table",
   icon: TableIcon,

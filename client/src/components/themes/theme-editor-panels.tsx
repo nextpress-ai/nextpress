@@ -78,6 +78,8 @@ export function ThemeEditorPanels({
   themeId,
   draftName,
   draftDescription,
+  onDraftNameChange,
+  onDraftDescriptionChange,
   draft,
   activePaletteId,
   activeTypeScaleId,

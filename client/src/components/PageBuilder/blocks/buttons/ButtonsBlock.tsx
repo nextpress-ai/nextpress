@@ -1,5 +1,5 @@
 import React from 'react';
-import type { BlockConfig } from '@shared/schema-types';
+import type { BlockConfig, BlockContent } from '@shared/schema-types';
 import { readStructuredBlockData } from '@shared/read-block-content';
 import { Input } from '@/components/ui/input';
 import {

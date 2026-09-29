@@ -369,13 +369,12 @@ export default function PageBuilderEditor({
     setPrevDataId(dataId);
 
     // Load local draft — skip for templates (they save directly)
-    let localDraft: { updatedAt?: unknown; [key: string]: unknown } | null = null;
-    if (!isTemplate) {
-      const localResult = isPost
+    const localResult = isTemplate
+      ? null
+      : isPost
         ? loadPostDraft(dataId)
         : loadPageDraft(dataId);
-      localDraft = localResult.status ? localResult.data : null;
-    }
+    const localDraft = localResult?.status ? localResult.data : null;
 
     const useLocal =
       localDraft &&
@@ -383,7 +382,7 @@ export default function PageBuilderEditor({
         localUpdatedAt: localDraft.updatedAt as Date | string | null | undefined,
         remoteUpdatedAt: data.updatedAt,
       });
-    const source = useLocal ? localDraft : data;
+    const source = useLocal && localDraft ? localDraft : data;
 
     const loaded = applyEditorSource({
       source,

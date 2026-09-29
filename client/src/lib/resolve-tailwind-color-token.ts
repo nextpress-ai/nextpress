@@ -51,8 +51,11 @@ export const normalizeHexColor = (raw: string): string | null => {
   return null;
 };
 
+/** Spread so the typed palette can be looked up by any family name. */
+const TOKEN_COLOR_GROUPS: Record<string, unknown> = { ...tokenColors };
+
 const readTokenHex = (family: string, shade?: string): string | null => {
-  const colorGroup = (tokenColors as Record<string, unknown>)[family];
+  const colorGroup = TOKEN_COLOR_GROUPS[family];
   if (!colorGroup) return null;
   if (typeof colorGroup === 'string') return colorGroup;
   if (shade && typeof colorGroup === 'object' && colorGroup !== null) {
