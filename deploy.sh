@@ -10,6 +10,7 @@
 #   --skip-build  Skip project build (pnpm build)
 #   --version X.Y.Z  Set release version explicitly (skip auto bump rule)
 #   --skip-push     Skip Docker Hub push confirmation
+#   --y             Push to Docker Hub without asking
 #   --skip-release  Skip version bump, git tag, and GitHub release publish
 #   -h, --help    Show help message
 #
@@ -31,6 +32,7 @@ SKIP_DB=true
 SKIP_BUILD=false
 SKIP_PUSH=false
 SKIP_RELEASE=false
+AUTO_PUSH=false
 DEPLOY_VERSION=""
 
 while [[ $# -gt 0 ]]; do
@@ -59,6 +61,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_RELEASE=true
       shift
       ;;
+    --y)
+      AUTO_PUSH=true
+      shift
+      ;;
     -h|--help)
       echo "Usage: ./deploy.sh [OPTIONS]"
       echo ""
@@ -67,6 +73,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --skip-build  Skip project build (pnpm build)"
       echo "  --version X.Y.Z Set release version explicitly"
       echo "  --skip-push     Skip Docker Hub push (build & verify only)"
+      echo "  --y             Push to Docker Hub without asking"
       echo "  --skip-release  Skip version bump, git tag, and GitHub release publish"
       echo "  -h, --help    Show this help message"
       exit 0
@@ -441,7 +448,12 @@ else
   echo -e "  ${BOLD}Size:${NC}    ${IMAGE_SIZE}"
   echo ""
 
-  read -rp "  Push to Docker Hub? [y/N]: " confirm_push
+  if [[ "$AUTO_PUSH" == true ]]; then
+    confirm_push=y
+    print_info "Pushing without asking (--y)"
+  else
+    read -rp "  Push to Docker Hub? [y/N]: " confirm_push
+  fi
 
   if [[ ! "$confirm_push" =~ ^[Yy]$ ]]; then
     print_warning "Push cancelled"
