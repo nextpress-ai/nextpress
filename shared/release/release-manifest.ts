@@ -31,7 +31,7 @@ export const RELEASE_MANIFEST = {
 			kind: "update",
 			title: "Move pages between sites",
 			description:
-				"Export a page with its images and theme, then import it on another NextPress site as a draft. Or copy and paste blocks between sites.",
+				"Export a page with its images, theme and the pages it links to, then import them on another NextPress site as drafts. Links follow if an address is taken. Or copy and paste blocks between sites.",
 		},
 		{
 			kind: "update",

@@ -4,18 +4,11 @@
  * On another site the same files get new paths, so every mention has to follow.
  */
 
+import { decodePath } from "./decode-path.js";
+
 const UPLOAD_PATH_PATTERN = /\/uploads\/[^\s"'()<>,\\?#]+/g;
 
 const escapeForRegex = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-const safeDecode = (text: string): string => {
-	try {
-		return decodeURI(text);
-	} catch {
-		// A lone `%` is not an encoded path; the text is already plain.
-		return text;
-	}
-};
 
 /** Every string anywhere inside a JSON-like value. */
 function collectStrings(value: unknown, into: string[] = []): string[] {
@@ -43,7 +36,7 @@ export function findUploadRefs({
 	const strings = collectStrings(value);
 	const found = new Set<string>();
 	strings.forEach((text) =>
-		(text.match(UPLOAD_PATH_PATTERN) ?? []).forEach((match) => found.add(safeDecode(match))),
+		(text.match(UPLOAD_PATH_PATTERN) ?? []).forEach((match) => found.add(decodePath(match))),
 	);
 	knownUrls
 		.filter((url) => strings.some((text) => text.includes(url) || text.includes(encodeURI(url))))

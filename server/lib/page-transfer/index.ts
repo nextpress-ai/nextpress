@@ -6,3 +6,4 @@ export {
 	type ImportedTheme,
 	type PageImportResult,
 } from "./import-page-package";
+export { createLinkedPagesFinder, type LinkedPage, type LinkedPagesResult } from "./find-linked-pages";

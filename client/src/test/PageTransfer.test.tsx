@@ -78,6 +78,8 @@ describe('ImportPageDialog', () => {
       new Response(
         JSON.stringify({
           page: { id: 'page-9', title: 'walkableca' },
+          pages: [{ id: 'page-9', title: 'walkableca', slug: 'walkableca' }],
+          renamed: [],
           files: { refMap: {}, added: ['hero.png'], reused: [], missing: [{ name: 'clip.mp4', reason: 'left out on export' }] },
           theme: { status: 'added', name: 'Walk theme', id: 't1' },
         }),
@@ -109,17 +111,53 @@ describe('ImportPageDialog', () => {
 describe('ExportPageDialog', () => {
   it('asks the server to leave files out when the switch is off', async () => {
     const user = userEvent.setup();
-    fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+    fetchMock.mockImplementation(async () => new Response('{"pages":[],"missing":[]}', { status: 200 }));
     const createUrl = vi.fn(() => 'blob:x');
     vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: createUrl, revokeObjectURL: vi.fn() }));
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-    render(<ExportPageDialog page={{ id: 'p1', title: 'Home' }} open onOpenChange={() => undefined} />);
+    withQuery(<ExportPageDialog page={{ id: 'p1', title: 'Home' }} open onOpenChange={() => undefined} />);
 
     await user.click(screen.getByRole('switch', { name: /Include images, videos and other files/ }));
     await user.click(screen.getByRole('button', { name: 'Download file' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/page-transfer/pages/p1/export?files=0', expect.anything()));
     await waitFor(() => expect(toasts.success).toHaveBeenCalledWith('Page file downloaded'));
     expect(click).toHaveBeenCalled();
+    click.mockRestore();
+  });
+});
+
+describe('ExportPageDialog linked pages', () => {
+  it('ticks linked pages except the homepage, offers deeper ones on request, and sends the choice', async () => {
+    const user = userEvent.setup();
+    const links = {
+      pages: [
+        { id: 'p-contact', title: 'Contact', slug: 'contact', status: 'draft', depth: 1, isHomepage: false, linkedFrom: 'walkableca' },
+        { id: 'p-work', title: 'Work', slug: 'work', status: 'publish', depth: 1, isHomepage: true, linkedFrom: 'walkableca' },
+        { id: 'p-thanks', title: 'Thanks', slug: 'thanks', status: 'draft', depth: 2, isHomepage: false, linkedFrom: 'Contact' },
+      ],
+      missing: ['/terms-and-conditions'],
+    };
+    fetchMock.mockImplementation(async (url: string) =>
+      url.endsWith('/links') ? new Response(JSON.stringify(links), { status: 200 }) : new Response('{}', { status: 200 }),
+    );
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:x'), revokeObjectURL: vi.fn() }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    withQuery(<ExportPageDialog page={{ id: 'p-main', title: 'walkableca' }} open onOpenChange={() => undefined} />);
+
+    const contact = await screen.findByRole('checkbox', { name: /Contact/ });
+    expect(contact).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /Work · homepage/ })).not.toBeChecked();
+    expect(screen.queryByRole('checkbox', { name: /Thanks/ })).toBeNull();
+    expect(screen.getByText(/Not on this site: \/terms-and-conditions/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('switch', { name: /Also list the pages those link to/ }));
+    expect(screen.getByRole('checkbox', { name: /Thanks/ })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Download 3 pages' }));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/page-transfer/pages/p-main/export?files=1&include=p-contact%2Cp-thanks', expect.anything()),
+    );
+    await waitFor(() => expect(toasts.success).toHaveBeenCalledWith('Page file with 3 pages downloaded'));
     click.mockRestore();
   });
 });

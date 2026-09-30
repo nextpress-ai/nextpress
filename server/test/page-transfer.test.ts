@@ -9,6 +9,7 @@ import {
   createPackageFileStore,
   createPagePackageBuilder,
   createPageImporter,
+  createLinkedPagesFinder,
   isPageImportRefusal,
 } from '../lib/page-transfer';
 
@@ -209,6 +210,62 @@ describe('page transfer between two sites', () => {
     expect(themes).toHaveLength(1);
   });
 
+  const contactPage = (): PageRow =>
+    ({
+      id: 'page-contact',
+      title: 'Contact',
+      slug: 'contact',
+      siteId: 'site-local',
+      status: 'draft',
+      authorId: 'u1',
+      featuredImage: null,
+      blocks: shellWith([
+        imageBlock('logo', '/uploads/hero-1.png'),
+        { ...imageBlock('link-back', ''), content: { kind: 'text', value: '<a href="/walkableca">Home</a>' } },
+      ]),
+      other: {},
+    }) as unknown as PageRow;
+
+  const linkingPage = (): PageRow => {
+    const page = sourcePage();
+    return {
+      ...page,
+      blocks: shellWith([
+        imageBlock('img', '/uploads/hero-1.png'),
+        { id: 'btn', name: 'core/button', type: 'block', parentId: null, content: { kind: 'text', value: 'Join', url: '/contact/#form' } as BlockConfig['content'] },
+      ]),
+    } as PageRow;
+  };
+
+  it('brings linked pages in one file: shared files once, links follow a taken address', async () => {
+    const pkg = await roundTrip(
+      await builder(local).buildForPage({ page: linkingPage(), extraPages: [contactPage()], includeFiles: true }),
+    );
+    expect(pkg.formatVersion).toBe(2);
+    expect(pkg.extraPages?.map((page) => page.slug)).toEqual(['contact']);
+    expect(pkg.files.filter((file) => file.ref === '/uploads/hero-1.png')).toHaveLength(1);
+
+    // "contact" is already used on the other site, so the imported Contact becomes contact-2.
+    const result = await importerFor(remote, ['contact']).importPage({ pkg, siteId: 'site-remote', authorId: 'u9', includeTheme: false });
+
+    expect(result.pages.map((page) => page.slug)).toEqual(['walkableca', 'contact-2']);
+    expect(result.renamed).toEqual([{ title: 'Contact', from: 'contact', to: 'contact-2' }]);
+    const main = JSON.stringify(result.pages[0]!.blocks);
+    expect(main).toContain('"url":"/contact-2/#form"');
+    const contact = JSON.stringify(result.pages[1]!.blocks);
+    expect(contact).toContain('href=\\"/walkableca\\"');
+    expect(remote.media.rows.filter((row) => row.originalName === 'hero.png')).toHaveLength(1);
+  });
+
+  it('writes nothing when any page in the file cannot be used', async () => {
+    const pkg = await builder(local).buildForPage({ page: sourcePage(), extraPages: [contactPage()], includeFiles: true });
+    const broken = { ...pkg, extraPages: [{ ...pkg.extraPages![0]!, blocks: [{ id: 'x', name: 'core/not-a-block', type: 'block', parentId: null, content: { kind: 'text', value: '' } }] as BlockConfig[] }] };
+    const attempt = importerFor(remote).importPage({ pkg: broken, siteId: 'site-remote', authorId: 'u9', includeTheme: false });
+    await expect(attempt).rejects.toSatisfy((error: Error) => isPageImportRefusal(error) && error.message.includes('"Contact"'));
+    expect(createdPages).toHaveLength(0);
+    expect(remote.media.rows).toHaveLength(0);
+  });
+
   it('refuses copied blocks as a page file', async () => {
     const pkg = await builder(local).buildForPage({ page: sourcePage(), includeFiles: false });
     const { page: _page, ...blocksOnly } = pkg;
@@ -249,5 +306,46 @@ describe('package file store', () => {
     expect(result.missing).toEqual([{ name: 'b.exe', reason: "this file type isn't allowed on this site" }]);
     const svgOnDisk = await fs.readFile(path.join(site.uploadDir, path.basename(result.refMap['/uploads/c.svg']!)), 'utf8');
     expect(svgOnDisk).not.toContain('<script');
+  });
+});
+
+describe('linked pages', () => {
+  const page = (slug: string, links: string[], status = 'draft'): PageRow =>
+    ({
+      id: `id-${slug}`,
+      title: slug,
+      slug,
+      siteId: 's',
+      status,
+      blocks: links.map((href, i) => ({ id: `${slug}-${i}`, name: 'core/button', type: 'block', parentId: null, content: { kind: 'text', value: '', url: href } })),
+      other: {},
+    }) as unknown as PageRow;
+
+  const site = [
+    page('walkableca', ['/', '/contact', '/terms', '/walkableca']),
+    page('contact', ['/thanks', '/']),
+    page('thanks', []),
+    page('work', ['/about'], 'publish'),
+    page('about', []),
+    page('old', [], 'trash'),
+  ];
+  const finder = createLinkedPagesFinder({
+    findBySiteAndSlug: async (_siteId, slug) => site.find((row) => row.slug === slug),
+    readHomepageSlug: async () => 'work',
+  });
+
+  it('lists direct and deeper links, marks the homepage, never follows it, and names missing pages', async () => {
+    const result = await finder.findLinked({ page: site[0]! });
+    expect(result.pages.map((p) => [p.slug, p.depth, p.isHomepage, p.linkedFrom])).toEqual([
+      ['work', 1, true, 'walkableca'],
+      ['contact', 1, false, 'walkableca'],
+      ['thanks', 2, false, 'contact'],
+    ]);
+    expect(result.missing).toEqual(['/terms']);
+  });
+
+  it('treats trashed pages as missing', async () => {
+    const result = await finder.findLinked({ page: page('x', ['/old']) });
+    expect(result).toEqual({ pages: [], missing: ['/old'] });
   });
 });

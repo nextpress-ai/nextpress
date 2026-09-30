@@ -45,8 +45,12 @@ function ChosenSummary({ chosen }: { chosen: Chosen }): JSX.Element {
   const { pkg, file } = chosen;
   const carried = pkg.files.filter((item) => item.data).length;
   const placeholders = pkg.files.length - carried;
+  const extras = pkg.extraPages ?? [];
   const rows: [string, string][] = [
     ['Page', pkg.page?.title ?? 'Untitled'],
+    ...(extras.length > 0
+      ? ([['Linked pages', extras.map((extra) => extra.title || 'Untitled').join(', ')]] as [string, string][])
+      : []),
     ['Blocks', String(countPageBlocks(pkg.blocks))],
     [
       'Files',
@@ -59,7 +63,7 @@ function ChosenSummary({ chosen }: { chosen: Chosen }): JSX.Element {
       {rows.map(([label, value]) => (
         <div key={label} className="contents">
           <dt className="text-npb-text-muted">{label}</dt>
-          <dd className="truncate font-medium text-npb-text-primary">{value}</dd>
+          <dd className="font-medium text-npb-text-primary [overflow-wrap:anywhere]">{value}</dd>
         </div>
       ))}
     </dl>
@@ -78,8 +82,25 @@ function ImportedSummary({ result }: { result: PageImportResult }): JSX.Element 
     <div className="grid gap-3 text-sm">
       <p className="flex items-center gap-2 font-medium text-npb-text-primary">
         <CheckCircle2 className="h-4 w-4 text-npb-status-success" aria-hidden />
-        "{result.page.title}" is ready as a draft.
+        {result.pages.length > 1
+          ? `${result.pages.length} pages are ready as drafts.`
+          : `"${result.page.title}" is ready as a draft.`}
       </p>
+      {result.pages.length > 1 ? (
+        <ul className="grid gap-1 text-npb-text-secondary">
+          {result.pages.map((created) => (
+            <li key={created.id}>
+              {created.title} <span className="text-npb-text-muted">/{created.slug}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {result.renamed.length > 0 ? (
+        <p className="text-npb-text-secondary">
+          {result.renamed.map((item) => `"${item.title}" is at /${item.to} because /${item.from} was taken`).join('. ')}.
+          Links between the imported pages already point to the new addresses.
+        </p>
+      ) : null}
       <p className="text-npb-text-secondary">
         {result.files.added.length} files added, {result.files.reused.length} already on this site.
       </p>

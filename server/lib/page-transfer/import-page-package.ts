@@ -2,7 +2,7 @@ import type { BlockConfig, Theme } from "@shared/schema-types";
 import type { pages } from "@shared/schema";
 
 type PageRow = typeof pages.$inferSelect;
-import { rewriteFileRefs, type PagePackage, type StoredPackageFiles } from "@shared/page-transfer";
+import { rewriteFileRefs, rewritePageLinks, type PagePackage, type StoredPackageFiles } from "@shared/page-transfer";
 import { validateContentForSave } from "@shared/validate-content-save";
 import { ensureRootPageShell } from "@shared/page-shell-model";
 import { reIdBlocks } from "@shared/re-id-blocks";
@@ -16,7 +16,11 @@ export type ImportedTheme =
 	| { status: "added" | "reused"; name: string; id: string };
 
 export type PageImportResult = {
+	/** The main page (first in `pages`). */
 	page: PageRow;
+	pages: PageRow[];
+	/** Pages whose address was taken here, so they got a new one; links to them follow. */
+	renamed: { title: string; from: string; to: string }[];
 	files: StoredPackageFiles;
 	theme: ImportedTheme;
 };
@@ -85,6 +89,36 @@ export function createPageImporter(deps: PageImportDeps) {
 		return { status: "added", name: created.name, id: created.id };
 	};
 
+	/** One page from the file: the main page first, then any linked pages that came along. */
+	type IncomingPage = { title: string; slug: string; featuredImage: string | null; other: Record<string, unknown>; blocks: BlockConfig[] };
+
+	const checkContent = (page: IncomingPage) => {
+		const validation = validateContentForSave({
+			blocks: reIdBlocks({ blocks: page.blocks, generateId: deps.generateId }),
+			other: otherForDuplicatedPage(page.other),
+			contentType: "page",
+		});
+		if (!validation.ok) {
+			throw refuseImport(`"${page.title}" has content this site can't use: ${validation.error.message}`);
+		}
+		return validation;
+	};
+
+	/** Free addresses for every page, so two imported pages never compete for the same one. */
+	const reserveSlugs = async ({ siteId, incoming }: { siteId: string; incoming: IncomingPage[] }): Promise<string[]> => {
+		const reserved = new Set<string>();
+		const slugs: string[] = [];
+		for (const page of incoming) {
+			const slug = await uniquePageSlug({
+				title: page.slug || page.title,
+				isTaken: async (candidate) => reserved.has(candidate) || (await deps.isSlugTaken({ siteId, slug: candidate })),
+			});
+			reserved.add(slug);
+			slugs.push(slug);
+		}
+		return slugs;
+	};
+
 	const importPage = async ({
 		pkg,
 		siteId,
@@ -99,42 +133,45 @@ export function createPageImporter(deps: PageImportDeps) {
 		if (!pkg.page) {
 			throw refuseImport("These are copied blocks, not a page file. Paste them in the editor instead.");
 		}
+		const incoming: IncomingPage[] = [{ ...pkg.page, blocks: pkg.blocks }, ...(pkg.extraPages ?? [])];
+
+		// Every page must be usable before anything is written, so a bad page never leaves half an import.
+		incoming.forEach(checkContent);
 
 		const files = await deps.store.storeFiles({ files: pkg.files, siteId, authorId });
-		const moved = rewriteFileRefs({
-			value: { blocks: pkg.blocks, other: pkg.page.other, featuredImage: pkg.page.featuredImage },
-			refMap: files.refMap,
-		});
+		const slugs = await reserveSlugs({ siteId, incoming });
+		const slugMap = Object.fromEntries(
+			incoming
+				.map((page, index) => [page.slug.toLowerCase(), slugs[index]!] as const)
+				.filter(([from, to]) => from && from !== to),
+		);
 
-		const other = otherForDuplicatedPage(moved.other);
-		const validation = validateContentForSave({
-			blocks: reIdBlocks({ blocks: moved.blocks, generateId: deps.generateId }),
-			other,
-			contentType: "page",
-		});
-		if (!validation.ok) {
-			throw refuseImport(`This page has content this site can't use: ${validation.error.message}`);
+		const created: PageRow[] = [];
+		for (const [index, page] of incoming.entries()) {
+			const moved = rewritePageLinks({
+				value: rewriteFileRefs({
+					value: { blocks: page.blocks, other: page.other, featuredImage: page.featuredImage },
+					refMap: files.refMap,
+				}),
+				slugMap,
+			});
+			const validation = checkContent({ ...page, ...moved });
+			created.push(
+				await deps.createPage({
+					title: page.title.trim() || "Imported page",
+					slug: slugs[index]!,
+					siteId,
+					authorId,
+					status: deps.draftStatus,
+					featuredImage: moved.featuredImage,
+					blocks: ensureRootPageShell({
+						blocks: Array.isArray(validation.blocks) ? (validation.blocks as BlockConfig[]) : [],
+						shellId: deps.generateId(),
+					}).blocks,
+					other: validation.other,
+				}),
+			);
 		}
-
-		const title = pkg.page.title.trim() || "Imported page";
-		const slug = await uniquePageSlug({
-			title: pkg.page.slug || title,
-			isTaken: (candidate) => deps.isSlugTaken({ siteId, slug: candidate }),
-		});
-
-		const page = await deps.createPage({
-			title,
-			slug,
-			siteId,
-			authorId,
-			status: deps.draftStatus,
-			featuredImage: moved.featuredImage,
-			blocks: ensureRootPageShell({
-				blocks: Array.isArray(validation.blocks) ? (validation.blocks as BlockConfig[]) : [],
-				shellId: deps.generateId(),
-			}).blocks,
-			other: validation.other,
-		});
 
 		const theme: ImportedTheme = !pkg.theme
 			? { status: "none" }
@@ -142,7 +179,10 @@ export function createPageImporter(deps: PageImportDeps) {
 				? await addTheme({ theme: pkg.theme, authorId })
 				: { status: "skipped", name: pkg.theme.name };
 
-		return { page, files, theme };
+		const renamed = incoming
+			.map((page, index) => ({ title: page.title, from: page.slug, to: slugs[index]! }))
+			.filter((item) => item.from && item.from.toLowerCase() !== item.to);
+		return { page: created[0]!, pages: created, renamed, files, theme };
 	};
 
 	return { importPage };

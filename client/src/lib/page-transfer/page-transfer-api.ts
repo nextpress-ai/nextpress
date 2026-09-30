@@ -7,7 +7,12 @@ export type ImportedTheme =
   | { status: 'added' | 'reused'; name: string; id: string };
 
 export type PageImportResult = {
+  /** The main page. */
   page: Page;
+  /** Every page created, main page first. */
+  pages: { id: string; title: string; slug: string }[];
+  /** Pages that got a new address because theirs was taken here; links to them were updated. */
+  renamed: { title: string; from: string; to: string }[];
   files: StoredPackageFiles;
   theme: ImportedTheme;
 };
@@ -34,18 +39,44 @@ const packageForm = ({ pkg, extra = {} }: { pkg: PagePackage | Blob; extra?: Rec
   return form;
 };
 
+/** A page the exported page links to (depth 1), or one those link to (depth 2+). */
+export type LinkedPage = {
+  id: string;
+  title: string;
+  slug: string;
+  status: string | null;
+  depth: number;
+  isHomepage: boolean;
+  linkedFrom: string;
+};
+
+export type LinkedPages = { pages: LinkedPage[]; missing: string[] };
+
+/** Pages a page links to, so the owner can choose which travel with it. */
+export async function fetchLinkedPages(pageId: string): Promise<LinkedPages> {
+  const response = await fetch(`/api/page-transfer/pages/${pageId}/links`, { credentials: 'include' });
+  if (!response.ok) throw await readFailure(response, "Couldn't list the linked pages. Please try again.");
+  return (await response.json()) as LinkedPages;
+}
+
 /**
  * Downloads a page file. With `includeFiles: false` every image, video and other file is left
  * out and comes back as a named placeholder on import.
+ * Chosen linked pages travel in the same file.
  */
 export async function downloadPageFile({
   pageId,
   includeFiles,
+  includePageIds = [],
 }: {
   pageId: string;
   includeFiles: boolean;
+  /** Linked pages that travel in the same file. */
+  includePageIds?: string[];
 }): Promise<void> {
-  const response = await fetch(`/api/page-transfer/pages/${pageId}/export?files=${includeFiles ? '1' : '0'}`, {
+  const params = new URLSearchParams({ files: includeFiles ? '1' : '0' });
+  if (includePageIds.length > 0) params.set('include', includePageIds.join(','));
+  const response = await fetch(`/api/page-transfer/pages/${pageId}/export?${params.toString()}`, {
     credentials: 'include',
   });
   if (!response.ok) throw await readFailure(response, "Couldn't prepare the page file. Please try again.");

@@ -2,11 +2,14 @@ import path from "node:path";
 import { promises as fs } from "node:fs";
 import type { BlockConfig, Media } from "@shared/schema-types";
 import type { pages } from "@shared/schema";
+
+type PageRow = typeof pages.$inferSelect;
 import {
 	decideFileTravel,
 	findUploadRefs,
 	PAGE_PACKAGE_FORMAT,
 	PAGE_PACKAGE_VERSION,
+	type PackageExtraPage,
 	type PackageFile,
 	type PackageTheme,
 	type PagePackage,
@@ -87,22 +90,35 @@ export function createPagePackageBuilder({
 		return { ...described, size: bytes.length, data: bytes.toString("base64") };
 	};
 
-	/** The whole page as one package. `includeFiles: false` gives a small layout-only file. */
+	const toPackagePage = (row: PageRow): PackageExtraPage => ({
+		title: row.title,
+		slug: row.slug,
+		featuredImage: row.featuredImage ?? null,
+		other: isRecord(row.other) ? row.other : {},
+		blocks: Array.isArray(row.blocks) ? (row.blocks as BlockConfig[]) : [],
+	});
+
+	/**
+	 * The page as one package, with any linked pages the owner chose (`extraPages`, same site).
+	 * Files used by several pages travel once. `includeFiles: false` gives a small layout-only file.
+	 */
 	const buildForPage = async ({
 		page,
+		extraPages = [],
 		includeFiles,
 	}: {
-		page: typeof pages.$inferSelect;
+		page: PageRow;
+		extraPages?: PageRow[];
 		includeFiles: boolean;
 	}): Promise<PagePackage> => {
 		const siteId = String(page.siteId);
-		const blocks = Array.isArray(page.blocks) ? (page.blocks as BlockConfig[]) : [];
-		const other = isRecord(page.other) ? page.other : {};
+		const main = toPackagePage(page);
+		const extras = extraPages.map(toPackagePage);
 		const siteMedia = await listSiteMedia(siteId);
 		const mediaByUrl = new Map(siteMedia.map((item) => [item.url, item]));
 
 		const refs = findUploadRefs({
-			value: { blocks, other, featuredImage: page.featuredImage },
+			value: [main, ...extras],
 			knownUrls: siteMedia.map((item) => item.url),
 		});
 		const files: PackageFile[] = [];
@@ -117,13 +133,9 @@ export function createPagePackageBuilder({
 			appVersion,
 			createdAt: new Date().toISOString(),
 			source: "export",
-			page: {
-				title: page.title,
-				slug: page.slug,
-				featuredImage: page.featuredImage ?? null,
-				other,
-			},
-			blocks,
+			page: { title: main.title, slug: main.slug, featuredImage: main.featuredImage, other: main.other },
+			blocks: main.blocks,
+			...(extras.length > 0 ? { extraPages: extras } : {}),
 			files,
 			...(theme ? { theme } : {}),
 		};

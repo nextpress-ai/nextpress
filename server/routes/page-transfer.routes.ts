@@ -15,12 +15,14 @@ import {
   createPackageFileStore,
   createPagePackageBuilder,
   createPageImporter,
+  createLinkedPagesFinder,
   isPageImportRefusal,
 } from '../lib/page-transfer';
 
 const RATE_WINDOW_MS = 60_000;
 const IMPORT_LIMIT_PER_MINUTE = 10;
 const EXPORT_LIMIT_PER_MINUTE = 20;
+const MAX_INCLUDED_PAGES = 50;
 
 type PublicError = Error & { statusCode: number; publicMessage: string };
 
@@ -36,7 +38,8 @@ const isPublicError = (error: Error): error is PublicError =>
  * files that came with pasted blocks. Page files arrive as an uploaded file, not a JSON body,
  * because they carry images and can be tens of megabytes.
  *
- * - GET  /api/page-transfer/pages/:id/export?files=1|0 - Download a page file
+ * - GET  /api/page-transfer/pages/:id/links - Pages this page links to (and what those link to)
+ * - GET  /api/page-transfer/pages/:id/export?files=1|0&include=id,id - Download a page file, with chosen linked pages
  * - POST /api/page-transfer/import - Create a draft page from a page file (field `package`)
  * - POST /api/page-transfer/files  - Store the files of copied blocks, returns old → new paths
  */
@@ -74,6 +77,14 @@ export function createPageTransferRoutes(deps: Deps): Router {
     uploadDir,
     uploadLimit: CONFIG.UPLOAD.LIMIT,
     appVersion: NEXTPRESS_CONFIG.version,
+  });
+
+  const linkedPages = createLinkedPagesFinder({
+    findBySiteAndSlug: (siteId, slug) => models.pages.findBySiteAndSlug(siteId, slug),
+    readHomepageSlug: async (siteId) => {
+      const option = await models.options.getOption('homepage_page_slug', siteId);
+      return typeof option?.value === 'string' && option.value ? option.value : null;
+    },
   });
 
   const importer = createPageImporter({
@@ -149,6 +160,44 @@ export function createPageTransferRoutes(deps: Deps): Router {
     return res.status(500).json({ message: fallback });
   };
 
+  /**
+   * Pages the chosen ones in `?include=id,id` stand for. Each must be a real page on the same site
+   * as the exported page; anything else is refused rather than quietly dropped.
+   */
+  const readIncludedPages = async ({ req, siteId, mainId }: { req: Request; siteId: string; mainId: string }) => {
+    const raw = typeof req.query.include === 'string' ? req.query.include : '';
+    const ids = [...new Set(raw.split(',').map((id) => id.trim()).filter((id) => id && id !== mainId))];
+    if (ids.length > MAX_INCLUDED_PAGES) throw refuse(400, `Choose at most ${MAX_INCLUDED_PAGES} linked pages.`);
+    const rows = await Promise.all(ids.map((id) => models.pages.findById(id)));
+    if (rows.some((row) => !row || String(row.siteId) !== siteId)) {
+      throw refuse(400, 'Some chosen pages are not on this site any more. Open Export again and retry.');
+    }
+    return rows.filter((row): row is NonNullable<typeof row> => Boolean(row));
+  };
+
+  router.get(
+    '/pages/:id/links',
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const { err, result } = await safeTryAsync(async () => {
+        const page = await models.pages.findById(req.params.id);
+        if (!page) throw refuse(404, 'This page no longer exists.');
+        await assertAuthenticatedSiteAccess({ req, models, siteId: String(page.siteId) });
+        return linkedPages.findLinked({ page });
+      });
+      if (err || !result) {
+        return sendError({
+          res,
+          err: err ?? new Error('Finding linked pages returned nothing'),
+          atFunction: 'pageTransfer.links',
+          ids: { pageId: req.params.id },
+          fallback: "Couldn't list the linked pages. Please try again.",
+        });
+      }
+      res.json(result);
+    }),
+  );
+
   router.get(
     '/pages/:id/export',
     requireAuth,
@@ -159,7 +208,8 @@ export function createPageTransferRoutes(deps: Deps): Router {
         const page = await models.pages.findById(req.params.id);
         if (!page) throw refuse(404, 'This page no longer exists.');
         await assertAuthenticatedSiteAccess({ req, models, siteId: String(page.siteId) });
-        return builder.buildForPage({ page, includeFiles: req.query.files !== '0' });
+        const extraPages = await readIncludedPages({ req, siteId: String(page.siteId), mainId: page.id });
+        return builder.buildForPage({ page, extraPages, includeFiles: req.query.files !== '0' });
       });
 
       if (err || !result) {
@@ -194,7 +244,7 @@ export function createPageTransferRoutes(deps: Deps): Router {
           authorId: userId,
           includeTheme: req.body?.includeTheme === 'true',
         });
-        hooks.doAction('save_post', imported.page);
+        imported.pages.forEach((created) => hooks.doAction('save_post', created));
         return imported;
       });
 
@@ -208,7 +258,11 @@ export function createPageTransferRoutes(deps: Deps): Router {
         });
       }
 
-      res.status(201).json({ ...result, page: enrichPageForApi(result.page) });
+      res.status(201).json({
+        ...result,
+        page: enrichPageForApi(result.page),
+        pages: result.pages.map((created) => ({ id: created.id, title: created.title, slug: created.slug })),
+      });
     }),
   );
 

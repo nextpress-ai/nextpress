@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { BlockConfig } from "../schema-types.js";
-import { PAGE_PACKAGE_FORMAT, PAGE_PACKAGE_VERSION, type PagePackage } from "./types.js";
+import { PAGE_PACKAGE_FORMAT, READABLE_PAGE_PACKAGE_VERSIONS, type PagePackage } from "./types.js";
 
 const fileSchema = z.object({
 	ref: z.string().startsWith("/uploads/").max(1024),
@@ -22,21 +22,28 @@ const blockSchema = z.custom<BlockConfig>(
 		typeof (value as { name?: unknown }).name === "string",
 );
 
+/** Most linked pages one file may bring; a whole small site, not a whole large one. */
+const MAX_EXTRA_PAGES = 50;
+
+const pageSchema = z.object({
+	title: z.string().min(1).max(500),
+	slug: z.string().max(500),
+	featuredImage: z.string().max(2048).nullable(),
+	other: z.record(z.string(), z.any()),
+});
+
 const packageSchema = z.object({
 	format: z.literal(PAGE_PACKAGE_FORMAT),
-	formatVersion: z.literal(PAGE_PACKAGE_VERSION),
+	formatVersion: z.union([z.literal(READABLE_PAGE_PACKAGE_VERSIONS[0]), z.literal(READABLE_PAGE_PACKAGE_VERSIONS[1])]),
 	appVersion: z.string().max(50),
 	createdAt: z.string().max(50),
 	source: z.enum(["export", "clipboard"]),
-	page: z
-		.object({
-			title: z.string().min(1).max(500),
-			slug: z.string().max(500),
-			featuredImage: z.string().max(2048).nullable(),
-			other: z.record(z.string(), z.any()),
-		})
-		.optional(),
+	page: pageSchema.optional(),
 	blocks: z.array(blockSchema).max(5000),
+	extraPages: z
+		.array(pageSchema.extend({ blocks: z.array(blockSchema).max(5000) }))
+		.max(MAX_EXTRA_PAGES)
+		.optional(),
 	files: z.array(fileSchema).max(500),
 	theme: z
 		.object({

@@ -1,7 +1,10 @@
 import type { BlockConfig } from "../schema-types.js";
 
 export const PAGE_PACKAGE_FORMAT = "nextpress-page" as const;
-export const PAGE_PACKAGE_VERSION = 1 as const;
+/** Written by this version. 2 added `extraPages` (linked pages that travel along). */
+export const PAGE_PACKAGE_VERSION = 2 as const;
+/** Every version this site can still read. */
+export const READABLE_PAGE_PACKAGE_VERSIONS = [1, 2] as const;
 
 /** Why a file did not travel with the package. The file becomes a named placeholder. */
 export type PackageFileLeftOut =
@@ -34,6 +37,9 @@ export type PackagePage = {
 	other: Record<string, unknown>;
 };
 
+/** A linked page that travels with the main page (its own title, address and blocks). */
+export type PackageExtraPage = PackagePage & { blocks: BlockConfig[] };
+
 export type PackageTheme = {
 	name: string;
 	description: string | null;
@@ -43,13 +49,15 @@ export type PackageTheme = {
 /** One page (or a set of copied blocks) with the files it uses, ready to move to another site. */
 export type PagePackage = {
 	format: typeof PAGE_PACKAGE_FORMAT;
-	formatVersion: typeof PAGE_PACKAGE_VERSION;
+	formatVersion: (typeof READABLE_PAGE_PACKAGE_VERSIONS)[number];
 	appVersion: string;
 	createdAt: string;
 	/** `export` = downloaded page file; `clipboard` = copied blocks. */
 	source: "export" | "clipboard";
 	page?: PackagePage;
 	blocks: BlockConfig[];
+	/** Pages the main page links to that the owner chose to bring along (file export only). */
+	extraPages?: PackageExtraPage[];
 	files: PackageFile[];
 	theme?: PackageTheme;
 };

@@ -100,7 +100,7 @@ describe("readPagePackage", () => {
 	it("refuses other text, damaged files, newer formats and paths outside uploads", () => {
 		expect(readPagePackage("hello").ok).toBe(false);
 		expect(readPagePackage('{"format":"nextpress-page",').ok).toBe(false);
-		const newer = readPagePackage(JSON.stringify({ ...valid, formatVersion: 2 }));
+		const newer = readPagePackage(JSON.stringify({ ...valid, formatVersion: 3 }));
 		expect(!newer.ok && newer.message).toContain("newer NextPress");
 		const sneaky = { ...valid, files: [{ ...valid.files[0]!, ref: "/etc/passwd" }] };
 		expect(readPagePackage(JSON.stringify(sneaky)).ok).toBe(false);

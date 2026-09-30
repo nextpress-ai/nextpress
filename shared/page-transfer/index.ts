@@ -1,6 +1,8 @@
 export {
 	PAGE_PACKAGE_FORMAT,
 	PAGE_PACKAGE_VERSION,
+	READABLE_PAGE_PACKAGE_VERSIONS,
+	type PackageExtraPage,
 	type PackageFile,
 	type PackageFileLeftOut,
 	type PackagePage,
@@ -19,3 +21,5 @@ export {
 } from "./file-limits.js";
 export { placePastedBlocks, type PasteAllMode } from "./place-pasted-blocks.js";
 export { countPageBlocks } from "./count-blocks.js";
+export { findPageLinks, rewritePageLinks, pageSlugFromPath, HOMEPAGE_PATH } from "./page-links.js";
+export { decodePath } from "./decode-path.js";
