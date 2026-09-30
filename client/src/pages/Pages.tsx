@@ -15,6 +15,7 @@ import {
   ContentListFiltersBar,
   SortableHeader,
   ContentCardGrid,
+  RowActionsMenu,
 } from "@/components/admin/content-list";
 import { ContentStatusSelect } from "@/components/admin/content-status-select";
 import { CreatePageModal } from "@/components/Pages/CreatePageModal";
@@ -281,6 +282,56 @@ function PagesList({
     homepageMutation.mutate(targetPage);
   };
 
+  const homepageDisabledReason = (page: Page): string | undefined => {
+    if (page.slug === homepageSlug) return 'This is already the homepage';
+    if (page.status !== 'publish') return 'Publish the page first';
+    return undefined;
+  };
+
+  const renderRowActions = (page: Page) => (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => handlePageBuilder(page.id)}
+        aria-label={`Edit ${page.title} with Page Builder`}
+        title="Edit with Page Builder"
+      >
+        <Pencil className="w-4 h-4" />
+      </Button>
+      <RowActionsMenu
+        itemTitle={page.title}
+        actions={[
+          {
+            key: 'view',
+            label: page.status === 'publish' ? 'View page' : 'Preview page',
+            icon: <Eye />,
+            onSelect: () => handleView(page),
+          },
+          { key: 'duplicate', label: 'Duplicate', icon: <Copy />, onSelect: () => setDuplicatePage(page) },
+          { key: 'export', label: 'Export', icon: <Download />, onSelect: () => setExportPage(page) },
+          {
+            key: 'homepage',
+            label: 'Set as homepage',
+            icon: <Home />,
+            onSelect: () => handleSetHomepage(page),
+            disabled: !!homepageDisabledReason(page) || homepageMutation.isPending,
+            disabledReason: homepageDisabledReason(page),
+          },
+          {
+            key: 'delete',
+            label: 'Delete',
+            icon: <Trash2 />,
+            onSelect: () => handleDelete(page.id),
+            destructive: true,
+            disabled: deleteMutation.isPending || isHomepage(page),
+            disabledReason: isHomepage(page) ? 'Choose a different homepage first' : undefined,
+          },
+        ]}
+      />
+    </>
+  );
+
   return (
     <AdminLayout
       title="Pages"
@@ -352,34 +403,7 @@ function PagesList({
                       {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}
                     </span>
                   )}
-                  renderActions={(item) => (
-                    <>
-                      <Button variant="ghost" size="sm" onClick={() => handlePageBuilder(item.id)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDuplicatePage(item)}
-                        aria-label={`Duplicate ${item.title}`}
-                        title="Duplicate page"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setExportPage(item)}
-                        aria-label={`Export ${item.title}`}
-                        title="Export page"
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleView(item)}>
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </>
-                  )}
+                  renderActions={(item) => renderRowActions(item)}
                 />
               ) : (
                 <Table className="admin-list-table">
@@ -467,80 +491,7 @@ function PagesList({
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleView(page)}
-                              aria-label={page.status === 'publish' ? `View published page ${page.title}` : `Preview page ${page.title}`}
-                              title={page.status === 'publish' ? 'View published page' : 'Preview page'}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handlePageBuilder(page.id)}
-                              aria-label={`Edit ${page.title} with Page Builder`}
-                              title="Edit with Page Builder"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDuplicatePage(page)}
-                              aria-label={`Duplicate ${page.title}`}
-                              title="Duplicate page"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setExportPage(page)}
-                              aria-label={`Export ${page.title}`}
-                              title="Export page"
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleSetHomepage(page)}
-                              aria-label={
-                                page.status === 'publish'
-                                  ? `Set ${page.title} as homepage`
-                                  : `Publish ${page.title} before setting homepage`
-                              }
-                              title={page.status === 'publish' ? 'Set as homepage' : 'Publish page before setting homepage'}
-                              disabled={
-                                page.status !== 'publish' ||
-                                page.slug === homepageSlug ||
-                                homepageMutation.isPending
-                              }
-                            >
-                              <Home className="w-4 h-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleDelete(page.id)}
-                              disabled={deleteMutation.isPending || isHomepage(page)}
-                              aria-label={
-                                isHomepage(page)
-                                  ? `Cannot delete ${page.title} while it is the homepage`
-                                  : `Delete page ${page.title}`
-                              }
-                              title={
-                                isHomepage(page)
-                                  ? "Choose a different homepage before deleting this page"
-                                  : "Delete page"
-                              }
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
+                          <div className="flex items-center justify-end gap-1">{renderRowActions(page)}</div>
                         </TableCell>
                       </TableRow>
                     ))}

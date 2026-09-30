@@ -86,7 +86,18 @@ const FormBlock = createBlockDefinition<FormContent>({
 	isContainer: true,
 	handlesOwnChildren: true,
 	defaultContent: DEFAULT_FORM_CONTENT,
-	defaultStyles: { gap: "12px", margin: "0" },
+	// Same starting point as a Group, so the Layout panel shows direction, gap and alignment at once;
+	// fields stretch to the form's width.
+	defaultStyles: {
+		width: "100%",
+		boxSizing: "border-box",
+		display: "flex",
+		flexDirection: "column",
+		gap: "12px",
+		alignItems: "stretch",
+		justifyContent: "flex-start",
+		margin: "0",
+	},
 	defaultChildren: buildStarterFormChildren,
 	parseContent: (raw) => readFormContent(raw),
 	settings: FormSettings,

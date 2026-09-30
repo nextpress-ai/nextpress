@@ -43,6 +43,24 @@ UUID PKs everywhere except sessions.sid.
 
 ## Decision records
 
+### 2026-09-30 — Form "sent" confirmation is a popup
+- On success, both form scripts (`shared/form-runtime.ts`, `vendor/form.js`) clear the form, keep it on the page, and open a `<dialog class="np-form-sent">`. It shows a green check icon, the form's success message and a "Done" button, and closes on Done, Escape or a backdrop click. The dialog is made once per form (`data-np-form-sent=<formId>`) and placed right **after the form** (not in `<body>`), so it inherits the page font. Errors still show in place. Browsers without `<dialog>` keep the old in-place message (`.is-sent`). The Done button uses `--npb-accent`. Tests: `client/src/test/form-sent-popup.test.ts` (both scripts).
+
+### 2026-09-30 — Pages open at /slug; links in text get a real default style
+- Pages were only reachable at `/page/:slug` (app) or `/sites/:siteId/:slug` (server), but page links, the export's `findPageLinks` and the live site all use `/contact`, so they hit Not found. `App.tsx` now has `/:slug` → `PublicPageView type="page"`, placed **last** before `NotFound` so every fixed address wins. An unknown slug shows the page 404.
+- Links inside text blocks (paragraph, heading, list, quote, pullquote, table) had no style and showed the browser's #0000ee. `publish-block-css.ts` gives them the text's colour, a 35%-opacity underline that turns solid on hover, and a focus ring. All under `:where(...)`, so any block or custom style wins. The dev server (`tsx`, no watch) must restart before server-drawn pages pick up shared CSS changes.
+
+### 2026-09-30 — Making "centred, no wider than X" findable, and row action menus
+- **Fill up to a max width** (`shared/block-container-placement.ts`): in a column stack, a child with `width:100%` + a real `maxWidth` keeps that in its slot (`readCappedFillWidth`), and keeps auto side margins (`readAutoSideMargins`). Before, a centring parent or "Pin in parent → Center" shrank it to its content. Checked by rendering every local page old vs new at 1440 and 390: only the walkableca demo image moved (803 → 900, matching the live site), and nothing moved on phones.
+- **Position** chips (Left / Center / Right) appear under "Max width" once one is set (`max-width-position-field.tsx`, `shared/max-width-position.ts`). They write `width:100%` (only if unset or already 100%) plus auto margins; `null` clears a margin.
+- **Mobile layout check** gained `WIDE_FIXED_WIDTH`: any non-image block with a px width > 480 and no max width at or under that. Issues can carry a `fix`. "Apply mobile-friendly defaults" now also applies those (`applyResponsiveHealthFixes`, one undo step), and swaps `width:1080px` for `width:100%; maxWidth:1080px`. Messages name the block by its label.
+- Pages / Posts lists: Edit stays a button; everything else is in a "⋯" menu (`content-list/row-actions-menu.tsx`, `RowAction[]`). Delete sits last after a divider and still opens its confirm. A disabled item shows why under its label ("Publish the page first"). Card view now has the same actions as list view.
+
+### 2026-09-30 — Form layout controls and a styled dropdown
+- `core/form` is in `BlockSettings` `isLayoutBlock` (shared Auto Layout panel + Max size) and in `SPAN_CHROME_BLOCKS`. New forms start like a Group (`display:flex`, column, gap 12px, `alignItems:stretch`); **the panel only shows direction/gap/align once `display` is set**, so older forms without it show "Display" alone (the local Contact page's form was patched to flex/column).
+- Dropdown field (`core/select`): one markup for editor, preview and publish in `shared/select-field-view.tsx` — a real `<select>` (value, `required`, no-script fallback) plus a styled button + `role=listbox` list. `vendor/select.js` (published) / `shared/select-runtime.ts` (in-app, started from `FormRuntime`) add `.is-ready`, which hides the native select and shows the styled one; keep the two in step. Keyboard: arrows, Home/End, Enter/Space, Escape, Tab, type-ahead. The editor canvas renders it `ready` without the runtime. jsdom lacks `scrollIntoView`, so it is guarded.
+- Fields now use the page font (`font-family: inherit`); textareas were showing monospace.
+
 ### 2026-09-30 — Export a page with the pages it links to
 - Page files are **format 2**: `extraPages` (title, slug, other, blocks) travel with the main page; files used by several pages are stored once. Readers accept 1 and 2; a 1.4.0 site says "made by a newer NextPress" for a v2 file.
 - `shared/page-transfer/page-links.ts`: `findPageLinks` reads `href`/`url`/`link` fields and `href="…"` in text; single-segment paths only (`/contact/#x` → `contact`, `/` → homepage); `/uploads`, `/api`, `/admin`… are never pages. `rewritePageLinks` swaps renamed addresses keeping `/`, `?…`, `#…`. Decoding uses `decodePath` (non-fatal TextDecoder) — no bare `catch`.

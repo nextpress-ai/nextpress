@@ -5,7 +5,14 @@ export type ResponsiveHealthIssue = {
 	message: string;
 	blockId: string;
 	severity: "warning" | "error";
+	/** One-click change that removes the problem, when there is an obvious one. */
+	fix?: { label: string; styles: Record<string, string> };
 };
+
+/** Widest a block can be fixed at and still fit a phone screen with some padding. */
+const PHONE_SAFE_WIDTH_PX = 480;
+
+const blockName = (block: BlockConfig): string => block.label?.trim() || block.name.replace(/^core\//, "");
 
 export type ResponsiveHealthResult = {
 	ok: boolean;
@@ -52,11 +59,27 @@ export function validateBlockResponsiveHealth(blocks: BlockConfig[]): Responsive
 			if (styles.maxWidth && !styles.width) {
 				issues.push({
 					code: "CONTAINER_MISSING_WIDTH",
-					message: "Container has max-width but no width: 100%; may not shrink on mobile.",
+					message: `"${blockName(block)}" has a max width but isn't set to fill its space, so it may not shrink on phones.`,
 					blockId: block.id,
 					severity: "warning",
+					fix: { label: "Make it fill", styles: { width: "100%" } },
 				});
 			}
+		}
+
+		// A fixed width wider than a phone runs off the screen there; a max width does the same job on
+		// large screens and still shrinks on small ones.
+		const fixedPx = block.name === "core/image" || block.name === "post/featured-image" ? null : parsePxWidth(styles.width);
+		const capPx = parsePxWidth(styles.maxWidth);
+		const capped = styles.maxWidth === "100%" || (capPx !== null && capPx <= PHONE_SAFE_WIDTH_PX);
+		if (fixedPx !== null && fixedPx > PHONE_SAFE_WIDTH_PX && !capped) {
+			issues.push({
+				code: "WIDE_FIXED_WIDTH",
+				message: `"${blockName(block)}" is ${fixedPx}px wide, wider than a phone screen, so it runs off the edge there.`,
+				blockId: block.id,
+				severity: "warning",
+				fix: { label: "Use max width instead", styles: { width: "100%", maxWidth: `${fixedPx}px` } },
+			});
 		}
 
 		if (block.name === "core/table") {
@@ -70,4 +93,25 @@ export function validateBlockResponsiveHealth(blocks: BlockConfig[]): Responsive
 	});
 
 	return { ok: issues.length === 0, issues };
+}
+
+/**
+ * Applies every issue's one-click fix to the tree. Pure — returns new blocks and how many changed,
+ * so the editor can commit it as one undo step alongside the mobile defaults.
+ */
+export function applyResponsiveHealthFixes(blocks: BlockConfig[]): { blocks: BlockConfig[]; fixedCount: number } {
+	const fixes = new Map(
+		validateBlockResponsiveHealth(blocks)
+			.issues.filter((issue) => issue.fix)
+			.map((issue) => [issue.blockId, issue.fix?.styles ?? {}] as const),
+	);
+	if (fixes.size === 0) return { blocks, fixedCount: 0 };
+	const patch = (list: BlockConfig[]): BlockConfig[] =>
+		list.map((block) => {
+			const styles = fixes.get(block.id);
+			const children = block.children?.length ? patch(block.children) : block.children;
+			if (!styles) return children === block.children ? block : { ...block, children };
+			return { ...block, children, styles: { ...(block.styles ?? {}), ...styles } };
+		});
+	return { blocks: patch(blocks), fixedCount: fixes.size };
 }

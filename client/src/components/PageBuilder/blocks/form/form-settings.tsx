@@ -45,8 +45,8 @@ export function FormSettings({ block, onUpdate }: FormSettingsProps): JSX.Elemen
 				/>
 			</div>
 			<p className="npb-settings-hint-muted text-xs">
-				Add fields and a button from the Form section of the block list. Turn on "Sends the form" on the button
-				that should send it.
+				Add fields and a button from "Form fields" in the block list. Turn on "Sends the form" on the button
+				that should send it. Spacing and direction are in the Style tab under Layout.
 			</p>
 		</SettingsSection>
 	);

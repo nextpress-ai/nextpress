@@ -147,6 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     'header-scroll.js': vendorCandidates('header-scroll.js'),
     'popup.js': vendorCandidates('popup.js'),
     'form.js': vendorCandidates('form.js'),
+    'select.js': vendorCandidates('select.js'),
   };
 
   for (const [filename, candidates] of Object.entries(vendorFileSources)) {

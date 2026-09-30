@@ -165,6 +165,14 @@ function Router() {
           <Route path="/admin" component={Login} />
         )}
 
+        {/* Pages at their own address (/contact), the same address page links and the export use. Last, so
+            every fixed address above wins. */}
+        <Route
+          path="/:slug"
+          component={({ params }: { params: { slug: string } }) => (
+            <PublicPageView slug={params.slug} type="page" />
+          )}
+        />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

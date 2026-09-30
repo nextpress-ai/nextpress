@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ListFilter, Plus, Trash2 } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
-import { FormFieldLabel, formFieldControlId } from "@shared/form-field-label";
+import { SelectFieldView } from "@shared/select-field-view";
 import { BlockShell } from "../shared/block-shell";
 import { SettingsLabel } from "../../shared";
 import {
@@ -23,36 +23,23 @@ type SelectRendererProps = {
 
 function SelectRenderer({ content, styles, blockId }: SelectRendererProps) {
 	const name = content?.name || "choice";
-	const ariaLabel = content?.ariaLabel || content?.placeholder || name;
-	const options = content?.options?.length ? content.options : DEFAULT_SELECT_CONTENT.options!;
-
+	// On the canvas the styled dropdown shows straight away; opening it is for preview and the live site.
 	return (
 		<BlockShell blockClass="wp-block-select">
-			<FormFieldLabel label={content?.label} htmlFor={formFieldControlId(blockId)} required={content?.required} />
-			<select
-				id={formFieldControlId(blockId)}
+			<SelectFieldView
+				blockId={blockId}
 				name={name}
+				label={content?.label}
+				placeholder={content?.placeholder}
 				defaultValue={content?.defaultValue ?? ""}
 				required={content?.required ?? false}
 				disabled={content?.disabled ?? false}
-				aria-label={ariaLabel}
-				className={["wp-block-select__control", content?.className].filter(Boolean).join(" ")}
-				style={{
-					...DEFAULT_FORM_FIELD_STYLES,
-					...styles,
-				}}
-			>
-				{content?.placeholder ? (
-					<option value="" disabled hidden>
-						{content.placeholder}
-					</option>
-				) : null}
-				{options.map((option) => (
-					<option key={option.value} value={option.value}>
-						{option.label}
-					</option>
-				))}
-			</select>
+				ariaLabel={content?.ariaLabel || content?.placeholder || name}
+				options={content?.options?.length ? content.options : DEFAULT_SELECT_CONTENT.options!}
+				controlClassName={content?.className}
+				style={{ ...DEFAULT_FORM_FIELD_STYLES, ...styles }}
+				ready
+			/>
 		</BlockShell>
 	);
 }

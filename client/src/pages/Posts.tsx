@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit, Trash2, Eye, Download, GripVertical } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AdminLayout } from "@/components/AdminLayout";
 import { ConfirmBulkDeleteDialog } from "@/components/admin/confirm-bulk-delete-dialog";
 import {
@@ -15,6 +14,7 @@ import {
   ContentListFiltersBar,
   SortableHeader,
   ContentCardGrid,
+  RowActionsMenu,
 } from "@/components/admin/content-list";
 import { ContentStatusSelect } from "@/components/admin/content-status-select";
 import { CreatePostDialog } from "@/components/posts/CreatePostDialog";
@@ -261,6 +261,39 @@ function PostsList({
     }
   };
 
+  const viewPost = (post: EnrichedPost) =>
+    window.open(post.status === 'publish' && post.slug ? `/post/${post.slug}` : `/preview/post/${post.id}`, '_blank');
+
+  const renderRowActions = (post: EnrichedPost) => (
+    <>
+      <Button variant="ghost" size="sm" asChild>
+        <Link href={postEditorPath(post.id)} aria-label={`Edit ${post.title}`} title="Edit in page builder">
+          <Edit className="w-4 h-4" />
+        </Link>
+      </Button>
+      <RowActionsMenu
+        itemTitle={post.title}
+        actions={[
+          {
+            key: 'view',
+            label: post.status === 'publish' ? 'View post' : 'Preview post',
+            icon: <Eye />,
+            onSelect: () => viewPost(post),
+          },
+          {
+            key: 'delete',
+            label: 'Delete',
+            icon: <Trash2 />,
+            onSelect: () => handleDelete(post.id),
+            destructive: true,
+            disabled: deleteMutation.isPending,
+            disabledReason: 'Deleting…',
+          },
+        ]}
+      />
+    </>
+  );
+
   const handleNewPost = () => {
     setShowCreateDialog(true);
   };
@@ -337,28 +370,7 @@ function PostsList({
                   <span>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}</span>
                 </span>
               )}
-              renderActions={(item) => (
-                <>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={postEditorPath(item.id)}>
-                      <Edit className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      window.open(
-                        item.status === 'publish' && item.slug
-                          ? `/post/${item.slug}`
-                          : `/preview/post/${item.id}`,
-                        '_blank',
-                      )
-                    }>
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                </>
-              )}
+              renderActions={(item) => renderRowActions(item)}
             />
           ) : (
             <Table className="admin-list-table">
@@ -456,63 +468,7 @@ function PostsList({
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => window.open(post.status === 'publish' && post.slug ? `/post/${post.slug}` : `/preview/post/${post.id}`, '_blank')}
-                                aria-label={`View ${post.title} in new tab`}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>View post in new tab</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                asChild
-                              >
-                                <Link href={postEditorPath(post.id)} aria-label={`Edit ${post.title}`}>
-                                  <Edit className="w-4 h-4" />
-                                </Link>
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Edit in page builder</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(post.id)}
-                                disabled={deleteMutation.isPending}
-                                aria-label={`Delete post ${post.title}`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Delete post</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
+                      <div className="flex items-center justify-end gap-1">{renderRowActions(post)}</div>
                     </TableCell>
                   </TableRow>
                 ))}

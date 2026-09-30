@@ -85,6 +85,38 @@ export function hasContainerShellSizing(styles: CSSProperties | undefined): bool
 }
 
 /** True when a non-default horizontal or vertical sibling placement is active (ignores `null` clears). */
+/**
+ * The max width of a block set to "fill, but no wider than X" (explicit `width: 100%` plus a real
+ * `maxWidth`), or null. Only this case is widened in centred/right-aligned stacks: plain fill
+ * (no width, or no cap) keeps hugging there, so centred text and buttons do not move.
+ */
+export function readCappedFillWidth(raw: CSSProperties | Record<string, unknown> | undefined): string | null {
+	if (!raw) return null;
+	const width = String((raw as Record<string, unknown>).width ?? "").trim();
+	const maxWidth = String((raw as Record<string, unknown>).maxWidth ?? "").trim();
+	if (width !== "100%" || !maxWidth || maxWidth === "100%" || maxWidth === "none") return null;
+	return maxWidth;
+}
+
+/**
+ * A block that centres itself with `margin: 0 auto` (or left/right `auto`) must keep doing so once
+ * its slot is capped to the same width: the slot takes the same auto margins.
+ */
+function readAutoSideMargins(raw: CSSProperties | Record<string, unknown> | undefined): CSSProperties {
+	if (!raw) return {};
+	const styles = raw as Record<string, unknown>;
+	const parts = typeof styles.margin === "string" ? styles.margin.trim().split(/\s+/) : [];
+	// CSS shorthand: 1 value = all sides, 2-3 = vertical | horizontal, 4 = top right bottom left.
+	const fromShorthand =
+		parts.length === 0 ? {} : parts.length === 4 ? { right: parts[1], left: parts[3] } : { right: parts[1] ?? parts[0], left: parts[1] ?? parts[0] };
+	const left = String(styles.marginLeft ?? fromShorthand.left ?? "").trim();
+	const right = String(styles.marginRight ?? fromShorthand.right ?? "").trim();
+	return {
+		...(left === "auto" ? { marginLeft: "auto" } : {}),
+		...(right === "auto" ? { marginRight: "auto" } : {}),
+	};
+}
+
 export function hasBlockContainerPlacement(raw: CSSProperties | undefined): boolean {
 	const { h, v } = readPlacement(raw);
 	return !!(h || v);
@@ -107,7 +139,11 @@ export function getBlockSiblingFlexItemStyles(
 	stackDirection: BlockStackDirection,
 ): CSSProperties {
 	const { h, v } = readPlacement(rawStyles);
-	if (!h && !v) return { minWidth: 0 };
+	const cap = stackDirection === "column" ? readCappedFillWidth(rawStyles) : null;
+	// "Fill, up to a max width": the slot keeps that width even when the parent centres or
+	// right-aligns its children, so the block is centred at its max width and still shrinks on phones.
+	const cappedSlot: CSSProperties = cap ? { width: "100%", maxWidth: cap, ...readAutoSideMargins(rawStyles) } : {};
+	if (!h && !v) return { minWidth: 0, ...cappedSlot };
 
 	const out: CSSProperties = {
 		minWidth: 0,
@@ -118,10 +154,12 @@ export function getBlockSiblingFlexItemStyles(
 			out.alignSelf = "center";
 			out.width = "auto";
 			out.maxWidth = "100%";
+			Object.assign(out, cappedSlot);
 		} else if (h === "right") {
 			out.alignSelf = "flex-end";
 			out.width = "auto";
 			out.maxWidth = "100%";
+			Object.assign(out, cappedSlot);
 		} else if (h === "left") {
 			out.alignSelf = "stretch";
 		}

@@ -60,6 +60,7 @@ import {
 } from "./spacing-styles";
 import { anyStyleSet, anyTokenSet } from "./style-set";
 import { AutoLayoutPanel } from "./auto-layout-panel";
+import { MaxWidthPositionField } from "./max-width-position-field";
 import { ChildPinCard } from "./child-pin-card";
 import { parentAllowsChildPin, readResizeFromLength } from "@shared/auto-layout-model";
 import {
@@ -382,6 +383,8 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
       "container",
       "core/columns",
       "core/stack",
+      // A form stacks its fields like a group, so it gets the same layout controls.
+      "core/form",
     ].includes(block.name);
     const showTypographyStyles = [
       "heading",
@@ -680,6 +683,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
                 onChange={(next) => updateStyles({ maxWidth: next })}
                 customPlaceholder="e.g. 1200px, 90rem"
               />
+              <MaxWidthPositionField styles={block.styles} onChange={(patch) => updateStyles(patch)} />
               <div>
                 <DimensionPresetField
                   label="Min height"
@@ -721,6 +725,7 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
                 onChange={(next) => updateStyles({ maxWidth: next })}
                 customPlaceholder="e.g. 1200px, 90rem"
               />
+              <MaxWidthPositionField styles={block.styles} onChange={(patch) => updateStyles(patch)} />
             </div>
 
             <div>

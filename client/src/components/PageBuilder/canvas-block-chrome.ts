@@ -10,6 +10,7 @@ const SPAN_CHROME_BLOCKS = new Set([
   "core/group",
   "core/container",
   "core/columns",
+  "core/form",
 ]);
 
 /** Headers and layout blocks fill the slot; text and media start hugged. */

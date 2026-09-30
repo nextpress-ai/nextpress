@@ -140,6 +140,9 @@ export function buildPublishedPageHtml({
 	if (blockJsScripts) {
 		bodyParts.push(blockJsScripts);
 	}
+	if (allBlocks.some((b) => b.name === "core/select")) {
+		bodyParts.push(`<script src="/vendor/select.js"></script>`);
+	}
 	if (allBlocks.some((b) => b.name === FORM_BLOCK_NAME)) {
 		bodyParts.push(`<script src="/vendor/form.js"></script>`);
 	}

@@ -37,6 +37,25 @@ ${FLUID_HEADING_CSS}
   font-style: italic;
 }
 .wp-block-markdown a { color: var(--npb-accent, #007cba); }
+/* Links inside text take the text's colour with a soft underline that firms up on hover, instead of
+   the browser's bright blue. Kept to the lowest priority so any block or custom style wins. */
+:where(.wp-block-paragraph, .wp-block-heading, .wp-block-list, .wp-block-quote, .wp-block-pullquote, .wp-block-table) a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  transition: text-decoration-color 150ms ease-out;
+}
+:where(.wp-block-paragraph, .wp-block-heading, .wp-block-list, .wp-block-quote, .wp-block-pullquote, .wp-block-table) a:hover { text-decoration-color: currentColor; }
+:where(.wp-block-paragraph, .wp-block-heading, .wp-block-list, .wp-block-quote, .wp-block-pullquote, .wp-block-table) a:focus-visible {
+  outline: 2px solid var(--npb-accent, currentColor);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.wp-block-paragraph, .wp-block-heading, .wp-block-list, .wp-block-quote, .wp-block-pullquote, .wp-block-table) a { transition: none; }
+}
 .wp-block-markdown code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875em;
@@ -636,6 +655,167 @@ figure.wp-block-embed {
 .wp-block-form.is-sent .wp-block-form__status {
   margin: 0;
   font-size: 1.0625rem;
+}
+/* "Sent" popup the form script opens after a successful send. */
+.np-form-sent {
+  width: min(24rem, calc(100vw - 2rem));
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  overflow: visible;
+}
+.np-form-sent::backdrop { background: rgb(15 23 42 / 0.5); }
+.np-form-sent__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  box-sizing: border-box;
+  padding: 2rem 1.75rem 1.5rem;
+  border: 1px solid rgb(15 23 42 / 0.08);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px -16px rgb(15 23 42 / 0.4);
+  text-align: center;
+  font-family: inherit;
+}
+.np-form-sent__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  color: #15803d;
+  background: #dcfce7;
+}
+.np-form-sent__message {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  color: inherit;
+}
+.np-form-sent__done {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--npb-accent, #18181b);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease-out;
+}
+.np-form-sent__done:hover { opacity: 0.9; }
+.np-form-sent__done:focus-visible { outline: 2px solid var(--npb-accent, #18181b); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes np-form-sent-in { from { opacity: 0; transform: scale(0.95); } }
+  @keyframes np-form-sent-backdrop-in { from { opacity: 0; } }
+  .np-form-sent[open] .np-form-sent__panel { animation: np-form-sent-in 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+  .np-form-sent[open]::backdrop { animation: np-form-sent-backdrop-in 200ms ease-out; }
+}
+/* Dropdown field: a styled button and list over a real <select>. The select script adds
+   .is-ready; until then (or with scripts off) the plain dropdown shows. */
+.np-select {
+  position: relative;
+}
+.np-select__label-wrap {
+  display: block;
+}
+.np-select__trigger,
+.np-select__list {
+  display: none;
+}
+.np-select.is-ready .np-select__native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  pointer-events: none;
+}
+.np-select.is-ready .np-select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.np-select__trigger:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.np-select__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.np-select__value.is-placeholder {
+  opacity: 0.55;
+}
+.np-select__chevron {
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.np-select.is-open .np-select__chevron {
+  transform: rotate(180deg);
+}
+.np-select.is-ready .np-select__list:not([hidden]) {
+  display: block;
+}
+.np-select__list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 50;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 16rem;
+  overflow-y: auto;
+  background: #ffffff;
+  color: #171717;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.28);
+  outline: none;
+}
+.np-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+.np-select__option.is-active {
+  background: rgba(0, 0, 0, 0.06);
+}
+.np-select__check {
+  flex-shrink: 0;
+  visibility: hidden;
+}
+.np-select__option[aria-selected="true"] .np-select__check {
+  visibility: visible;
+}
+@media (prefers-reduced-motion: reduce) {
+  .np-select__chevron {
+    transition: none;
+  }
 }
 button.wp-block-button__link {
   font: inherit;

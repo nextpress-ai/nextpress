@@ -37,7 +37,7 @@ import {
 } from './block-clipboard';
 import { reIdTemplateBlocks } from '@/lib/re-id-template-blocks';
 import { persistResponsiveDefaultsToBlocks } from '@shared/persist-responsive-defaults';
-import { validateBlockResponsiveHealth } from '@shared/validate-block-responsive-health';
+import { applyResponsiveHealthFixes, validateBlockResponsiveHealth } from '@shared/validate-block-responsive-health';
 import { writePreviewSession } from '@shared/preview-session';
 import { readPageDesign } from '@shared/page-shell-model';
 import { useToast } from '@/hooks/use-toast';
@@ -356,11 +356,13 @@ export default function PageBuilder({
 
   const handleApplyResponsiveDefaults = useCallback((): boolean => {
     const confirmed = window.confirm(
-      'Apply mobile-friendly defaults to blocks that are missing them? Existing styles you set will not be changed.',
+      'Apply mobile-friendly defaults to blocks that are missing them, and fix the blocks listed in the mobile layout check?',
     );
     if (!confirmed) return false;
 
-    const { blocks: nextBlocks, changedCount } = persistResponsiveDefaultsToBlocks({ blocks });
+    const withDefaults = persistResponsiveDefaultsToBlocks({ blocks });
+    const { blocks: nextBlocks, fixedCount } = applyResponsiveHealthFixes(withDefaults.blocks);
+    const changedCount = withDefaults.changedCount + fixedCount;
     if (changedCount === 0) {
       toast({
         title: 'Nothing to update',

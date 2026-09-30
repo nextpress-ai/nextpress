@@ -16,6 +16,46 @@ const setStatus = (form: HTMLFormElement, text: string, tone: "success" | "error
 	status.classList.toggle("is-error", tone === "error");
 };
 
+const CHECK_ICON =
+	'<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+
+/** The "sent" popup for a form, made once and reused. Null where the browser has no <dialog>. */
+const getSentDialog = (form: HTMLFormElement): HTMLDialogElement | null => {
+	const formId = form.getAttribute("data-np-form") ?? "";
+	const existing = document.querySelector<HTMLDialogElement>(`dialog[data-np-form-sent="${CSS.escape(formId)}"]`);
+	if (existing) return existing;
+	const dialog = document.createElement("dialog");
+	if (typeof dialog.showModal !== "function") return null;
+	const messageId = `np-form-sent-${formId}`;
+	dialog.className = "np-form-sent";
+	dialog.setAttribute("data-np-form-sent", formId);
+	dialog.setAttribute("aria-labelledby", messageId);
+	dialog.innerHTML = `<form method="dialog" class="np-form-sent__panel"><span class="np-form-sent__icon">${CHECK_ICON}</span><p class="np-form-sent__message" id="${messageId}"></p><button type="submit" class="np-form-sent__done">Done</button></form>`;
+	// A click on the backdrop lands on the dialog itself; clicks inside land on the panel.
+	dialog.addEventListener("click", (event) => {
+		if (event.target === dialog) dialog.close();
+	});
+	// Next to the form (not in <body>) so it inherits the page font; a closed dialog takes no space.
+	form.after(dialog);
+	return dialog;
+};
+
+/** Clears the form and confirms in a popup; falls back to the message in place of the form. */
+const showSent = (form: HTMLFormElement, message: string): void => {
+	const dialog = getSentDialog(form);
+	if (!dialog) {
+		form.classList.add("is-sent");
+		setStatus(form, message, "success");
+		return;
+	}
+	form.reset();
+	setStatus(form, "", "success");
+	const text = dialog.querySelector<HTMLElement>(".np-form-sent__message");
+	if (text) text.textContent = message;
+	dialog.showModal();
+	dialog.querySelector<HTMLButtonElement>(".np-form-sent__done")?.focus();
+};
+
 const readValues = (form: HTMLFormElement): Record<string, string> => {
 	const values: Record<string, string> = {};
 	new FormData(form).forEach((value, key) => {
@@ -50,8 +90,7 @@ async function sendForm(form: HTMLFormElement): Promise<void> {
 	setBusy(form, false);
 
 	if (answer.ok) {
-		form.classList.add("is-sent");
-		setStatus(form, answer.message ?? "Thanks!", "success");
+		showSent(form, answer.message ?? "Thanks!");
 		return;
 	}
 	setStatus(form, answer.message ?? OFFLINE_MESSAGE, "error");
