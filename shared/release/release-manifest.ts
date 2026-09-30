@@ -28,6 +28,38 @@ export const RELEASE_MANIFEST = {
 			description: "Make a button's icon smaller or bigger.",
 		},
 		{
+			kind: "improvement",
+			title: "Form layout and dropdowns",
+			description:
+				"Arrange form fields in rows or columns with your own spacing. Dropdown fields match your site instead of the browser's default.",
+		},
+		{
+			kind: "improvement",
+			title: "Thank-you popup",
+			description: "After someone sends a form, a popup with a check mark shows your thank-you message and the form clears.",
+		},
+		{
+			kind: "improvement",
+			title: "Centre a section at a set width",
+			description:
+				"Give a block a max width, then pick Left, Center or Right. The mobile check now spots blocks too wide for a phone and fixes them in one click.",
+		},
+		{
+			kind: "fix",
+			title: "Page links work",
+			description: "Pages open at their own short address, like /contact, so links between pages no longer lead to Not found.",
+		},
+		{
+			kind: "fix",
+			title: "Links in text look right",
+			description: "Links inside text match the words around them with a soft underline, instead of the browser's bright blue.",
+		},
+		{
+			kind: "improvement",
+			title: "Tidier page and post lists",
+			description: "Edit stays one click away; duplicate, export, homepage and delete sit in a ⋯ menu.",
+		},
+		{
 			kind: "update",
 			title: "Move pages between sites",
 			description:
