@@ -255,6 +255,7 @@ export type ReadingSettings = {
 	rssPosts: number;
 	rssEnabled: boolean;
 	discourageSearchIndexing: boolean;
+	descriptionFrom: "auto" | "page" | "excerpt" | "site";
 };
 
 export type DiscussionSettings = {

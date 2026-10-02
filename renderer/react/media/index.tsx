@@ -6,6 +6,16 @@ import { isYouTubeUrl, buildYouTubeEmbedUrl } from "@shared/video-embed";
 import { readVideoPlayback, videoElementStyle } from "@shared/video-playback";
 import { getRenderProps, parseMediaContent, parseStructuredContent, renderChildBlocks } from "../render-helpers";
 
+/** A bare pixel count, not a CSS length. Used to reserve the picture's box. */
+function intrinsicPx(value: number | string | undefined): number | undefined {
+	if (typeof value === "number" && Number.isFinite(value) && value > 0) return Math.round(value);
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	if (!/^\d+(\.\d+)?$/.test(trimmed)) return undefined;
+	const parsed = Number(trimmed);
+	return parsed > 0 ? Math.round(parsed) : undefined;
+}
+
 /**
  * Image Block Component
  * Renders an image with optional caption, width, height, and object-fit
@@ -19,6 +29,10 @@ export function ImageBlock(block: BlockConfig) {
 	const caption = content.caption as string | undefined;
 	const width = content.width as number | string | undefined;
 	const height = content.height as number | string | undefined;
+	const intrinsicWidth =
+		intrinsicPx(content.intrinsicWidth as number | string | undefined) ?? intrinsicPx(width);
+	const intrinsicHeight =
+		intrinsicPx(content.intrinsicHeight as number | string | undefined) ?? intrinsicPx(height);
 	const objectFit = content.objectFit as string | undefined;
 	const href = content.href as string | undefined;
 	const linkTarget = (content.linkTarget as string) || (content.target as string) || undefined;
@@ -37,9 +51,12 @@ export function ImageBlock(block: BlockConfig) {
 	const imageStyle: React.CSSProperties = {
 		...style,
 		maxWidth: style.maxWidth ?? "100%",
-		height: style.height ?? (width ? undefined : "auto"),
-		...(width ? { width } : {}),
-		...(height ? { height } : {}),
+		height: style.height ?? "auto",
+		...(intrinsicWidth && intrinsicHeight
+			? { aspectRatio: `${intrinsicWidth} / ${intrinsicHeight}` }
+			: {}),
+		...(width && intrinsicWidth == null ? { width } : {}),
+		...(height && intrinsicHeight == null ? { height } : {}),
 		...(objectFit
 			? { objectFit: objectFit as React.CSSProperties["objectFit"] }
 			: {}),
@@ -50,6 +67,9 @@ export function ImageBlock(block: BlockConfig) {
 		<img
 			src={url}
 			alt={imageAlt}
+			width={intrinsicWidth}
+			height={intrinsicHeight}
+			decoding="async"
 			style={imageStyle}
 			role={imageAlt ? undefined : 'presentation'}
 		/>

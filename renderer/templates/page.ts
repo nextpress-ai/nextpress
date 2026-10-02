@@ -5,6 +5,8 @@
 
 import { PUBLISH_BLOCK_CSS } from '@shared/publish-block-css';
 import { BUNDLED_FONTS_STYLESHEET } from '@shared/font-catalog';
+import { escapeHtml } from '@shared/published-document-meta';
+import { optimizePublishedDocument } from '@shared/published-document-speed';
 
 export interface PageRenderOptions {
   fontFamily?: string;
@@ -17,6 +19,8 @@ export interface PageRenderOptions {
   hasPageShell?: boolean;
   /** Ready-to-write CSS for the page's scrollbar (already safe; see `buildScrollbarCss`). */
   scrollbarCss?: string;
+  /** Open Graph and Twitter tags, already escaped. */
+  socialMeta?: string;
 }
 
 export const PageTemplate = (
@@ -31,18 +35,21 @@ export const PageTemplate = (
 ): string => {
 	const bundledFontsLink = `<link rel="stylesheet" href="${BUNDLED_FONTS_STYLESHEET}">`;
 
-	// We use backticks (`) to define the template literal
-	return `<!DOCTYPE html>
+	const html = `<!DOCTYPE html>
   <html lang="en">
   <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-      <title>${pageTitle}</title>
-      <meta name="description" content="${description}">
-      <link rel="canonical" href="${canonicalUrl}">
+      <title>${escapeHtml(pageTitle)}</title>
+      ${description ? `<meta name="description" content="${escapeHtml(description)}">` : ''}
+      <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
+      ${options.socialMeta ?? ''}
       ${options.noIndex ? '<meta name="robots" content="noindex, nofollow">' : ''}
-      ${(options.customMeta || []).filter(m => m.name && m.content).map(m => `<meta name="${m.name}" content="${m.content}">`).join('\n      ')}
+      ${(options.customMeta || []).filter(m => m.name && m.content).map(m => {
+        const attr = m.name.startsWith('og:') || m.name.startsWith('article:') ? 'property' : 'name';
+        return `<meta ${attr}="${escapeHtml(m.name)}" content="${escapeHtml(m.content)}">`;
+      }).join('\n      ')}
       
       ${bundledFontsLink}
   
@@ -68,6 +75,8 @@ export const PageTemplate = (
           min-height: 100dvh;
           display: flex;
           flex-direction: column;
+          container-type: inline-size;
+          container-name: npb-canvas;
         }
         
         #main-content {
@@ -157,4 +166,5 @@ export const PageTemplate = (
       ${hydrateScript}
   </body>
   </html>`;
+	return optimizePublishedDocument(html);
 };

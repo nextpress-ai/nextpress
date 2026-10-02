@@ -13,6 +13,12 @@ import {
 	type HeaderNavItem,
 	type HeaderSlotPart,
 } from "./header-model.js";
+import { screenShowClass, type ScreenShow } from "./screen-show.js";
+
+const withScreen = (base: string, showOn: ScreenShow | undefined): string => {
+	const extra = screenShowClass(showOn);
+	return extra ? `${base} ${extra}` : base;
+};
 
 function LogoPlaceholderIcon() {
 	return (
@@ -45,7 +51,7 @@ function LogoPlaceholderIcon() {
 	);
 }
 
-function BrandMark({ brand }: { brand: HeaderBrand }) {
+function BrandMark({ brand, showOn }: { brand: HeaderBrand; showOn?: ScreenShow }) {
 	const href = resolveHeaderHref(brand.href, HEADER_PLACEHOLDERS.brandHref);
 	const label = brand.text.trim() || HEADER_PLACEHOLDERS.brandName;
 
@@ -55,9 +61,9 @@ function BrandMark({ brand }: { brand: HeaderBrand }) {
 			<span className="wp-block-header__brand-label">{label}</span>
 		) : null;
 		return (
-			<a className="wp-block-header__brand" href={href}>
+			<a className={withScreen("wp-block-header__brand", showOn)} href={href}>
 				{brand.logoUrl ? (
-					<img src={brand.logoUrl} alt={brand.showName ? "" : label} style={markStyle} />
+					<img src={brand.logoUrl} alt={brand.showName ? "" : label} style={markStyle} decoding="async" />
 				) : (
 					<span className="wp-block-header__logo-placeholder" aria-hidden="true" style={markStyle}>
 						<LogoPlaceholderIcon />
@@ -69,16 +75,16 @@ function BrandMark({ brand }: { brand: HeaderBrand }) {
 	}
 
 	return (
-		<a className="wp-block-header__brand" href={href}>
+		<a className={withScreen("wp-block-header__brand", showOn)} href={href}>
 			<span className="wp-block-header__brand-label">{label}</span>
 		</a>
 	);
 }
 
-function NavLinks({ items }: { items: HeaderNavItem[] }) {
+function NavLinks({ items, showOn }: { items: HeaderNavItem[]; showOn?: ScreenShow }) {
 	if (items.length === 0) return null;
 	return (
-		<nav className="wp-block-header__nav" aria-label="Site">
+		<nav className={withScreen("wp-block-header__nav", showOn)} aria-label="Site">
 			{items.map((item) =>
 				item.children && item.children.length > 0 ? (
 					<details key={item.id} className="wp-block-header__dropdown">
@@ -103,10 +109,10 @@ function NavLinks({ items }: { items: HeaderNavItem[] }) {
 	);
 }
 
-function ActionButtons({ actions }: { actions: HeaderAction[] }) {
+function ActionButtons({ actions, showOn }: { actions: HeaderAction[]; showOn?: ScreenShow }) {
 	if (actions.length === 0) return null;
 	return (
-		<div className="wp-block-header__actions">
+		<div className={withScreen("wp-block-header__actions", showOn)}>
 			{actions.map((action) => (
 				<a
 					key={action.id}
@@ -137,10 +143,18 @@ function SlotParts({
 	return (
 		<>
 			{names.map((name) => {
-				if (name === "brand") return <BrandMark key="brand" brand={content.brand} />;
-				if (name === "nav") return <NavLinks key="nav" items={content.nav} />;
-				if (name === "blocks") return <React.Fragment key="blocks">{blocks}</React.Fragment>;
-				return <ActionButtons key="actions" actions={content.actions} />;
+				if (name === "brand") return <BrandMark key="brand" brand={content.brand} showOn={content.brandShowOn} />;
+				if (name === "nav") return <NavLinks key="nav" items={content.nav} showOn={content.navShowOn} />;
+				if (name === "blocks") {
+					const screen = screenShowClass(content.blocksShowOn);
+					if (!screen) return <React.Fragment key="blocks">{blocks}</React.Fragment>;
+					return (
+						<div key="blocks" className={screen}>
+							{blocks}
+						</div>
+					);
+				}
+				return <ActionButtons key="actions" actions={content.actions} showOn={content.actionsShowOn} />;
 			})}
 		</>
 	);
@@ -200,8 +214,8 @@ export function HeaderBar({
 							<span className="wp-block-header__burger" aria-hidden="true" />
 						</summary>
 						<div className="wp-block-header__mobile-body">
-							<NavLinks items={content.nav} />
-							<ActionButtons actions={content.actions} />
+							<NavLinks items={content.nav} showOn={content.navShowOn} />
+							<ActionButtons actions={content.actions} showOn={content.actionsShowOn} />
 						</div>
 					</details>
 				) : null}

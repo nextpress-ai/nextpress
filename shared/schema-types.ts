@@ -19,6 +19,7 @@ import type { CSSProperties } from "react";
 import type { PageIconDefaultSet, ReactIconsPrefix } from "./icon-types";
 import type { ScrollbarSettings } from "./scrollbar-model";
 import type { BlockFills, Fill } from "./fill-model";
+import type { ScreenShow } from "./screen-show";
 
 // User types
 export type User = typeof users.$inferSelect;
@@ -142,6 +143,9 @@ export type BlockContent =
 			minHeight?: string;
 			width?: string;
 			height?: string;
+			/** Pixel size of the picture itself, used to reserve space before it loads. */
+			intrinsicWidth?: string;
+			intrinsicHeight?: string;
 	}
 	| { kind: "html"; value: string; sanitized: boolean }
 	| { kind: "structured"; data: Record<string, unknown> }
@@ -161,6 +165,11 @@ export interface PageSeoSettings {
   canonicalUrl?: string;
   noIndex?: boolean;
   customMeta?: MetaTagEntry[];
+  /**
+   * Where the search and link description comes from.
+   * `inherit` follows the site setting.
+   */
+  descriptionFrom?: "inherit" | "auto" | "page" | "excerpt" | "site";
 }
 
 /** Leftover per-page design. Live design is read from the root page shell. */
@@ -317,6 +326,8 @@ export interface BlockConfig {
 			tablet?: CSSProperties;
 			mobile?: CSSProperties;
 		};
+		/** Paint this block on every screen, on desktop and tablet, or on a phone. */
+		showOn?: ScreenShow;
 	}
 }
 

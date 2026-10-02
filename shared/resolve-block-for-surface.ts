@@ -8,6 +8,7 @@ import { resolveTokenMapForSSR } from "./token-resolution.js";
 import { generateBlockAnimationCSS, getEntryAnimationAttributes } from "./animation-utils.js";
 import { resolveBlockFills } from "./fill-model.js";
 import { blockExtraCss } from "./block-extra-css.js";
+import { readScreenShow, screenShowClass } from "./screen-show.js";
 
 export type RenderSurface = "canvas" | "preview" | "publish";
 
@@ -68,6 +69,7 @@ export function resolveBlockForSurface(params: ResolveBlockForSurfaceParams): Re
 
 	const classNames = [
 		`block-${block.id}`,
+		screenShowClass(readScreenShow(typeof block.other?.showOn === "string" ? block.other.showOn : undefined)),
 		block.other?.classNames,
 		...defaults.classNames,
 	].filter(Boolean) as string[];

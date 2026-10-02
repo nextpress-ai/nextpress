@@ -35,9 +35,11 @@ import {
   Sparkles,
   Layers,
   MoveHorizontal,
+  Smartphone,
 } from "lucide-react";
 import type { BlockConfig, DisplayCondition } from "@shared/schema-types";
 import { blockRegistry } from "./blocks";
+import { readScreenShow, SCREEN_SHOW_OPTIONS } from "@shared/screen-show";
 import { ConditionBuilder } from "@/components/Templates/ConditionBuilder";
 import { VariablePicker } from "@/components/Templates/VariablePicker";
 import { getBlockStateAccessor } from "./blocks/blockStateRegistry";
@@ -892,6 +894,31 @@ export default function BlockSettings({ block, onUpdate, onHoverArea, parentBloc
 
         <TabsContent value="advanced" className="mt-0">
           <div key={block.id}>
+            {block.name !== "core/page-shell" ? (
+              <CollapsibleCard
+                title="Screens"
+                icon={Smartphone}
+                defaultOpen={block.other?.showOn === "desktop" || block.other?.showOn === "phone"}
+              >
+                <p className="npb-settings-hint-muted text-xs">
+                  Desktop, Mobile, or both. The tablet preview follows Desktop.
+                </p>
+                <SettingsChipGroup
+                  label="Show on"
+                  options={SCREEN_SHOW_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                  value={readScreenShow(typeof block.other?.showOn === "string" ? block.other.showOn : undefined)}
+                  onChange={(value) => {
+                    onUpdate({
+                      other: {
+                        ...block.other,
+                        showOn: readScreenShow(value),
+                      },
+                    });
+                  }}
+                />
+              </CollapsibleCard>
+            ) : null}
+
             {/* Animation Section */}
             <CollapsibleCard title="Animations" icon={Sparkles} defaultOpen={Boolean(block.other?.animation)}>
               <AnimationPicker

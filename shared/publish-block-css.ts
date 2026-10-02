@@ -108,6 +108,31 @@ figure.wp-block-embed {
   max-width: 100%;
   height: auto;
   display: block;
+  background-color: color-mix(in srgb, currentColor 8%, transparent);
+  background-image: linear-gradient(
+    100deg,
+    transparent 35%,
+    color-mix(in srgb, currentColor 14%, transparent) 50%,
+    transparent 65%
+  );
+  background-size: 200% 100%;
+  animation: np-image-shimmer 1.15s ease-in-out 2;
+}
+@keyframes np-image-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wp-block-image img { animation: none; }
+}
+
+/* A piece marked for one screen only. The page frame is the size container, so the
+   editor's phone preview and a real phone agree. */
+@container npb-canvas (max-width: 767px) {
+  .is-screen-desktop { display: none !important; }
+}
+@container npb-canvas (min-width: 768px) {
+  .is-screen-phone { display: none !important; }
 }
 .wp-block-image figcaption {
   margin-top: 0.5em;
@@ -291,12 +316,15 @@ figure.wp-block-embed {
 .wp-block-header__slot.is-right {
   justify-content: flex-end;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .wp-block-header__brand {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
   font-weight: 600;
   letter-spacing: -0.02em;
   text-decoration: none;
@@ -324,6 +352,9 @@ figure.wp-block-embed {
 
 .wp-block-header__brand-label {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .wp-block-header__brand img {

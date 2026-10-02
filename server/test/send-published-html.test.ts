@@ -12,14 +12,25 @@ const commentsBlock = {
 	content: { kind: "structured" as const, data: { showForm: true, showCount: true } },
 };
 
-function captureResponse(): Response & { body: string; headers: Record<string, string> } {
+function captureResponse(ifNoneMatch?: string): Response & {
+	body: string;
+	headers: Record<string, string>;
+	statusCode: number;
+} {
 	let body = "";
+	let statusCode = 200;
 	const headers: Record<string, string> = {};
 	const res = {
+		req: { headers: ifNoneMatch ? { "if-none-match": ifNoneMatch } : {} },
 		setHeader: (name: string, value: string) => {
 			headers[name] = value;
 			return res;
 		},
+		status: (code: number) => {
+			statusCode = code;
+			return res;
+		},
+		end: () => res,
 		send: (html: string) => {
 			body = html;
 			return res;
@@ -30,8 +41,11 @@ function captureResponse(): Response & { body: string; headers: Record<string, s
 		get headers() {
 			return headers;
 		},
+		get statusCode() {
+			return statusCode;
+		},
 	};
-	return res as unknown as Response & { body: string; headers: Record<string, string> };
+	return res as unknown as Response & { body: string; headers: Record<string, string>; statusCode: number };
 }
 
 describe("sendPublishedHtml", () => {
@@ -79,6 +93,7 @@ describe("sendPublishedHtml", () => {
 		expect(res.body).toContain("Comments (2)");
 		expect(res.body).not.toContain("Jane Doe");
 		expect(res.headers["X-Nextpress-Cache"]).toBe("skip");
+		expect(res.headers["Cache-Control"]).toBe("private, no-store");
 	});
 
 	it("returns the stored HTML when the page version has not changed", async () => {
@@ -261,5 +276,49 @@ describe("sendPublishedHtml", () => {
 		expect(second.body).toContain("Grace Hopper");
 		expect(second.body).toContain("Second neighbor");
 		expect(second.body).not.toContain("Ada Lovelace");
+	});
+
+	it("skips the body when the browser already has this copy", async () => {
+		publishedPageCache.clear();
+		const models = {
+			users: { findById: async () => null },
+			comments: { findManyWhere: async () => [] },
+			posts: { findManyWhere: async () => [] },
+		} as unknown as Deps["models"];
+		const document = {
+			id: "page-fresh",
+			title: "Fresh",
+			status: "publish",
+			version: 3,
+			blocks: [
+				{
+					id: "h",
+					name: "core/heading",
+					type: "block" as const,
+					parentId: null,
+					content: { kind: "text" as const, value: "Fresh heading", level: 1 },
+				},
+			],
+			other: { seo: {}, design: {} },
+		};
+		const first = captureResponse();
+		await sendPublishedHtml({
+			res: first,
+			models,
+			document,
+			canonicalUrl: "http://localhost:5000/fresh",
+		});
+		expect(first.headers["Cache-Control"]).toBe("public, max-age=60");
+		expect(first.body).toContain("speculationrules");
+		const again = captureResponse(first.headers.ETag);
+		await sendPublishedHtml({
+			res: again,
+			models,
+			document,
+			canonicalUrl: "http://localhost:5000/fresh",
+		});
+		expect(again.statusCode).toBe(304);
+		expect(again.body).toBe("");
+		expect(again.headers["X-Nextpress-Cache"]).toBe("hit");
 	});
 });

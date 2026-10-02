@@ -36,6 +36,13 @@ import { buildScrollbarCss } from "@shared/scrollbar-model";
 import { collectBlockExtraCss, treeHasScrollingHeader } from "@shared/collect-block-extra-css";
 import { POPUP_BLOCK_NAME } from "@shared/popup-model";
 import { FORM_BLOCK_NAME } from "@shared/form-model";
+import { parsePageOther } from "@shared/page-other";
+import {
+	buildPublishedDocumentMeta,
+	publishedCanonicalUrl,
+	publishedPreviewImageUrl,
+	renderPublishedSocialMeta,
+} from "@shared/published-document-meta";
 
 /** Every block in the tree, parents before children. */
 const listAllBlocks = (list: BlockConfig[]): BlockConfig[] =>
@@ -46,6 +53,18 @@ type PublishedDocument = {
 	title: string;
 	blocks?: unknown;
 	other?: unknown;
+	excerpt?: string | null;
+	featuredImage?: string | null;
+	blogId?: string | null;
+};
+
+type PublishedSite = {
+	name?: string;
+	description?: string;
+	url?: string;
+	discourageIndexing?: boolean;
+	descriptionFrom?: string;
+	logoUrl?: string;
 };
 
 type BuildPublishedPageHtmlParams = {
@@ -54,6 +73,7 @@ type BuildPublishedPageHtmlParams = {
 	post?: BindablePostDocument;
 	themeSettings?: ThemeSettings;
 	themeRawSettings?: unknown;
+	site?: PublishedSite;
 };
 
 /**
@@ -65,6 +85,7 @@ export function buildPublishedPageHtml({
 	post,
 	themeSettings,
 	themeRawSettings,
+	site,
 }: BuildPublishedPageHtmlParams): string {
 	const rawBlocks = (Array.isArray(page.blocks) ? page.blocks : []) as BlockConfig[];
 	const boundBlocks = post ? bindPostBlocks({ blocks: rawBlocks, post }) : rawBlocks;
@@ -105,7 +126,6 @@ export function buildPublishedPageHtml({
 	const needsAnimateCss = allBlocks.some((b) => usesAnimateCss(b.other?.animation));
 	const hasEntryAnimations = allBlocks.some((b) => b.other?.animation?.entry);
 
-	const pageOther = pageOtherEarly;
 	const design = resolveVisitorDesign({
 		design: readPageDesign({ blocks }),
 		themeSettings,
@@ -155,8 +175,29 @@ export function buildPublishedPageHtml({
 	const bodyScripts = bodyParts.join("\n");
 
 	const hydrateScript = blocksHaveReactiveFlag(blocks) ? getHydrationScript() : "";
-	const seo = (pageOther.seo as Record<string, unknown> | undefined) ?? {};
-	const pageDescription = typeof seo.metaDescription === "string" ? seo.metaDescription : "";
+	const seo = parsePageOther(page.other).seo ?? {};
+	const canonical = publishedCanonicalUrl({
+		requestUrl: canonicalUrl,
+		siteUrl: site?.url,
+		pageCanonical: seo.canonicalUrl,
+	});
+	const meta = buildPublishedDocumentMeta({
+		pageTitle: page.title,
+		metaTitle: seo.metaTitle,
+		metaDescription: seo.metaDescription,
+		excerpt: page.excerpt ?? undefined,
+		siteName: site?.name,
+		siteDescription: site?.description,
+		pageDescriptionFrom: seo.descriptionFrom,
+		siteDescriptionFrom: site?.descriptionFrom,
+		canonicalUrl: canonical,
+		imageUrl: publishedPreviewImageUrl({
+			featuredImage: page.featuredImage,
+			blocks,
+			logoUrl: site?.logoUrl,
+		}),
+		kind: page.blogId ? "article" : "website",
+	});
 
 	const renderOptions: PageRenderOptions = {
 		fontFamily: design.fontFamily,
@@ -166,16 +207,15 @@ export function buildPublishedPageHtml({
 		textColor: design.textColor?.style,
 		hasPageShell: true,
 		scrollbarCss: buildScrollbarCss({ selector: "html", settings: design.scrollbar }),
-		noIndex: seo.noIndex === true,
-		customMeta: Array.isArray(seo.customMeta)
-			? (seo.customMeta as Array<{ name: string; content: string }>)
-			: undefined,
+		noIndex: seo.noIndex === true || site?.discourageIndexing === true,
+		customMeta: seo.customMeta,
+		socialMeta: renderPublishedSocialMeta(meta),
 	};
 
 	return PageTemplate(
-		(typeof seo.metaTitle === "string" && seo.metaTitle) || page.title || "Untitled Page",
-		pageDescription,
-		canonicalUrl,
+		meta.title,
+		meta.description,
+		meta.canonicalUrl,
 		headScripts,
 		blockContentHtml,
 		bodyScripts,

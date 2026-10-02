@@ -10,6 +10,8 @@ import { useSiteThemeSettings } from "@/hooks/use-site-theme-settings";
 import { buildVisitorDocumentStyle } from "@/lib/visitor-theme-style";
 import { resolveVisitorDesign } from "@shared/theme-to-page-design";
 import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
+import { buildPublishedDocumentMeta, publishedCanonicalUrl, publishedPreviewImageUrl } from "@shared/published-document-meta";
+import { publishedHoverPrefetchScript, publishedSpeculationRulesJson } from "@shared/published-document-speed";
 import type { Post } from "@shared/schema-types";
 import type { BlockConfig } from "@shared/schema-types";
 import type { PageOther } from "@shared/schema-types";
@@ -32,6 +34,14 @@ interface PublicPageData extends Post {
   author?: AuthorDisplay | null;
   categories?: string[];
   tags?: string[];
+  site?: {
+    name?: string;
+    description?: string;
+    url?: string;
+    discourageIndexing?: boolean;
+    descriptionFrom?: string;
+    logoUrl?: string;
+  };
 }
 
 interface PublicPageViewProps {
@@ -138,45 +148,57 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
   });
   const visitorStyle = buildVisitorDocumentStyle({ themeCssVars, design });
 
-  // SEO meta information
-  const metaTitle = seo?.metaTitle || `${data.title} | Your Site`;
-  const metaDescription = seo?.metaDescription || data.excerpt || `Read ${data.title} on our website.`;
-  const canonicalUrl =
-    seo?.canonicalUrl ||
-    (type === 'homepage'
-      ? `${window.location.origin}/`
-      : `${window.location.origin}/${type}/${data.slug}`);
+  const canonicalUrl = publishedCanonicalUrl({
+    requestUrl: window.location.href,
+    siteUrl: data.site?.url,
+    pageCanonical: seo?.canonicalUrl,
+  });
+  const meta = buildPublishedDocumentMeta({
+    pageTitle: data.title,
+    metaTitle: seo?.metaTitle,
+    metaDescription: seo?.metaDescription,
+    excerpt: data.excerpt ?? undefined,
+    siteName: data.site?.name,
+    siteDescription: data.site?.description,
+    pageDescriptionFrom: seo?.descriptionFrom,
+    siteDescriptionFrom: data.site?.descriptionFrom,
+    canonicalUrl,
+    imageUrl: publishedPreviewImageUrl({
+      featuredImage: data.featuredImage,
+      blocks,
+      logoUrl: data.site?.logoUrl,
+    }),
+    kind: type === 'post' ? 'article' : 'website',
+  });
 
   return (
     <div 
       className="np-visitor-document flex min-h-screen flex-col" 
       data-testid={`public-${type}-view`}
-      style={visitorStyle}
+      style={{ ...visitorStyle, containerType: "inline-size", containerName: "npb-canvas" }}
     >
       <SkipLink href="#main-content">Skip to content</SkipLink>
-      {/* SEO Meta Tags */}
+      <script type="speculationrules" dangerouslySetInnerHTML={{ __html: publishedSpeculationRulesJson() }} />
+      <script dangerouslySetInnerHTML={{ __html: publishedHoverPrefetchScript() }} />
       <Helmet>
-        <title>{metaTitle}</title>
-        <meta name="description" content={metaDescription} />
-        <meta property="og:title" content={data.title} />
-        <meta property="og:description" content={metaDescription} />
-        <meta property="og:type" content={type === 'post' ? 'article' : 'website'} />
-        <meta property="og:url" content={canonicalUrl} />
-        {data.featuredImage && (
-          <meta property="og:image" content={data.featuredImage} />
-        )}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={data.title} />
-        <meta name="twitter:description" content={metaDescription} />
-        {data.featuredImage && (
-          <meta name="twitter:image" content={data.featuredImage} />
-        )}
-        <link rel="canonical" href={canonicalUrl} />
-        {seo?.noIndex && (
+        <title>{meta.title}</title>
+        {meta.description ? <meta name="description" content={meta.description} /> : null}
+        <meta property="og:title" content={meta.title} />
+        {meta.description ? <meta property="og:description" content={meta.description} /> : null}
+        <meta property="og:type" content={meta.type} />
+        <meta property="og:url" content={meta.canonicalUrl} />
+        {meta.siteName ? <meta property="og:site_name" content={meta.siteName} /> : null}
+        {meta.imageUrl ? <meta property="og:image" content={meta.imageUrl} /> : null}
+        <meta name="twitter:card" content={meta.imageUrl ? "summary_large_image" : "summary"} />
+        <meta name="twitter:title" content={meta.title} />
+        {meta.description ? <meta name="twitter:description" content={meta.description} /> : null}
+        {meta.imageUrl ? <meta name="twitter:image" content={meta.imageUrl} /> : null}
+        <link rel="canonical" href={meta.canonicalUrl} />
+        {(seo?.noIndex || data.site?.discourageIndexing) && (
           <meta name="robots" content="noindex, nofollow" />
         )}
-        {seo?.customMeta?.filter(m => m.name && m.content).map((meta, i) => (
-          <meta key={`custom-${i}`} name={meta.name} content={meta.content} />
+        {seo?.customMeta?.filter(m => m.name && m.content).map((tag, i) => (
+          <meta key={`custom-${i}`} name={tag.name} content={tag.content} />
         ))}
         
         {/* Article specific meta for posts */}

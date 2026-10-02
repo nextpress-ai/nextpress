@@ -7,6 +7,7 @@ import { getOptionalCaddyAcmeEmail } from '../config';
 import { updateCaddyConfig, syncCaddyFromSites } from '../utils/caddy';
 import { getCaddyTlsHostnames, validateDomain } from '../utils/validate-domain';
 import { readRequestSiteId, resolveRequestSite } from './shared/resolve-request-site';
+import { setResponseCompressionEnabled } from '../lib/response-compression';
 
 /**
  * Creates settings routes for site-wide configuration management
@@ -156,6 +157,11 @@ export function createSettingsRoutes(deps: Deps): Router {
       // Domain validation or Caddy config failures are returned as { status: false }
       if (result && !result.status) {
         return res.status(400).json(result);
+      }
+
+      const compressionEnabled = result?.data?.system?.compressionEnabled;
+      if (typeof compressionEnabled === "boolean") {
+        setResponseCompressionEnabled(compressionEnabled);
       }
 
       res.json(result);

@@ -34,9 +34,11 @@ const headingBlock = (text: string) => ({
 function createModels({
 	page,
 	post,
+	homepageSlug,
 }: {
 	page?: Record<string, unknown> | null;
 	post?: Record<string, unknown> | null;
+	homepageSlug?: string;
 }): Deps["models"] {
 	return {
 		sites: {
@@ -75,7 +77,7 @@ function createModels({
 			],
 		},
 		users: { findById: async () => null },
-		options: { getOption: async () => undefined },
+		options: { getOption: async () => (homepageSlug ? { value: homepageSlug } : undefined) },
 	} as unknown as Deps["models"];
 }
 
@@ -253,5 +255,27 @@ describe("public HTML routes bind post blocks", () => {
 		const reserved = await requestPath({ models, path: "/admin" });
 		expect(reserved.status).toBe(404);
 		expect(reserved.body).not.toContain("About from slug");
+	});
+
+	it("serves the homepage at / with the site name and preview tags", async () => {
+		const home = {
+			id: PAGE_ID,
+			title: "walkableca",
+			status: "publish",
+			siteId: SITE.id,
+			slug: "home",
+			blocks: [headingBlock("walkableca")],
+			other: { seo: {} },
+			featuredImage: "/uploads/cover.jpg",
+		};
+		const result = await requestPath({
+			models: createModels({ page: home, homepageSlug: "home" }),
+			path: "/",
+		});
+		expect(result.status).toBe(200);
+		expect(result.body).toContain("walkableca | Test");
+		expect(result.body).toContain('property="og:image" content="http://localhost:5000/uploads/cover.jpg"');
+		expect(result.body).toContain('rel="canonical" href="http://localhost:5000/"');
+		expect(result.body).not.toContain("Your Site");
 	});
 });

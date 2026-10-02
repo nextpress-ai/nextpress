@@ -17,7 +17,8 @@ import { bindPostBlocks } from '@shared/bind-post-blocks';
 import { bindablePostFromRecord } from '@shared/bind-post-blocks';
 import { renderBlocksToHtml } from '../../renderer/to-html';
 import { sanitizeHtml } from '@shared/sanitize-html';
-import type { BlockConfig } from '@shared/schema-types';
+import type { BlockConfig, Site } from '@shared/schema-types';
+import { publicSiteDescription, publicSiteName } from '@shared/published-document-meta';
 
 /**
  * Public API routes — resolve site from Host header or ?siteId= hint.
@@ -25,6 +26,23 @@ import type { BlockConfig } from '@shared/schema-types';
 export function createPublicRoutes(deps: Deps): Router {
   const router = Router();
   const { models } = deps;
+
+  const siteIdentity = async (site: Site) => {
+    const stored = await models.sites.getSettings(site.id);
+    const url = stored.general.siteUrl || site.siteUrl || '';
+    return {
+      name: publicSiteName({
+        settingsName: stored.general.siteName,
+        recordName: site.name,
+        siteUrl: url,
+      }),
+      description: publicSiteDescription(stored.general.siteDescription),
+      url,
+      discourageIndexing: Boolean(stored.reading.discourageSearchIndexing),
+      descriptionFrom: stored.reading.descriptionFrom,
+      logoUrl: site.logoUrl || "",
+    };
+  };
 
   router.get(
     '/page/:slug',
@@ -46,7 +64,7 @@ export function createPublicRoutes(deps: Deps): Router {
           return;
         }
 
-        res.json(page);
+        res.json({ ...page, site: await siteIdentity(site) });
       });
 
       if (err) {
@@ -163,6 +181,7 @@ export function createPublicRoutes(deps: Deps): Router {
         });
         res.json({
           ...payload,
+          site: await siteIdentity(site),
           renderedHtml:
             boundBlocks.length > 0
               ? sanitizeHtml(renderBlocksToHtml(boundBlocks))
@@ -199,7 +218,7 @@ export function createPublicRoutes(deps: Deps): Router {
           return;
         }
 
-        res.json(page);
+        res.json({ ...page, site: await siteIdentity(site) });
       });
 
       if (err) {

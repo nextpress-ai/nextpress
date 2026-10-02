@@ -21,6 +21,15 @@ describe("resolveBlockForSurface", () => {
 		expect(publish.warnings.some((w) => w.code === "FIXED_WIDE_IMAGE")).toBe(true);
 	});
 
+	it("adds a screen class when the block is phone-only", () => {
+		const block = {
+			...legacyFixedWidthFixture[0],
+			other: { showOn: "phone" as const },
+		};
+		const resolved = resolveBlockForSurface({ block, surface: "publish" });
+		expect(resolved.classNames).toContain("is-screen-phone");
+	});
+
 	it("adds is-stacked-on-mobile class for media-text when default true", () => {
 		const block = contentStressFixture.find((b) => b.name === "core/media-text")!;
 		const resolved = resolveBlockForSurface({ block, surface: "publish" });

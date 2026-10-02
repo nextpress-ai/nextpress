@@ -273,4 +273,84 @@ describe("buildPublishedPageHtml", () => {
 		expect(standard).not.toContain("scrollbar-width:thin");
 		expect(standard).not.toContain("scrollbar-color");
 	});
+
+	it("names the site in the title and reserves the image box", () => {
+		const html = buildPublishedPageHtml({
+			page: {
+				id: "page-photo",
+				title: "walkableca",
+				featuredImage: "/uploads/cover.jpg",
+				blocks: [
+					{
+						id: "img",
+						name: "core/image",
+						type: "block",
+						content: {
+							kind: "media",
+							url: "/uploads/cover.jpg",
+							mediaType: "image",
+							alt: "A path",
+							intrinsicWidth: "800",
+							intrinsicHeight: "600",
+						},
+					},
+				],
+				other: { seo: {} },
+			} as Parameters<typeof buildPublishedPageHtml>[0]["page"],
+			canonicalUrl: "http://127.0.0.1:5000/walkableca",
+			site: { name: "nextpress.ai", url: "https://nextpress.ai", description: "City walks" },
+		});
+
+		expect(html).toContain("walkableca | nextpress.ai");
+		expect(html).toContain('rel="canonical" href="https://nextpress.ai/walkableca"');
+		expect(html).toContain('property="og:description" content="City walks"');
+		expect(html).toContain('property="og:image" content="https://nextpress.ai/uploads/cover.jpg"');
+		expect(html).toContain('width="800"');
+		expect(html).toContain('height="600"');
+		expect(html).toContain("aspect-ratio");
+		expect(html).not.toContain("Your Site");
+	});
+
+	it("uses a picture on the page when no featured image is set", () => {
+		const html = buildPublishedPageHtml({
+			page: {
+				id: "page-plain",
+				title: "walkableca",
+				blocks: [
+					{
+						id: "join",
+						name: "core/button",
+						type: "block",
+						content: { kind: "text", value: "Join", url: "/Contact/#form" },
+					},
+					{
+						id: "img",
+						name: "core/image",
+						type: "block",
+						content: { kind: "media", url: "/uploads/hero.jpg", mediaType: "image" },
+					},
+				],
+				other: { seo: {} },
+			} as Parameters<typeof buildPublishedPageHtml>[0]["page"],
+			canonicalUrl: "http://127.0.0.1:5000/walkableca",
+			site: { name: "nextpress.ai", url: "https://nextpress.ai", logoUrl: "/uploads/logo.png" },
+		});
+
+		expect(html).toContain('property="og:image" content="https://nextpress.ai/uploads/hero.jpg"');
+		expect(html).not.toContain("og:image\" content=\"https://nextpress.ai/Contact");
+		expect(html).toContain('name="twitter:card" content="summary_large_image"');
+
+		const textOnly = buildPublishedPageHtml({
+			page: {
+				id: "page-text",
+				title: "Notes",
+				blocks: [],
+				other: { seo: {} },
+			} as Parameters<typeof buildPublishedPageHtml>[0]["page"],
+			canonicalUrl: "http://127.0.0.1:5000/notes",
+			site: { name: "nextpress.ai", url: "https://nextpress.ai" },
+		});
+		expect(textOnly).not.toContain("og:image");
+		expect(textOnly).toContain('name="twitter:card" content="summary"');
+	});
 });

@@ -41,6 +41,7 @@ import {
 	type HeaderVariant,
 } from "@shared/header-model";
 import { HeaderVariantPicker } from "./header-variant-picker";
+import { HeaderScreenSettings } from "./header-screen-settings";
 import { HeaderScrollSettings } from "./header-scroll-settings";
 import { HeaderSpacingSettings } from "./header-spacing-settings";
 import { PopupLinkPicker } from "../../popup-links";
@@ -160,6 +161,7 @@ export function HeaderSettings({
 						Drop any block on the header's right side, on the canvas.
 					</p>
 				) : null}
+				<HeaderScreenSettings content={content} onChange={updateContent} />
 				<div className="mt-3 flex items-center justify-between gap-3">
 					<SettingsLabel htmlFor="header-sticky">Float on scroll</SettingsLabel>
 					<Switch

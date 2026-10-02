@@ -32,6 +32,8 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { appendSiteIdToUrl, buildSiteOptionUrl } from '@/lib/site-api';
 import { useActiveSite } from '@/hooks/useActiveSite';
+import { PAGE_DESCRIPTION_FROM_OPTIONS } from "@shared/description-from";
+import type { PageDescriptionFrom } from "@shared/description-from";
 import type {
   Page,
   Post,
@@ -126,6 +128,9 @@ export default function PageSettingsModal({
   const [metaDescription, setMetaDescription] = useState(currentSeo?.metaDescription ?? '');
   const [canonicalUrl, setCanonicalUrl] = useState(currentSeo?.canonicalUrl ?? '');
   const [noIndex, setNoIndex] = useState(currentSeo?.noIndex ?? false);
+  const [descriptionFrom, setDescriptionFrom] = useState<PageDescriptionFrom>(
+    currentSeo?.descriptionFrom ?? "inherit",
+  );
   const [customMetaTags, setCustomMetaTags] = useState<MetaTagEntry[]>(
     currentSeo?.customMeta ?? []
   );
@@ -155,6 +160,7 @@ export default function PageSettingsModal({
         metaDescription,
         canonicalUrl,
         noIndex,
+        descriptionFrom,
         customMetaTags,
         iconDefaultSet,
         iconDefaultSize,
@@ -311,9 +317,11 @@ export default function PageSettingsModal({
                 <div className="flex items-center justify-between rounded-md border border-npb-border-default p-3">
                   <div className="space-y-0.5">
                     <Label htmlFor="setAsHomepage">Homepage</Label>
-<p className="text-xs text-npb-text-muted">
-                    Prevent search engines from indexing this page
-                  </p>
+                    <p className="text-xs text-npb-text-muted">
+                      {isCurrentHomepage
+                        ? "This page is the homepage."
+                        : "Visitors who open the site address see this page."}
+                    </p>
                   </div>
                   <Switch
                     id="setAsHomepage"
@@ -325,13 +333,16 @@ export default function PageSettingsModal({
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="featuredImage">Featured Image URL</Label>
+                <Label htmlFor="featuredImage">Featured image</Label>
                 <Input
                   id="featuredImage"
                   value={featuredImage}
                   onChange={(e) => setFeaturedImage(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
+                  placeholder="/uploads/cover.jpg"
                 />
+                <p className="text-xs text-npb-text-muted">
+                  Link previews use this picture. Leave it empty to use the first picture on the page, then the site logo.
+                </p>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -480,6 +491,31 @@ export default function PageSettingsModal({
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="descriptionFrom">Description uses</Label>
+                <Select
+                  value={descriptionFrom}
+                  onValueChange={(value) => setDescriptionFrom(value as PageDescriptionFrom)}
+                >
+                  <SelectTrigger id="descriptionFrom" className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_DESCRIPTION_FROM_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-npb-text-muted">
+                  Search results and link previews use this text. Same as the site uses the choice in Settings. If the chosen text is empty, the preview has no description.
+                </p>
+                <p className="text-xs text-npb-text-muted">
+                  The link picture is the featured image on General. An empty featured image uses the first picture on the page, then the site logo.
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="canonicalUrl">Canonical URL</Label>
                 <Input
                   id="canonicalUrl"
@@ -492,9 +528,9 @@ export default function PageSettingsModal({
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="noIndex">Hide from Search Engines</Label>
-<p className="text-xs text-npb-text-muted">
-                      Default icon set for new Icon and Button blocks on this page
-                    </p>
+                  <p className="text-xs text-npb-text-muted">
+                    Keep this page out of search results
+                  </p>
                 </div>
                 <Switch id="noIndex" checked={noIndex} onCheckedChange={setNoIndex} />
               </div>

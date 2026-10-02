@@ -199,6 +199,47 @@ export function createRenderRoutes(deps: Deps): Router {
 	);
 
 	/**
+	 * GET / - The published homepage, when one is set. Otherwise the app shell.
+	 */
+	router.get(
+		"/",
+		asyncHandler(async (req, res, next) => {
+			const { err } = await safeTryAsync(async () => {
+				const context = await resolveSiteRenderContext({ models, req });
+				if (!context) {
+					next();
+					return;
+				}
+
+				const homepage = await models.options.getOption("homepage_page_slug", context.site.id);
+				if (!homepage?.value) {
+					next();
+					return;
+				}
+
+				const page = await models.pages.findBySiteAndSlug(context.site.id, homepage.value);
+				if (!page || !isPubliclyReadable(page)) {
+					next();
+					return;
+				}
+
+				await sendPublishedHtml({
+					res,
+					models,
+					document: page,
+					canonicalUrl: `${req.protocol}://${req.get("host")}/`,
+					siteId: context.site.id,
+				});
+			});
+
+			if (err) {
+				console.error("Error rendering home:", err);
+				sendStatusPage({ req, res, status: 500 });
+			}
+		}),
+	);
+
+	/**
 	 * GET /home - Render the site homepage page (same document as `/api/public/homepage`).
 	 */
 	router.get(

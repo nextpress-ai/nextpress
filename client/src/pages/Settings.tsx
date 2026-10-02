@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { SITE_DESCRIPTION_FROM_OPTIONS } from '@shared/description-from';
+import type { DescriptionFrom } from '@shared/description-from';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +55,7 @@ interface Settings {
     rssPosts: number;
     rssEnabled: boolean;
     discourageSearchIndexing: boolean;
+    descriptionFrom: "auto" | "page" | "excerpt" | "site";
   };
   discussion: {
     enableComments: boolean;
@@ -1387,6 +1390,30 @@ export default function Settings() {
                           updateReadingField('rssEnabled', checked)
                         }
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="descriptionFrom">Link and search description</Label>
+                      <Select
+                        value={formData.reading.descriptionFrom ?? "auto"}
+                        onValueChange={(value) =>
+                          updateReadingField("descriptionFrom", value as DescriptionFrom)
+                        }
+                      >
+                        <SelectTrigger id="descriptionFrom" className="max-w-md">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SITE_DESCRIPTION_FROM_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-npb-text-secondary">
+                        Used when a page does not choose its own. A page can override this in its SEO settings. If the chosen text is empty, the preview has no description.
+                      </p>
                     </div>
 
                     <div className="flex items-center justify-between">

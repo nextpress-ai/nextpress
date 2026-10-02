@@ -141,6 +141,9 @@ export function PageShellSettings({
 					}
 				/>
 			</div>
+			<p className="npb-settings-hint-muted text-xs">
+				Open a block, then Advanced, then Screens. Desktop includes the tablet preview. Mobile is the phone.
+			</p>
 			<SettingsDisclosure
 				title="Scrollbar"
 				defaultOpen={content.scrollbar?.look === "custom" || content.scrollbar?.look === "hidden"}

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { Response } from "express";
 import { documentHasBlockName } from "@shared/bind-post-blocks";
 import type { BlockConfig } from "@shared/schema-types";
@@ -10,6 +11,12 @@ import {
 	preparePublishedPost,
 	type PublishedContentRow,
 } from "./prepare-published-post";
+import { parsePageOther } from "@shared/page-other";
+import {
+	publicSiteDescription,
+	publicSiteName,
+	publishedCanonicalUrl,
+} from "@shared/published-document-meta";
 
 /**
  * These blocks are filled from other records when the HTML is built.
@@ -19,6 +26,50 @@ const LIVE_BLOCK_NAMES = ["post/list", "post/comments", "post/navigation", "post
 
 const canCacheBlocks = (blocks: BlockConfig[]): boolean =>
 	!LIVE_BLOCK_NAMES.some((name) => documentHasBlockName({ blocks, name }));
+
+/** A published page may be reused by the browser for about a minute. Live pages are not stored. */
+const PUBLISHED_CACHE_CONTROL = "public, max-age=60";
+
+const publishedHtmlEtag = (html: string): string => {
+	const hash = createHash("sha256").update(html).digest("base64url").slice(0, 22);
+	return `W/"${hash}"`;
+};
+
+const readIfNoneMatch = (res: Response): string | undefined => {
+	const header = res.req?.headers?.["if-none-match"];
+	if (Array.isArray(header)) return header.join(", ");
+	return header;
+};
+
+const ifNoneMatchHits = (header: string | undefined, etag: string): boolean => {
+	if (!header) return false;
+	if (header.trim() === "*") return true;
+	return header.split(",").some((part) => part.trim() === etag);
+};
+
+const finishPublishedHtml = ({
+	res,
+	html,
+	cacheable,
+	cacheState,
+}: {
+	res: Response;
+	html: string;
+	cacheable: boolean;
+	cacheState: "hit" | "miss" | "skip";
+}): void => {
+	const etag = publishedHtmlEtag(html);
+	res.setHeader("Content-Type", "text/html; charset=utf-8");
+	res.setHeader("ETag", etag);
+	res.setHeader("Cache-Control", cacheable ? PUBLISHED_CACHE_CONTROL : "private, no-store");
+	res.setHeader("X-Nextpress-Cache", cacheState);
+	if (ifNoneMatchHits(readIfNoneMatch(res), etag)) {
+		res.status(304);
+		res.end();
+		return;
+	}
+	res.send(html);
+};
 
 /**
  * Bind the document (author, comments, adjacent) then send SSR HTML.
@@ -52,19 +103,46 @@ export async function sendPublishedHtml({
 		? await resolveSiteThemeSettings({ models, siteId })
 		: null;
 
+	const siteRecord = siteId && typeof models.sites?.findById === "function"
+		? await models.sites.findById(siteId)
+		: undefined;
+	const storedSettings = siteId && typeof models.sites?.getSettings === "function"
+		? await models.sites.getSettings(siteId)
+		: undefined;
+	const siteUrl = storedSettings?.general?.siteUrl || siteRecord?.siteUrl || "";
+	const site = {
+		name: publicSiteName({
+			settingsName: storedSettings?.general?.siteName,
+			recordName: siteRecord?.name,
+			siteUrl,
+		}),
+		description: publicSiteDescription(storedSettings?.general?.siteDescription),
+		url: siteUrl,
+		discourageIndexing: Boolean(storedSettings?.reading?.discourageSearchIndexing),
+		descriptionFrom: storedSettings?.reading?.descriptionFrom,
+		logoUrl: siteRecord?.logoUrl || "",
+	};
+	const pageSeo = parsePageOther(document.other).seo;
+	const publicCanonical = publishedCanonicalUrl({
+		requestUrl: stableCanonical,
+		siteUrl: site.url,
+		pageCanonical: pageSeo?.canonicalUrl,
+	});
+
 	const cacheKey = publishedPageCacheKey({
 		documentId: document.id,
 		version,
-		canonicalUrl: stableCanonical,
+		canonicalUrl: publicCanonical,
 		themeId: theme?.themeId ?? null,
-		themeSettingsJson: JSON.stringify(theme?.rawSettings ?? null),
+		themeSettingsJson: JSON.stringify({
+			theme: theme?.rawSettings ?? null,
+			site,
+		}),
 	});
 	if (cacheable) {
 		const cached = publishedPageCache.read(cacheKey);
 		if (cached) {
-			res.setHeader("Content-Type", "text/html");
-			res.setHeader("X-Nextpress-Cache", "hit");
-			res.send(cached);
+			finishPublishedHtml({ res, html: cached, cacheable: true, cacheState: "hit" });
 			return;
 		}
 	}
@@ -85,16 +163,23 @@ export async function sendPublishedHtml({
 			title: document.title,
 			blocks,
 			other: document.other,
+			excerpt: document.excerpt,
+			featuredImage: document.featuredImage,
+			blogId: document.blogId,
 		},
-		canonicalUrl: stableCanonical,
+		canonicalUrl: publicCanonical,
 		post: prepared.post,
 		themeSettings: theme?.settings,
 		themeRawSettings: theme?.rawSettings,
+		site,
 	});
 	if (cacheable) {
 		publishedPageCache.write(cacheKey, html);
 	}
-	res.setHeader("Content-Type", "text/html");
-	res.setHeader("X-Nextpress-Cache", cacheable ? "miss" : "skip");
-	res.send(html);
+	finishPublishedHtml({
+		res,
+		html,
+		cacheable,
+		cacheState: cacheable ? "miss" : "skip",
+	});
 }

@@ -28,6 +28,9 @@ export type ImageContent = {
   rel?: string;
   title?: string;
   id?: string;
+  /** Pixel size of the file, so the page can hold the box before the picture arrives. */
+  intrinsicWidth?: string;
+  intrinsicHeight?: string;
 };
 
 export const DEFAULT_CONTENT: ImageContent = {

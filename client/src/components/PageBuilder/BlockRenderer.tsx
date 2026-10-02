@@ -26,6 +26,7 @@ import {
 import { getHorizontalFlexChildStyles } from "@shared/container-child-flex";
 import { readOverlayFit } from "@shared/overlay-stack-fit";
 import { blockExtraCss } from "@shared/block-extra-css";
+import { readScreenShow, screenShowClass } from "@shared/screen-show";
 import { resolveSpacingSides, spacingOverlayLength, hasNonZeroSpacing } from '@/lib/resolve-spacing-sides';
 import { resolveFormFieldModifierSelector } from "@shared/form-field-block-styles";
 import { resolveButtonBlockModifierSelector } from "@shared/button-block-styles";
@@ -671,6 +672,7 @@ export default function BlockRenderer({
   const pageShellStretch = isPageShellGuide ? "flex min-h-full flex-1 flex-col" : "";
   const blockChromeClasses = [
     `block-${block.id}`,
+    screenShowClass(readScreenShow(typeof block.other?.showOn === "string" ? block.other.showOn : undefined)),
     showSelectedChrome ? 'npb-canvas-block-selected' : '',
     showEditingChrome ? 'npb-canvas-block-editing' : '',
     isPageShellGuide ? "npb-page-shell-guide" : "",

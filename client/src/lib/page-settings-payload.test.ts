@@ -31,6 +31,7 @@ const values = {
 	metaDescription: "",
 	canonicalUrl: "",
 	noIndex: false,
+	descriptionFrom: "inherit" as const,
 	customMetaTags: [],
 	iconDefaultSet: "lucide" as const,
 	iconDefaultSize: 24,

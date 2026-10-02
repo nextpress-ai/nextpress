@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { readScreenShow, type ScreenShow } from "./screen-show.js";
 import type { BlockContent, TokenEntry } from "./schema-types.js";
 import { BORDER_RADIUS_PRESETS, isCssLength } from "./dimension-presets.js";
 import { fillToBackgroundStyles, readFill, type Fill } from "./fill-model.js";
@@ -227,6 +228,11 @@ export type HeaderContent = {
 	overFirstSection?: boolean;
 	/** A thin bar on the header's bottom edge that fills as the page is read. Off by default. */
 	progress?: HeaderProgress;
+	/** Which screen the name, the links, the buttons, and the right-side blocks appear on. */
+	brandShowOn?: ScreenShow;
+	navShowOn?: ScreenShow;
+	actionsShowOn?: ScreenShow;
+	blocksShowOn?: ScreenShow;
 } & HeaderSpacing;
 
 export type HeaderProgress = {
@@ -566,6 +572,10 @@ export function readHeaderContent(content: BlockContent | undefined): HeaderCont
 		backgroundFill: readFill(data.backgroundFill),
 		overFirstSection: data.overFirstSection === true,
 		progress: readHeaderProgress(data.progress),
+		brandShowOn: readScreenShow(typeof data.brandShowOn === "string" ? data.brandShowOn : undefined),
+		navShowOn: readScreenShow(typeof data.navShowOn === "string" ? data.navShowOn : undefined),
+		actionsShowOn: readScreenShow(typeof data.actionsShowOn === "string" ? data.actionsShowOn : undefined),
+		blocksShowOn: readScreenShow(typeof data.blocksShowOn === "string" ? data.blocksShowOn : undefined),
 		...readHeaderSpacing(data),
 	};
 }

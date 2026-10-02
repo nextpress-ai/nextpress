@@ -323,6 +323,7 @@ export const readingSettingsSchema = z.object({
 	rssPosts: z.number().int().positive().max(100),
 	rssEnabled: z.boolean(),
 	discourageSearchIndexing: z.boolean(),
+	descriptionFrom: z.enum(["auto", "page", "excerpt", "site"]),
 });
 
 export const discussionSettingsSchema = z.object({

@@ -7,11 +7,19 @@ import express, {
 import { registerRoutes } from './routes';
 import { serveStatic, log } from './vite';
 import { initDevDatabase } from './db';
+import { models } from './storage';
+import { safeTryAsync } from './utils';
+import {
+  responseCompression,
+  setResponseCompressionEnabled,
+} from './lib/response-compression';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
+
+app.use(responseCompression());
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -46,6 +54,19 @@ app.use((req, res, next) => {
 (async () => {
   // Initialize PGlite schema in development mode
   await initDevDatabase();
+
+  const { err: compressionErr, result: bootSettings } = await safeTryAsync(() =>
+    models.sites.getSettings(),
+  );
+  if (compressionErr || !bootSettings) {
+    console.error({
+      atFunction: "start",
+      error: compressionErr,
+      message: "Could not read the compression setting",
+    });
+  } else {
+    setResponseCompressionEnabled(Boolean(bootSettings.system.compressionEnabled));
+  }
 
   const server = await registerRoutes(app);
 

@@ -25,6 +25,7 @@ export const DEFAULT_SETTINGS = {
     rssPosts: 10,
     rssEnabled: true,
     discourageSearchIndexing: false,
+    descriptionFrom: 'auto',
   },
   discussion: {
     enableComments: true,

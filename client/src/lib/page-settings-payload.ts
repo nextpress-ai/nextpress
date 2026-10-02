@@ -22,6 +22,7 @@ export type PageSettingsFormValues = {
   metaDescription: string;
   canonicalUrl: string;
   noIndex: boolean;
+  descriptionFrom: "inherit" | "auto" | "page" | "excerpt" | "site";
   customMetaTags: MetaTagEntry[];
   iconDefaultSet: PageIconSettings['defaultSet'];
   iconDefaultSize: number;
@@ -77,6 +78,7 @@ export function buildPageSettingsPayload({
     metaDescription: values.metaDescription || undefined,
     canonicalUrl: values.canonicalUrl || undefined,
     noIndex: values.noIndex,
+    descriptionFrom: values.descriptionFrom,
     customMeta:
       values.customMetaTags.length > 0 ? values.customMetaTags : undefined,
   };

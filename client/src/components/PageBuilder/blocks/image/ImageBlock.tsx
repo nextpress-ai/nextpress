@@ -6,6 +6,12 @@ import { useImageResize } from "./use-image-resize";
 import { type ImageContent, DEFAULT_CONTENT } from "./image-model";
 import { ImageSettings } from "./image-settings";
 
+const positivePx = (value: string | undefined): number | undefined => {
+  if (!value || !/^\d+(\.\d+)?$/.test(value.trim())) return undefined;
+  const parsed = Number(value);
+  return parsed > 0 ? Math.round(parsed) : undefined;
+};
+
 // ============================================================================
 // RENDERER
 // ============================================================================
@@ -15,7 +21,9 @@ interface ImageRendererProps {
   styles?: React.CSSProperties;
   isEditing?: boolean;
   isSelected?: boolean;
+  isPreview?: boolean;
   onStylesChange?: (updates: Partial<React.CSSProperties>) => void;
+  onIntrinsicSize?: (size: { width: number; height: number }) => void;
 }
 
 const HANDLE_POSITIONS = {
@@ -28,7 +36,9 @@ function ImageRenderer({
   styles,
   isEditing,
   isSelected,
+  isPreview,
   onStylesChange,
+  onIntrinsicSize,
 }: ImageRendererProps): JSX.Element | null {
   const url = content?.kind === "media" && content.mediaType === "image" ? content.url : "";
   const alt = content?.alt;
@@ -82,13 +92,30 @@ function ImageRenderer({
     .filter(Boolean)
     .join(" ");
 
+  const intrinsicWidth = positivePx(content?.intrinsicWidth);
+  const intrinsicHeight = positivePx(content?.intrinsicHeight);
   const imgEl = (
     <img
       ref={showHandles ? imgRef : undefined}
       src={url}
       alt={alt}
-      style={{ ...styles }}
+      width={intrinsicWidth}
+      height={intrinsicHeight}
+      decoding="async"
+      style={{
+        ...styles,
+        ...(intrinsicWidth && intrinsicHeight
+          ? { aspectRatio: `${intrinsicWidth} / ${intrinsicHeight}` }
+          : {}),
+      }}
       draggable={false}
+      onLoad={(event) => {
+        if (isPreview || content?.intrinsicWidth) return;
+        const img = event.currentTarget;
+        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+          onIntrinsicSize?.({ width: img.naturalWidth, height: img.naturalHeight });
+        }
+      }}
     />
   );
 
@@ -159,10 +186,13 @@ function ImageBlockView({
   content,
   styles,
   setStyles,
+  setContent,
   isPreview,
   isSelected,
   isEditing,
-}: ImageBlockViewProps): JSX.Element | null {
+}: ImageBlockViewProps & {
+  setContent: (next: ImageContent | ((prev: ImageContent) => ImageContent)) => void;
+}): JSX.Element | null {
   const handleStylesChange = useCallback(
     (updates: Partial<React.CSSProperties>) => {
       setStyles({ ...styles, ...updates });
@@ -176,7 +206,15 @@ function ImageBlockView({
       styles={styles}
       isEditing={Boolean(isEditing && !isPreview)}
       isSelected={isSelected}
+      isPreview={isPreview}
       onStylesChange={handleStylesChange}
+      onIntrinsicSize={({ width, height }) => {
+        setContent((prev) =>
+          prev.intrinsicWidth
+            ? prev
+            : { ...prev, intrinsicWidth: String(width), intrinsicHeight: String(height) },
+        );
+      }}
     />
   );
 }
@@ -199,11 +237,12 @@ const ImageBlock = createBlockDefinition<ImageContent>({
   },
   settings: ImageSettings,
   hasSettings: true,
-  render: ({ content, styles, setStyles, isPreview, isSelected, isEditing }) => (
+  render: ({ content, styles, setStyles, setContent, isPreview, isSelected, isEditing }) => (
     <ImageBlockView
       content={content}
       styles={styles}
       setStyles={setStyles}
+      setContent={setContent}
       isPreview={isPreview}
       isSelected={isSelected}
       isEditing={isEditing}

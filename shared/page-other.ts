@@ -41,6 +41,15 @@ const parseSeoSettings = (raw: unknown): PageSeoSettings | undefined => {
 	if (typeof raw.metaDescription === "string") seo.metaDescription = raw.metaDescription;
 	if (typeof raw.canonicalUrl === "string") seo.canonicalUrl = raw.canonicalUrl;
 	if (typeof raw.noIndex === "boolean") seo.noIndex = raw.noIndex;
+	if (
+		raw.descriptionFrom === "inherit" ||
+		raw.descriptionFrom === "auto" ||
+		raw.descriptionFrom === "page" ||
+		raw.descriptionFrom === "excerpt" ||
+		raw.descriptionFrom === "site"
+	) {
+		seo.descriptionFrom = raw.descriptionFrom;
+	}
 
 	if (Array.isArray(raw.customMeta)) {
 		const customMeta: MetaTagEntry[] = [];
