@@ -4,8 +4,32 @@ import type { ReleaseHighlight } from "./release-highlight-meta";
 /** In-app release notes. Consumer-facing copy only. Keep in sync with package.json on release. */
 export const RELEASE_MANIFEST = {
 	version: NEXTPRESS_CONFIG.version,
-	releaseDate: "2026-09-30",
+	releaseDate: "2026-10-02",
 	highlights: [
+		{
+			kind: "improvement",
+			title: "Published pages open faster",
+			description:
+				"A published page is saved after the first visit and reused until you save it or change the theme. Comments, post lists, the author, and next and previous posts stay up to date.",
+		},
+		{
+			kind: "fix",
+			title: "Main site addresses",
+			description:
+				"On the main site, a published page opens at its short address, like /contact, including when you are on localhost.",
+		},
+		{
+			kind: "fix",
+			title: "Imported pages keep their look",
+			description:
+				"Styles that name a block still apply after import. Include the theme and it is switched on. Google fonts used on the page come along in the file.",
+		},
+		{
+			kind: "update",
+			title: "Themes for an assistant",
+			description:
+				"An assistant connected to your site can list themes, create one, change its colors and type, and switch it on.",
+		},
 		{
 			kind: "update",
 			title: "Forms",
@@ -131,7 +155,7 @@ export const RELEASE_MANIFEST = {
 			description: "Older sites upgrade without getting stuck.",
 		},
 	] satisfies ReleaseHighlight[],
-	supportedUpgradeFrom: ["1.0.12", "1.3.2", "1.3.3", "1.3.4", "1.3.5", "1.3.6", "1.3.7", "1.3.8", "1.3.9"],
+	supportedUpgradeFrom: ["1.0.12", "1.3.2", "1.3.3", "1.3.4", "1.3.5", "1.3.6", "1.3.7", "1.3.8", "1.3.9", "1.4.0"],
 } as const;
 
 export type { ReleaseHighlight, ReleaseHighlightKind } from "./release-highlight-meta";
