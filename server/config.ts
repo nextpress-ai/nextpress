@@ -24,6 +24,10 @@ export const CONFIG = {
 			"audio/wav",
 			"application/pdf",
 			"text/plain",
+			"font/woff",
+			"font/woff2",
+			"font/ttf",
+			"font/otf",
 		],
 	},
 

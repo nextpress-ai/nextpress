@@ -13,6 +13,7 @@ import {
 import { buildImportedWpMap } from "@shared/import/wordpress/build-imported-wp-map";
 import type { FeaturedImageMode } from "@shared/import/wordpress/types";
 import { resolveRequestSite } from "./shared/resolve-request-site";
+import { contentVersionAfterRewrite } from "../lib/content-version-after-rewrite";
 
 const importer = createWordPressImporter();
 
@@ -245,11 +246,14 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 						return { id: post.id, title: post.title };
 					},
 					updatePost: async ({ postId, data }) => {
+						const existing = await models.posts.findById(postId);
+						if (!existing) throw new Error("Post not found");
 						const parsed = schemas.posts.update.parse(data);
 						const post = await models.posts.update(postId, {
 							...parsed,
 							title: String(parsed.title ?? ""),
 							slug: String(parsed.slug ?? ""),
+							version: contentVersionAfterRewrite(existing.version),
 						});
 						if (!post) throw new Error("Post not found");
 						deps.hooks.doAction("save_post", post);
@@ -503,11 +507,14 @@ export function createWordPressImportRoutes(deps: Deps): Router {
 						return { id: page.id, title: page.title };
 					},
 					updatePage: async ({ pageId, data }) => {
+						const existing = await models.pages.findById(pageId);
+						if (!existing) throw new Error("Page not found");
 						const parsed = schemas.pages.update.parse(data);
 						const page = await models.pages.update(pageId, {
 							...parsed,
 							title: String(parsed.title ?? ""),
 							slug: String(parsed.slug ?? ""),
+							version: contentVersionAfterRewrite(existing.version),
 						});
 						if (!page) throw new Error("Page not found");
 						deps.hooks.doAction("save_post", page);

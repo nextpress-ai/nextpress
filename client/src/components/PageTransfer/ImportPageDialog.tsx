@@ -227,7 +227,7 @@ export function ImportPageDialog({ open, onOpenChange, siteId }: ImportPageDialo
                       <Label htmlFor="import-include-theme" className="grid gap-1 font-normal">
                         <span className="font-medium">Also add theme "{themeName}"</span>
                         <span className="text-xs text-npb-text-muted">
-                          Added next to your themes. Your site keeps its current look until you switch.
+                          Added and switched on, so colors and type match this page.
                         </span>
                       </Label>
                     </div>

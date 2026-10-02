@@ -52,6 +52,7 @@ type OptionApiResponse = {
 export default function Pages() {
   const {
     activeSiteId,
+    activeSite,
     isLoading: activeSiteLoading,
     error: activeSiteError,
   } = useActiveSite();
@@ -59,6 +60,7 @@ export default function Pages() {
     <PagesList
       key={activeSiteId || "no-active-site"}
       activeSiteId={activeSiteId}
+      activeSiteIsDefault={activeSite?.isDefault === true}
       activeSiteLoading={activeSiteLoading}
       activeSiteError={activeSiteError}
     />
@@ -67,12 +69,14 @@ export default function Pages() {
 
 type PagesListProps = {
   activeSiteId: string;
+  activeSiteIsDefault?: boolean;
   activeSiteLoading?: boolean;
   activeSiteError?: Error | null;
 };
 
 function PagesList({
   activeSiteId,
+  activeSiteIsDefault = false,
   activeSiteLoading = false,
   activeSiteError = null,
 }: PagesListProps) {
@@ -268,7 +272,11 @@ function PagesList({
   const handleView = (page: Page) => {
     // Published pages: open public URL. Draft/preview: open preview by ID so content is visible.
     if (page.status === 'publish' && page.siteId && page.slug) {
-      window.open(`/sites/${page.siteId}/${page.slug}`, '_blank');
+      const href =
+        activeSiteIsDefault && page.siteId === activeSiteId
+          ? `/${page.slug}`
+          : `/sites/${page.siteId}/${page.slug}`;
+      window.open(href, '_blank');
     } else {
       window.open(`/preview/page/${page.id}`, '_blank');
     }

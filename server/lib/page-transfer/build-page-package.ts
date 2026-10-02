@@ -14,6 +14,7 @@ import {
 	type PackageTheme,
 	type PagePackage,
 } from "@shared/page-transfer";
+import { packExternalFonts, type RemoteFontBody } from "./pack-external-fonts";
 
 /** Guess for a referenced file that is on disk but has no media row (older uploads). */
 const MIME_BY_EXTENSION: Record<string, string> = {
@@ -39,18 +40,36 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  * Files are read from this site's uploads folder only; a path that would leave it is treated
  * as missing.
  */
+const readRemoteFont = async (url: string): Promise<RemoteFontBody | null> => {
+	try {
+		const response = await fetch(url, {
+			redirect: "manual",
+			headers: { "User-Agent": "Mozilla/5.0" },
+			signal: AbortSignal.timeout(8000),
+		});
+		if (!response.ok) return null;
+		const bytes = Buffer.from(await response.arrayBuffer());
+		return { bytes, contentType: response.headers.get("content-type") ?? "" };
+	} catch (error) {
+		console.error("[page-transfer] Font file was not fetched", { atFunction: "readRemoteFont", url, error });
+		return null;
+	}
+};
+
 export function createPagePackageBuilder({
 	listSiteMedia,
 	readActiveTheme,
 	uploadDir,
 	uploadLimit,
 	appVersion,
+	readRemote = readRemoteFont,
 }: {
 	listSiteMedia: (siteId: string) => Promise<Media[]>;
 	readActiveTheme: (siteId: string) => Promise<PackageTheme | null>;
 	uploadDir: string;
 	uploadLimit: number;
 	appVersion: string;
+	readRemote?: (url: string) => Promise<RemoteFontBody | null>;
 }) {
 	const readUpload = async (ref: string): Promise<Buffer | null> => {
 		const filePath = path.resolve(uploadDir, path.basename(ref));
@@ -127,17 +146,33 @@ export function createPagePackageBuilder({
 		}
 
 		const theme = await readActiveTheme(siteId);
+		const carried = includeFiles
+			? await packExternalFonts({
+					value: { blocks: main.blocks, extras, theme, other: main.other, featuredImage: main.featuredImage },
+					readRemote,
+					uploadLimit,
+				})
+			: {
+					value: { blocks: main.blocks, extras, theme, other: main.other, featuredImage: main.featuredImage },
+					files: [] as PackageFile[],
+				};
+		const packed = carried.value;
 		return {
 			format: PAGE_PACKAGE_FORMAT,
 			formatVersion: PAGE_PACKAGE_VERSION,
 			appVersion,
 			createdAt: new Date().toISOString(),
 			source: "export",
-			page: { title: main.title, slug: main.slug, featuredImage: main.featuredImage, other: main.other },
-			blocks: main.blocks,
-			...(extras.length > 0 ? { extraPages: extras } : {}),
-			files,
-			...(theme ? { theme } : {}),
+			page: {
+				title: main.title,
+				slug: main.slug,
+				featuredImage: packed.featuredImage,
+				other: packed.other,
+			},
+			blocks: packed.blocks,
+			...(packed.extras.length > 0 ? { extraPages: packed.extras } : {}),
+			files: [...files, ...carried.files],
+			...(packed.theme ? { theme: packed.theme } : {}),
 		};
 	};
 

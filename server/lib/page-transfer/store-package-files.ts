@@ -25,6 +25,10 @@ const EXTENSION_BY_MIME: Record<string, string> = {
 	"audio/wav": ".wav",
 	"application/pdf": ".pdf",
 	"text/plain": ".txt",
+	"font/woff": ".woff",
+	"font/woff2": ".woff2",
+	"font/ttf": ".ttf",
+	"font/otf": ".otf",
 };
 
 const SVG_MIME_TYPES = new Set(["image/svg+xml", "image/svg"]);

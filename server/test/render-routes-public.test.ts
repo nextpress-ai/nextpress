@@ -4,6 +4,7 @@ import express from "express";
 import { afterEach, describe, expect, it } from "vitest";
 import type { Deps } from "../routes/shared/deps";
 import { createRenderRoutes } from "../routes/render.routes";
+import { publishedPageCache } from "../lib/published-page-cache";
 
 const SITE = {
 	id: "550e8400-e29b-41d4-a716-446655440000",
@@ -87,6 +88,7 @@ async function requestPath({
 	models: Deps["models"];
 	path: string;
 }): Promise<{ status: number; body: string; contentType: string }> {
+	publishedPageCache.clear();
 	const app = express();
 	app.use(createRenderRoutes({ models } as Deps));
 	const server = createServer(app);
@@ -227,5 +229,29 @@ describe("public HTML routes bind post blocks", () => {
 		expect(result.status).toBe(200);
 		expect(result.body).toContain("Ada");
 		expect(result.body).not.toContain("Jane Doe");
+	});
+
+	it("serves /slug on the host site without a site id in the path", async () => {
+		const about = {
+			id: PAGE_ID,
+			title: "About",
+			status: "publish",
+			siteId: SITE.id,
+			slug: "about",
+			version: 4,
+			blocks: [headingBlock("About from slug")],
+			other: { seo: {}, design: {} },
+		};
+		const models = createModels({ page: about });
+		models.pages.findBySiteAndSlug = (async (_siteId: string, slug: string) =>
+			slug === "about" ? about : undefined) as typeof models.pages.findBySiteAndSlug;
+
+		const result = await requestPath({ models, path: "/about" });
+		expect(result.status).toBe(200);
+		expect(result.body).toContain("About from slug");
+
+		const reserved = await requestPath({ models, path: "/admin" });
+		expect(reserved.status).toBe(404);
+		expect(reserved.body).not.toContain("About from slug");
 	});
 });

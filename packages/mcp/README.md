@@ -90,6 +90,7 @@ New pages and posts default to **draft** until you or the agent publishes them e
 | `list_blogs` / `get_blog` / `create_blog` | Blogs (needed before `create_post`) |
 | `list_posts` / `get_post` / `create_post` / `update_post` / `publish_post` | Blog posts |
 | `list_templates` / `get_template` | Reusable templates |
+| `list_themes` / `get_theme` / `create_theme` / `update_theme` / `activate_theme` | Installed themes and which one the site uses |
 | `list_media` / `upload_media` | Media library |
 | `preview_page` / `preview_post` | Preview share URL |
 | `list_block_types` / `build_blocks` | Block catalog and tree builder |

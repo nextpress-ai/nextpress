@@ -12,6 +12,7 @@ import {
   createLinkedPagesFinder,
   isPageImportRefusal,
 } from '../lib/page-transfer';
+import { CONFIG } from '../config';
 
 type PageRow = typeof pages.$inferSelect;
 
@@ -73,12 +74,14 @@ describe('page transfer between two sites', () => {
   let remote: Awaited<ReturnType<typeof makeSite>>;
   let createdPages: PageRow[];
   let themes: Theme[];
+  let activated: { siteId: string; themeId: string }[];
 
   beforeEach(async () => {
     local = await makeSite('local');
     remote = await makeSite('remote');
     createdPages = [];
     themes = [];
+    activated = [];
     await fs.writeFile(path.join(local.uploadDir, 'hero-1.png'), PNG_BYTES);
     await local.media.create({
       filename: 'hero-1.png',
@@ -140,6 +143,9 @@ describe('page transfer between two sites', () => {
         themes.push(theme);
         return theme;
       },
+      activateTheme: async (params) => {
+        activated.push(params);
+      },
       draftStatus: 'draft',
     });
   };
@@ -198,6 +204,30 @@ describe('page transfer between two sites', () => {
     expect(placeholder?.alt).toBe('Missing file: hero.png');
   });
 
+  it('rewrites stored block selectors and keeps phone styles', async () => {
+    const page = sourcePage();
+    const shell = (page.blocks as BlockConfig[])[0];
+    if (shell?.children?.[0]) {
+      shell.children[0] = {
+        ...shell.children[0],
+        customCss: '.block-img{letter-spacing:2px}',
+        other: { deviceStyles: { mobile: { padding: '8px' } } },
+      };
+    }
+    const pkg = await builder(local).buildForPage({ page, includeFiles: false });
+    const result = await importerFor(remote).importPage({
+      pkg,
+      siteId: 'site-remote',
+      authorId: 'u9',
+      includeTheme: false,
+    });
+    const saved = JSON.stringify(result.page.blocks);
+    expect(saved).toContain('letter-spacing:2px');
+    expect(saved).not.toContain('.block-img{');
+    expect(saved).toContain('"padding":"8px"');
+    expect(activated).toEqual([]);
+  });
+
   it('adds the theme only when asked, and reuses an identical one', async () => {
     const pkg = await builder(local).buildForPage({ page: sourcePage(), includeFiles: false });
     const importer = importerFor(remote);
@@ -205,9 +235,11 @@ describe('page transfer between two sites', () => {
       status: 'skipped',
       name: 'Walk theme',
     });
+    expect(activated).toEqual([]);
     expect((await importer.importPage({ pkg, siteId: 's', authorId: 'u', includeTheme: true })).theme.status).toBe('added');
     expect((await importer.importPage({ pkg, siteId: 's', authorId: 'u', includeTheme: true })).theme.status).toBe('reused');
     expect(themes).toHaveLength(1);
+    expect(activated.map((item) => item.themeId)).toEqual(['theme-1', 'theme-1']);
   });
 
   const contactPage = (): PageRow =>
@@ -306,6 +338,41 @@ describe('package file store', () => {
     expect(result.missing).toEqual([{ name: 'b.exe', reason: "this file type isn't allowed on this site" }]);
     const svgOnDisk = await fs.readFile(path.join(site.uploadDir, path.basename(result.refMap['/uploads/c.svg']!)), 'utf8');
     expect(svgOnDisk).not.toContain('<script');
+  });
+
+  it('stores a font file and refuses a stylesheet', async () => {
+    const uploadDir = await fs.mkdtemp(path.join(os.tmpdir(), 'np-transfer-fonts-'));
+    const media = createMediaTable();
+    const store = createPackageFileStore({
+      media,
+      uploadDir,
+      allowedMimeTypes: CONFIG.UPLOAD.ALLOWED_MIME_TYPES,
+      uploadLimit: UPLOAD_LIMIT,
+    });
+    const font = Buffer.from('wOFF2');
+    const result = await store.storeFiles({
+      siteId: 's',
+      authorId: 'u',
+      files: [
+        {
+          ref: '/uploads/np-font-abc.woff2',
+          name: 'abc.woff2',
+          mimeType: 'font/woff2',
+          size: font.length,
+          data: font.toString('base64'),
+        },
+        {
+          ref: '/uploads/look.css',
+          name: 'look.css',
+          mimeType: 'text/css',
+          size: 7,
+          data: Buffer.from('body{}').toString('base64'),
+        },
+      ],
+    });
+    expect(result.refMap['/uploads/np-font-abc.woff2']).toMatch(/\.woff2$/);
+    expect(result.missing).toEqual([{ name: 'look.css', reason: "this file type isn't allowed on this site" }]);
+    await fs.rm(uploadDir, { recursive: true, force: true });
   });
 });
 

@@ -11,6 +11,7 @@ import { getSiteBlogIds } from "./shared/site-content";
 import { renderStatusHtml } from "../../renderer/templates/status-page";
 import { isPubliclyReadable } from "../lib/is-publicly-readable";
 import { sendPublishedHtml } from "../lib/send-published-html";
+import { isReservedPublicSlug } from "./shared/public-slug";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -318,6 +319,38 @@ export function createRenderRoutes(deps: Deps): Router {
 					res.status(500).json({ message: "Failed to retrieve page" });
 				}
 			}
+		}),
+	);
+
+	/**
+	 * GET /:slug — published page on the site this host belongs to.
+	 * Localhost has no saved site address, so this uses the default site.
+	 * Reserved names and missing pages fall through to the app.
+	 */
+	router.get(
+		"/:slug",
+		asyncHandler(async (req, res, next) => {
+			const slug = req.params.slug ?? "";
+			if (isReservedPublicSlug(slug)) {
+				next();
+				return;
+			}
+
+			const context = await resolveSiteRenderContext({ models, req });
+			const page = context
+				? await models.pages.findBySiteAndSlug(context.site.id, slug)
+				: undefined;
+			if (!context || !page || !isPubliclyReadable(page)) {
+				next();
+				return;
+			}
+
+			await sendPublishedHtml({
+				res,
+				models,
+				document: page,
+				canonicalUrl: `${req.protocol}://${req.get("host")}/${slug}`,
+			});
 		}),
 	);
 

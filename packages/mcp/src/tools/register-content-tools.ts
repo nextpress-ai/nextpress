@@ -7,6 +7,7 @@ import { registerPostTools } from "./post-tools.js";
 import { registerPreviewTools } from "./preview-tools.js";
 import { registerSiteTools } from "./site-tools.js";
 import { registerTemplateTools } from "./template-tools.js";
+import { registerThemeTools } from "./theme-tools.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { NextpressClient } from "@nextpress-org/sdk";
 
@@ -26,6 +27,7 @@ export function registerContentTools({
 	registerPageTools(deps);
 	registerPostTools(deps);
 	registerTemplateTools(deps);
+	registerThemeTools(deps);
 	registerMediaTools(deps);
 	registerPreviewTools(deps);
 	registerBlockTools(deps);

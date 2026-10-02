@@ -24,4 +24,26 @@ describe("reIdBlocks", () => {
 		expect(copy[0]?.children?.every((child) => child.parentId === "new-1")).toBe(true);
 		expect(copy[0]?.children?.some((child) => child.id === "header")).toBe(false);
 	});
+
+	it("points stored .block-<id> selectors at the new ids", () => {
+		let n = 0;
+		const copy = reIdBlocks({
+			blocks: [
+				{
+					...block("shell", [
+						{
+							...block("header"),
+							customCss: ".block-header{color:red} .block-header-note{color:blue}",
+							other: { css: ".block-shell .wp-block-header{padding:0}", deviceStyles: { mobile: { padding: "8px" } } },
+						},
+					]),
+				},
+			],
+			generateId: () => `new-${(n += 1)}`,
+		});
+		const header = copy[0]?.children?.[0];
+		expect(header?.customCss).toBe(".block-new-2{color:red} .block-header-note{color:blue}");
+		expect(header?.other?.css).toBe(".block-new-1 .wp-block-header{padding:0}");
+		expect(header?.other?.deviceStyles).toEqual({ mobile: { padding: "8px" } });
+	});
 });

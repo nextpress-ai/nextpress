@@ -55,14 +55,16 @@ type PageImportDeps = {
 		authorId: string;
 		settings: unknown;
 	}) => Promise<Theme>;
+	/** Makes this theme the one the site draws with. */
+	activateTheme: (params: { siteId: string; themeId: string }) => Promise<void>;
 	draftStatus: string;
 };
 
 /**
  * Turns a page file into a new draft page on this site.
  * The page gets new ids and a free web address, its files land in this site's media library,
- * and every file path in its blocks is pointed at the new copies. Nothing is published and the
- * site's active theme never changes.
+ * and every file path in its blocks is pointed at the new copies. Nothing is published.
+ * When the owner asks for the theme, it is added and switched on for this site.
  */
 export function createPageImporter(deps: PageImportDeps) {
 	const addTheme = async ({
@@ -178,6 +180,9 @@ export function createPageImporter(deps: PageImportDeps) {
 			: includeTheme
 				? await addTheme({ theme: pkg.theme, authorId })
 				: { status: "skipped", name: pkg.theme.name };
+		if (theme.status === "added" || theme.status === "reused") {
+			await deps.activateTheme({ siteId, themeId: theme.id });
+		}
 
 		const renamed = incoming
 			.map((page, index) => ({ title: page.title, from: page.slug, to: slugs[index]! }))

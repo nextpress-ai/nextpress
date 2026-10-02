@@ -104,6 +104,10 @@ export function createPageTransferRoutes(deps: Deps): Router {
         status: 'inactive',
         renderer: null,
       }),
+    activateTheme: async ({ siteId, themeId }) => {
+      await models.themes.setActiveTheme(themeId);
+      await models.sites.update(siteId, { activeThemeId: themeId });
+    },
     draftStatus: CONFIG.STATUS.DRAFT,
   });
 

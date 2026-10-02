@@ -194,13 +194,23 @@ export type Template = {
 	updatedAt?: string | Date;
 };
 
+export type ThemeDesign = {
+	colors?: Record<string, string>;
+	typography?: Record<string, { fontFamily?: string; fontSize?: string; fontWeight?: string; lineHeight?: string }>;
+	buttons?: { fontFamily?: string };
+	shape?: { radius?: string };
+};
+
 export type Theme = {
 	id: string;
 	name: string;
-	slug: string;
+	slug?: string;
+	description?: string | null;
+	status?: string;
 	version?: string;
 	isActive?: boolean;
 	siteId?: string;
+	settings?: ThemeDesign;
 };
 
 export type Plugin = {
