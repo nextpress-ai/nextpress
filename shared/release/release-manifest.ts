@@ -4,8 +4,38 @@ import type { ReleaseHighlight } from "./release-highlight-meta";
 /** In-app release notes. Consumer-facing copy only. Keep in sync with package.json on release. */
 export const RELEASE_MANIFEST = {
 	version: NEXTPRESS_CONFIG.version,
-	releaseDate: "2026-10-02",
+	releaseDate: "2026-10-03",
 	highlights: [
+		{
+			kind: "improvement",
+			title: "Link previews show your site",
+			description:
+				"A shared link uses your site name and a picture: the featured image, or the first picture on the page, or your logo. Choose whether the description comes from the page, the excerpt, or the site.",
+		},
+		{
+			kind: "fix",
+			title: "Your site address opens the homepage",
+			description:
+				"Opening your domain shows the published homepage, with the title and description search engines should see.",
+		},
+		{
+			kind: "improvement",
+			title: "Pictures stay put while they load",
+			description:
+				"A picture keeps its space, with a soft shimmer until it appears. The first pictures load right away. Later ones wait.",
+		},
+		{
+			kind: "improvement",
+			title: "Header and blocks by screen",
+			description:
+				"Show the name, the links, or a button on desktop or mobile only, so they don't sit on top of each other on a phone. Any block can do the same. The tablet preview follows desktop.",
+		},
+		{
+			kind: "improvement",
+			title: "The next page opens sooner",
+			description:
+				"A published page quietly prepares the other pages on your site. The compression switch in Settings now sends those pages smaller.",
+		},
 		{
 			kind: "improvement",
 			title: "Published pages open faster",
