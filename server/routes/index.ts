@@ -101,8 +101,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // JSON body parsing for all non-Better-Auth routes
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
+  app.use(express.json({ limit: '2mb' }));
+  app.use(express.urlencoded({ extended: false, limit: '2mb' }));
 
   // ============================================
   // Setup Wizard Routes (must be before setupCheck middleware)
