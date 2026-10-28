@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
 import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
+import { collectBlockCustomCss } from "@shared/collect-block-scripts";
 import { buildScrollbarCss } from "@shared/scrollbar-model";
 import { PAGE_BLOCK_STACK_GAP } from "@shared/block-container-placement";
 import { resolveBlockTreeForSurface } from "@shared/resolve-block-for-surface";
@@ -34,6 +35,10 @@ const toIsoOrNull = (value: string | Date | null | undefined): string | null => 
   if (value instanceof Date) return value.toISOString();
   return String(value);
 };
+
+/** Every block in the tree, parents before children — same order as the SSR head. */
+const listAllBlocks = (list: BlockConfig[]): BlockConfig[] =>
+  list.flatMap((block) => [block, ...listAllBlocks(block.children ?? [])]);
 
 /**
  * Shared block stack for preview and published pages (not the editor canvas).
@@ -75,6 +80,10 @@ export function PublicBlockStack({
     ? ""
     : buildScrollbarCss({ selector: "html", settings: readPageDesign({ blocks: preparedBlocks }).scrollbar });
 
+  // `collectBlockCustomCss` reads one level only, and every block nests under the page shell —
+  // flatten first, or client routes (`/`, `/page/:slug`) ship without a page's custom CSS.
+  const customCss = collectBlockCustomCss(listAllBlocks(preparedBlocks));
+
   const postDocument: PostDocumentValue | null = boundPost?.id
     ? {
         contentType: "post",
@@ -103,6 +112,7 @@ export function PublicBlockStack({
         }}
       >
         <PublishBlockStyles />
+        {customCss ? <style dangerouslySetInnerHTML={{ __html: customCss }} /> : null}
         {scrollbarCss ? <style dangerouslySetInnerHTML={{ __html: scrollbarCss }} /> : null}
         {deviceAndTokenCss ? (
           <style dangerouslySetInnerHTML={{ __html: deviceAndTokenCss }} />
