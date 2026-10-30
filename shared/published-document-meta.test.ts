@@ -4,6 +4,7 @@ import {
 	publicSiteName,
 	publishedCanonicalUrl,
 	publishedPreviewImageUrl,
+	renderPublishedIconLinks,
 	renderPublishedSocialMeta,
 } from "./published-document-meta.js";
 import type { BlockConfig } from "./schema-types.js";
@@ -148,5 +149,44 @@ describe("published document meta", () => {
 		);
 		expect(publishedPreviewImageUrl({ blocks: [headerPhoto, mediaText] })).toBe("https://cdn.test/board.png");
 		expect(publishedPreviewImageUrl({ blocks: [headerPhoto] })).toBe("/uploads/header.jpg");
+	});
+});
+
+describe("published document favicon", () => {
+	it("points the tab icon at the site favicon", () => {
+		const meta = buildPublishedDocumentMeta({
+			pageTitle: "walkableca",
+			siteName: "nextpress.ai",
+			canonicalUrl: "https://nextpress.ai/walkableca",
+			faviconUrl: "/uploads/favicon.png",
+			kind: "website",
+		});
+
+		const html = renderPublishedIconLinks(meta);
+		expect(html).toContain('<link rel="icon" href="https://nextpress.ai/uploads/favicon.png">');
+		expect(html).toContain('<link rel="apple-touch-icon" href="https://nextpress.ai/uploads/favicon.png">');
+	});
+
+	it("emits no icon tags when the site has no favicon", () => {
+		const meta = buildPublishedDocumentMeta({
+			pageTitle: "walkableca",
+			canonicalUrl: "https://nextpress.ai/walkableca",
+			kind: "website",
+		});
+
+		expect(renderPublishedIconLinks(meta)).toBe("");
+	});
+
+	it("marks an SVG icon and skips the apple tag", () => {
+		const meta = buildPublishedDocumentMeta({
+			pageTitle: "walkableca",
+			canonicalUrl: "https://nextpress.ai/walkableca",
+			faviconUrl: "/uploads/icon.svg",
+			kind: "website",
+		});
+
+		const html = renderPublishedIconLinks(meta);
+		expect(html).toContain('type="image/svg+xml"');
+		expect(html).not.toContain("apple-touch-icon");
 	});
 });

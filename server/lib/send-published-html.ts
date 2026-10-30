@@ -142,6 +142,7 @@ export async function sendPublishedHtml({
 		descriptionFrom: storedSettings?.reading?.descriptionFrom,
 		hasFeed: storedSettings?.reading?.rssEnabled !== false,
 		logoUrl: siteRecord?.logoUrl || "",
+		faviconUrl: siteRecord?.faviconUrl || "",
 	};
 	const pageSeo = parsePageOther(document.other).seo;
 	const publicCanonical = publishedCanonicalUrl({

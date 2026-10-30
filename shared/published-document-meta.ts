@@ -18,6 +18,8 @@ export type PublishedDocumentMeta = {
 	canonicalUrl: string;
 	siteName: string;
 	imageUrl: string;
+	/** Absolute address of the site's favicon, from `sites.favicon_url`. Empty when the site has none. */
+	iconUrl: string;
 	type: "website" | "article";
 };
 
@@ -242,6 +244,7 @@ export function buildPublishedDocumentMeta({
 	siteDescription,
 	canonicalUrl,
 	imageUrl,
+	faviconUrl,
 	kind,
 	pageDescriptionFrom,
 	siteDescriptionFrom,
@@ -254,6 +257,8 @@ export function buildPublishedDocumentMeta({
 	siteDescription?: string;
 	canonicalUrl: string;
 	imageUrl?: string;
+	/** `sites.favicon_url`: the icon the browser puts on the tab. */
+	faviconUrl?: string;
 	kind: "website" | "article";
 	pageDescriptionFrom?: string | null;
 	siteDescriptionFrom?: string | null;
@@ -280,8 +285,22 @@ export function buildPublishedDocumentMeta({
 		canonicalUrl,
 		siteName: site,
 		imageUrl: absoluteAsset(imageUrl, origin),
+		iconUrl: absoluteAsset(faviconUrl, origin),
 		type: kind,
 	};
+}
+
+/**
+ * The tab icon, from the site's own favicon (`sites.favicon_url`).
+ * Only emitted when the site has one; otherwise the browser keeps its default.
+ * `apple-touch-icon` is skipped for SVG, which iOS does not accept there.
+ */
+export function renderPublishedIconLinks(meta: PublishedDocumentMeta): string {
+	if (!meta.iconUrl) return "";
+	const isSvg = /\.svg(\?|#|$)/i.test(meta.iconUrl);
+	const tags = [`<link rel="icon"${isSvg ? ' type="image/svg+xml"' : ""} href="${escapeHtml(meta.iconUrl)}">`];
+	if (!isSvg) tags.push(`<link rel="apple-touch-icon" href="${escapeHtml(meta.iconUrl)}">`);
+	return tags.join("\n      ");
 }
 
 /** Open Graph and Twitter tags. Values are escaped for an HTML attribute. */

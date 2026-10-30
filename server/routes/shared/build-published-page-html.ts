@@ -45,6 +45,7 @@ import {
 	buildPublishedDocumentMeta,
 	publishedCanonicalUrl,
 	publishedPreviewImageUrl,
+	renderPublishedIconLinks,
 	renderPublishedSocialMeta,
 } from "@shared/published-document-meta";
 
@@ -69,6 +70,8 @@ type PublishedSite = {
 	discourageIndexing?: boolean;
 	descriptionFrom?: string;
 	logoUrl?: string;
+	/** `sites.favicon_url`: the icon for the browser tab. */
+	faviconUrl?: string;
 	/** Settings → Reading → RSS feed is on. */
 	hasFeed?: boolean;
 };
@@ -216,6 +219,7 @@ export function buildPublishedPageHtml({
 			blocks,
 			logoUrl: site?.logoUrl,
 		}),
+		faviconUrl: site?.faviconUrl,
 		kind: page.blogId ? "article" : "website",
 	});
 
@@ -229,7 +233,7 @@ export function buildPublishedPageHtml({
 		scrollbarCss: buildScrollbarCss({ selector: "html", settings: design.scrollbar }),
 		noIndex: seo.noIndex === true || site?.discourageIndexing === true,
 		customMeta: seo.customMeta,
-		socialMeta: renderPublishedSocialMeta(meta),
+		socialMeta: [renderPublishedSocialMeta(meta), renderPublishedIconLinks(meta)].filter(Boolean).join("\n      "),
 		...(site?.hasFeed ? { feed: { title: site.name || 'Feed', href: `${(site.url || '').replace(/\/+$/, '')}/feed` } } : {}),
 	};
 
