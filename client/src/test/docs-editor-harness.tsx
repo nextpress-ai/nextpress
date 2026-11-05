@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 import type { DocsTree } from '@shared/docs';
 import { buildDocsPageBlocks } from '@shared/docs/docs-page-frame';
-import { mdxToBlocks } from '@shared/mdx-blocks';
+import { createDefaultBlock } from '@shared/block-catalog/create-default-block';
 import type { BlockConfig, Page, PageOther } from '@shared/schema-types';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -27,24 +27,32 @@ export const idMaker = (): (() => string) => {
   return () => `b${++count}`;
 };
 
-export const DEFAULT_MDX = `Acme runs on Node 20 or later.
+/** The page's own blocks: a paragraph, a heading and a list, made from the same blocks every page uses. */
+const made = ({ name, id, newId }: { name: string; id: string; newId: () => string }): BlockConfig => {
+  const block = createDefaultBlock({ name, id, newId });
+  if (!block) throw new Error(`No block named ${name}`);
+  return block;
+};
 
-## Requirements
+const proseBlocks = ({ words, newId }: { words: string; newId: () => string }): BlockConfig[] => {
+  const paragraph = made({ name: 'core/paragraph', id: newId(), newId });
+  const withWords = { ...paragraph, content: { kind: 'text', value: words, dropCap: false, anchor: '', className: '' } } as BlockConfig;
+  if (words !== DEFAULT_WORDS) return [withWords];
+  const heading = { ...made({ name: 'core/heading', id: newId(), newId }), content: { kind: 'text', value: 'Requirements', level: 2, anchor: '', className: '' } } as BlockConfig;
+  const list = { ...made({ name: 'core/list', id: newId(), newId }), content: { kind: 'structured', data: { ordered: false, values: '<li>Node 20 or later</li><li>A Postgres database</li>', marker: 'default', anchor: '', className: '' } } } as BlockConfig;
+  return [withWords, heading, list];
+};
 
-- Node 20 or later
-- A Postgres database
-`;
+export const DEFAULT_WORDS = 'Acme runs on Node 20 or later.';
 
-/** The blocks of one docs page: page shell, docs shell, docs page, then the page's own blocks from MDX. */
-export const docsPageBlocks = ({ home = false, mdx = DEFAULT_MDX, shellData = {} }: { home?: boolean; mdx?: string; shellData?: Record<string, object | string | boolean | number> } = {}): BlockConfig[] => {
+/** The blocks of one docs page: page shell, docs shell, docs page, then the page's own blocks. */
+export const docsPageBlocks = ({ home = false, words = DEFAULT_WORDS, shellData = {} }: { home?: boolean; words?: string; shellData?: Record<string, object | string | boolean | number> } = {}): BlockConfig[] => {
   const newId = idMaker();
-  const parsed = mdxToBlocks({ text: mdx, newId });
-  if (!parsed.ok) throw new Error(parsed.message);
   const frame = buildDocsPageBlocks({
     newId,
     home,
     settings: home ? { title: 'Acme Docs', search: { show: true, label: 'Search', placeholder: 'Search the docs' } } : undefined,
-    children: parsed.blocks,
+    children: proseBlocks({ words, newId }),
   });
   if (Object.keys(shellData).length === 0) return frame;
   const [pageShell] = frame;
@@ -74,9 +82,7 @@ export const makePage = (changes: Partial<Page> & Pick<Page, 'id'>): Page =>
 /** An ordinary page: a page shell holding a paragraph, nothing from the docs. */
 export const plainPageBlocks = (): BlockConfig[] => {
   const newId = idMaker();
-  const parsed = mdxToBlocks({ text: 'Just a page.', newId });
-  if (!parsed.ok) throw new Error(parsed.message);
-  const [shell] = buildDocsPageBlocks({ newId, home: false, children: parsed.blocks });
+  const [shell] = buildDocsPageBlocks({ newId, home: false, children: proseBlocks({ words: 'Just a page.', newId }) });
   const [docsShell] = shell.children ?? [];
   const [docsPage] = docsShell.children ?? [];
   return [{ ...shell, children: (docsPage.children ?? []).map((child) => ({ ...child, parentId: shell.id })) }];

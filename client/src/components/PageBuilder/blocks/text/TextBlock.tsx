@@ -11,6 +11,8 @@ import { sanitizeHtml } from "@shared/sanitize-html";
 import { readTextAlign } from "@shared/text-align";
 import { PARAGRAPH_DEFAULT_CONTENT } from "@shared/block-catalog/text-blocks";
 import { catalogMeta } from "../catalog-meta";
+import { DocsTextField } from "../../docs-mode/DocsTextField";
+import { useWriting } from "../../writing/writing-context";
 
 // ============================================================================
 // TYPES
@@ -35,6 +37,7 @@ interface TextRendererProps {
   content: TextBlockContent;
   styles?: React.CSSProperties;
   isEditing?: boolean;
+  blockId?: string;
   onUpdateContent?: (updates: Partial<TextBlockContent>) => void;
 }
 
@@ -42,8 +45,10 @@ function TextRenderer({
   content,
   styles,
   isEditing,
+  blockId,
   onUpdateContent,
 }: TextRendererProps) {
+  const writing = useWriting();
   const textContent = content?.kind === "text" ? content.value : "";
   const align =
     readTextAlign({ styles, content }) ||
@@ -68,6 +73,23 @@ function TextRenderer({
       .join(" ") || undefined;
 
   // `format: "html"` carries sanitized inline markup (e.g. imported paragraphs with links/bold).
+  // In an editor that writes (docs, posts) the paragraph is typed like a document: Enter, markers, "/" and **bold** work.
+  if (isEditing && writing && blockId) {
+    return (
+      <BlockShell as="p" blockClass="wp-block-paragraph" className={sharedClassName} style={mergedStyles} id={anchor}>
+        <DocsTextField
+          blockId={blockId}
+          value={textContent}
+          format={(content as { format?: string }).format}
+          kind="paragraph"
+          onChange={(fields) => onUpdateContent?.(fields as Partial<TextBlockContent>)}
+          placeholder="Write, or type / for a block"
+          ariaLabel="Paragraph text"
+        />
+      </BlockShell>
+    );
+  }
+
   if (isEditing) {
     return (
       <BlockShell
@@ -165,8 +187,9 @@ const TextBlock = createBlockDefinition<TextBlockContent>({
   defaultContent: DEFAULT_CONTENT,
   settings: TextSettings,
   hasSettings: true,
-  render: ({ content, styles, isEditing, setContent }) => (
+  render: ({ value, content, styles, isEditing, setContent }) => (
     <TextRenderer
+      blockId={value.id}
       content={content}
       styles={styles}
       isEditing={isEditing}

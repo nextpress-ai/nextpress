@@ -32,6 +32,7 @@ import { themeSettingsToStyleBlock } from "@shared/theme-to-css-vars";
 import type { PageDesignSettings } from "@shared/schema-types";
 import { resolveVisitorDesign } from "@shared/theme-to-page-design";
 import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
+import { convertLegacyProse } from "@shared/docs/legacy-prose";
 import { buildScrollbarCss } from "@shared/scrollbar-model";
 import { collectBlockExtraCss, treeHasScrollingHeader } from "@shared/collect-block-extra-css";
 import { POPUP_BLOCK_NAME } from "@shared/popup-model";
@@ -101,7 +102,7 @@ export function buildPublishedPageHtml({
 			: {};
 	const leftoverDesign = pageOtherEarly.design as PageDesignSettings | undefined;
 	const blocks = prepareVisitorPageBlocks({
-		blocks: boundBlocks,
+		blocks: convertLegacyProse(boundBlocks),
 		leftoverDesign,
 	});
 	const blockContentHtml = renderBlocksToHtml(blocks);

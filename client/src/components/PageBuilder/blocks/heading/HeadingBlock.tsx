@@ -14,6 +14,8 @@ import { readTextAlign } from "@shared/text-align";
 import { headingAnchorId } from "@shared/page-headings";
 import { HEADING_DEFAULT_CONTENT } from "@shared/block-catalog/text-blocks";
 import { catalogMeta } from "../catalog-meta";
+import { DocsTextField } from "../../docs-mode/DocsTextField";
+import { useWriting } from "../../writing/writing-context";
 
 // ============================================================================
 // TYPES
@@ -54,6 +56,7 @@ interface HeadingRendererProps {
   content: HeadingContent;
   styles?: React.CSSProperties;
   isEditing?: boolean;
+  blockId?: string;
   onUpdateContent?: (updates: Partial<HeadingContent>) => void;
 }
 
@@ -61,8 +64,10 @@ function HeadingRenderer({
   content,
   styles,
   isEditing,
+  blockId,
   onUpdateContent,
 }: HeadingRendererProps) {
+  const writing = useWriting();
   const textContent = getTextContent(content);
   const level = content.level || 2;
   const headingId = headingAnchorId({ text: textContent, anchor: content.anchor }) || undefined;
@@ -81,6 +86,23 @@ function HeadingRenderer({
     ]
       .filter(Boolean)
       .join(" ") || undefined;
+
+  // In an editor that writes (docs, posts) the heading is typed in place; Enter starts a paragraph under it.
+  if (isEditing && writing && blockId) {
+    return (
+      <BlockShell as={Tag} blockClass="wp-block-heading" className={sharedClassName} style={mergedStyles} id={headingId}>
+        <DocsTextField
+          blockId={blockId}
+          value={textContent}
+          format={(content as { format?: string }).format}
+          kind="heading"
+          onChange={(fields) => onUpdateContent?.(fields as Partial<HeadingContent>)}
+          placeholder="Heading text"
+          ariaLabel="Heading text"
+        />
+      </BlockShell>
+    );
+  }
 
   // `format: "html"` carries sanitized inline markup (e.g. imported headings with links).
   if ((content as { format?: string })?.format === "html") {
@@ -191,8 +213,9 @@ export const HeadingBlock = createBlockDefinition<HeadingContent>({
   defaultContent: DEFAULT_CONTENT,
   settings: LegacyHeadingSettings,
   hasSettings: true,
-  render: ({ content, styles, isEditing, setContent }) => (
+  render: ({ value, content, styles, isEditing, setContent }) => (
     <HeadingRenderer
+      blockId={value.id}
       content={content}
       styles={styles}
       isEditing={isEditing}

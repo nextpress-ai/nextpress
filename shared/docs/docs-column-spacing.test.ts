@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { INSERTED_BLOCK_BASE_STYLES } from "../block-catalog/create-default-block.js";
-import { mdxToBlocks } from "../mdx-blocks/index.js";
 import type { BlockConfig } from "../schema-types.js";
 import { fitToDocsColumn } from "./docs-column-spacing.js";
 
@@ -25,13 +24,5 @@ describe("blocks in a docs page line up with its text", () => {
 
 	it("leaves a padding someone chose", () => {
 		expect(fitToDocsColumn(block("32px")).styles?.padding).toBe("32px");
-	});
-
-	it("is how MDX builds every block, so imported and agent-written pages line up too", () => {
-		let n = 0;
-		const read = mdxToBlocks({ text: "Text\n\n```bash\nnpm i\n```\n\n<Note>Careful</Note>\n", newId: () => `m-${++n}` });
-		if (!read.ok) throw new Error(read.message);
-		const paddings = (blocks: BlockConfig[]): string[] => blocks.flatMap((each) => [String(each.styles?.padding ?? ""), ...paddings(each.children ?? [])]);
-		expect(paddings(read.blocks)).not.toContain(INSERTED_BLOCK_BASE_STYLES.padding);
 	});
 });

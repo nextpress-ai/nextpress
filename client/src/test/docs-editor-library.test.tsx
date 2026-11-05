@@ -90,7 +90,7 @@ describe('the docs sections', () => {
   });
 
   it('uses the short names of the mockup, as the groups of the shared block list', () => {
-    const heading = blocks.find((block) => block.id === 'docs/heading')!;
+    const heading = blocks.find((block) => block.id === 'core/heading')!;
     expect(docsBlockLabel(heading)).toBe('Heading');
 
     const categories = buildDocsLibraryCategories();

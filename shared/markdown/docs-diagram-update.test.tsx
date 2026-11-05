@@ -38,10 +38,10 @@ const update = (data: { label: string; description: string }, children: BlockCon
 
 const paragraph = (text: string): BlockConfig => ({
 	id: "p1",
-	name: "docs/text",
+	name: "core/paragraph",
 	type: "block",
 	parentId: "u1",
-	content: { kind: "structured", data: { text } },
+	content: { kind: "text", value: text, format: "html" },
 	styles: {},
 	settings: {},
 });

@@ -63,7 +63,6 @@ function DocsModeActive({ docs, ...props }: Props & { docs: DocsModeProps }): Re
 	const panel = useDocsPanel({ pickedBlockId: selectedBlockId });
 	const rail = useDocsRail();
 	const [, navigate] = useLocation();
-	const mdxInsert = useRef<((text: string) => void) | null>(null);
 
 	const homeId = tree?.home.id ?? "";
 	const isHome = tree ? tree.home.id === pageId : false;
@@ -161,7 +160,6 @@ function DocsModeActive({ docs, ...props }: Props & { docs: DocsModeProps }): Re
 		rail,
 		openPage,
 		dragBridge,
-		mdxInsert,
 		selectedBlock,
 		selectBlock,
 		insertBlock,
@@ -185,7 +183,7 @@ function DocsModeActive({ docs, ...props }: Props & { docs: DocsModeProps }): Re
 
 /**
  * Turns the page builder into the docs editor for everything below it: the panels, the page
- * switcher, the MDX view and the canvas all read this one provider. With `docs` null (any other
+ * switcher and the canvas all read this one provider. With `docs` null (any other
  * page) it adds nothing, so the page builder behaves exactly as before.
  */
 export function DocsModeProvider({ docs, ...props }: Props): ReactElement {

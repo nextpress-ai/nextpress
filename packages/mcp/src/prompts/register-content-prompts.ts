@@ -103,7 +103,7 @@ export function registerContentPrompts({ server }: { server: McpServer }): void 
 		{
 			title: "Write docs",
 			description:
-				"Instructions and the docs writing guide for writing docs pages: find the docs, plan the pages, write them in MDX, check them, and leave them as drafts for the owner.",
+				"Instructions and the docs writing guide for writing docs pages: find the docs, plan the pages, write them with the page and block tools, check them, and leave them as drafts for the owner.",
 			argsSchema: {
 				topic: z.string().min(1).describe("What the docs pages are about, e.g. installing NextPress"),
 				audience: z.string().optional().describe("Who reads them, e.g. site owners who have never used a CMS"),

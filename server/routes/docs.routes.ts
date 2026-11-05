@@ -45,7 +45,6 @@ const addItemSchema = z.object({
   title: z.string().min(1).max(200),
   kind: z.enum(['page', 'group']),
   slug: z.string().max(200).optional(),
-  mdx: z.string().max(500_000).optional(),
   position: z.number().int().min(0).optional(),
 });
 
@@ -59,15 +58,8 @@ const updateItemSchema = z.object({
 
 const reorderSchema = z.object({ parentId: z.string().min(1), orderedIds: z.array(z.string().min(1)).max(1000) });
 
-const writeMdxSchema = z.object({
-  mdx: z.string().max(500_000),
-  expectedVersion: z.number().int().min(0),
-  title: z.string().max(200).optional(),
-  description: z.string().max(1000).optional(),
-});
-
 /**
- * The docs system: list and create docs, their navigation tree and settings, pages as MDX, and
+ * The docs system: list and create docs, their navigation tree and settings, and
  * the whole docs as one page file. The editor, the SDK and MCP all use these. The routes are
  * listed in `shared/docs/types.ts`.
  */
@@ -99,7 +91,7 @@ export function createDocsRoutes(deps: Deps): Router {
 
   const sendError = ({ res, err, atFunction, ids }: { res: Response; err: Error; atFunction: string; ids: Record<string, string | undefined> }) => {
     if (isDocsRefusal(err)) {
-      return res.status(err.statusCode).json(err.line !== null ? { ok: false, message: err.publicMessage, line: err.line } : { message: err.publicMessage });
+      return res.status(err.statusCode).json({ message: err.publicMessage });
     }
     if (isPageVersionStale(err)) {
       return res.status(409).json({ code: VERSION_STALE, message: 'The page changed somewhere else. Read it again.', remoteVersion: err.remoteVersion });
@@ -156,19 +148,6 @@ export function createDocsRoutes(deps: Deps): Router {
     const page = await pageWithAccess(req, req.params.pageId);
     await docs.deleteItem({ siteId: String(page.siteId), pageId: page.id });
     res.json({ ok: true });
-  }));
-
-  router.get('/pages/:pageId/mdx', requireAuth, handle('docs.readPageMdx', async (req, res) => {
-    const page = await pageWithAccess(req, req.params.pageId);
-    res.json(await docs.readPageMdx({ page }));
-  }));
-
-  router.put('/pages/:pageId/mdx', requireAuth, handle('docs.writePageMdx', async (req, res) => {
-    assertWriteRate(req);
-    const page = await pageWithAccess(req, req.params.pageId);
-    const input = writeMdxSchema.parse(req.body);
-    const saved = await docs.writePageMdx({ page, input });
-    res.json({ ok: true, version: saved.version });
   }));
 
   router.get('/:homeId/tree', requireAuth, handle('docs.tree', async (req, res) => {

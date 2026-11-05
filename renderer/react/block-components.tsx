@@ -13,7 +13,7 @@ import { AccordionBlock, AccordionItemBlock } from "./layout/accordion";
 import { PopupBlock } from "./layout/popup";
 import * as DesignBlocks from "./design";
 import { SearchBlock } from "./search";
-import { CalloutBlock, CodeExampleBlock, CodeGroupBlock, DiagramBlock, DocsHeadingBlock, DocsLayoutBlock, DocsListBlock, DocsTextBlock, DocsPageBlock, DocsShellBlock, FileTreeBlock, ParamsBlock, UpdateBlock } from "./docs";
+import { CalloutBlock, CodeExampleBlock, CodeGroupBlock, DiagramBlock, DocsLayoutBlock, DocsPageBlock, DocsShellBlock, FileTreeBlock, ParamsBlock, UpdateBlock } from "./docs";
 
 /**
  * Counter Block Component (legacy/test component)
@@ -74,9 +74,6 @@ export const BLOCK_COMPONENTS: Record<string, React.FC<BlockConfig>> = {
 	// Docs blocks (category "docs", names start with docs/)
 	"docs/shell": DocsShellBlock,
 	"docs/page": DocsPageBlock,
-	"docs/heading": DocsHeadingBlock,
-	"docs/text": DocsTextBlock,
-	"docs/list": DocsListBlock,
 	"docs/callout": CalloutBlock,
 	"docs/code-group": CodeGroupBlock,
 	"docs/file-tree": FileTreeBlock,

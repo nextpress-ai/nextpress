@@ -29,7 +29,6 @@ describe('which editor a page opens in', () => {
     renderEditor({ page: makePage({ id: 'p-docs', blocks: docsPageBlocks() }) });
 
     expect(await screen.findByRole('button', { name: /Acme Docs, Install/ })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Edit as' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Page' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Docs' })).toBeInTheDocument();
     // The page builder's own title box and menus are not here.
@@ -41,7 +40,6 @@ describe('which editor a page opens in', () => {
     renderEditor({ page: makePage({ id: 'p-plain', title: 'About', slug: 'about', parentId: null, blocks: plainPageBlocks() }) });
 
     expect(await screen.findByLabelText('Page title')).toHaveValue('About');
-    expect(screen.queryByRole('group', { name: 'Edit as' })).toBeNull();
     expect(screen.queryByRole('tab', { name: 'Docs' })).toBeNull();
   });
 

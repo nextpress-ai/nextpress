@@ -143,7 +143,7 @@ export function registerContentResources({
 		{
 			title: "Docs writing guide",
 			description:
-				"How to write good docs pages in NextPress, in plain words, with the MDX cheat sheet for every component",
+				"How a docs is made in NextPress, in plain words: pages and groups, and which blocks a docs page is written with",
 			mimeType: "text/markdown",
 		},
 		async (uri) => ({

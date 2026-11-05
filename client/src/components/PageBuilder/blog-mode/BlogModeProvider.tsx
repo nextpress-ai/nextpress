@@ -26,7 +26,7 @@ const POST_FRAME: DocsFrameValue = {
 };
 
 /** Blocks a click in the block list opens for typing; the rest are picked. */
-const TYPED_IN: ReadonlySet<string> = new Set(["docs/text", "docs/heading", "docs/list", "core/quote", "core/code"]);
+const TYPED_IN: ReadonlySet<string> = new Set(["core/paragraph", "core/heading", "core/list", "core/quote", "core/code"]);
 
 type Props = {
 	blog: BlogModeProps | null;

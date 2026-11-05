@@ -1,5 +1,4 @@
 import type { HttpClient } from "../client/http-client.js";
-import type { NextpressError } from "../client/nextpress-error.js";
 import { safeHttpRequest } from "../client/safe-request.js";
 import type { SdkResult } from "../client/sdk-result.js";
 import { parseInput } from "../client/validate-input.js";
@@ -11,7 +10,6 @@ import {
 	reorderDocsSchema,
 	updateDocsItemSchema,
 	updateDocsSettingsSchema,
-	writeDocsPageSchema,
 } from "../schemas/docs.js";
 import { idParamSchema } from "../schemas/index.js";
 import type { DownloadedFile } from "../types/client.js";
@@ -20,7 +18,6 @@ import type {
 	CreateDocsParams,
 	CreateDocsResult,
 	DocsOkResult,
-	DocsPageMdx,
 	DocsSettings,
 	DocsSummary,
 	DocsTree,
@@ -30,8 +27,6 @@ import type {
 	ReorderDocsParams,
 	UpdateDocsItemParams,
 	UpdateDocsSettingsParams,
-	WriteDocsPageParams,
-	WriteDocsPageResult,
 } from "../types/docs.js";
 import type { PageTransferFile } from "../types/page-transfer.js";
 
@@ -57,8 +52,8 @@ export type DocsResource = {
 		params: UpdateDocsSettingsParams,
 	) => Promise<SdkResult<{ settings: DocsSettings }>>;
 	/**
-	 * Add a page or a group under a page or group of the same docs. A group takes no text. Pages are
-	 * drafts. Returns the new row of the tree.
+	 * Add a page or a group under a page or group of the same docs. Pages are drafts. Write a page's
+	 * content with the page and block calls. Returns the new row of the tree.
 	 */
 	addItem: (params: AddDocsItemParams) => Promise<SdkResult<{ item: DocsTreeItem }>>;
 	/** Rename, move, hide, change the address of, or change the kind of one page or group. */
@@ -71,42 +66,14 @@ export type DocsResource = {
 	/** Delete a page. The server refuses a page that still has pages under it (409). */
 	deleteItem: (params: { pageId: string }) => Promise<SdkResult<DocsOkResult>>;
 	/**
-	 * A docs page as MDX, with the `version` a write must send back. A read: it throws on a server
-	 * refusal. `skipped` lists blocks that have no MDX form; writing the MDX back drops them.
-	 */
-	readPage: (params: { pageId: string }) => Promise<DocsPageMdx>;
-	/**
-	 * Save a page's MDX as a new version. A broken MDX is refused with a 400 whose line is read with
-	 * `readDocsMdxProblem`. A `version` that is no longer current is refused with `VERSION_STALE` (409):
-	 * read the page again, then write again. Nothing is saved on a refusal.
-	 */
-	writePage: (params: WriteDocsPageParams) => Promise<SdkResult<WriteDocsPageResult>>;
-	/**
 	 * Download the whole docs as a page file: the same file `pageTransfer.import` takes, so a docs can
 	 * move to another site with its tree and order. Pass `includeFiles: false` to leave images out.
 	 */
 	exportFile: (params: ExportDocsParams) => Promise<PageTransferFile>;
 };
 
-/** The MDX problem a refused `writePage` names: the message, and the line to fix when the server could place it. */
-export type DocsMdxProblem = { message: string; line: number | null };
-
-/** The body a refused MDX write carries, as the server sends it. */
-type DocsMdxRefusalBody = { ok?: boolean; message?: string; line?: number | null };
-
 /**
- * Reads the MDX problem out of a refused `writePage`. Returns null for any other error, so a caller
- * can tell "fix line 3" apart from "the page changed" (409) or "not allowed" (403).
- */
-export function readDocsMdxProblem(error: NextpressError): DocsMdxProblem | null {
-	if (error.status !== 400) return null;
-	const body = error.body as DocsMdxRefusalBody | undefined;
-	if (body?.ok !== false || typeof body.message !== "string") return null;
-	return { message: body.message, line: typeof body.line === "number" ? body.line : null };
-}
-
-/**
- * Docs: a site's docs, their navigation, pages written as MDX, and a whole docs as one page file.
+ * Docs: a site's docs, their navigation and settings, and a whole docs as one page file.
  * The routes are the server's `/api/docs` routes; the id checks run before any request is sent.
  */
 export function createDocsResource({ http }: { http: HttpClient }): DocsResource {
@@ -188,24 +155,6 @@ export function createDocsResource({ http }: { http: HttpClient }): DocsResource
 		deleteItem: async ({ pageId }: { pageId: string }): Promise<SdkResult<DocsOkResult>> => {
 			parseInput({ schema: idParamSchema, input: { id: pageId }, label: "docs.deleteItem pageId" });
 			return safeHttpRequest(http, `${DOCS_PATH}/items/${pageId}`, { method: "DELETE" });
-		},
-
-		readPage: async ({ pageId }: { pageId: string }): Promise<DocsPageMdx> => {
-			parseInput({ schema: idParamSchema, input: { id: pageId }, label: "docs.readPage pageId" });
-			return http.request(`${DOCS_PATH}/pages/${pageId}/mdx`);
-		},
-
-		writePage: async ({
-			pageId,
-			...input
-		}: WriteDocsPageParams): Promise<SdkResult<WriteDocsPageResult>> => {
-			parseInput({ schema: idParamSchema, input: { id: pageId }, label: "docs.writePage pageId" });
-			const body = parseInput({
-				schema: writeDocsPageSchema,
-				input,
-				label: "docs.writePage input",
-			});
-			return safeHttpRequest(http, `${DOCS_PATH}/pages/${pageId}/mdx`, { method: "PUT", body });
 		},
 
 		exportFile: async ({ homeId, includeFiles }: ExportDocsParams): Promise<PageTransferFile> => {

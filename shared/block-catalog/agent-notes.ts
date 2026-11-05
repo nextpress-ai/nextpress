@@ -38,7 +38,7 @@ export const BLOCK_AGENT_NOTES: Record<BlockName, string> = {
 	"core/grid":
 		"Equal items side by side that wrap to new rows: feature cards, team, plans. Put each item as a child (usually a Card). `columns` (1–6) on desktop, `tabletColumns`, `phoneColumns` (usually 1); or `minItemWidth` (\"240px\") to fit as many as there is room for. Spacing is `styles.gap`. Prefer it over Columns for more than two or three items.",
 	"core/card":
-		"A box for one feature, plan, person or link, holding any blocks (icon, heading, text, button). `title` is an optional heading at its top (the MDX `<Card title>`). `look`: bordered, raised, subtle or plain. To make the whole card a link, set `link` and `linkLabel` (what a screen reader says); buttons inside still work. Usually inside a Grid.",
+		"A box for one feature, plan, person or link, holding any blocks (icon, heading, text, button). `title` is an optional heading at its top. `look`: bordered, raised, subtle or plain. To make the whole card a link, set `link` and `linkLabel` (what a screen reader says); buttons inside still work. Usually inside a Grid.",
 	"core/badge":
 		"A small label: the eyebrow above a section heading (\"New\", \"Pricing\") or a status. `text`, `tone` (accent, neutral, success, warning, danger), `look` (soft, outline, solid). Keep it to one or two words.",
 	"core/steps":
@@ -52,31 +52,25 @@ export const BLOCK_AGENT_NOTES: Record<BlockName, string> = {
 	"core/search":
 		"A search button (with a Ctrl/⌘ + K hint) that opens a search window over this site's published pages. Put one in the header or the top of a docs page. `label` is the button text, `placeholder` the hint in the empty search box. Nothing to configure beyond those; add at most one per page.",
 	"core/docs-layout":
-		"Legacy: for new pages use docs/shell with docs/page. Kept so existing pages keep working. Wraps a documentation page: a sidebar of the site's pages on the left, the page's content in the middle, and an \"On this page\" list on the right, with breadcrumbs and previous/next links. Use it on every docs page, inside the page shell, and write the content as one markdown block with `mdx: true` inside it. The sidebar comes from the pages' parents: set a page's parent to put it under another page, and its menu order sets the sequence. `rootPageId` picks the page the sidebar starts from (empty: the top page of the section this page is in). `showToc`, `showPrevNext`, `showBreadcrumbs` and `copyPage` (Copy page and Open as markdown buttons) are on by default. Don't put a header or footer inside it, and use at most one per page.",
+		"Legacy: for new pages use docs/shell with docs/page. Kept so existing pages keep working. Wraps a documentation page: a sidebar of the site's pages on the left, the page's content in the middle, and an \"On this page\" list on the right, with breadcrumbs and previous/next links. Use it on every docs page, inside the page shell. The sidebar comes from the pages' parents: set a page's parent to put it under another page, and its menu order sets the sequence. `rootPageId` picks the page the sidebar starts from (empty: the top page of the section this page is in). `showToc`, `showPrevNext`, `showBreadcrumbs` and `copyPage` (Copy page and Open as markdown buttons) are on by default. Don't put a header or footer inside it, and use at most one per page.",
 	"docs/shell":
 		"The docs frame for a documentation site: a top bar (the site name or logo, a search button, up to six links) and a sidebar of the site's pages. Put it directly inside the page shell, once per page; it holds exactly one Docs page. Set it up once on the docs home page. Every other docs page leaves `inherit` true and reads the home page's settings, so don't repeat them. `rootPageId` (empty: the top page of the section), `title` (empty: the home page's title), `logoUrl`, `links` ({label, url}), `search` ({show, label, placeholder}). The sidebar comes from the pages' parents and menu order. Replaces core/docs-layout.",
 	"docs/page":
 		"One page of documentation, only directly inside Docs shell. It draws breadcrumbs, the page's own title and description (the page title and its search description; don't add a heading for them), Copy page, an \"On this page\" list from the headings below, and previous/next links. Put the page's blocks inside it (headings level 2 and 3, text, callouts, code). `showTitle`, `showDescription`, `showBreadcrumbs`, `showToc`, `showPrevNext` and `copyPage` are all on by default.",
-	"docs/heading":
-		"A section title inside a docs page, written `## Text` in MDX. `level` 2, 3 or 4 (level 1 is the page title, which the docs page draws); `text` is inline markdown. Its link id is made from the words and shows in \"On this page\", with a \"#\" link on hover. Use it instead of core/heading in docs pages.",
-	"docs/text":
-		"One paragraph inside a docs page. `text` is inline markdown: **bold**, *italic*, `code` and [links](url) only; use docs/list for lists and docs/callout for notes. One paragraph per block, the way MDX separates paragraphs with a blank line.",
-	"docs/list":
-		"A list inside a docs page. `style`: bullet, number or check (a checklist). `items` is a list of {text, checked, children}; `children` is the one nested level, a list of {text, checked}. `text` is inline markdown; `checked` only matters for check. In MDX: `- item`, `1. item`, `- [ ] item`.",
 	"docs/callout":
-		"A highlighted note around other blocks. `type`: note (default), tip, warning, danger or success; `title` is an optional bold line. Its children are the message (usually one paragraph). In a markdown block with `mdx: true`, write `<Callout type=\"warning\">…</Callout>` instead. Keep it short, and don't stack several in a row.",
+		"A highlighted note around other blocks. `type`: note (default), tip, warning, danger or success; `title` is an optional bold line. Its children are the message (usually one paragraph). Keep it short, and don't stack several in a row.",
 	"docs/code-group":
-		"Several code blocks shown as tabs: the same command for npm, pnpm and yarn, or one example in several languages. Each child is a code block; its `title` is the tab label (else its language). The reader's choice is remembered across the site (`remember`). In MDX, wrap fenced code blocks in `<CodeGroup>`, each with `title=\"npm\"` after the language.",
+		"Several code blocks shown as tabs: the same command for npm, pnpm and yarn, or one example in several languages. Each child is a code block; its `title` is the tab label (else its language). The reader's choice is remembered across the site (`remember`).",
 	"docs/file-tree":
-		"Folders and files drawn as a tree. `tree` is text: one line per entry, two spaces per level, folders end with `/`, ` *` at the end highlights a line, `# words` adds a note. In MDX, `<FileTree>` around a markdown list does the same.",
+		"Folders and files drawn as a tree. `tree` is text: one line per entry, two spaces per level, folders end with `/`, ` *` at the end highlights a line, `# words` adds a note.",
 	"docs/params":
-		"A list of options, props or API fields. `items` is a list of {name, type, default, required, description}; description is short markdown. Use one per group of fields, under a heading. In MDX, write one `<Param name=\"limit\" type=\"number\" default=\"20\">What it does.</Param>` per field.",
+		"A list of options, props or API fields. `items` is a list of {name, type, default, required, description}; description is short markdown. Use one per group of fields, under a heading.",
 	"docs/example":
-		"Code beside what it makes: the first child is a code block, the other children are the result built from ordinary blocks (nothing runs). `layout`: side (side by side, stacked on phones) or stacked. In MDX, `<Example>` with a fenced code block first and the result after it.",
+		"Code beside what it makes: the first child is a code block, the other children are the result built from ordinary blocks (nothing runs). `layout`: side (side by side, stacked on phones) or stacked.",
 	"docs/diagram":
-		"A diagram drawn from Mermaid text in `code` (flowcharts, sequence diagrams, state machines). `caption` is an optional line under the picture. Use it when a picture of a flow or of steps explains more than words. Write the Mermaid plainly: a mistake shows a short message in place of the picture. In MDX, a ```mermaid fence with the caption as `title=\"…\"` after it.",
+		"A diagram drawn from Mermaid text in `code` (flowcharts, sequence diagrams, state machines). `caption` is an optional line under the picture. Use it when a picture of a flow or of steps explains more than words. Write the Mermaid plainly: a mistake shows a short message in place of the picture.",
 	"docs/update":
-		"One changelog entry: `label` is its version or date (\"v1.4.2\", \"October 2026\") and shows in a narrow column; `description` is one short line under it. Its children are the notes for that release (headings, text, lists, callouts, diagrams). Each entry can be linked from \"On this page\". In MDX, `<Update label=\"…\" description=\"…\">…</Update>`.",
+		"One changelog entry: `label` is its version or date (\"v1.4.2\", \"October 2026\") and shows in a narrow column; `description` is one short line under it. Its children are the notes for that release (headings, text, lists, callouts, diagrams). Each entry can be linked from \"On this page\".",
 	"core/logo-cloud":
 		"Logos of customers or partners. `logos` is a list of {url, alt, href}; take urls from list_media. `layout`: row (`marquee: true` scrolls it) or grid (`columns`); `grayscale` makes them quieter. Alt text is the company name.",
 	"core/heading":
@@ -102,7 +96,7 @@ export const BLOCK_AGENT_NOTES: Record<BlockName, string> = {
 	"core/html":
 		"Raw HTML (`content`), cleaned before it is shown. Last resort when no block fits; prefer real blocks so people can still edit the page.",
 	"core/markdown":
-		"Text written in Markdown (`content`): headings, lists, tables, links and fenced code (```ts {2} title=\"app.ts\"), ```mermaid diagrams. Best for docs and long articles; for page sections prefer Heading and Paragraph blocks. Set `mdx: true` to use docs components, e.g. <Callout type=\"warning\" title=\"…\">…</Callout> (types: note, tip, warning, danger, success); they take plain text props only and nothing in MDX is ever run.",
+		"Text written in Markdown (`content`): headings, lists, tables, links and fenced code (```ts {2} title=\"app.ts\"), ```mermaid diagrams. Best for docs and long articles; for page sections prefer Heading and Paragraph blocks.",
 	"core/icon":
 		"An icon. Set it as `icon: {\"iconSet\": \"lucide\", \"iconName\": \"arrow-right\"}` — `iconName` is a kebab-case Lucide name (`check`, `zap`, `star`) and must sit inside `icon`; published pages draw Lucide by name. `link` makes it clickable.",
 	"core/spacer":
@@ -146,5 +140,5 @@ export const BLOCK_AGENT_NOTES: Record<BlockName, string> = {
 	"post/progress":
 		"A reading-progress bar. Only on long posts.",
 	"post/body":
-		"The writing of a written post (one made in the blog writing editor): its blocks are this block alone, and the blog's look (title, date, cover, author, comments) is put around it when the post is shown. Put writing blocks in it: docs/text, docs/heading, docs/list, core/quote, core/separator, core/image, core/gallery, core/video, core/code, docs/callout, core/table, core/button. Never on a page, never inside another block.",
+		"The writing of a written post (one made in the blog writing editor): its blocks are this block alone, and the blog's look (title, date, cover, author, comments) is put around it when the post is shown. Put writing blocks in it: core/paragraph, core/heading, core/list, core/quote, core/separator, core/image, core/gallery, core/video, core/code, docs/callout, core/table, core/button. Never on a page, never inside another block.",
 };

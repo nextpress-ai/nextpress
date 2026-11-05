@@ -3,11 +3,11 @@ import { DOCS_GUIDE } from "../docs/docs-guide.js";
 const WRITE_DOCS_WORKFLOW = `# Workflow
 1. Find the docs. Call list_docs. If there are none, call create_docs with a name. Keep the docs' homeId.
 2. See what exists. Call get_docs_tree with the homeId. Use a page that already covers the topic rather than making a second one. Note the addresses you may link to.
-3. Plan. Split the topic into pages: one idea per page, each with a title and a place in the tree. Groups hold pages; pages hold the text.
-4. Make each page. Call add_docs_page with the homeId, the parent (a page or group, or leave it out for the top of the docs), kind "page" and the title. Then call read_docs_page on it for its version.
-5. Write it. Write the page's MDX by the guide below. Call write_docs_page with the pageId, the whole MDX, the version from read_docs_page as expectedVersion, and a description. If the reply names a line, fix that line and send the whole page again. If it says the page changed, read it again.
+3. Plan. Split the topic into pages: one idea per page, each with a title and a place in the tree. Groups hold pages; pages hold the content.
+4. Make each page. Call add_docs_page with the homeId, the parent (a page or group, or leave it out for the top of the docs), kind "page" and the title.
+5. Write it. Call get_page for the new page, then fill it with patch_page_blocks, using the blocks the guide below names.
 6. Check the links. Every link to a docs page must match an address from get_docs_tree.
-7. Leave everything as a draft. Call publish_page only when the owner asks, using the version write_docs_page returned.
+7. Leave everything as a draft. Call publish_page only when the owner asks, using the version of the page.
 8. Finish with one or two plain sentences: which pages you made, and what the owner should check.`;
 
 /**

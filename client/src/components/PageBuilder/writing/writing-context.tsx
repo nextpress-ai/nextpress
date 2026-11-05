@@ -23,7 +23,7 @@ export type WritingValue = {
 const WritingContext = createContext<WritingValue | null>(null);
 
 /** Blocks a writing edit leaves open for typing; the rest are picked, so their settings show. */
-const OPENS_FOR_TYPING: ReadonlySet<string> = new Set(["docs/text", "docs/heading", "docs/list", "core/quote", "core/code"]);
+const OPENS_FOR_TYPING: ReadonlySet<string> = new Set(["core/paragraph", "core/heading", "core/list", "core/quote", "core/code"]);
 
 type ProviderProps = {
 	getBlocks: () => BlockConfig[];

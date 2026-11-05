@@ -15,7 +15,7 @@ describe("a written post", () => {
 	it("starts as one post body holding one empty paragraph", () => {
 		const blocks = newPostBody({ newId: ids() });
 		expect(isWrittenPost(blocks)).toBe(true);
-		expect(names(blocks)).toEqual(["post/body", "docs/text"]);
+		expect(names(blocks)).toEqual(["post/body", "core/paragraph"]);
 		expect(blocks[0].children?.[0].parentId).toBe(blocks[0].id);
 	});
 

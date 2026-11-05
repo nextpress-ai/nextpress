@@ -7,7 +7,7 @@ import { docsBlockLabel } from "../docs-mode/docs-block-labels";
  * docs writing blocks, so typing shortcuts and the "/" menu work in posts as they do in docs.
  */
 const SECTIONS: ReadonlyArray<{ id: string; name: string; names: readonly string[] }> = [
-	{ id: "writing", name: "Writing", names: ["docs/heading", "docs/text", "docs/list", "core/quote", "core/separator"] },
+	{ id: "writing", name: "Writing", names: ["core/heading", "core/paragraph", "core/list", "core/quote", "core/separator"] },
 	{ id: "media", name: "Media", names: ["core/image", "core/gallery", "core/video"] },
 	{ id: "more", name: "More", names: ["core/code", "docs/callout", "core/table", "core/button"] },
 ];

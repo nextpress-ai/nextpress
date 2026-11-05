@@ -1,4 +1,3 @@
-import { mdxToBlocks } from "@shared/mdx-blocks";
 import { parsePageOther } from "@shared/page-other";
 import type { AddDocsItemInput, DocsTreeItem, ReorderDocsInput, UpdateDocsItemInput } from "@shared/docs";
 import type { Deps } from "../../routes/shared/deps";
@@ -46,8 +45,6 @@ export function createDocsItems({ models, hooks, newId }: ItemsDeps) {
 		const site = await loadDocsSitePages({ models, siteId });
 		requireInDocs({ site, pageId: input.parentId, homeId });
 		const title = cleanTitle(input.title);
-		const parsed = input.kind === "page" && input.mdx?.trim() ? mdxToBlocks({ text: input.mdx, newId }) : null;
-		if (parsed && !parsed.ok) throw refuseDocs({ statusCode: 400, message: parsed.message, line: parsed.line });
 		const siblings = site.childrenOf.get(input.parentId) ?? [];
 		const position = Math.max(0, Math.min(input.position ?? siblings.length, siblings.length));
 		const created = await createDocsPage({
@@ -61,7 +58,7 @@ export function createDocsItems({ models, hooks, newId }: ItemsDeps) {
 			parentId: input.parentId,
 			menuOrder: position,
 			home: false,
-			children: input.kind === "group" ? [] : parsed?.ok ? parsed.blocks : emptyDocsText({ newId }),
+			children: input.kind === "group" ? [] : emptyDocsText({ newId }),
 			flags: input.kind === "group" ? { group: true } : undefined,
 		});
 		const ordered = [...siblings.map((row) => row.id)];

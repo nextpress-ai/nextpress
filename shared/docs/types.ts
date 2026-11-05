@@ -5,7 +5,7 @@ import type { DocsFeatures, DocsShellButton, DocsShellLink, DocsShellSearch } fr
  *
  * A docs is a top-level page whose page shell holds a `docs/shell` block with `inherit` off (the
  * docs home). Every page under it is a docs page: page shell → `docs/shell` (inherit on) →
- * `docs/page` → the page's docs blocks, each block one MDX element. Docs-wide settings live on the
+ * `docs/page` → the page's docs blocks, each block its own block. Docs-wide settings live on the
  * home page's shell; a page's own flags live in `page.other.docs` (`PageDocsFlags`). No table of
  * its own, so a docs travels in an ordinary page file and needs no database change.
  *
@@ -19,8 +19,6 @@ import type { DocsFeatures, DocsShellButton, DocsShellLink, DocsShellSearch } fr
  * - `PATCH  /api/docs/items/:pageId`          → `UpdateDocsItemInput` → `{ item: DocsTreeItem }`
  * - `PUT    /api/docs/:homeId/order`          → `ReorderDocsInput` → `{ ok: true }`
  * - `DELETE /api/docs/items/:pageId`          → `{ ok: true }` (deleted the way any page is; refused while it has pages under it)
- * - `GET    /api/docs/pages/:pageId/mdx`      → `DocsPageMdx`
- * - `PUT    /api/docs/pages/:pageId/mdx`      → `WriteDocsPageMdxInput` → `WriteDocsPageMdxResult`
  * - `GET    /api/docs/:homeId/export?files=1` → a page file (`PagePackage`) with every page of the docs
  */
 
@@ -99,8 +97,6 @@ export type AddDocsItemInput = {
 	kind: DocsItemKind;
 	/** Defaults to one made from the title (and made unique on the site). */
 	slug?: string;
-	/** Starting content; empty starts the page with one empty text block. Groups take none. */
-	mdx?: string;
 	/** Index among the parent's pages; default last. */
 	position?: number;
 };
@@ -116,27 +112,3 @@ export type UpdateDocsItemInput = {
 
 /** The full new order of one parent's pages. */
 export type ReorderDocsInput = { parentId: string; orderedIds: string[] };
-
-export type DocsPageMdx = {
-	pageId: string;
-	title: string;
-	/** The page's description (its search description), shown under the title. */
-	description: string;
-	mdx: string;
-	version: number;
-	status: string;
-	/** Blocks on the page that have no MDX form (left out of `mdx`; writing the MDX back drops them). */
-	skipped: string[];
-};
-
-export type WriteDocsPageMdxInput = {
-	mdx: string;
-	/** The `version` from the last read; a newer save elsewhere refuses this one. */
-	expectedVersion: number;
-	title?: string;
-	description?: string;
-};
-
-export type WriteDocsPageMdxResult =
-	| { ok: true; version: number }
-	| { ok: false; message: string; line: number | null };

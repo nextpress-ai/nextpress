@@ -1,19 +1,24 @@
-import { useId, useMemo, useState, type KeyboardEvent, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
 import { Box } from "lucide-react";
 import type { JsonObject } from "@shared/blocks/docs-types";
+import { inlineMarkdown } from "@shared/content-text/html-text";
+import { escapeHtml } from "@shared/markdown/inline-html";
 import { cn } from "@/lib/utils";
 import { InlineTextEditor } from "../blocks/shared/inline-text-editor";
 import type { BlockDefinition } from "../blocks/types";
 import { generateBlockId } from "../utils";
 import { useWriting } from "../writing/writing-context";
-import { readSlashQuery, readWritingTurn, removeEmptyBlock, replaceBlock, splitBlock, splitText } from "./docs-writing";
+import { readSlashQuery, readWritingTurn, removeEmptyBlock, replaceBlock, splitBlock, splitText, textFields } from "./docs-writing";
 
 /** Blocks picked from the "/" menu start empty where the catalog's sample text would only be deleted. */
 const EMPTY_START: Readonly<Record<string, JsonObject>> = {
-	"docs/heading": { text: "" },
-	"docs/text": { text: "" },
-	"docs/list": { items: [{ text: "", checked: false, children: [] }] },
+	"core/heading": { value: "", format: "html" },
+	"core/paragraph": { value: "", format: "html" },
+	"core/list": { values: "<li></li>" },
 };
+
+/** What the writer types and reads: the stored words as inline markdown (plain text is escaped first, so a lone `*` stays a `*`). */
+const toMarkdown = ({ value, format }: { value: string; format?: string }): string => inlineMarkdown(format === "html" ? value : escapeHtml(value));
 
 const MENU_LIMIT = 8;
 
@@ -38,10 +43,11 @@ function matchBlocks({ blocks, query }: { blocks: BlockDefinition[]; query: stri
 
 type Props = {
 	blockId: string;
-	/** The field of the block's content this text is (`text`). */
-	field: string;
+	/** The block's stored words: inline HTML when `format` is "html", otherwise plain text. */
 	value: string;
-	onChange: (value: string) => void;
+	format?: string;
+	/** Called with the fields to save: the words as inline HTML, marked as such. */
+	onChange: (fields: { value: string; format: "html" }) => void;
 	/** A paragraph also turns into other blocks (markers, the "/" menu); a heading only splits on Enter. */
 	kind: "paragraph" | "heading";
 	placeholder: string;
@@ -54,7 +60,15 @@ type Props = {
  * `## `, `- `, `1. `, `[] `, `> ` or three backticks at the start makes that block, and "/" opens a
  * menu of the editor's blocks to pick by name. Outside an editor that writes it is the plain field.
  */
-export function DocsTextField({ blockId, field, value, onChange, kind, placeholder, ariaLabel }: Props): ReactElement {
+export function DocsTextField({ blockId, value: stored, format, onChange, kind, placeholder, ariaLabel }: Props): ReactElement {
+	// The writer's own text is kept as typed (a trailing space must survive); the stored words are only read back when something else changed them, such as undo.
+	const [value, setValue] = useState(() => toMarkdown({ value: stored, format }));
+	const lastSaved = useRef(stored);
+	useEffect(() => {
+		if (stored === lastSaved.current) return;
+		lastSaved.current = stored;
+		setValue(toMarkdown({ value: stored, format }));
+	}, [stored, format]);
 	const docs = useWriting();
 	const menuId = useId();
 	const [caret] = useState(() => docs?.takeCaret(blockId) ?? "end");
@@ -81,7 +95,10 @@ export function DocsTextField({ blockId, field, value, onChange, kind, placehold
 			docs.applyWriting(result);
 			return;
 		}
-		onChange(next);
+		const fields = textFields(next);
+		lastSaved.current = fields.value as string;
+		setValue(next);
+		onChange({ value: fields.value as string, format: "html" });
 	};
 
 	const keyDown = (event: KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>): void => {
@@ -105,7 +122,7 @@ export function DocsTextField({ blockId, field, value, onChange, kind, placehold
 		if (event.key === "Enter" && !event.shiftKey) {
 			event.preventDefault();
 			const { before, after } = splitText({ text: value, start: el.selectionStart ?? value.length, end: el.selectionEnd ?? value.length });
-			const result = splitBlock({ blocks: docs.getBlocks(), blockId, field, before, after, newId: generateBlockId });
+			const result = splitBlock({ blocks: docs.getBlocks(), blockId, before, after, newId: generateBlockId });
 			if (result) docs.applyWriting(result);
 			return;
 		}
@@ -113,7 +130,7 @@ export function DocsTextField({ blockId, field, value, onChange, kind, placehold
 			event.preventDefault();
 			const result =
 				kind === "heading"
-					? replaceBlock({ blocks: docs.getBlocks(), blockId, name: "docs/text", data: EMPTY_START["docs/text"], newId: generateBlockId })
+					? replaceBlock({ blocks: docs.getBlocks(), blockId, name: "core/paragraph", data: EMPTY_START["core/paragraph"], newId: generateBlockId })
 					: removeEmptyBlock({ blocks: docs.getBlocks(), blockId });
 			if (result) docs.applyWriting(result);
 		}

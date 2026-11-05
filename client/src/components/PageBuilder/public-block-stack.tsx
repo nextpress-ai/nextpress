@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 import type { BlockConfig, PageOther } from "@shared/schema-types";
+import { convertLegacyProse } from "@shared/docs/legacy-prose";
 import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
 import { buildScrollbarCss } from "@shared/scrollbar-model";
 import { PAGE_BLOCK_STACK_GAP } from "@shared/block-container-placement";
@@ -60,7 +61,7 @@ export function PublicBlockStack({
     : blocks;
 
   const preparedBlocks = prepareVisitorPageBlocks({
-    blocks: resolvedBlocks,
+    blocks: convertLegacyProse(resolvedBlocks),
     leftoverDesign: design,
   });
 

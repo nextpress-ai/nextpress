@@ -24,9 +24,6 @@ const SPAN_CHROME_BLOCKS = new Set([
   "docs/shell",
   "docs/page",
   // Docs blocks are boxes that fill the reading column.
-  "docs/heading",
-  "docs/text",
-  "docs/list",
   "docs/callout",
   "docs/code-group",
   "docs/file-tree",

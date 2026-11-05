@@ -4450,9 +4450,9 @@
           "content": {
             "data": {
               "className": "",
-              "content": "<Callout type=\"tip\">Use pnpm.</Callout>",
+              "content": "pnpm add nextpress",
               "highlightLines": "",
-              "language": "mdx",
+              "language": "bash",
               "showCopyButton": true,
               "showLineNumbers": false,
               "title": "",
@@ -4587,156 +4587,6 @@
     },
     "isContainer": false,
     "label": "File tree"
-  },
-  "docs/heading": {
-    "category": "docs",
-    "defaultContent": {
-      "data": {
-        "anchor": "",
-        "level": 2,
-        "text": "A new section"
-      },
-      "kind": "structured"
-    },
-    "defaultStyles": {
-      "boxSizing": "border-box",
-      "margin": "28px 0 10px",
-      "padding": "0",
-      "width": "100%"
-    },
-    "description": "A section title (level 2 to 4) with a link to itself, listed in On this page",
-    "handlesOwnChildren": false,
-    "hasSettings": true,
-    "id": "docs/heading",
-    "inserted": {
-      "category": "docs",
-      "content": {
-        "data": {
-          "anchor": "",
-          "level": 2,
-          "text": "A new section"
-        },
-        "kind": "structured"
-      },
-      "id": "block-under-test",
-      "label": "Docs heading",
-      "name": "docs/heading",
-      "other": {
-        "tokenMap": {},
-        "units": {
-          "border": "px",
-          "dimension": "px",
-          "font": "rem",
-          "spacing": "px"
-        }
-      },
-      "parentId": null,
-      "settings": {},
-      "styles": {
-        "boxSizing": "border-box",
-        "margin": "28px 0 10px",
-        "padding": "0",
-        "width": "100%"
-      },
-      "type": "block"
-    },
-    "isContainer": false,
-    "label": "Docs heading"
-  },
-  "docs/list": {
-    "category": "docs",
-    "defaultContent": {
-      "data": {
-        "items": [
-          {
-            "checked": false,
-            "children": [],
-            "text": "First point"
-          },
-          {
-            "checked": false,
-            "children": [
-              {
-                "checked": false,
-                "text": "A detail under it"
-              }
-            ],
-            "text": "Second point"
-          },
-          {
-            "checked": false,
-            "children": [],
-            "text": "Third point"
-          }
-        ],
-        "style": "bullet"
-      },
-      "kind": "structured"
-    },
-    "defaultStyles": {
-      "boxSizing": "border-box",
-      "margin": "0 0 16px",
-      "padding": "0",
-      "width": "100%"
-    },
-    "description": "Bullets, numbers or a checklist, with one level of nesting",
-    "handlesOwnChildren": false,
-    "hasSettings": true,
-    "id": "docs/list",
-    "inserted": {
-      "category": "docs",
-      "content": {
-        "data": {
-          "items": [
-            {
-              "checked": false,
-              "children": [],
-              "text": "First point"
-            },
-            {
-              "checked": false,
-              "children": [
-                {
-                  "checked": false,
-                  "text": "A detail under it"
-                }
-              ],
-              "text": "Second point"
-            },
-            {
-              "checked": false,
-              "children": [],
-              "text": "Third point"
-            }
-          ],
-          "style": "bullet"
-        },
-        "kind": "structured"
-      },
-      "id": "block-under-test",
-      "label": "Docs list",
-      "name": "docs/list",
-      "other": {
-        "tokenMap": {},
-        "units": {
-          "border": "px",
-          "dimension": "px",
-          "font": "rem",
-          "spacing": "px"
-        }
-      },
-      "parentId": null,
-      "settings": {},
-      "styles": {
-        "boxSizing": "border-box",
-        "margin": "0 0 16px",
-        "padding": "0",
-        "width": "100%"
-      },
-      "type": "block"
-    },
-    "isContainer": false,
-    "label": "Docs list"
   },
   "docs/page": {
     "category": "docs",
@@ -5034,57 +4884,6 @@
     "isContainer": true,
     "label": "Docs shell"
   },
-  "docs/text": {
-    "category": "docs",
-    "defaultContent": {
-      "data": {
-        "text": "Write a paragraph. Use **bold**, *italic*, `code` and [links](https://example.com)."
-      },
-      "kind": "structured"
-    },
-    "defaultStyles": {
-      "boxSizing": "border-box",
-      "margin": "0 0 16px",
-      "padding": "0",
-      "width": "100%"
-    },
-    "description": "A paragraph with bold, italic, code and links",
-    "handlesOwnChildren": false,
-    "hasSettings": true,
-    "id": "docs/text",
-    "inserted": {
-      "category": "docs",
-      "content": {
-        "data": {
-          "text": "Write a paragraph. Use **bold**, *italic*, `code` and [links](https://example.com)."
-        },
-        "kind": "structured"
-      },
-      "id": "block-under-test",
-      "label": "Docs text",
-      "name": "docs/text",
-      "other": {
-        "tokenMap": {},
-        "units": {
-          "border": "px",
-          "dimension": "px",
-          "font": "rem",
-          "spacing": "px"
-        }
-      },
-      "parentId": null,
-      "settings": {},
-      "styles": {
-        "boxSizing": "border-box",
-        "margin": "0 0 16px",
-        "padding": "0",
-        "width": "100%"
-      },
-      "type": "block"
-    },
-    "isContainer": false,
-    "label": "Docs text"
-  },
   "docs/update": {
     "category": "docs",
     "defaultContent": {
@@ -5107,16 +4906,14 @@
       "category": "docs",
       "children": [
         {
-          "category": "docs",
+          "category": "basic",
           "content": {
-            "data": {
-              "text": "What changed in this entry."
-            },
-            "kind": "structured"
+            "kind": "text",
+            "value": "What changed in this entry."
           },
           "id": "id-1",
-          "label": "Docs text",
-          "name": "docs/text",
+          "label": "Paragraph",
+          "name": "core/paragraph",
           "other": {
             "tokenMap": {},
             "units": {
@@ -5129,10 +4926,9 @@
           "parentId": "block-under-test",
           "settings": {},
           "styles": {
-            "boxSizing": "border-box",
-            "margin": "0 0 16px",
-            "padding": "0",
-            "width": "100%"
+            "fontSize": "16px",
+            "lineHeight": "1.6",
+            "margin": "0"
           },
           "type": "block"
         }

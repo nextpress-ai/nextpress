@@ -24,8 +24,6 @@ const DOCS_TOOL_NAMES = [
 	"update_docs_page",
 	"reorder_docs_pages",
 	"delete_docs_page",
-	"read_docs_page",
-	"write_docs_page",
 ];
 
 type ListedTool = {
@@ -81,10 +79,9 @@ describe("docs tools over MCP", () => {
 				expect(byName[name]?.description?.length ?? 0, name).toBeGreaterThan(80);
 			}
 			expect(byName.add_docs_page?.inputSchema.required).toEqual(expect.arrayContaining(["homeId", "kind", "title"]));
-			expect(byName.write_docs_page?.inputSchema.required).toEqual(expect.arrayContaining(["pageId", "mdx", "expectedVersion"]));
 			expect(byName.update_docs_settings?.inputSchema.required).toEqual(["homeId"]);
 			expect(byName.reorder_docs_pages?.inputSchema.required).toEqual(expect.arrayContaining(["homeId", "orderedIds"]));
-			expect(byName.read_docs_page?.inputSchema.required).toEqual(["pageId"]);
+			expect(Object.keys(byName.add_docs_page?.inputSchema.properties ?? {})).not.toContain("mdx");
 			expect(byName.get_docs_guide?.inputSchema.properties).toEqual({});
 		});
 
@@ -92,7 +89,7 @@ describe("docs tools over MCP", () => {
 			const tools = (await session!.client.listTools()).tools as ListedTool[];
 			const byName = Object.fromEntries(tools.map((tool) => [tool.name, tool]));
 
-			for (const name of ["list_docs", "get_docs_tree", "read_docs_page", "get_docs_guide"]) {
+			for (const name of ["list_docs", "get_docs_tree", "get_docs_guide"]) {
 				expect(byName[name]?.annotations?.readOnlyHint, name).toBe(true);
 			}
 			expect(byName.delete_docs_page?.annotations?.destructiveHint).toBe(true);
@@ -164,21 +161,20 @@ describe("docs tools over MCP", () => {
 	});
 
 	describe("the pages and groups", () => {
-		it("adds a page under a group, with its starting text, as a draft at the right address", async () => {
+		it("adds a page under a group, empty, as a draft at the right address", async () => {
 			const result = await call("add_docs_page", {
 				homeId: DOCS_HOME_ID,
 				parentId: DOCS_GROUP_ID,
 				kind: "page",
 				title: "Quickstart",
-				mdx: "Run it.\n",
 				position: 0,
 			});
 
 			expect(result.isError).toBe(false);
 			expect(result.text).toContain('Added the page "Quickstart" at /docs/getting-started/quickstart.');
-			expect(result.text).toContain("It is a draft.");
+			expect(result.text).toContain("It is a draft and empty.");
 			const added = [...api.rows.values()].find((item) => item.title === "Quickstart");
-			expect(added).toMatchObject({ status: "draft", mdx: "Run it.\n", group: false });
+			expect(added).toMatchObject({ status: "draft", group: false });
 		});
 
 		it("adds a group under the top of the docs when no parent is given", async () => {
@@ -186,16 +182,6 @@ describe("docs tools over MCP", () => {
 
 			expect(result.isError).toBe(false);
 			expect(result.text).toContain('Added the group "Guides" at /docs/guides.');
-		});
-
-		it("refuses text on a group before calling the server, and says where the text goes", async () => {
-			const before = api.requests.length;
-
-			const result = await call("add_docs_page", { homeId: DOCS_HOME_ID, kind: "group", title: "Guides", mdx: "Text" });
-
-			expect(result.isError).toBe(true);
-			expect(result.text).toMatch(/^A group holds no text\./);
-			expect(api.requests.length).toBe(before);
 		});
 
 		it("moves, renames, hides and changes the address of a page, and warns about the old address", async () => {
@@ -242,138 +228,30 @@ describe("docs tools over MCP", () => {
 		});
 	});
 
-	describe("reading and writing a page's text", () => {
-		it("reads the title, description, version and MDX as plain lines, with the MDX last", async () => {
-			const result = await call("read_docs_page", { pageId: DOCS_INSTALL_ID });
-
-			expect(result.isError).toBe(false);
-			expect(result.text).toBe(
-				[
-					"Title: Install",
-					"Description: Get it running.",
-					"Status: draft",
-					"Version: 3 (send this as expectedVersion when you write the page)",
-					"Blocks with no MDX form: none",
-					"",
-					"MDX:",
-					"## Requirements\n\nDocker.\n",
-				].join("\n"),
-			);
-		});
-
-		it("names the blocks a write would drop, before the agent writes", async () => {
-			const install = api.rows.get(DOCS_INSTALL_ID);
-			if (install) install.skipped = ["docs/callout-legacy"];
-
-			const result = await call("read_docs_page", { pageId: DOCS_INSTALL_ID });
-
-			expect(result.text).toContain("Blocks with no MDX form, which writing the page drops: docs/callout-legacy");
-		});
-
-		it("saves the whole text as a new version, says it is still a draft, and says how to publish", async () => {
-			const result = await call("write_docs_page", {
-				pageId: DOCS_INSTALL_ID,
-				mdx: "## Setup\n\nRun the installer.\n",
-				expectedVersion: 3,
-				description: "Set it up in five minutes.",
-			});
-
-			expect(result.isError).toBe(false);
-			expect(result.text).toBe(
-				"Saved as version 4. The page is still a draft. Publish it with publish_page, using version 4, only when the owner asks.",
-			);
-			expect(api.rows.get(DOCS_INSTALL_ID)).toMatchObject({
-				version: 4,
-				mdx: "## Setup\n\nRun the installer.\n",
-				description: "Set it up in five minutes.",
-			});
-		});
-
-		it("refuses broken MDX, names the line to fix, and saves nothing", async () => {
-			const before = { mdx: api.rows.get(DOCS_INSTALL_ID)?.mdx, version: api.rows.get(DOCS_INSTALL_ID)?.version };
-
-			const result = await call("write_docs_page", {
-				pageId: DOCS_INSTALL_ID,
-				mdx: "Hello\n\n<Callout>\nnever closed\n",
-				expectedVersion: 3,
-			});
-
-			expect(result.isError).toBe(true);
-			expect(result.text).toMatch(/^Nothing was saved\. Line 3: A <Callout> is never closed\. Add <\/Callout> after its text\./);
-			expect(result.text).toContain("Fix that line, then send the whole page again with write_docs_page.");
-			expect(api.rows.get(DOCS_INSTALL_ID)).toMatchObject(before);
-		});
-
-		it("refuses a version that is no longer current, tells the agent to read again, and saves nothing", async () => {
-			const before = api.rows.get(DOCS_INSTALL_ID)?.mdx;
-
-			const result = await call("write_docs_page", { pageId: DOCS_INSTALL_ID, mdx: "New text.\n", expectedVersion: 1 });
-
-			expect(result.isError).toBe(true);
-			expect(result.text).toBe(
-				"Nothing was saved. The page changed somewhere else since you read it. Read it again with read_docs_page, put your change into the new text, and write it with the new version.",
-			);
-			expect(api.rows.get(DOCS_INSTALL_ID)?.mdx).toBe(before);
-		});
-
-		it("recovers from a save made elsewhere: the refused write, read again, then saved", async () => {
-			const install = api.rows.get(DOCS_INSTALL_ID);
-			const read = await call("read_docs_page", { pageId: DOCS_INSTALL_ID });
-			expect(read.text).toContain("Version: 3");
-			api.beforeNextSave = () => {
-				if (install) {
-					install.version += 1;
-					install.mdx = "Written in the editor.\n";
-				}
-			};
-
-			const refused = await call("write_docs_page", { pageId: DOCS_INSTALL_ID, mdx: "Agent text.\n", expectedVersion: 3 });
-			const reread = await call("read_docs_page", { pageId: DOCS_INSTALL_ID });
-			const saved = await call("write_docs_page", { pageId: DOCS_INSTALL_ID, mdx: "Agent text.\n", expectedVersion: 4 });
-
-			expect(refused.isError).toBe(true);
-			expect(refused.text).toContain("The page changed somewhere else since you read it.");
-			expect(reread.text).toContain("Version: 4");
-			expect(saved).toEqual({
-				isError: false,
-				text: "Saved as version 5. The page is still a draft. Publish it with publish_page, using version 5, only when the owner asks.",
-			});
-		});
-	});
-
 	describe("failures", () => {
-		it("logs a failed read with the tool name, the page id and the server's status", async () => {
-			const result = await call("read_docs_page", { pageId: MISSING_PAGE_ID });
+		it("logs a failed read with the tool name, the docs id and the server's status", async () => {
+			const result = await call("get_docs_tree", { homeId: MISSING_PAGE_ID });
 
 			expect(result.isError).toBe(true);
-			expect(result.text).toBe("That isn't a docs page. Open it from the docs editor or pick another page.");
 			const entry = JSON.parse(logged[0] ?? "{}") as {
 				atFunction: string;
-				data: { toolName: string; pageId: string };
+				data: { toolName: string; homeId: string };
 				error: { status: number };
 			};
-			expect(entry).toMatchObject({ atFunction: "read_docs_page", data: { toolName: "read_docs_page", pageId: MISSING_PAGE_ID } });
+			expect(entry).toMatchObject({ atFunction: "get_docs_tree", data: { toolName: "get_docs_tree", homeId: MISSING_PAGE_ID } });
 			expect(entry.error.status).toBe(404);
 		});
 
 		it("answers a server fault in plain words, and logs the cause", async () => {
 			api.failNext = { status: 500, message: "Database is down" };
 
-			const result = await call("read_docs_page", { pageId: DOCS_INSTALL_ID });
+			const result = await call("get_docs_tree", { homeId: DOCS_HOME_ID });
 
 			expect(result.isError).toBe(true);
 			expect(result.text).toBe("Couldn't finish that. Please try again.");
 			expect(result.text).not.toContain("{");
 			const entry = JSON.parse(logged[0] ?? "{}") as { error: { message: string; status: number } };
 			expect(entry.error).toMatchObject({ message: "Database is down", status: 500 });
-		});
-
-		it("logs a refused write with the page it was for, and the line it refused", async () => {
-			await call("write_docs_page", { pageId: DOCS_INSTALL_ID, mdx: "<Callout>\n", expectedVersion: 3 });
-
-			const entry = JSON.parse(logged[0] ?? "{}") as { atFunction: string; data: { pageId: string }; error: { status: number } };
-			expect(entry).toMatchObject({ atFunction: "write_docs_page", data: { pageId: DOCS_INSTALL_ID } });
-			expect(entry.error.status).toBe(400);
 		});
 	});
 });

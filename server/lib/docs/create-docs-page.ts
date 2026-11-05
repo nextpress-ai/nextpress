@@ -8,14 +8,16 @@ import type { Deps } from "../../routes/shared/deps";
 import { resolveSiteThemeSettings } from "../../routes/shared/resolve-site-theme-settings";
 import { uniquePageSlug } from "../../routes/shared/duplicate-page";
 import { scheduleSearchIndexRebuild } from "../site-search";
+import { emptyParagraphContent } from "@shared/docs/empty-paragraph";
+import { fitToDocsColumn } from "@shared/docs/docs-column-spacing";
 import { refuseDocs } from "./docs-refusal";
 import type { DocsPageRow } from "./docs-site-pages";
 
 /** A text block with nothing in it yet: where a new docs page's writing starts. */
 export function emptyDocsText({ newId }: { newId: () => string }): BlockConfig[] {
-	const block = createDefaultBlock({ name: "docs/text", id: newId(), newId });
+	const block = createDefaultBlock({ name: "core/paragraph", id: newId(), newId });
 	if (!block) return [];
-	return [{ ...block, content: { kind: "structured", data: { text: "" } } }];
+	return [{ ...fitToDocsColumn(block), content: emptyParagraphContent() }];
 }
 
 /**

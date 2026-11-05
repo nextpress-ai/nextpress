@@ -5,12 +5,8 @@ import MDEditor from "@uiw/react-md-editor";
 import type { BlockConfig } from "@shared/schema-types";
 import { DOC_COMPONENT_PROPS, MarkdownView, parseMarkdown } from "@shared/markdown";
 import { useTheme } from "@/components/ThemeProvider";
-import { CollapsibleCard } from "@/components/ui/collapsible-card";
-import { Switch } from "@/components/ui/switch";
-import { SettingsLabel } from "../../shared";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
-import { useSettingsState } from "../useSettingsState";
 import { MARKDOWN_DEFAULT_CONTENT } from "@shared/block-catalog/text-blocks";
 import { catalogMeta } from "../catalog-meta";
 
@@ -123,30 +119,10 @@ interface MarkdownSettingsProps {
   onUpdate?: (updates: Partial<BlockConfig>) => void;
 }
 
-function MarkdownSettings({ block, onUpdate }: MarkdownSettingsProps): JSX.Element {
-  const { content, updateContent } = useSettingsState<MarkdownContent>({
-    block,
-    onUpdate,
-    defaultContent: DEFAULT_CONTENT,
-  });
-
+function MarkdownSettings(_props: MarkdownSettingsProps): JSX.Element {
   return (
     <div className="space-y-4">
-      <CollapsibleCard title="Markdown" icon={MarkdownIcon} defaultOpen={true}>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <SettingsLabel htmlFor="markdown-mdx">Docs components (MDX)</SettingsLabel>
-            <Switch
-              id="markdown-mdx"
-              checked={content?.mdx === true}
-              onCheckedChange={(checked) => updateContent({ mdx: checked })}
-            />
-          </div>
-          <p className="text-xs text-npb-text-muted">
-            Lets this text use components like {"<Callout type=\"tip\">"}. Nothing written here is ever run.
-          </p>
-        </div>
-      </CollapsibleCard>
+      <p className="text-xs text-npb-text-muted">Write headings, lists, tables, code and diagrams in Markdown.</p>
     </div>
   );
 }

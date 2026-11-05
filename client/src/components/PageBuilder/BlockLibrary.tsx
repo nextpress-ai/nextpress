@@ -105,8 +105,6 @@ export type BlockLibraryProps = {
    * keyboard can add blocks too; without it a tile is dragged only, as in the page builder.
    */
   onPick?: (block: BlockDefinition) => void;
-  /** Tiles can't be dragged: the docs editor's MDX view, where a click writes the block's MDX instead. */
-  dragDisabled?: boolean;
 };
 
 /** A tile's face: the block's icon in its well and its name. */
@@ -141,7 +139,6 @@ export default function BlockLibrary({
   openCategories: openCategoriesProp,
   onCategoryOpenChange,
   onPick,
-  dragDisabled = false,
 }: BlockLibraryProps) {
   const categories = categoriesProp ?? DEFAULT_CATEGORIES;
 
@@ -268,8 +265,7 @@ export default function BlockLibrary({
                           <Draggable
                             key={block.id}
                             draggableId={block.id}
-                            index={startIndex + index}
-                            isDragDisabled={dragDisabled}>
+                            index={startIndex + index}>
                             {(provided, snapshot) => (
                               <Card
                                 ref={provided.innerRef}
@@ -287,7 +283,7 @@ export default function BlockLibrary({
                                       type="button"
                                       {...provided.dragHandleProps}
                                       onClick={() => onPick(block)}
-                                      className={`${TILE_FACE_CLASS} w-full rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-npb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-npb-surface-base ${dragDisabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}`}>
+                                      className={`${TILE_FACE_CLASS} w-full rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-npb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-npb-surface-base cursor-grab active:cursor-grabbing`}>
                                       <TileFace block={block} />
                                     </button>
                                   ) : (

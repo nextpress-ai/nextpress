@@ -114,6 +114,7 @@ export const DIVIDER_DEFAULT_CONTENT = {
 export const TEXT_BLOCKS: readonly WrittenBlockEntry[] = [
 	{
 		name: "core/heading",
+		alsoIn: ["docs"],
 		label: "Heading",
 		description: "Add a heading text",
 		category: "basic",
@@ -142,6 +143,7 @@ export const TEXT_BLOCKS: readonly WrittenBlockEntry[] = [
 	},
 	{
 		name: "core/paragraph",
+		alsoIn: ["docs"],
 		label: "Paragraph",
 		description: "Add a paragraph of text",
 		category: "basic",
@@ -151,6 +153,7 @@ export const TEXT_BLOCKS: readonly WrittenBlockEntry[] = [
 	},
 	{
 		name: "core/list",
+		alsoIn: ["docs"],
 		label: "List",
 		description: "Add a bulleted or numbered list",
 		category: "advanced",

@@ -4,8 +4,7 @@ import type { JsonObject } from "./json-value.js";
 /**
  * A NextPress docs server held in memory, reached through `fetch`, so the MCP docs tools run the real
  * SDK over it. It keeps the server's rules: addresses follow parents, the home stays on top, an order
- * must list the pages exactly, a bad MDX line is refused before anything is saved, and a stale version
- * answers 409. Its MDX check knows one mistake only; the server's own tests cover the real parser.
+ * must list the pages exactly and a page still holds children only when it is a group.
  */
 
 export const DOCS_HOME_ID = "00000000-0000-4000-8000-0000000000e1";
@@ -24,11 +23,6 @@ export type FakeDocsRow = {
 	home: boolean;
 	group: boolean;
 	hidden: boolean;
-	description: string;
-	mdx: string;
-	version: number;
-	/** Blocks with no MDX form, named the way the server names them. */
-	skipped: string[];
 };
 
 export type FakeDocsRequest = { method: string; path: string; query: URLSearchParams; body: JsonObject };
@@ -38,8 +32,6 @@ export type FakeDocsApi = {
 	requests: FakeDocsRequest[];
 	rows: Map<string, FakeDocsRow>;
 	settings: Map<string, JsonObject>;
-	/** Runs before the next MDX save, the way a save made in the editor does: it moves the version on. */
-	beforeNextSave: (() => void) | undefined;
 	/** Answers the next request with this status and message, the way a server fault would. */
 	failNext: { status: number; message: string } | undefined;
 };
@@ -71,10 +63,6 @@ const row = (values: Partial<FakeDocsRow> & Pick<FakeDocsRow, "id" | "title" | "
 	home: false,
 	group: false,
 	hidden: false,
-	description: "",
-	mdx: "",
-	version: 0,
-	skipped: [],
 	...values,
 });
 
@@ -113,23 +101,6 @@ const isUnder = (rows: Map<string, FakeDocsRow>, item: FakeDocsRow, ancestorId: 
 
 const slugOf = (text: string): string =>
 	text.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-
-/** A line-level stand-in for the server's MDX check: a Callout that is never closed is refused with its line. */
-const mdxProblem = (mdx: string): { message: string; line: number } | null => {
-	const lines = mdx.split("\n");
-	const open = lines.findIndex((line) => line.includes("<Callout") && !mdx.includes("</Callout>"));
-	return open === -1 ? null : { message: "A <Callout> is never closed. Add </Callout> after its text.", line: open + 1 };
-};
-
-const pageMdx = (item: FakeDocsRow) => ({
-	pageId: item.id,
-	title: item.title,
-	description: item.description,
-	mdx: item.mdx,
-	version: item.version,
-	status: item.status,
-	skipped: item.skipped,
-});
 
 const treeFor = (api: FakeDocsApi, home: FakeDocsRow) => ({
 	home: itemOf(api.rows, home),
@@ -233,7 +204,6 @@ const routes: Route[] = [
 				slug,
 				menuOrder: childrenOf(api.rows, parent.id).length,
 				group: kind === "group",
-				mdx: kind === "page" && typeof request.body.mdx === "string" ? request.body.mdx : "",
 			});
 			api.rows.set(id, created);
 			return json({ item: itemOf(api.rows, created) }, 201);
@@ -303,49 +273,11 @@ const routes: Route[] = [
 			return json({ ok: true });
 		},
 	},
-	{
-		method: "GET",
-		pattern: /^\/api\/docs\/pages\/([^/]+)\/mdx$/,
-		handle: ({ match, api }) => {
-			const item = api.rows.get(match[1] ?? "");
-			return item && !item.home
-				? json(pageMdx(item))
-				: refusal("That isn't a docs page. Open it from the docs editor or pick another page.", 404);
-		},
-	},
-	{
-		method: "PUT",
-		pattern: /^\/api\/docs\/pages\/([^/]+)\/mdx$/,
-		handle: ({ match, api, request }) => {
-			const item = api.rows.get(match[1] ?? "");
-			if (!item) return refusal("That isn't a docs page. Open it from the docs editor or pick another page.", 404);
-			const problem = mdxProblem(String(request.body.mdx));
-			if (problem) return json({ ok: false, message: problem.message, line: problem.line }, 400);
-			const hook = api.beforeNextSave;
-			api.beforeNextSave = undefined;
-			hook?.();
-			if (request.body.expectedVersion !== item.version) {
-				return json(
-					{
-						code: "VERSION_STALE",
-						message: "The page changed somewhere else. Read it again.",
-						remoteVersion: item.version,
-					},
-					409,
-				);
-			}
-			item.mdx = String(request.body.mdx);
-			if (typeof request.body.title === "string") item.title = request.body.title;
-			if (typeof request.body.description === "string") item.description = request.body.description;
-			item.version += 1;
-			return json({ ok: true, version: item.version });
-		},
-	},
 ];
 
 /**
  * Builds the fake docs server. By default it holds one docs, "Acme Docs": a group "Getting started"
- * with the page "Install" (version 3, with text) under it, and the page "Upgrade" at the top.
+ * with the page "Install"  under it, and the page "Upgrade" at the top.
  */
 export const createFakeDocsApi = ({ withDocs = true }: { withDocs?: boolean } = {}): FakeDocsApi => {
 	const api: FakeDocsApi = {
@@ -353,7 +285,6 @@ export const createFakeDocsApi = ({ withDocs = true }: { withDocs?: boolean } = 
 		requests: [],
 		rows: new Map(),
 		settings: new Map(),
-		beforeNextSave: undefined,
 		failNext: undefined,
 	};
 
@@ -365,9 +296,6 @@ export const createFakeDocsApi = ({ withDocs = true }: { withDocs?: boolean } = 
 			parentId: DOCS_GROUP_ID,
 			title: "Install",
 			slug: "install",
-			description: "Get it running.",
-			mdx: "## Requirements\n\nDocker.\n",
-			version: 3,
 		});
 		const upgrade = row({ id: DOCS_UPGRADE_ID, parentId: DOCS_HOME_ID, title: "Upgrade", slug: "upgrade", menuOrder: 1 });
 		for (const item of [home, group, install, upgrade]) api.rows.set(item.id, item);

@@ -18,6 +18,7 @@ import type { BlockConfig, Page, PageOther, Post, Template } from '@shared/schem
 import { storeSlugToIdMapping } from '@/lib/editorStorage';
 import { setParentIds } from '@/lib/handlers/treeUtils';
 import { generateId } from '@/lib/utils';
+import { convertLegacyProse } from '@shared/docs/legacy-prose';
 import { ensureRootPageShell, readPageDesign } from '@shared/page-shell-model';
 import { parsePageOther } from '@shared/page-other';
 import { composeBlogPost, findPostBody, isWrittenPost, writtenPostBlocks } from '@shared/blog/compose-blog-post';
@@ -58,11 +59,9 @@ import {
   writeEditorEntityCache,
 } from '@/lib/editor-entity-cache';
 import { livePreviewHref, writePreviewSession } from '@shared/preview-session';
-import { isDocsPageBlocks, readDocsPageContent } from '@shared/docs/docs-page-frame';
-import { blocksToMdx } from '@shared/mdx-blocks';
+import { isDocsPageBlocks } from '@shared/docs/docs-page-frame';
 import { DocsPageSwitcher } from '@/components/PageBuilder/docs-mode/DocsPageSwitcher';
-import { DocsViewSwitch } from '@/components/PageBuilder/docs-mode/DocsViewSwitch';
-import { describeMdxBlock, useDocsEditorState } from '@/components/PageBuilder/docs-mode/docs-editor-state';
+import { useDocsEditorState } from '@/components/PageBuilder/docs-mode/docs-editor-state';
 import { mergeDocsPageOther } from '@/components/PageBuilder/docs-mode/docs-page-draft';
 import { findNavItemById } from '@/components/PageBuilder/docs-mode/docs-nav-model';
 import { useDocsTree } from '@/components/PageBuilder/docs-mode/use-docs-tree';
@@ -103,7 +102,7 @@ function blocksWithRootShell({
   /** A written post's blog look: its body is shown inside it (a saved draft may hold an older look). */
   postLook?: BlogPostLook | null;
 }): BlockConfig[] {
-  const parented = setParentIds(Array.isArray(blocks) ? (blocks as BlockConfig[]) : [], null);
+  const parented = setParentIds(convertLegacyProse(Array.isArray(blocks) ? (blocks as BlockConfig[]) : []), null);
   const body = postLook ? findPostBody(parented) : null;
   if (postLook && body) return composeBlogPost({ body: { ...body, parentId: null }, look: postLook });
   return ensureRootPageShell({
@@ -253,7 +252,7 @@ export default function PageBuilderEditor({
   const writeDraftRef = useRef<((next: PageState) => void) | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  /** The docs editor's view, MDX problem and page settings; unused (and untouched) on any other page. */
+  /** The docs editor's page settings; unused (and untouched) on any other page. */
   const docsState = useDocsEditorState();
 
   /**
@@ -323,9 +322,6 @@ export default function PageBuilderEditor({
   // A docs page sits under its docs home and groups; the publish dialog shows its whole address.
   const docsTreeOfPage = useDocsTree({ pageId: isDocs && data?.id ? String(data.id) : '' }).tree;
   const docsPagePath = docsTreeOfPage && data?.id ? findNavItemById({ home: docsTreeOfPage.home, id: String(data.id) })?.path.replace(/^\/+/, '') : undefined;
-  const docsContent = isDocs ? readDocsPageContent(pageState.blocks) : null;
-  // Blocks MDX has no form for would be dropped by a round trip, so MDX stays off while the page has any.
-  const mdxBlockedBy = useMemo(() => (docsContent ? blocksToMdx(docsContent).skipped : []), [docsContent]);
 
   // Keep refs fresh every render for stable useMountEffect handlers
   dataRef.current = data;
@@ -1220,10 +1216,6 @@ latestPageStateRef.current = {
             )}
           </div>
 
-          {isDocs ? (
-            <DocsViewSwitch view={docsState.view} onChange={docsState.setView} issue={docsState.mdxIssue} mdxBlockedBy={mdxBlockedBy} />
-          ) : null}
-
           <div className={isDocs ? 'flex flex-1 items-center justify-end gap-2' : 'flex items-center gap-2'}>
             {isDocs ? null : (
             <SiteMenu>
@@ -1270,8 +1262,7 @@ latestPageStateRef.current = {
                 post={isInlineEditing ? inlinePostData ?? undefined : data}
                 blocks={isWritten ? writtenPostBlocks(pageState.blocks) : pageState.blocks}
                 onPublished={handlePublished}
-                disabled={isSaving || (isDocs && docsState.mdxIssue !== null)}
-                disabledReason={isDocs && docsState.mdxIssue ? describeMdxBlock(docsState.mdxIssue) : undefined}
+                disabled={isSaving}
                 extraPayload={
                   isDocs
                     ? { title: pageState.title, other: mergeDocsPageOther({ existing: data.other as PageOther | undefined, draft: docsState.draft }) }

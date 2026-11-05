@@ -97,8 +97,6 @@ export type AddDocsItemInput = {
 	kind: DocsItemKind;
 	/** Defaults to one made from the title, and made unique on the site. */
 	slug?: string;
-	/** Starting text. Empty starts the page with one empty text block. Groups take none. */
-	mdx?: string;
 	/** Index among the parent's pages. Default: last. */
 	position?: number;
 };
@@ -114,35 +112,6 @@ export type UpdateDocsItemInput = {
 
 /** The full new order of one parent's pages. */
 export type ReorderDocsInput = { parentId: string; orderedIds: string[] };
-
-/** A docs page read as MDX. */
-export type DocsPageMdx = {
-	pageId: string;
-	title: string;
-	/** The page's description (its search description), shown under the title. */
-	description: string;
-	mdx: string;
-	version: number;
-	status: string;
-	/** Blocks on the page that have no MDX form. They are left out of `mdx`, and writing the MDX back drops them. */
-	skipped: string[];
-};
-
-export type WriteDocsPageMdxInput = {
-	mdx: string;
-	/** The `version` from the last read. A newer save elsewhere refuses this one. */
-	expectedVersion: number;
-	title?: string;
-	description?: string;
-};
-
-/** What the server answers to a write: saved (with the new version), or refused with the line to fix. */
-export type WriteDocsPageMdxResult =
-	| { ok: true; version: number }
-	| { ok: false; message: string; line: number | null };
-
-/** What a saved MDX write returns. A refused write is an error result instead (see `readDocsMdxProblem`). */
-export type WriteDocsPageResult = Extract<WriteDocsPageMdxResult, { ok: true }>;
 
 /** What the delete and reorder calls return. */
 export type DocsOkResult = { ok: true };
@@ -170,9 +139,6 @@ export type UpdateDocsItemParams = { pageId: string } & UpdateDocsItemInput;
 
 /** Input for `docs.reorder`: the docs, then the parent whose pages are ordered. */
 export type ReorderDocsParams = { homeId: string } & ReorderDocsInput;
-
-/** Input for `docs.writePage`: the page, then the text and the version it was read at. */
-export type WriteDocsPageParams = { pageId: string } & WriteDocsPageMdxInput;
 
 /** Input for `docs.exportFile`. Pass `includeFiles: false` for a small file with no images. */
 export type ExportDocsParams = { homeId: string; includeFiles?: boolean };

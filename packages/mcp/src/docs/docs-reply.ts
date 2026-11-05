@@ -1,9 +1,4 @@
-import {
-	isNextpressError,
-	readDocsMdxProblem,
-	VERSION_STALE,
-	type SdkResult,
-} from "@nextpress-org/sdk";
+import { isNextpressError, type SdkResult } from "@nextpress-org/sdk";
 import type { McpTextResult } from "../format-result.js";
 import { logError } from "../log-error.js";
 
@@ -42,36 +37,17 @@ export function explainDocsError(error: Error): string {
 }
 
 /**
- * What the agent is told when a page write fails. Nothing is saved in any of these cases. A stale
- * version and a broken line each get their own next step, because sending the same call again
- * would fail the same way.
- */
-export function explainPageWriteError(error: Error): string {
-	if (isNextpressError(error) && error.code === VERSION_STALE) {
-		return "Nothing was saved. The page changed somewhere else since you read it. Read it again with read_docs_page, put your change into the new text, and write it with the new version.";
-	}
-	const problem = isNextpressError(error) ? readDocsMdxProblem(error) : null;
-	if (problem && problem.line !== null) {
-		return `Nothing was saved. Line ${problem.line}: ${asSentence(problem.message)} Fix that line, then send the whole page again with write_docs_page.`;
-	}
-	return `Nothing was saved. ${explainDocsError(error)}`;
-}
-
-/**
  * Runs one docs tool. A failure is logged with the tool's name and the ids it acted on, so the log
  * says which page or docs failed, and the agent gets a plain sentence instead of the raw error.
  */
 export async function runDocsTool({
 	toolName,
 	ids,
-	explain = explainDocsError,
 	run,
 }: {
 	toolName: string;
 	/** The ids the call acts on (homeId, pageId, parentId), so the log names what failed. */
 	ids: Record<string, string | undefined>;
-	/** Picks the words for a failure. The default fits every call except page writes. */
-	explain?: (error: Error) => string;
 	run: () => Promise<McpTextResult>;
 }): Promise<McpTextResult> {
 	try {
@@ -84,6 +60,6 @@ export async function runDocsTool({
 			data: { toolName, ...ids },
 			error,
 		});
-		return docsFailure(explain(error));
+		return docsFailure(explainDocsError(error));
 	}
 }

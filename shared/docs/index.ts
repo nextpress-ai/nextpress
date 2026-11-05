@@ -3,7 +3,6 @@ export type {
 	CreateDocsInput,
 	CreateDocsResult,
 	DocsItemKind,
-	DocsPageMdx,
 	DocsSettings,
 	DocsSummary,
 	DocsTree,
@@ -11,6 +10,4 @@ export type {
 	ReorderDocsInput,
 	UpdateDocsItemInput,
 	UpdateDocsSettingsInput,
-	WriteDocsPageMdxInput,
-	WriteDocsPageMdxResult,
 } from "./types.js";

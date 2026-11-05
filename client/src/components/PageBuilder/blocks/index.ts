@@ -54,9 +54,6 @@ import DocsLayoutBlock from './docs-layout/DocsLayoutBlock';
 import DocsShellBlock from './docs-shell/DocsShellBlock';
 import DocsPageBlock from './docs-page/DocsPageBlock';
 import CalloutBlock from './callout/CalloutBlock';
-import DocsHeadingBlock from './docs-heading/DocsHeadingBlock';
-import DocsListBlock from './docs-list/DocsListBlock';
-import DocsTextBlock from './docs-text/DocsTextBlock';
 import CodeGroupBlock from './code-group/CodeGroupBlock';
 import FileTreeBlock from './file-tree/FileTreeBlock';
 import ParamsBlock from './params/ParamsBlock';
@@ -178,9 +175,6 @@ export const blockRegistry: Record<string, BlockDefinition> = {
   'core/docs-layout': DocsLayoutBlock,
 
   // Docs blocks (category "docs", names start with docs/)
-  'docs/heading': DocsHeadingBlock,
-  'docs/text': DocsTextBlock,
-  'docs/list': DocsListBlock,
   'docs/shell': DocsShellBlock,
   'docs/page': DocsPageBlock,
   'docs/callout': CalloutBlock,

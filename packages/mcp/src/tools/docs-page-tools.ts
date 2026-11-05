@@ -1,6 +1,6 @@
-import { MAX_DOCS_MDX_LENGTH, MAX_DOCS_REORDER_ITEMS } from "@nextpress-org/sdk";
+import { MAX_DOCS_REORDER_ITEMS } from "@nextpress-org/sdk";
 import { z } from "zod";
-import { docsFailure, docsText, runDocsTool, valueOrThrow } from "../docs/docs-reply.js";
+import { docsText, runDocsTool, valueOrThrow } from "../docs/docs-reply.js";
 import type { ToolDeps } from "./tool-deps.js";
 
 const homeIdSchema = z.string().uuid().describe("The docs' id, from list_docs");
@@ -18,17 +18,12 @@ export function registerDocsPageTools({ server, client }: ToolDeps): void {
 		{
 			title: "Add docs page",
 			description:
-				"Adds a page or a group to a docs. A page holds text; a group is a heading in the sidebar that holds other pages and has no text of its own. Put it under a page or group with parentId, or leave parentId out to put it at the top of the docs. A new page is a draft. Its address is made from its title; change it with update_docs_page. Give mdx to start the page with text, or leave it out and write the text with write_docs_page.",
+				"Adds a page or a group to a docs. A page holds content; a group is a heading in the sidebar that holds other pages and has no content of its own. Put it under a page or group with parentId, or leave parentId out to put it at the top of the docs. A new page is a draft. Its address is made from its title; change it with update_docs_page. A new page starts empty: write its content with the page and block tools (see get_docs_guide).",
 			inputSchema: {
 				homeId: homeIdSchema,
 				parentId: parentIdSchema,
-				kind: z.enum(["page", "group"]).describe('"page" for a page with text, "group" for a sidebar heading that holds pages'),
+				kind: z.enum(["page", "group"]).describe('"page" for a page with content, "group" for a sidebar heading that holds pages'),
 				title: z.string().min(1).max(200).describe("The title, shown on the page and in the sidebar"),
-				mdx: z
-					.string()
-					.max(MAX_DOCS_MDX_LENGTH)
-					.optional()
-					.describe("The starting text, in MDX (see get_docs_guide). Pages only."),
 				position: z
 					.number()
 					.int()
@@ -37,27 +32,21 @@ export function registerDocsPageTools({ server, client }: ToolDeps): void {
 					.describe("Where it goes among its siblings: 0 is first. Default: last."),
 			},
 		},
-		async ({ homeId, parentId, kind, title, mdx, position }) => {
-			if (kind === "group" && mdx !== undefined) {
-				return docsFailure(
-					"A group holds no text. Add the text to a page inside the group instead: call add_docs_page with kind page and parentId set to the group's id.",
-				);
-			}
-			return runDocsTool({
+		async ({ homeId, parentId, kind, title, position }) =>
+			runDocsTool({
 				toolName: "add_docs_page",
 				ids: { homeId, parentId },
 				run: async () => {
 					const { item } = valueOrThrow(
-						await client.docs.addItem({ homeId, parentId: parentId ?? homeId, kind, title, mdx, position }),
+						await client.docs.addItem({ homeId, parentId: parentId ?? homeId, kind, title, position }),
 					);
 					const next =
 						item.kind === "page"
-							? "It is a draft. To change its text, read it with read_docs_page for the version, then write it with write_docs_page."
+							? "It is a draft and empty. Write its content with get_page and patch_page_blocks (see get_docs_guide)."
 							: "Add pages inside it with parentId set to its id.";
 					return docsText(`Added the ${item.kind} "${item.title}" at ${item.path}. Its id is ${item.id}. ${next}`);
 				},
-			});
-		},
+			}),
 	);
 
 	server.registerTool(

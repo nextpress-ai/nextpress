@@ -173,22 +173,6 @@ describe('the right panel', () => {
   });
 });
 
-describe('the MDX view', () => {
-  it('shows the page as MDX, and keeps Visual off with the line named while the MDX has a mistake', async () => {
-    const { user } = openQuickstart();
-    await user.click(await screen.findByRole('button', { name: 'MDX' }));
-
-    const text = await screen.findByRole('textbox', { name: 'MDX of this page' });
-    expect((text as HTMLTextAreaElement).value).toContain('## Requirements');
-
-    fireEvent.change(text, { target: { value: `${(text as HTMLTextAreaElement).value}\n<Note>\nNever closed\n` } });
-
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
-    // While blocked, the button's name carries the reason: "Visual. …".
-    await waitFor(() => expect(screen.getByRole('button', { name: /^Visual/ })).toBeDisabled());
-  });
-});
-
 describe('the canvas sidebar of docs on an address of their own', () => {
   it('links pages from the site root, as the published page does', () => {
     const home = { ...treeWithQuickstart().home, ownAddress: true };
@@ -217,7 +201,7 @@ describe('writing in the docs editor', () => {
   it('types like a document: the field opens focused, "## " makes a heading, Enter a new paragraph, "/" a block', async () => {
     const { user } = openQuickstart();
     const paragraph = await waitFor(() => {
-      const found = document.querySelector<HTMLElement>('.np-docs__content .wp-block-docs-text');
+      const found = document.querySelector<HTMLElement>('.np-docs__content .wp-block-paragraph');
       if (!found) throw new Error('no paragraph on the canvas yet');
       return found;
     });
@@ -228,7 +212,8 @@ describe('writing in the docs editor', () => {
 
     await user.clear(field);
     await user.keyboard('## ');
-    const headingField = await screen.findByRole('textbox', { name: 'Heading text' });
+    // The heading's settings panel has a field of the same name; the one that is typed in sits in the page.
+    const headingField = await within(document.querySelector<HTMLElement>('.np-docs__content') as HTMLElement).findByRole('textbox', { name: 'Heading text' });
     await waitFor(() => expect(headingField).toHaveFocus());
     await user.keyboard('Setup');
     expect(headingField).toHaveValue('Setup');

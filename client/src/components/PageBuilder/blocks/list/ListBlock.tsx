@@ -11,6 +11,9 @@ import { List as ListIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
 import { InlineTextEditor } from "../shared/inline-text-editor";
+import { leaveList } from "../../docs-mode/docs-writing";
+import { useWriting } from "../../writing/writing-context";
+import { generateBlockId } from "../../utils";
 import { useSettingsState } from "../useSettingsState";
 import { SettingsChipGroup } from "../../settings-chip-group";
 import { sanitizeHtml } from "../../utils";
@@ -100,12 +103,17 @@ function readBulletStyle({ type }: { type?: string }): "disc" | "circle" | "squa
 }
 
 function ListCanvasItemsEditor({
+  blockId,
   itemsText,
   onUpdateContent,
 }: {
+  blockId?: string;
   itemsText: string;
   onUpdateContent?: (updates: Partial<ListContent>) => void;
 }): JSX.Element {
+  const writing = useWriting();
+  // In an editor that writes (docs, posts) a list made by typing "- " opens focused, and Enter on an empty line leaves it.
+  const [caret] = useState(() => (writing && blockId ? writing.takeCaret(blockId) ?? undefined : undefined));
   const [itemsDraft, setItemsDraft] = useState<string | null>(null);
   const field = createListItemsDraft({
     savedText: itemsText,
@@ -121,6 +129,16 @@ function ListCanvasItemsEditor({
       }}
       onFocus={field.onFocus}
       onBlur={field.onBlur}
+      focusAt={caret}
+      onKeyDown={(event) => {
+        if (!writing || !blockId || event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+        const el = event.currentTarget;
+        const onEmptyLine = el.selectionStart === el.value.length && (el.value === "" || el.value.endsWith("\n"));
+        if (!onEmptyLine) return;
+        event.preventDefault();
+        const result = leaveList({ blocks: writing.getBlocks(), blockId, newId: generateBlockId });
+        if (result) writing.applyWriting(result);
+      }}
       style={{ color: "inherit", fontSize: "inherit", lineHeight: "inherit" }}
       multiline
       placeholder={"List item 1\nList item 2\nList item 3"}
@@ -136,6 +154,7 @@ interface ListRendererProps {
   content: ListContent;
   styles?: React.CSSProperties;
   isEditing?: boolean;
+  blockId?: string;
   onUpdateContent?: (updates: Partial<ListContent>) => void;
 }
 
@@ -143,6 +162,7 @@ function ListRenderer({
   content,
   styles,
   isEditing,
+  blockId,
   onUpdateContent,
 }: ListRendererProps) {
   const isOrdered = !!content?.ordered;
@@ -199,6 +219,7 @@ function ListRenderer({
         style={style}
       >
         <ListCanvasItemsEditor
+          blockId={blockId}
           itemsText={itemsText}
           onUpdateContent={onUpdateContent}
         />
@@ -379,8 +400,9 @@ const ListBlock = createBlockDefinition<ListContent>({
   defaultContent: DEFAULT_CONTENT,
   settings: ListSettings,
   hasSettings: true,
-  render: ({ content, styles, isEditing, setContent }) => (
+  render: ({ value, content, styles, isEditing, setContent }) => (
     <ListRenderer
+      blockId={value.id}
       content={content}
       styles={styles}
       isEditing={isEditing}

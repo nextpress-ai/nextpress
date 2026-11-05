@@ -266,8 +266,6 @@ describe("resolveRequiredApiKeyScopes", () => {
 	it("guards docs with page permissions, and a docs file with media read too", () => {
 		expect(resolveRequiredApiKeyScopes({ method: "GET", path: "/api/docs" })).toEqual(["pages:read"]);
 		expect(resolveRequiredApiKeyScopes({ method: "GET", path: "/api/docs/h1/tree" })).toEqual(["pages:read"]);
-		expect(resolveRequiredApiKeyScopes({ method: "GET", path: "/api/docs/pages/p1/mdx" })).toEqual(["pages:read"]);
-		expect(resolveRequiredApiKeyScopes({ method: "PUT", path: "/api/docs/pages/p1/mdx" })).toEqual(["pages:write"]);
 		expect(resolveRequiredApiKeyScopes({ method: "POST", path: "/api/docs/h1/items" })).toEqual(["pages:write"]);
 		expect(resolveRequiredApiKeyScopes({ method: "DELETE", path: "/api/docs/items/p1" })).toEqual(["pages:write"]);
 		expect(resolveRequiredApiKeyScopes({ method: "GET", path: "/api/docs/h1/export" })).toEqual(["pages:read", "media:read"]);

@@ -12,7 +12,7 @@ Built on [`@nextpress-org/sdk`](https://www.npmjs.com/package/@nextpress-org/sdk
 - **Create and edit pages and posts** — draft-first; publish when you are ready
 - **Build and change pages block by block** — read a short outline, add or change one section at a time, and let the server's own checks (structure, save rules, phone layout) refuse a bad change before it is saved
 - **Follow the design guide** — the same guide the editor's assistant uses ships as a prompt and a resource
-- **Write docs** — make a docs, arrange its pages, and write each page as MDX; the same checks as the editor refuse a broken page with its line, and a page changed elsewhere is never overwritten
+- **Write docs** — make a docs, arrange its pages, and write each page with the normal page and block tools, using the docs blocks
 - **Undo** — list a page's earlier versions and put one back
 - **Reuse shared headers and footers** — list, create and check where template parts are used
 - **Read form answers** — what visitors sent through the site's forms
@@ -144,13 +144,11 @@ Docs are a set of pages with their own header, sidebar and search. Pages are dra
 | `create_docs` | Makes a docs with its home page as the first page. Give a name, and optionally the first part of its address (such as `docs`). |
 | `get_docs_tree` | Reads a docs' navigation: every page and group in sidebar order, with ids, addresses, kinds, hidden flags, and the header settings. |
 | `update_docs_settings` | Changes a docs' name, logos, header links (up to six), header button, search button, and frame switches. Only the fields you send change. |
-| `add_docs_page` | Adds a page (it holds text) or a group (a sidebar heading that holds pages) under a page or group, or at the top. A page can start with MDX text. |
+| `add_docs_page` | Adds a page (it holds text) or a group (a sidebar heading that holds pages) under a page or group, or at the top. A new page starts empty. |
 | `update_docs_page` | Renames a page or group, changes its address, moves it under another, hides it from the sidebar or shows it again, or switches between page and group. |
 | `reorder_docs_pages` | Sets the order of the pages under one parent. The list must name every page under that parent, once each. |
 | `delete_docs_page` | Deletes a page or group. A page with pages under it is refused until those are moved or deleted. |
-| `read_docs_page` | Reads a page's MDX with its title, description and version, and names any blocks that writing the page would drop. |
-| `write_docs_page` | Saves the whole MDX text as a new version. Broken MDX is refused with the line to fix; a page changed elsewhere is refused with a note to read it again. Nothing is saved on a refusal. |
-| `get_docs_guide` | The docs writing guide and the MDX cheat sheet: the same text as the `write_docs` prompt. |
+| `get_docs_guide` | A short guide to making a docs and which blocks its pages use: the same text as the `write_docs` prompt. |
 
 ### Ready-made blocks
 
@@ -178,7 +176,7 @@ Docs are a set of pages with their own header, sidebar and search. Pages are dra
 | URI | What it contains |
 |-----|------------------|
 | `nextpress://design-guide` | The page design guide (markdown) |
-| `nextpress://docs/guide` | The docs writing guide (markdown), with the MDX cheat sheet for every component a docs page may use |
+| `nextpress://docs/guide` | The docs guide (markdown): how a docs is made and which blocks its pages use |
 | `nextpress://blocks/catalog` | Block names and metadata, each with a note on when to use it |
 | `nextpress://blocks/schema` | Block schema catalog (types, child rules) |
 | `nextpress://site/map` | Slug map of pages and posts |

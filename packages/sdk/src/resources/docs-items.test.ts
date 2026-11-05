@@ -10,7 +10,7 @@ import {
 } from "../test/docs-fixtures.js";
 
 describe("docs.addItem", () => {
-	it("adds a page under a parent, with its starting text and position", async () => {
+	it("adds a page under a parent, with its position", async () => {
 		const item = treeItem({ id: GROUP_ID, title: "Install", menuOrder: 0 });
 		const { client, calls } = createTestClient([
 			{
@@ -25,7 +25,6 @@ describe("docs.addItem", () => {
 			parentId: HOME_ID,
 			title: "Install",
 			kind: "page",
-			mdx: "Run it.\n",
 			position: 0,
 		});
 
@@ -37,7 +36,6 @@ describe("docs.addItem", () => {
 			parentId: HOME_ID,
 			title: "Install",
 			kind: "page",
-			mdx: "Run it.\n",
 			position: 0,
 		});
 	});

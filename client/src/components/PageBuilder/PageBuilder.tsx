@@ -64,7 +64,6 @@ import { docsBlockLabel } from './docs-mode/docs-block-labels';
 import { BlogModeProvider, type BlogModeProps } from './blog-mode/BlogModeProvider';
 import { BlogInspectorSidebar, BlogResponsiveSidebar } from './blog-mode/BlogSidebars';
 import { POST_FRAME_BLOCK_NAMES, POST_FRAME_EDITABLE } from '@shared/blog/compose-blog-post';
-import { MdxView } from './docs-mode/MdxView';
 import { isDocsFrameBlockName } from './docs-mode/docs-frame-context';
 import type { DocsDragBridge } from './docs-mode/docs-mode-context';
 
@@ -908,7 +907,6 @@ export default function PageBuilder({
     },
     [blogMode, docsMode],
   );
-  const docsView = docsMode?.state.view ?? 'visual';
 
   return (
     <div className="npb-editor-shell flex h-full min-h-0 flex-col bg-npb-canvas-bg">
@@ -1071,7 +1069,7 @@ export default function PageBuilder({
                     setActiveTab('settings');
                   }
                 }}
-                docsView={docsMode ? docsView : undefined}
+                docs={Boolean(docsMode)}
                 writing={Boolean(blogMode)}
                 sidebarVisible={sidebarVisible}
                 onToggleSidebar={toggleSidebar}
@@ -1095,9 +1093,6 @@ export default function PageBuilder({
               />
               {pageTransfer.dialogs}
               <div className="flex min-h-0 flex-1">
-                {docsMode && docsView === 'mdx' ? (
-                  <MdxView />
-                ) : (
                 <BuilderCanvas
                   blocks={blocks}
                   deviceView={deviceView}
@@ -1110,7 +1105,6 @@ export default function PageBuilder({
                   hoverHighlight={hoverHighlight}
                   onBlockChange={handleBlockChange}
                 />
-                )}
                 {isWideLayout && inspectorVisible ? (
                   <MotionSidebarPanel visible={inspectorVisible} className="h-full shrink-0">
                     {docsMode ? (

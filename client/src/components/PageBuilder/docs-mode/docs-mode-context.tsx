@@ -37,7 +37,7 @@ export type DocsRail = {
 /**
  * Everything the docs editor's screens read, in one place: the page being edited, the docs it sits
  * in and what is picked. Built once by `DocsModeProvider`, so the panels, the page switcher and the
- * MDX view all see the same copy and none of them reach into the page builder.
+ * other screens all see the same copy and none of them reach into the page builder.
  */
 export type DocsModeValue = {
 	pageId: string;
@@ -74,8 +74,6 @@ export type DocsModeValue = {
 	/** Opens another page of these docs in the editor (this page's changes are kept as a draft, as for any page you leave). */
 	openPage: (pageId: string) => void;
 	dragBridge: MutableRefObject<DocsDragBridge>;
-	/** Set by the MDX view while it is open: puts text at the cursor. Null in the Visual view. */
-	mdxInsert: MutableRefObject<((text: string) => void) | null>;
 	selectedBlock: BlockConfig | null;
 	selectBlock: (id: string | null) => void;
 	/** Adds a block of this kind to the docs page: after the picked block, else at the end. */

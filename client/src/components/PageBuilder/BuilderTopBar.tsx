@@ -52,7 +52,7 @@ export function BuilderTopBar({
   onCreateNewPage,
   onCreateNewPost,
   pageTransfer,
-  docsView,
+  docs = false,
   writing = false,
 }: {
   data: any;
@@ -83,15 +83,14 @@ export function BuilderTopBar({
   onCreateNewPost?: () => void;
   /** Copy / paste / export for moving blocks between NextPress sites. */
   pageTransfer?: PageTransferActions;
-  /** Set only in the docs editor: it has no Blog, Design or Page menus, and in MDX there is no canvas to size. */
-  docsView?: "visual" | "mdx";
+  /** Set only in the docs editor: it has no Blog, Design or Page menus. */
+  docs?: boolean;
   /** A written post in the blog writing editor: its look comes from the blog, so page design tools are hidden. */
   writing?: boolean;
 }) {
-  const inDocs = docsView !== undefined;
+  const inDocs = docs;
   // Docs and written posts have a fixed frame: no page design, page menu or layer list.
   const fixedFrame = inDocs || writing;
-  const showCanvasTools = docsView !== "mdx";
   const { isDark, toggleTheme } = useTheme();
   const deviceHint =
     deviceView === "mobile"
@@ -126,7 +125,6 @@ export function BuilderTopBar({
           )}
           {/* <h3 className="font-medium">{data ? (isTemplate ? data.name : data.title) : 'Untitled'}</h3> */}
           {/* <Separator orientation="vertical" className="h-6" /> */}
-          {showCanvasTools ? (
           <div className="flex items-center gap-2">
             <Button
               variant={deviceView === "desktop" ? "default" : "outline"}
@@ -206,7 +204,6 @@ export function BuilderTopBar({
               </Button>
             ) : null}
           </div>
-          ) : null}
         </div>
         <div className="flex items-center gap-4">
           {inspectorVisible === false && onToggleInspector ? (

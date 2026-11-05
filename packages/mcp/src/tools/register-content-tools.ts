@@ -1,6 +1,5 @@
 import { registerBlogTools } from "./blog-tools.js";
 import { registerBlockTools } from "./block-tools.js";
-import { registerDocsContentTools } from "./docs-content-tools.js";
 import { registerDocsPageTools } from "./docs-page-tools.js";
 import { registerDocsTools } from "./docs-tools.js";
 import { registerFormTools } from "./form-tools.js";
@@ -45,5 +44,4 @@ export function registerContentTools({
 	registerFormTools(deps);
 	registerDocsTools(deps);
 	registerDocsPageTools(deps);
-	registerDocsContentTools(deps);
 }

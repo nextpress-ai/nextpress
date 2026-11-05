@@ -11,7 +11,7 @@ import { docsBlockLabel } from "./docs-block-labels";
 export type DocsLibrarySection = { id: string; name: string; blocks: BlockDefinition[] };
 
 const SECTIONS: ReadonlyArray<{ id: string; name: string; ids: readonly string[] }> = [
-	{ id: "writing", name: "Writing", ids: ["docs/heading", "docs/text", "docs/list", "core/quote", "core/separator"] },
+	{ id: "writing", name: "Writing", ids: ["core/heading", "core/paragraph", "core/list", "core/quote", "core/separator"] },
 	{ id: "callouts", name: "Callouts", ids: ["docs/callout"] },
 	{ id: "code", name: "Code", ids: ["core/code", "docs/code-group", "docs/example", "docs/diagram"] },
 	{ id: "structure", name: "Structure", ids: ["core/steps", "core/tabs", "core/grid", "core/accordion", "core/table", "docs/file-tree"] },

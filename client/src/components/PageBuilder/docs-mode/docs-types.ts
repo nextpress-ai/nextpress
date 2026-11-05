@@ -1,9 +1,3 @@
-/** Which way the page is shown: the real frame with blocks, or the page as MDX text. */
-export type DocsView = "visual" | "mdx";
-
-/** Why the MDX text can't become blocks yet. `line` is where to look, or null when the parser could not say. */
-export type MdxIssue = { line: number | null; message: string };
-
 /** The page settings that live in `page.other` (not in the blocks): saved with the page, never on their own. */
 export type DocsPageDraft = { description: string; hidden: boolean };
 

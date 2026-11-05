@@ -4,7 +4,6 @@ import { CODE_GROUP_BLOCK_NAME, DEFAULT_CODE_GROUP_CONTENT } from "../blocks/cod
 import { DEFAULT_DIAGRAM_CONTENT, DIAGRAM_BLOCK_NAME } from "../blocks/diagram-model.js";
 import { DEFAULT_FILE_TREE_CONTENT, FILE_TREE_BLOCK_NAME } from "../blocks/file-tree-model.js";
 import { DEFAULT_PARAMS_CONTENT, PARAMS_BLOCK_NAME } from "../blocks/params-model.js";
-import { DOCS_TEXT_BLOCK_NAME } from "../blocks/docs-text-model.js";
 import { DEFAULT_UPDATE_CONTENT, UPDATE_BLOCK_NAME } from "../blocks/update-model.js";
 import type { BlockConfig } from "../schema-types.js";
 import { newBlockOther, structured } from "./content.js";
@@ -54,26 +53,12 @@ const startingCodeGroup = ({ parentId, newId }: StartingChildrenParams): BlockCo
 		{ title: "yarn", code: "yarn add nextpress" },
 	].map(({ title, code }) => codeChild({ parentId, id: newId(), code, language: "bash", title }));
 
-/** A docs paragraph as it starts inside a docs block: the same prose box as a new docs text block. */
-const docsTextChild = ({ parentId, id, text }: { parentId: string; id: string; text: string }): BlockConfig => ({
-	id,
-	name: DOCS_TEXT_BLOCK_NAME,
-	label: "Docs text",
-	type: "block",
-	parentId,
-	category: "docs",
-	content: structured({ text }),
-	styles: { width: "100%", boxSizing: "border-box", padding: "0", margin: "0 0 16px" },
-	settings: {},
-	other: newBlockOther(),
-});
-
 const startingUpdate = ({ parentId, newId }: StartingChildrenParams): BlockConfig[] => [
-	docsTextChild({ parentId, id: newId(), text: "What changed in this entry." }),
+	paragraphChild({ parentId, id: newId(), value: "What changed in this entry." }),
 ];
 
 const startingExample = ({ parentId, newId }: StartingChildrenParams): BlockConfig[] => [
-	codeChild({ parentId, id: newId(), code: "<Callout type=\"tip\">Use pnpm.</Callout>", language: "mdx", title: "" }),
+	codeChild({ parentId, id: newId(), code: "pnpm add nextpress", language: "bash", title: "" }),
 	paragraphChild({ parentId, id: newId(), value: "What the code makes: build the result here from ordinary blocks." }),
 ];
 

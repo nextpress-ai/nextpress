@@ -4,7 +4,7 @@ import { readUpdateContent, UPDATE_BLOCK_NAME } from "../blocks/update-model.js"
 import { readDocsListContent } from "../blocks/docs-list-model.js";
 import { readDocsTextContent } from "../blocks/docs-text-model.js";
 import { readParamsContent, shownParams } from "../blocks/params-model.js";
-import { docsListToMdx } from "../mdx-blocks/docs-list-mdx.js";
+import { docsListToMarkdown } from "./docs-list-markdown.js";
 import { collectHeadingsFromBlocks } from "../page-headings.js";
 import { readBlockContentData } from "../read-block-content.js";
 import type { BlockConfig } from "../schema-types.js";
@@ -114,7 +114,7 @@ const ownMarkdown = ({ block, data }: { block: BlockConfig; data: BlockData }): 
 		"docs/file-tree": () => fenceAround({ code: readString(data.tree), language: "", title: "" }),
 		"docs/params": () => paramsAsMarkdown(block),
 		"docs/text": () => readDocsTextContent(block.content).text.trim(),
-		"docs/list": () => docsListToMdx(readDocsListContent(block.content)),
+		"docs/list": () => docsListToMarkdown(readDocsListContent(block.content)),
 	};
 	return (handlers[block.name] ?? (() => plainFallback(data)))();
 };

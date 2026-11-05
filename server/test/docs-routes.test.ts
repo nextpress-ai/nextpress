@@ -75,8 +75,8 @@ const createDocs = async (): Promise<string> => {
 	return String(created.body.homeId);
 };
 
-const addItem = async ({ homeId, parentId, title, kind = "page", mdx, position }: { homeId: string; parentId: string; title: string; kind?: "page" | "group"; mdx?: string; position?: number }): Promise<DocsTreeItem> => {
-	const added = await call({ userId: admin, method: "POST", path: `/api/docs/${homeId}/items`, body: { parentId, title, kind, mdx, position } });
+const addItem = async ({ homeId, parentId, title, kind = "page", position }: { homeId: string; parentId: string; title: string; kind?: "page" | "group"; position?: number }): Promise<DocsTreeItem> => {
+	const added = await call({ userId: admin, method: "POST", path: `/api/docs/${homeId}/items`, body: { parentId, title, kind, position } });
 	expect(added.status).toBe(201);
 	return added.body.item as DocsTreeItem;
 };
@@ -132,7 +132,7 @@ describe("docs: create, list and the navigation tree", () => {
 		const homeId = await createDocs();
 		const group = await addItem({ homeId, parentId: homeId, title: "Getting started", kind: "group" });
 		expect(group).toMatchObject({ kind: "group", path: "/docs/getting-started", status: "draft" });
-		const install = await addItem({ homeId, parentId: group.id, title: "Install", mdx: "Run the installer.\n" });
+		const install = await addItem({ homeId, parentId: group.id, title: "Install" });
 		expect(install.path).toBe("/docs/getting-started/install");
 		const quick = await addItem({ homeId, parentId: group.id, title: "Quickstart", position: 0 });
 		expect(titles((await tree(homeId)).home.children[0]!.children)).toEqual(["Quickstart", "Install"]);
@@ -181,48 +181,6 @@ describe("docs: create, list and the navigation tree", () => {
 	});
 });
 
-describe("docs: pages as MDX", () => {
-	const text = "## Before you start\n\nYou need Docker.\n\n- One\n- Two\n";
-
-	it("writes and reads a page as MDX, with a new version and a history entry, frame untouched", async () => {
-		const homeId = await createDocs();
-		const page = await addItem({ homeId, parentId: homeId, title: "Install" });
-		const before = await call({ userId: admin, path: `/api/docs/pages/${page.id}/mdx` });
-		const version = Number(before.body.version);
-		const written = await call({ userId: admin, method: "PUT", path: `/api/docs/pages/${page.id}/mdx`, body: { mdx: text, expectedVersion: version, description: "Get it running." } });
-		expect(written.status).toBe(200);
-		expect(written.body).toEqual({ ok: true, version: version + 1 });
-
-		const read = await call({ userId: admin, path: `/api/docs/pages/${page.id}/mdx` });
-		expect(String(read.body.mdx).trim()).toBe(text.trim());
-		expect(read.body).toMatchObject({ title: "Install", description: "Get it running.", version: version + 1, skipped: [] });
-
-		const row = await models.pages.findById(page.id);
-		expect(Array.isArray(row?.history) ? row.history.length : 0).toBe(1);
-		const blocks = (row?.blocks ?? []) as BlockConfig[];
-		expect(blocks[0]?.name).toBe("core/page-shell");
-		expect(blocks[0]?.children?.[0]?.name).toBe("docs/shell");
-		expect(blocks[0]?.children?.[0]?.children?.[0]?.name).toBe("docs/page");
-	});
-
-	it("refuses broken MDX with its line, and a stale version", async () => {
-		const homeId = await createDocs();
-		const page = await addItem({ homeId, parentId: homeId, title: "Install" });
-		const broken = await call({ userId: admin, method: "PUT", path: `/api/docs/pages/${page.id}/mdx`, body: { mdx: "Hello\n\n<Callout>\nnever closed\n", expectedVersion: 0 } });
-		expect(broken.status).toBe(400);
-		expect(broken.body).toMatchObject({ ok: false });
-		expect(typeof broken.body.line).toBe("number");
-
-		const stale = await call({ userId: admin, method: "PUT", path: `/api/docs/pages/${page.id}/mdx`, body: { mdx: text, expectedVersion: 99 } });
-		expect(stale.status).toBe(409);
-	});
-
-	it("refuses MDX for a page outside any docs", async () => {
-		const notDocs = await call({ userId: admin, path: `/api/docs/pages/${ID.pageA}/mdx` });
-		expect(notDocs.status).toBe(404);
-	});
-});
-
 describe("docs: settings", () => {
 	it("changes only the home shell; pages under it keep inheriting", async () => {
 		const homeId = await createDocs();
@@ -250,7 +208,7 @@ describe("docs: one page file for the whole docs", () => {
 	it("exports a docs and imports it on another site with the same tree, order and pages", async () => {
 		const homeId = await createDocs();
 		const group = await addItem({ homeId, parentId: homeId, title: "Getting started", kind: "group" });
-		await addItem({ homeId, parentId: group.id, title: "Install", mdx: "## Requirements\n\nDocker.\n" });
+		await addItem({ homeId, parentId: group.id, title: "Install" });
 		await addItem({ homeId, parentId: group.id, title: "Upgrade" });
 
 		const exported = await fetch(`${baseUrl}/api/docs/${homeId}/export?files=0`, { headers: { "x-test-user": admin } });
@@ -273,9 +231,6 @@ describe("docs: one page file for the whole docs", () => {
 		expect(titles(homeB.children)).toEqual(["Getting started"]);
 		expect(homeB.children[0]).toMatchObject({ kind: "group" });
 		expect(titles(homeB.children[0]!.children)).toEqual(["Install", "Upgrade"]);
-		const installB = homeB.children[0]!.children[0]!;
-		const mdx = await call({ userId: ID.siteBOwner, path: `/api/docs/pages/${installB.id}/mdx` });
-		expect(String(mdx.body.mdx).trim()).toBe("## Requirements\n\nDocker.");
 	});
 });
 

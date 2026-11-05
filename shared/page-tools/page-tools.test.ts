@@ -137,14 +137,15 @@ describe("read tools", () => {
 		const alsoInDocs = ["core/code", "core/image", "core/table", "core/tabs", "core/steps", "core/grid", "core/accordion", "core/separator", "core/markdown"];
 		for (const name of alsoInDocs) expect(categoryOf(name), name).toMatch(/^[a-z]+ \(also docs\)$/);
 		expect(categoryOf("core/code")).toBe("advanced (also docs)");
-		expect(categoryOf("core/heading")).toBe("basic");
+		expect(categoryOf("core/heading")).toBe("basic (also docs)");
+		expect(categoryOf("core/button")).toBe("basic");
 	});
 
 	it("get_block_type gives the entry, its note and an example as the editor inserts it", async () => {
 		const { result } = await run({ tool: "get_block_type", input: { name: "core/heading" }, blocks: [] });
 		expect(result.ok).toBe(true);
 		expect(result.text).toContain("core/heading: Heading.");
-		expect(result.text).toContain("Kind: block (cannot hold other blocks). Category: basic.");
+		expect(result.text).toContain("Kind: block (cannot hold other blocks). Category: basic (also docs).");
 		expect(result.text).toContain("When to use:");
 		const example = JSON.parse(result.text.split("\n").at(-1) ?? "{}");
 		expect(example.content).toMatchObject({ kind: "text", value: "Your heading here", level: 2 });
@@ -158,7 +159,7 @@ describe("read tools", () => {
 	it("get_block_type suggests names for a near miss", async () => {
 		const { result } = await run({ tool: "get_block_type", input: { name: "core/head" }, blocks: [] });
 		expect(result.ok).toBe(false);
-		expect(result.text).toContain('Unknown block name "core/head". Did you mean core/heading, core/header, docs/heading?');
+		expect(result.text).toContain('Unknown block name "core/head". Did you mean core/heading, core/header?');
 		const nothing = await run({ tool: "get_block_type", input: { name: "zzz" }, blocks: [] });
 		expect(nothing.result.text).toBe('Unknown block name "zzz". Call list_block_types for the valid names.');
 	});

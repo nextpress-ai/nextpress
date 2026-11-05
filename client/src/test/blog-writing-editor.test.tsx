@@ -100,7 +100,7 @@ describe('the blog writing editor', () => {
 
     const library = screen.getByTestId('blog-block-library');
     const tiles = Array.from(library.querySelectorAll('[data-dnd-debug-id]')).map((tile) => tile.getAttribute('data-dnd-debug-id'));
-    expect(tiles).toEqual(expect.arrayContaining(['docs/text', 'docs/heading', 'core/quote', 'core/image', 'core/code']));
+    expect(tiles).toEqual(expect.arrayContaining(['core/paragraph', 'core/heading', 'core/quote', 'core/image', 'core/code']));
     expect(tiles).not.toContain('core/columns');
   });
 
@@ -115,7 +115,7 @@ describe('the blog writing editor', () => {
     const body = calls.find((call) => call.method === 'PUT' && call.url === '/api/posts/p-1')?.body;
     const blocks = body?.blocks as BlockConfig[];
     expect(isWrittenPost(blocks)).toBe(true);
-    expect(blocks[0].children?.map((child) => child.name)).toEqual(['docs/text', 'core/quote']);
+    expect(blocks[0].children?.map((child) => child.name)).toEqual(['core/paragraph', 'core/quote']);
     expect(body).toMatchObject({ allowComments: true });
   });
 });

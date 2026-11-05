@@ -1,39 +1,17 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createNextpress } from "@nextpress-org/sdk";
 import { DOCS_GUIDE, DOCS_GUIDE_URI } from "./docs/docs-guide.js";
-import { DOCS_MDX_CHEAT_SHEET } from "./docs/docs-mdx-cheat-sheet.js";
+import { BLOCK_NAMES } from "../../../shared/block-catalog/block-names.js";
 import { writeDocsPrompt } from "./prompts/write-docs-prompt.js";
 import { SITE_ID } from "./test/fake-nextpress-api.js";
 import { connectMcpSession, resourceText, textPayload, type LinkedSession } from "./test/mcp-session.js";
 
-/**
- * The server's allowlist of docs components, read from its source. The cheat sheet must teach
- * exactly these tags and attributes, plus `Update` (the release-note component the server adds).
- */
-const ALLOWLIST_PATH = fileURLToPath(new URL("../../../shared/markdown/doc-component-props.ts", import.meta.url));
-
-/** Each tag and the attributes it takes, from the two lists in the allowlist file (not its internal attributes). */
-const readAllowlist = (): Record<string, string[]> => {
-	const source = readFileSync(ALLOWLIST_PATH, "utf8");
-	const start = source.indexOf("export const CONTAINER_DOC_PROPS");
-	const end = source.indexOf("export const DOC_COMPONENT_PROPS");
-	expect(start, "CONTAINER_DOC_PROPS is in the allowlist file").toBeGreaterThan(-1);
-	expect(end, "DOC_COMPONENT_PROPS is in the allowlist file").toBeGreaterThan(start);
-	const lists = [...source.slice(start, end).matchAll(/^\s+(\w+): \[([^\]]*)\],?$/gm)];
-	return Object.fromEntries(lists.map((match) => [match[1] ?? "", [...(match[2] ?? "").matchAll(/"([^"]+)"/g)].map((prop) => prop[1] ?? "")]));
-};
-
-/** The attribute names in one opening tag's attribute text, ignoring the values in quotes and braces. */
-const attributeNames = (attributes: string): string[] =>
-	[...attributes.replace(/"[^"]*"/g, "").replace(/\{[^}]*\}/g, "").matchAll(/([A-Za-z][\w-]*)(?=\s*=|\s|$)/g)].map(
-		(match) => match[1] ?? "",
-	);
+/** The block names the guide may list: the real ones in the block catalog. */
+const guideBlockNames = (): string[] => [...new Set([...DOCS_GUIDE.matchAll(/\b(?:core|docs)\/[a-z-]+\b/g)].map((match) => match[0]))];
 
 /** Every tool name the guide and the prompt mention, by its verb-first snake_case shape. */
 const namesMentioned = (text: string): string[] =>
-	[...text.matchAll(/\b(?:list|get|create|update|add|reorder|delete|read|write|publish|upload)_[a-z_]+\b/g)].map((match) => match[0]);
+	[...text.matchAll(/\b(?:list|get|create|update|add|reorder|delete|read|write|publish|upload|patch|build|validate)_[a-z_]+\b/g)].map((match) => match[0]);
 
 describe("the docs guide", () => {
 	let session: LinkedSession | undefined;
@@ -49,58 +27,44 @@ describe("the docs guide", () => {
 		session = undefined;
 	});
 
-	describe("the cheat sheet against the server's allowlist", () => {
-		const cheatTags = (): string[] => [...new Set([...DOCS_MDX_CHEAT_SHEET.matchAll(/<([A-Z][A-Za-z]*)\b/g)].map((match) => match[1] ?? ""))];
+	describe("the guide", () => {
+		it("never lists a block that does not exist", () => {
+			const known = new Set<string>(BLOCK_NAMES);
+			const mentioned = guideBlockNames();
 
-		it("teaches exactly the tags in the allowlist, plus Update", () => {
-			const allowed = Object.keys(readAllowlist());
-
-			expect(allowed.length).toBeGreaterThan(15);
-			expect(new Set(cheatTags())).toEqual(new Set([...allowed, "Update"]));
+			expect(mentioned.length).toBeGreaterThan(15);
+			for (const name of mentioned) expect(known.has(name), name).toBe(true);
 		});
 
-		it("shows every attribute each tag takes, and no attribute the tag does not take", () => {
-			const allowlist = readAllowlist();
-			allowlist.Update ??= ["label", "description"];
-
-			for (const tag of Object.keys(allowlist)) {
-				const openings = [...DOCS_MDX_CHEAT_SHEET.matchAll(new RegExp(`<${tag}(\\s[^>]*)?>`, "g"))].map((match) => match[1] ?? "");
-				expect(openings.length, `${tag} has an example in the cheat sheet`).toBeGreaterThan(0);
-				const shown = new Set(openings.flatMap(attributeNames));
-				const taken = allowlist[tag] ?? [];
-				for (const name of shown) expect(taken, `${tag} does not take ${name}`).toContain(name);
-				for (const name of taken) expect(shown, `the cheat sheet never shows ${tag} ${name}`).toContain(name);
-			}
-		});
-
-		it("states the rules that keep MDX working", () => {
-			expect(DOCS_MDX_CHEAT_SHEET).toContain("Put every block tag on its own line");
-			expect(DOCS_MDX_CHEAT_SHEET).toContain("After an opening block tag, leave one blank line. Before its closing tag, leave one blank line.");
-		});
-
-		it("shows code fences with a title, line marks and line numbers, and a mermaid diagram", () => {
-			expect(DOCS_MDX_CHEAT_SHEET).toMatch(/```ts \{2,4-6\} title="app\.ts" showLineNumbers/);
-			expect(DOCS_MDX_CHEAT_SHEET).toMatch(/```mermaid\n/);
-			expect(DOCS_MDX_CHEAT_SHEET).toMatch(/\| Setting \| Default \| What it does \|/);
-		});
-	});
-
-	describe("the writing guide", () => {
-		it("covers the components and habits the brief asks for", () => {
-			for (const phrase of [
-				"Steps",
-				"Tabs",
-				"CodeGroup",
-				"Warning",
-				"Mermaid",
-				"Cards",
-				"A description.",
-				"Put the language right after",
-				"Six sections at most",
-				"Sections with ## headings",
+		it("names the core blocks and docs components a docs page is written with", () => {
+			for (const name of [
+				"core/heading",
+				"core/paragraph",
+				"core/list",
+				"core/quote",
+				"core/code",
+				"core/image",
+				"core/table",
+				"core/button",
+				"docs/callout",
+				"docs/code-group",
+				"core/steps",
+				"core/tabs",
+				"core/card",
+				"core/accordion",
+				"docs/file-tree",
+				"docs/params",
+				"docs/example",
+				"docs/diagram",
+				"docs/update",
 			]) {
-				expect(DOCS_GUIDE, phrase).toContain(phrase);
+				expect(DOCS_GUIDE, name).toContain(name);
 			}
+		});
+
+		it("no longer teaches MDX", () => {
+			expect(DOCS_GUIDE).not.toMatch(/mdx/i);
+			expect(writeDocsPrompt({ topic: "x" })).not.toMatch(/mdx/i);
 		});
 
 		it("names only tools that exist", async () => {
@@ -134,7 +98,7 @@ describe("the docs guide", () => {
 			expect(text).toContain("Topic: Installing NextPress");
 			expect(text).toContain("Who reads them: site owners new to CMSs");
 			expect(text).toContain(DOCS_GUIDE);
-			const steps = ["list_docs", "get_docs_tree", "add_docs_page", "read_docs_page", "write_docs_page", "publish_page"];
+			const steps = ["list_docs", "get_docs_tree", "add_docs_page", "get_page", "patch_page_blocks", "publish_page"];
 			const positions = steps.map((step) => text.indexOf(step, text.indexOf("# Workflow")));
 			expect(positions.every((position) => position > 0)).toBe(true);
 			expect([...positions].sort((a, b) => a - b)).toEqual(positions);

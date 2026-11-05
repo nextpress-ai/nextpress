@@ -132,7 +132,7 @@ export function registerDocsTools({ server, client }: ToolDeps): void {
 		{
 			title: "Docs writing guide",
 			description:
-				"The guide to writing good docs pages in NextPress, in plain words: one idea per page, a description on every page, Steps for tasks, Tabs and code groups for alternatives, callouts for warnings, diagrams for flows, and cards on overview pages. It ends with the MDX cheat sheet: the exact syntax of every component a page may use. Read it before you write or change a docs page. The write_docs prompt and the nextpress://docs/guide resource hold the same text.",
+				"A short guide to making a docs in NextPress: create it, add pages and groups, order, move and hide them, and write each page's content with the normal page and block tools using the core and docs blocks. Read it before you build or change a docs. The write_docs prompt and the nextpress://docs/guide resource hold the same text.",
 			inputSchema: {},
 			annotations: { readOnlyHint: true },
 		},

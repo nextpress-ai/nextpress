@@ -8,7 +8,6 @@ export type {
 	FormsResource,
 	PageTransferResource,
 } from "./resources/index.js";
-export { type DocsMdxProblem, readDocsMdxProblem } from "./resources/docs.js";
 export * from "./schemas/brand-logo.js";
 export * from "./schemas/docs.js";
 export * from "./schemas/forms.js";

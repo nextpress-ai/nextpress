@@ -17,6 +17,7 @@ import { useOptionalActiveSite } from "@/hooks/useActiveSite";
 import { useSiteThemeSettings } from "@/hooks/use-site-theme-settings";
 import { buildVisitorDocumentStyle } from "@/lib/visitor-theme-style";
 import { resolveVisitorDesign } from "@shared/theme-to-page-design";
+import { convertLegacyProse } from "@shared/docs/legacy-prose";
 import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
 
 interface PreviewPageProps {
@@ -190,7 +191,7 @@ export default function PreviewPage({ postId, templateId, type }: PreviewPagePro
   }
 
   blocks = prepareVisitorPageBlocks({
-    blocks,
+    blocks: convertLegacyProse(blocks),
     leftoverDesign: liveSession?.design ?? pageOther?.design,
   });
   const design = resolveVisitorDesign({

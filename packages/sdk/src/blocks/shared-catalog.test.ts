@@ -73,7 +73,8 @@ describe("the SDK reads the shared block list", () => {
 			expect(BLOCK_DEFINITIONS[name].category, name).toBe("docs");
 		}
 		expect(BLOCK_DEFINITIONS["core/code"]).toMatchObject({ category: "advanced", alsoIn: ["docs"] });
-		expect(BLOCK_DEFINITIONS["core/heading"]).not.toHaveProperty("alsoIn");
+		expect(BLOCK_DEFINITIONS["core/heading"]).toMatchObject({ alsoIn: ["docs"] });
+		expect(BLOCK_DEFINITIONS["core/button"]).not.toHaveProperty("alsoIn");
 		expect(getBlockEntry("core/image").alsoIn).toEqual(["docs"]);
 	});
 

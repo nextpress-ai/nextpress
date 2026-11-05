@@ -8,7 +8,6 @@ import type { createPagePackageBuilder } from "../page-transfer/build-page-packa
 import { savePageVersion } from "../save-page-version";
 import { createDocsPage, emptyDocsText } from "./create-docs-page";
 import { createDocsItems } from "./docs-items";
-import { createDocsMdx } from "./docs-mdx";
 import { refuseDocs } from "./docs-refusal";
 import { descendantsOf, docsHomeOf, isDocsHomeRow, loadDocsSitePages, pageBlocks, type DocsPageRow } from "./docs-site-pages";
 import { buildDocsTree, summarizeDocs } from "./docs-tree";
@@ -48,7 +47,6 @@ const cleanSettings = ({ current, input }: { current: DocsSettings; input: Updat
  */
 export function createDocsService({ models, hooks, newId, builder }: DocsServiceDeps) {
 	const items = createDocsItems({ models, hooks, newId });
-	const mdx = createDocsMdx({ models, hooks, newId });
 
 	const requireHome = async ({ homeId }: { homeId: string }): Promise<{ home: DocsPageRow; siteId: string }> => {
 		const home = await models.pages.findById(homeId);
@@ -134,8 +132,6 @@ export function createDocsService({ models, hooks, newId, builder }: DocsService
 		exportDocs,
 		findPage,
 		...items,
-		readPageMdx: mdx.readPage,
-		writePageMdx: mdx.writePage,
 	};
 }
 

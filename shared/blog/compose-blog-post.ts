@@ -1,6 +1,7 @@
 import { fresh } from "../block-catalog/content.js";
 import { createDefaultBlock } from "../block-catalog/create-default-block.js";
 import { POST_INFO_DEFAULT_CONTENT } from "../block-catalog/post-blocks.js";
+import { emptyParagraphContent } from "../docs/empty-paragraph.js";
 import { fitToDocsColumn } from "../docs/docs-column-spacing.js";
 import { ensureRootPageShell } from "../page-shell-model.js";
 import type { BlockConfig } from "../schema-types.js";
@@ -51,9 +52,9 @@ export function writtenPostBlocks(blocks: BlockConfig[]): BlockConfig[] {
 /** An empty post body with one empty paragraph, for a new written post. */
 export function newPostBody({ newId }: { newId: () => string }): BlockConfig[] {
 	const body = createDefaultBlock({ name: POST_BODY_BLOCK_NAME, id: newId(), newId });
-	const paragraph = createDefaultBlock({ name: "docs/text", id: newId(), newId });
+	const paragraph = createDefaultBlock({ name: "core/paragraph", id: newId(), newId });
 	if (!body || !paragraph) throw new Error("The block catalog has no post body or text block, so a written post can't start.");
-	const text = { ...paragraph, parentId: body.id, styles: { ...paragraph.styles, padding: "0" }, content: { kind: "structured" as const, data: { text: "" } } };
+	const text = { ...paragraph, parentId: body.id, styles: { ...paragraph.styles, padding: "0" }, content: emptyParagraphContent() };
 	return [{ ...body, children: [text] }];
 }
 

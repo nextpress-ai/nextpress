@@ -4,9 +4,6 @@ import { uuidSchema } from "./index.js";
 /** The most links the docs header can show (the server keeps no more). */
 export const MAX_DOCS_HEADER_LINKS = 6;
 
-/** The longest MDX one save may hold (the server refuses more). */
-export const MAX_DOCS_MDX_LENGTH = 500_000;
-
 /** The most pages one reorder call can order (the server refuses more). */
 export const MAX_DOCS_REORDER_ITEMS = 1000;
 
@@ -61,7 +58,6 @@ export const addDocsItemSchema = z.object({
 	title: z.string().trim().min(1).max(200),
 	kind: docsItemKindSchema,
 	slug: z.string().max(200).optional(),
-	mdx: z.string().max(MAX_DOCS_MDX_LENGTH).optional(),
 	position: z.number().int().min(0).optional(),
 });
 
@@ -76,13 +72,6 @@ export const updateDocsItemSchema = z.object({
 export const reorderDocsSchema = z.object({
 	parentId: uuidSchema,
 	orderedIds: z.array(uuidSchema).max(MAX_DOCS_REORDER_ITEMS),
-});
-
-export const writeDocsPageSchema = z.object({
-	mdx: z.string().max(MAX_DOCS_MDX_LENGTH),
-	expectedVersion: z.number().int().min(0),
-	title: z.string().trim().max(200).optional(),
-	description: z.string().max(1000).optional(),
 });
 
 export const exportDocsQuerySchema = z.object({

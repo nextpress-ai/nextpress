@@ -2,7 +2,6 @@ import { BLOCK_AGENT_NOTES } from "./agent-notes.js";
 import { BLOCK_NAMES, type BlockName } from "./block-names.js";
 import { DOCS_BLOCKS } from "./docs-blocks.js";
 import { DOCS_COMPONENT_BLOCKS } from "./docs-component-blocks.js";
-import { DOCS_PROSE_BLOCKS } from "./docs-prose-blocks.js";
 import { DESIGN_BLOCKS } from "./design-blocks.js";
 import { FORM_BLOCKS } from "./form-blocks.js";
 import { LAYOUT_BLOCKS } from "./layout-blocks.js";
@@ -22,7 +21,6 @@ const WRITTEN_ENTRIES: readonly WrittenBlockEntry[] = [
 	...SEARCH_BLOCKS,
 	...DOCS_BLOCKS,
 	...DOCS_COMPONENT_BLOCKS,
-	...DOCS_PROSE_BLOCKS,
 ];
 
 const ALL_ENTRIES: readonly BlockCatalogEntry[] = WRITTEN_ENTRIES.map((entry) => ({

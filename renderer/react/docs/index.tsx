@@ -1,5 +1,4 @@
 export { DocsLayoutBlock } from "./docs-layout";
-export { DocsHeadingBlock, DocsListBlock, DocsTextBlock } from "./prose";
 export { CalloutBlock } from "./callout";
 export { CodeGroupBlock } from "./code-group";
 export { FileTreeBlock } from "./file-tree";

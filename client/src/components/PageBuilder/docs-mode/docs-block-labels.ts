@@ -4,9 +4,9 @@
  * imports, so the canvas and the settings panel can use it without loading the block list.
  */
 const DISPLAY_LABELS: Readonly<Record<string, string>> = {
-	"docs/heading": "Heading",
-	"docs/text": "Text",
-	"docs/list": "List",
+	"core/heading": "Heading",
+	"core/paragraph": "Text",
+	"core/list": "List",
 	"core/separator": "Divider",
 	"docs/example": "Example",
 };

@@ -9,6 +9,7 @@ import { SkipLink } from "@/components/a11y/skip-link";
 import { useSiteThemeSettings } from "@/hooks/use-site-theme-settings";
 import { buildVisitorDocumentStyle } from "@/lib/visitor-theme-style";
 import { resolveVisitorDesign } from "@shared/theme-to-page-design";
+import { convertLegacyProse } from "@shared/docs/legacy-prose";
 import { prepareVisitorPageBlocks, readPageDesign } from "@shared/page-shell-model";
 import { buildPublishedDocumentMeta, publishedCanonicalUrl, publishedPreviewImageUrl } from "@shared/published-document-meta";
 import { publishedHoverPrefetchScript, publishedSpeculationRulesJson } from "@shared/published-document-speed";
@@ -143,7 +144,7 @@ export default function PublicPageView({ slug: propSlug, type = 'page' }: Public
   const pageOther = (data as { other?: PageOther })?.other;
   const seo = pageOther?.seo;
   const blocks = prepareVisitorPageBlocks({
-    blocks: rawBlocks,
+    blocks: convertLegacyProse(rawBlocks),
     leftoverDesign: pageOther?.design,
   });
   const design = resolveVisitorDesign({
