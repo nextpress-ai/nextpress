@@ -96,6 +96,7 @@ export function CreateContentDialog({
           >
             Create {type === 'page' ? 'Page' : 'Post'}
           </Button>
+          {!title.trim() ? <p className="basis-full text-right text-xs text-muted-foreground">Type a title to continue.</p> : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>

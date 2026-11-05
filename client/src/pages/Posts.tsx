@@ -319,7 +319,7 @@ function PostsList({
           </Button>
           <Button className="npb-btn-accent" onClick={handleNewPost}>
             <Plus className="w-4 h-4 mr-2" />
-            Add New Post
+            New post
           </Button>
         </>
       }
@@ -363,7 +363,15 @@ function PostsList({
             </div>
           ) : posts.length === 0 ? (
             <div className="text-center py-8 text-npb-text-muted">
-              No posts found. <Button variant="link" onClick={handleNewPost}>Create your first post</Button>
+              {search.trim() ? (
+                <>
+                  No posts match "{search.trim()}". <Button variant="link" onClick={() => setSearch("")}>Clear search</Button>
+                </>
+              ) : (
+                <>
+                  No posts found. <Button variant="link" onClick={handleNewPost}>Create your first post</Button>
+                </>
+              )}
             </div>
           ) : viewMode === 'cards' ? (
             <ContentCardGrid

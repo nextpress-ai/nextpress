@@ -14,7 +14,7 @@ interface SiteMenuProps {
 
 /**
  * SiteMenu - Dropdown for site-level settings and configuration
- * Provides navigation to Settings, Themes, and Media Library
+ * Provides navigation to Settings, Themes, and Media
  */
 export function SiteMenu({ children }: SiteMenuProps) {
   const [, setLocation] = useLocation();
@@ -37,7 +37,7 @@ export function SiteMenu({ children }: SiteMenuProps) {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleNavigation('/admin/media')}>
           <Image className="w-4 h-4" />
-          Media Library
+          Media
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

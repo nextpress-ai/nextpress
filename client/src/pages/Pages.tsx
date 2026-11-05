@@ -394,7 +394,15 @@ function PagesList({
                 </div>
               ) : pages.length === 0 ? (
                 <div className="text-center py-8 text-npb-text-muted">
-                  No pages found. <Button variant="link" onClick={handleNewPage}>Create your first page</Button>
+                  {search.trim() ? (
+                    <>
+                      No pages match "{search.trim()}". <Button variant="link" onClick={() => setSearch("")}>Clear search</Button>
+                    </>
+                  ) : (
+                    <>
+                      No pages found. <Button variant="link" onClick={handleNewPage}>Create your first page</Button>
+                    </>
+                  )}
                 </div>
               ) : viewMode === 'cards' ? (
                 <ContentCardGrid

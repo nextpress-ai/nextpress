@@ -233,6 +233,10 @@ const absoluteAsset = (url: string | undefined, origin: string): string => {
 	return `${origin}/${raw}`;
 };
 
+/** A bare IP address, with or without a port: what an install is called when nobody gave it a name. */
+export const looksLikeServerAddress = (name: string): boolean =>
+	/^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/.test(name) || /^\[?[0-9a-f:]+\]?(:\d+)?$/i.test(name) && name.includes(":");
+
 export function buildPublishedDocumentMeta({
 	pageTitle,
 	metaTitle,
@@ -260,7 +264,10 @@ export function buildPublishedDocumentMeta({
 }): PublishedDocumentMeta {
 	const page = pageTitle?.trim() || "";
 	const explicitTitle = metaTitle?.trim() || "";
-	const site = siteName?.trim() || "";
+	// A site named after its server address ("35.202.100.66", set when it was first installed) must not
+	// end up in browser tab titles and search results.
+	const named = siteName?.trim() || "";
+	const site = looksLikeServerAddress(named) ? "" : named;
 	const title = explicitTitle
 		? explicitTitle
 		: site && page && site.toLowerCase() !== page.toLowerCase()

@@ -38,7 +38,7 @@ describe('SiteMenu', () => {
     // Check for menu items
     expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.getByText('Themes')).toBeInTheDocument();
-    expect(screen.getByText('Media Library')).toBeInTheDocument();
+    expect(screen.getByText('Media')).toBeInTheDocument();
   });
 
   test('navigates to /settings when Settings is clicked', async () => {
@@ -75,7 +75,7 @@ describe('SiteMenu', () => {
     expect(mockSetLocation).toHaveBeenCalledWith('/admin/themes');
   });
 
-  test('navigates to /media when Media Library is clicked', async () => {
+  test('navigates to /media when Media is clicked', async () => {
     const user = userEvent.setup();
     render(
       <SiteMenu>
@@ -86,7 +86,7 @@ describe('SiteMenu', () => {
     const trigger = screen.getByText('Open Menu');
     await user.click(trigger);
 
-    const mediaItem = screen.getByText('Media Library');
+    const mediaItem = screen.getByText('Media');
     await user.click(mediaItem);
 
     expect(mockSetLocation).toHaveBeenCalledWith('/admin/media');
@@ -106,6 +106,6 @@ describe('SiteMenu', () => {
     // Check that all menu items are present (icons are rendered with lucide-react)
     expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.getByText('Themes')).toBeInTheDocument();
-    expect(screen.getByText('Media Library')).toBeInTheDocument();
+    expect(screen.getByText('Media')).toBeInTheDocument();
   });
 });

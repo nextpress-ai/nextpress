@@ -154,7 +154,7 @@ export default function Dashboard() {
     { label: 'Posts', value: (stats as { posts?: number })?.posts ?? 0, icon: FileText, href: '/admin/posts' },
     { label: 'Pages', value: (stats as { pages?: number })?.pages ?? 0, icon: File, href: '/admin/pages' },
     { label: 'Comments', value: (stats as { comments?: number })?.comments ?? 0, icon: MessageCircle, href: '/admin/comments' },
-    { label: 'Users', value: (stats as { users?: number })?.users ?? 0, icon: Users, href: '/admin/users' },
+    { label: 'People', value: (stats as { users?: number })?.users ?? 0, icon: Users, href: '/admin/users' },
   ];
 
   const headerActions = (
@@ -168,7 +168,7 @@ export default function Dashboard() {
       <Button size="sm" asChild className="npb-btn-accent">
         <Link href="/admin/posts?create=true">
           <Plus className="mr-2 h-4 w-4" />
-          New Post
+          New post
         </Link>
       </Button>
       <Button variant="outline" size="sm" asChild>

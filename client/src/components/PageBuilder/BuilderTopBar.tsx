@@ -302,7 +302,7 @@ export function BuilderTopBar({
               <Button
                 type="button"
                 size="sm"
-                title="Page — browse, create, settings"
+                title="Page: browse, create, settings"
                 className="npb-interactive-emphasis mr-2 gap-2 focus-visible:ring-2 focus-visible:ring-npb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-npb-surface-base"
               >
                 <FileStack className="h-4 w-4 shrink-0" aria-hidden />

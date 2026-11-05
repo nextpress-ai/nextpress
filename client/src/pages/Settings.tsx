@@ -32,6 +32,8 @@ import { AiSettingsPanel } from '@/components/settings/ai-settings';
 import { TimezoneField } from '@/components/settings/timezone-field';
 import { AccountPanel } from '@/components/account/account-panel';
 import { useSiteAccess } from '@/hooks/use-site-access';
+import { looksLikeServerAddress } from '@shared/published-document-meta';
+import { NEXTPRESS_CONFIG } from '../../../config';
 
 /**
  * Settings structure matching server schema
@@ -686,12 +688,8 @@ function SettingsScreen() {
   };
 
   const systemInfo = [
-    { label: 'NextPress Version', value: '1.0.0' },
-    { label: 'Node.js Version', value: '20.x' },
+    { label: 'NextPress version', value: NEXTPRESS_CONFIG.version },
     { label: 'Database', value: 'PostgreSQL' },
-    { label: 'WordPress API', value: 'Compatible' },
-    { label: 'Hook System', value: 'Active' },
-    { label: 'Theme Engine', value: 'Multi-Renderer' },
   ];
 
   if (!activeSiteId || isLoading || (isSiteInfoLoading && !siteInfoError) || (isThemesLoading && !themesError) || !formData) {
@@ -733,8 +731,8 @@ function SettingsScreen() {
               <TabsTrigger value="account">Your account</TabsTrigger>
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="reading">Reading</TabsTrigger>
-              <TabsTrigger value="discussion">Discussion</TabsTrigger>
-              <TabsTrigger value="ai">AI</TabsTrigger>
+              <TabsTrigger value="discussion">Comments</TabsTrigger>
+              <TabsTrigger value="ai">AI assistant</TabsTrigger>
               <TabsTrigger value="system">System</TabsTrigger>
             </TabsList>
 
@@ -768,6 +766,11 @@ function SettingsScreen() {
                       {getFieldError('general.siteName') && (
                         <p className="text-sm text-red-500">
                           {getFieldError('general.siteName')}
+                        </p>
+                      )}
+                      {looksLikeServerAddress(formData.general.siteName.trim()) && (
+                        <p className="text-sm text-amber-600">
+                          This looks like an address. Visitors see the site title in the browser tab and in search results, so use a name like "Acme". Until you do, it is left out of page titles.
                         </p>
                       )}
                     </div>

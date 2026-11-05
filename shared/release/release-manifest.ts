@@ -4,8 +4,49 @@ import type { ReleaseHighlight } from "./release-highlight-meta";
 /** In-app release notes. Consumer-facing copy only. Keep in sync with package.json on release. */
 export const RELEASE_MANIFEST = {
 	version: NEXTPRESS_CONFIG.version,
-	releaseDate: "2026-10-28",
+	releaseDate: "2026-11-05",
 	highlights: [
+		{
+			kind: "update",
+			title: "Write docs and posts with normal blocks",
+			description:
+				"Docs and blog posts now use the same headings, paragraphs and lists as every page. Type ## for a heading, - for a list, or / for any block, and use bold, code and links as you write. Older docs pages convert on their own.",
+		},
+		{
+			kind: "update",
+			title: "Publish a whole docs on import",
+			description:
+				"When you import a page file, tick Publish the pages now to make every page live as it arrives. Leave it off to look the pages over as drafts first.",
+		},
+		{
+			kind: "fix",
+			title: "Page titles no longer show an address",
+			description:
+				"If a site is named after its server address, the address stays out of browser tabs and search results. Settings tells you to give the site a name.",
+		},
+		{
+			kind: "improvement",
+			title: "Clearer admin screens",
+			description:
+				"Each admin screen names its browser tab. A search with no results says so and lets you clear it. The same thing has the same name everywhere, and a disabled Create button says why.",
+		},
+		{
+			kind: "improvement",
+			title: "Page settings in plain words",
+			description: "Slug, Meta Title and Canonical URL are now Web address, Search title and Preferred web address.",
+		},
+		{
+			kind: "fix",
+			title: "Editing on a phone",
+			description:
+				"The side panel starts closed on small screens so the page has room, and the top bar wraps so Save and Publish are always within reach.",
+		},
+		{
+			kind: "fix",
+			title: "Posts and docs editors",
+			description:
+				"An empty paragraph shows where to write, a quote or list you start by typing opens ready for your words, and clicking a link in your text no longer leaves the editor.",
+		},
 		{
 			kind: "update",
 			title: "A page assistant in the editor",

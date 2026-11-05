@@ -271,6 +271,9 @@ export default function Setup() {
                 disabled={isLoading}
                 className="h-10"
               />
+              <p className="text-xs text-muted-foreground">
+                The name visitors see in the browser tab and search results, like "Acme". Not an address.
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -293,7 +296,7 @@ export default function Setup() {
                     Use local
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Run on this machine only — no DNS or HTTPS setup required.
+                    Run on this machine only. No domain or HTTPS setup is needed.
                   </p>
                 </div>
               </div>

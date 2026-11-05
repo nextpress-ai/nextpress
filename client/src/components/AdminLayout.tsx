@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import {
   AdminChrome,
   AdminPageFrame,
@@ -16,6 +16,10 @@ type AdminLayoutProps = {
  * Page header uses surface contrast only (no heavy border chrome).
  */
 export function AdminLayout({ children, title, actions }: AdminLayoutProps) {
+  // The browser tab names the screen, so several admin tabs can be told apart.
+  useEffect(() => {
+    if (title) document.title = `${title} · NextPress`;
+  }, [title]);
   const page = <AdminPageFrame title={title} actions={actions}>{children}</AdminPageFrame>;
 
   return useIsInsideAdminChrome() ? page : <AdminChrome>{page}</AdminChrome>;

@@ -524,7 +524,7 @@ function MediaList({
 
   return (
     <AdminLayout
-      title="Media Library"
+      title="Media"
       actions={
         <Button onClick={() => setIsUploadOpen(true)} className="npb-btn-accent">
           <Upload className="w-4 h-4 mr-2" />

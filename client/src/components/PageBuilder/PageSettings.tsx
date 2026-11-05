@@ -276,7 +276,7 @@ export default function PageSettingsModal({
         <Tabs defaultValue="general" className="flex-1">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="seo">SEO</TabsTrigger>
+            <TabsTrigger value="seo">Search</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="h-[calc(85vh-180px)] pr-4">
@@ -293,12 +293,12 @@ export default function PageSettingsModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
+                <Label htmlFor="slug">Web address</Label>
                 <Input
                   id="slug"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  placeholder="page-slug"
+                  placeholder="about-us"
                 />
               </div>
 
@@ -473,7 +473,7 @@ export default function PageSettingsModal({
             {/* SEO Tab */}
             <TabsContent value="seo" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label htmlFor="metaTitle">Meta Title</Label>
+                <Label htmlFor="metaTitle">Search title</Label>
                 <Input
                   id="metaTitle"
                   value={metaTitle}
@@ -483,7 +483,7 @@ export default function PageSettingsModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="metaDescription">Meta Description</Label>
+                <Label htmlFor="metaDescription">Search description</Label>
                 <Textarea
                   id="metaDescription"
                   value={metaDescription}
@@ -514,7 +514,7 @@ export default function PageSettingsModal({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-npb-text-muted">
-                  Search results and link previews use this text. Same as the site uses the choice in Settings. If the chosen text is empty, the preview has no description.
+                  Search results and link previews use this text. The default for every page is the choice in Settings. If the chosen text is empty, the preview has no description.
                 </p>
                 <p className="text-xs text-npb-text-muted">
                   The link picture is the featured image on General. An empty featured image uses the first picture on the page, then the site logo.
@@ -522,7 +522,7 @@ export default function PageSettingsModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="canonicalUrl">Canonical URL</Label>
+                <Label htmlFor="canonicalUrl">Preferred web address</Label>
                 <Input
                   id="canonicalUrl"
                   value={canonicalUrl}

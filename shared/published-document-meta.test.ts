@@ -53,6 +53,15 @@ describe("published document meta", () => {
 		expect(html).not.toContain("Your Site");
 	});
 
+	it("leaves a server address out of the title when the site was named after it", () => {
+		const base = { canonicalUrl: "https://nextpress.ai/roadmap", kind: "website" as const };
+		expect(buildPublishedDocumentMeta({ ...base, pageTitle: "Roadmap", siteName: "35.202.100.66" }).title).toBe("Roadmap");
+		expect(buildPublishedDocumentMeta({ ...base, pageTitle: "Roadmap", siteName: "35.202.100.66:5000" }).siteName).toBe("");
+		expect(buildPublishedDocumentMeta({ ...base, pageTitle: "Roadmap", siteName: "2001:db8::1" }).title).toBe("Roadmap");
+		expect(buildPublishedDocumentMeta({ ...base, pageTitle: "Roadmap", siteName: "nextpress.ai" }).title).toBe("Roadmap | nextpress.ai");
+		expect(buildPublishedDocumentMeta({ ...base, pageTitle: "Roadmap", siteName: "Acme" }).title).toBe("Roadmap | Acme");
+	});
+
 	it("uses the first picture on the page when no featured image is set", () => {
 		const blocks = [
 			{
