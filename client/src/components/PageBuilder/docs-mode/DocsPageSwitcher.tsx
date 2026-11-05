@@ -41,7 +41,7 @@ export function DocsPageSwitcher({ pageId, pageTitle }: Props): ReactElement {
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<Button type="button" variant="outline" size="sm" className="npb-chrome-outline max-w-[22rem] gap-2" aria-label={`${docsName}, ${pageTitle || "Untitled"}. Choose another page`}>
+				<Button type="button" variant="outline" size="sm" className="npb-chrome-outline min-w-0 max-w-[22rem] gap-2" aria-label={`${docsName}, ${pageTitle || "Untitled"}. Choose another page`}>
 					<span className="truncate">{docsName}</span>
 					<span className="text-npb-text-muted" aria-hidden>
 						/

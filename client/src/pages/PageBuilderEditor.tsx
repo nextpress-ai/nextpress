@@ -1174,8 +1174,8 @@ latestPageStateRef.current = {
       {/* Full-screen page builder */}
       <div className="w-full h-full flex flex-col">
         {/* Top navigation for page builder */}
-        <div className="npb-editor-chrome-header flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-4 flex-1">
+        <div className="npb-editor-chrome-header flex flex-wrap items-center justify-between gap-y-2 px-3 py-3 sm:px-6">
+          <div className="flex min-w-0 flex-1 basis-40 items-center gap-2 sm:gap-4">
             <Button
               variant="ghost"
               size="sm"
@@ -1184,7 +1184,7 @@ latestPageStateRef.current = {
               }
               className="npb-chrome-ghost flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
-              {isInlineEditing ? 'Back to Blog Page' : 'Back'}
+              <span className="max-sm:sr-only">{isInlineEditing ? 'Back to Blog Page' : 'Back'}</span>
             </Button>
             {isDocs ? (
               <DocsPageSwitcher pageId={data.id} pageTitle={pageState.title} />
@@ -1216,7 +1216,7 @@ latestPageStateRef.current = {
             )}
           </div>
 
-          <div className={isDocs ? 'flex flex-1 items-center justify-end gap-2' : 'flex items-center gap-2'}>
+          <div className="ml-auto flex items-center gap-2">
             {isDocs ? null : (
             <SiteMenu>
               <Button
@@ -1237,7 +1237,7 @@ latestPageStateRef.current = {
               className="npb-chrome-outline flex items-center gap-2"
               data-testid="button-preview">
               <Eye className="w-4 h-4" />
-              Preview
+              <span className="max-sm:sr-only">Preview</span>
             </Button>
 
             <Button

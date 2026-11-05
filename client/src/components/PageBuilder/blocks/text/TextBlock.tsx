@@ -112,6 +112,15 @@ function TextRenderer({
     );
   }
 
+  // An empty paragraph in an editor that writes still shows where it is and how to start, on the canvas only (the published page leaves it out).
+  if (writing && textContent.replace(/<[^>]*>/g, "").trim() === "") {
+    return (
+      <BlockShell as="p" blockClass="wp-block-paragraph" className={sharedClassName} style={mergedStyles} id={anchor}>
+        <span className="text-npb-text-muted">Empty paragraph. Double-click to write.</span>
+      </BlockShell>
+    );
+  }
+
   if ((content as { format?: string })?.format === "html") {
     return (
       <BlockShell

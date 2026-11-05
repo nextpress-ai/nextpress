@@ -364,7 +364,8 @@ export default function PageBuilder({
   const [hoverHighlight, setHoverHighlight] = useState<
     'padding' | 'margin' | null
   >(null);
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  // On a phone the side panel would cover the page being edited, so it starts closed there; the top bar button opens it.
+  const [sidebarVisible, setSidebarVisible] = useState(() => !(typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 767px)').matches));
   const [inspectorVisible, setInspectorVisible] = useState(true);
   const isWideLayout = useBuilderWideLayout();
   const [pageSettingsOpen, setPageSettingsOpen] = useState(false);

@@ -104,6 +104,14 @@ function HeadingRenderer({
     );
   }
 
+  if (writing && textContent.replace(/<[^>]*>/g, "").trim() === "") {
+    return (
+      <BlockShell as={Tag} blockClass="wp-block-heading" className={sharedClassName} style={mergedStyles} id={headingId}>
+        <span className="text-npb-text-muted">Empty heading. Double-click to write.</span>
+      </BlockShell>
+    );
+  }
+
   // `format: "html"` carries sanitized inline markup (e.g. imported headings with links).
   if ((content as { format?: string })?.format === "html") {
     return (

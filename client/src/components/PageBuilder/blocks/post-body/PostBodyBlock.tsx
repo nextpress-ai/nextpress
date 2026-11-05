@@ -18,7 +18,14 @@ const PostBodyBlock = createBlockDefinition<PostBodyContent>({
 	defaultContent: {},
 	hasSettings: false,
 	render: ({ value, styles, isPreview, onNestedBlockChange }) => (
-		<div className="wp-block-post-body np-prose" style={styles}>
+		// A link in the writing is part of the text here: clicking it must not leave the editor.
+		<div
+			className="wp-block-post-body np-prose"
+			style={styles}
+			onClickCapture={(event) => {
+				if ((event.target as Element).closest("a[href]")) event.preventDefault();
+			}}
+		>
 			<ContainerChildren block={value} isPreview={isPreview ?? false} onBlockChange={onNestedBlockChange} stackLayout="document" />
 		</div>
 	),

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { BlockConfig } from "@shared/schema-types";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,7 @@ import { readTextAlign } from "@shared/text-align";
 import { sanitizeHtml } from "../../utils";
 import { QUOTE_DEFAULT_CONTENT } from "@shared/block-catalog/text-blocks";
 import { catalogMeta } from "../catalog-meta";
+import { useWriting } from "../../writing/writing-context";
 
 // ============================================================================
 // TYPES
@@ -87,6 +88,7 @@ interface QuoteRendererProps {
   content: QuoteContent;
   styles?: React.CSSProperties;
   isEditing?: boolean;
+  blockId?: string;
   onUpdateContent?: (updates: Partial<QuoteContent>) => void;
 }
 
@@ -94,8 +96,12 @@ function QuoteRenderer({
   content,
   styles,
   isEditing,
+  blockId,
   onUpdateContent,
 }: QuoteRendererProps) {
+  // A quote made by typing "> " in a docs page or post opens focused, so the writer carries on typing.
+  const writing = useWriting();
+  const [caret] = useState(() => (writing && blockId ? writing.takeCaret(blockId) ?? undefined : undefined));
   const valueHtmlRaw: string | undefined = content?.value;
   const legacyText: string | undefined = content?.text;
   const citation: string | undefined = content?.citation ?? content?.author;
@@ -155,6 +161,7 @@ function QuoteRenderer({
             }}
             style={editorStyle}
             multiline
+            focusAt={caret}
             placeholder="Add a quote"
           />
           <InlineTextEditor
@@ -249,8 +256,9 @@ const QuoteBlock = createBlockDefinition<QuoteContent>({
   defaultContent: DEFAULT_CONTENT,
   settings: QuoteSettings,
   hasSettings: true,
-  render: ({ content, styles, isEditing, setContent }) => (
+  render: ({ value, content, styles, isEditing, setContent }) => (
     <QuoteRenderer
+      blockId={value.id}
       content={content}
       styles={styles}
       isEditing={isEditing}
