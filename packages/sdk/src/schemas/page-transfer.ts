@@ -29,5 +29,7 @@ export const importPageSchema = z.object({
 	fileName: z.string().trim().min(1).max(255),
 	/** Also bring the page file's theme, and make it the site's theme. Default: leave it out. */
 	includeTheme: z.boolean().optional(),
+	/** Make the imported pages live instead of drafts. */
+	publish: z.boolean().optional(),
 	siteId: z.string().uuid().optional(),
 });

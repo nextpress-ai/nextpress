@@ -91,6 +91,7 @@ export function createPageTransferResource({ http }: { http: HttpClient }): Page
 			const formData = new FormData();
 			formData.append("package", toBlob(parsed.file), parsed.fileName);
 			if (parsed.includeTheme) formData.append("includeTheme", "true");
+			if (parsed.publish) formData.append("publish", "true");
 			return safeHttpRequest(http, `${PAGE_TRANSFER_PATH}/import`, {
 				method: "POST",
 				body: formData,

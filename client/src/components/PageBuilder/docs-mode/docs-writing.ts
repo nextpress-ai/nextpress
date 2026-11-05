@@ -1,5 +1,5 @@
 import { createDefaultBlock } from "@shared/block-catalog";
-import { fitToDocsColumn } from "@shared/docs/docs-column-spacing";
+import { DOCS_PROSE_STYLES, fitToDocsColumn } from "@shared/docs/docs-column-spacing";
 import type { JsonObject } from "@shared/blocks/docs-types";
 import { escapeHtml, inlineMarkdownToHtml } from "@shared/markdown/inline-html";
 import type { BlockConfig } from "@shared/schema-types";
@@ -58,18 +58,11 @@ export const splitText = ({ text, start, end }: { text: string; start: number; e
 	after: text.slice(end),
 });
 
-/** Spacing between the blocks of a written page: the reading column is the only inset. */
-const PROSE_STYLES: Readonly<Record<string, NonNullable<BlockConfig["styles"]>>> = {
-	"core/paragraph": { margin: "0 0 16px", padding: "0" },
-	"core/heading": { margin: "28px 0 10px", padding: "0" },
-	"core/list": { margin: "0 0 16px", padding: "0 0 0 1.5em" },
-};
-
 /** A new block of `name` with the catalog's starting fields and `data` on top, or null for a name NextPress does not know. */
 export function buildWritingBlock({ name, data = {}, newId, parentId }: { name: string; data?: JsonObject; newId: () => string; parentId: string | null }): BlockConfig | null {
 	const made = createDefaultBlock({ name, id: newId(), newId });
 	if (!made) return null;
-	const block = { ...fitToDocsColumn(made), styles: { ...fitToDocsColumn(made).styles, ...PROSE_STYLES[name] } };
+	const block = { ...fitToDocsColumn(made), styles: { ...fitToDocsColumn(made).styles, ...DOCS_PROSE_STYLES[name] } };
 	return { ...block, parentId, ...(Object.keys(data).length > 0 ? withData({ block, data }) : {}) };
 }
 

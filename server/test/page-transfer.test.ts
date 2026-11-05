@@ -148,6 +148,7 @@ describe('page transfer between two sites', () => {
         activated.push(params);
       },
       draftStatus: 'draft',
+      publishStatus: 'publish',
     });
   };
 
@@ -156,6 +157,18 @@ describe('page transfer between two sites', () => {
     if (!read.ok) throw new Error(read.message);
     return read.value;
   };
+
+  it('comes in as a draft unless the owner asks to publish, and then every page is live with a publish date', async () => {
+    const pkg = await roundTrip(await builder(local).buildForPage({ page: sourcePage(), includeFiles: false }));
+
+    const draft = await importerFor(remote).importPage({ pkg, siteId: 'site-remote', authorId: 'u9', includeTheme: false });
+    expect(draft.page.status).toBe('draft');
+    expect(draft.page.publishedAt).toBeUndefined();
+
+    const live = await importerFor(remote).importPage({ pkg, siteId: 'site-remote', authorId: 'u9', includeTheme: false, publish: true });
+    expect(live.pages.every((page) => page.status === 'publish')).toBe(true);
+    expect(live.page.publishedAt).toBeInstanceOf(Date);
+  });
 
   it('moves the page with its file: new paths everywhere, new ids, a draft, no edits needed', async () => {
     const pkg = await roundTrip(await builder(local).buildForPage({ page: sourcePage(), includeFiles: true }));

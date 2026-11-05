@@ -4,7 +4,8 @@ import { safeHref } from "./safe-href.js";
 
 export const escapeHtml = (text: string): string => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-const nodesToHtml = (nodes: MarkdownNode[]): string =>
+/** Inline markdown nodes as the HTML the rich-text blocks keep. */
+export const nodesToHtml = (nodes: MarkdownNode[]): string =>
 	nodes
 		.map((node): string => {
 			const inner = nodesToHtml(node.children ?? []);

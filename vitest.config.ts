@@ -55,6 +55,7 @@ export default defineConfig({
 					environment: "node",
 					include: [
 						"packages/sdk/src/**/*.test.{ts,tsx}",
+						"packages/sdk/scripts/**/*.test.{ts,tsx}",
 					],
 					exclude: [
 						"node_modules",

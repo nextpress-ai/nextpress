@@ -92,14 +92,17 @@ export async function downloadPageFile({
   URL.revokeObjectURL(url);
 }
 
-/** Creates a draft page from a page file on the current site. */
+/** Creates pages from a page file on the current site: drafts, or live when `publish` is on. */
 export async function importPageFile({
   file,
   includeTheme,
+  publish = false,
   siteId,
 }: {
   file: Blob;
   includeTheme: boolean;
+  /** Make the pages live as they arrive, instead of drafts. */
+  publish?: boolean;
   siteId?: string;
 }): Promise<PageImportResult> {
   const response = await fetch('/api/page-transfer/import', {
@@ -107,7 +110,7 @@ export async function importPageFile({
     credentials: 'include',
     body: packageForm({
       pkg: file,
-      extra: { includeTheme: String(includeTheme), ...(siteId ? { siteId } : {}) },
+      extra: { includeTheme: String(includeTheme), publish: String(publish), ...(siteId ? { siteId } : {}) },
     }),
   });
   if (!response.ok) throw await readFailure(response, "Couldn't bring this page in. Please try again.");

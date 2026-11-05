@@ -16,3 +16,10 @@ export function fitToDocsColumn(block: BlockConfig): BlockConfig {
 	const children = block.children?.map(fitToDocsColumn);
 	return { ...block, styles, ...(children ? { children } : {}) };
 }
+
+/** Spacing between the blocks of a written page (docs, posts): the reading column is the only inset. */
+export const DOCS_PROSE_STYLES: Readonly<Record<string, NonNullable<BlockConfig["styles"]>>> = {
+	"core/paragraph": { margin: "0 0 16px", padding: "0" },
+	"core/heading": { margin: "28px 0 10px", padding: "0" },
+	"core/list": { margin: "0 0 16px", padding: "0 0 0 1.5em" },
+};

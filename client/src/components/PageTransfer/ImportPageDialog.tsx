@@ -41,6 +41,10 @@ const readFileText = (file: File): Promise<string> =>
 const formatSize = (bytes: number): string =>
   bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
+/** A few titles and a count, so a whole docs does not push the options out of sight. */
+const describeLinkedPages = (titles: string[]): string =>
+  titles.length <= 6 ? titles.join(', ') : `${titles.length} pages: ${titles.slice(0, 5).join(', ')} and ${titles.length - 5} more`;
+
 function ChosenSummary({ chosen }: { chosen: Chosen }): JSX.Element {
   const { pkg, file } = chosen;
   const carried = pkg.files.filter((item) => item.data).length;
@@ -49,7 +53,7 @@ function ChosenSummary({ chosen }: { chosen: Chosen }): JSX.Element {
   const rows: [string, string][] = [
     ['Page', pkg.page?.title ?? 'Untitled'],
     ...(extras.length > 0
-      ? ([['Linked pages', extras.map((extra) => extra.title || 'Untitled').join(', ')]] as [string, string][])
+      ? ([['Linked pages', describeLinkedPages(extras.map((extra) => extra.title || 'Untitled'))]] as [string, string][])
       : []),
     ['Blocks', String(countPageBlocks(pkg.blocks))],
     [
@@ -70,7 +74,7 @@ function ChosenSummary({ chosen }: { chosen: Chosen }): JSX.Element {
   );
 }
 
-function ImportedSummary({ result }: { result: PageImportResult }): JSX.Element {
+function ImportedSummary({ result, published }: { result: PageImportResult; published: boolean }): JSX.Element {
   const missing = describeMissingFiles(result.files.missing);
   const themeLine =
     result.theme.status === 'added'
@@ -83,8 +87,8 @@ function ImportedSummary({ result }: { result: PageImportResult }): JSX.Element 
       <p className="flex items-center gap-2 font-medium text-npb-text-primary">
         <CheckCircle2 className="h-4 w-4 text-npb-status-success" aria-hidden />
         {result.pages.length > 1
-          ? `${result.pages.length} pages are ready as drafts.`
-          : `"${result.page.title}" is ready as a draft.`}
+          ? `${result.pages.length} pages are ${published ? 'live' : 'ready as drafts'}.`
+          : `"${result.page.title}" is ${published ? 'live' : 'ready as a draft'}.`}
       </p>
       {result.pages.length > 1 ? (
         <ul className="grid gap-1 text-npb-text-secondary">
@@ -111,12 +115,14 @@ function ImportedSummary({ result }: { result: PageImportResult }): JSX.Element 
 }
 
 /**
- * Brings a page file from another NextPress site in as a draft: blocks, files and (if chosen)
- * the theme it was made with. Nothing is published and the active theme never changes.
+ * Brings a page file from another NextPress site in, as drafts unless "Publish now" is ticked: blocks, files and (if chosen)
+ * the theme it was made with. The active theme never changes.
  */
 export function ImportPageDialog({ open, onOpenChange, siteId }: ImportPageDialogProps): JSX.Element {
   const [chosen, setChosen] = useState<Chosen | null>(null);
   const [includeTheme, setIncludeTheme] = useState(true);
+  const [publish, setPublish] = useState(false);
+  const [publishedRun, setPublishedRun] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [result, setResult] = useState<PageImportResult | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -160,8 +166,9 @@ export function ImportPageDialog({ open, onOpenChange, siteId }: ImportPageDialo
   const runImport = async (): Promise<void> => {
     if (!chosen) return;
     setIsImporting(true);
-    await importPageFile({ file: chosen.file, includeTheme, siteId })
+    await importPageFile({ file: chosen.file, includeTheme, publish, siteId })
       .then((imported) => {
+        setPublishedRun(publish);
         setResult(imported);
         void queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
       })
@@ -186,7 +193,7 @@ export function ImportPageDialog({ open, onOpenChange, siteId }: ImportPageDialo
 
         <div className="max-h-[60vh] overflow-y-auto">
           {result ? (
-            <ImportedSummary result={result} />
+            <ImportedSummary result={result} published={publishedRun} />
           ) : (
             <div className="divide-y divide-npb-divider">
               <div className="pb-4">
@@ -232,6 +239,20 @@ export function ImportPageDialog({ open, onOpenChange, siteId }: ImportPageDialo
                       </Label>
                     </div>
                   ) : null}
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="import-publish"
+                      checked={publish}
+                      onCheckedChange={(checked) => setPublish(checked === true)}
+                      disabled={isImporting}
+                    />
+                    <Label htmlFor="import-publish" className="grid gap-1 font-normal">
+                      <span className="font-medium">Publish {chosen.pkg.extraPages?.length ? 'the pages' : 'the page'} now</span>
+                      <span className="text-xs text-npb-text-muted">
+                        They go live as soon as they arrive. Leave this off to look them over as drafts first.
+                      </span>
+                    </Label>
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -265,7 +286,7 @@ export function ImportPageDialog({ open, onOpenChange, siteId }: ImportPageDialo
                 disabled={!chosen || isImporting}
                 title={!chosen ? 'Choose a page file first' : undefined}
               >
-                {isImporting ? 'Importing…' : chosen ? 'Import as draft' : 'Choose a file first'}
+                {isImporting ? 'Importing…' : chosen ? (publish ? 'Import and publish' : 'Import as draft') : 'Choose a file first'}
               </Button>
             </>
           )}

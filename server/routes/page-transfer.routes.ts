@@ -104,6 +104,7 @@ export function createPageTransferRoutes(deps: Deps): Router {
       await models.sites.update(siteId, { activeThemeId: themeId, updatedAt: new Date() });
     },
     draftStatus: CONFIG.STATUS.DRAFT,
+    publishStatus: CONFIG.STATUS.PUBLISH,
   });
 
   const requireUserId = (req: Request): string => {
@@ -244,6 +245,7 @@ export function createPageTransferRoutes(deps: Deps): Router {
           siteId: String(site.id),
           authorId: userId,
           includeTheme: req.body?.includeTheme === 'true',
+          publish: req.body?.publish === 'true',
         });
         imported.pages.forEach((created) => hooks.doAction('save_post', created));
         scheduleSearchIndexRebuild({ models, siteId: String(site.id) });

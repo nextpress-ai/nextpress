@@ -44,6 +44,7 @@ type PageImportDeps = {
 		siteId: string;
 		authorId: string;
 		status: string;
+		publishedAt?: Date;
 		featuredImage: string | null;
 		blocks: BlockConfig[];
 		other: unknown;
@@ -60,12 +61,14 @@ type PageImportDeps = {
 	/** Makes this theme the one the site draws with. */
 	activateTheme: (params: { siteId: string; themeId: string }) => Promise<void>;
 	draftStatus: string;
+	publishStatus: string;
 };
 
 /**
  * Turns a page file into a new draft page on this site.
  * The page gets new ids and a free web address, its files land in this site's media library,
- * and every file path in its blocks is pointed at the new copies. Nothing is published.
+ * and every file path in its blocks is pointed at the new copies. Nothing is published unless the
+ * owner asks (`publish`), as when a whole docs comes in and should go live as it is.
  * When the owner asks for the theme, it is added and switched on for this site.
  */
 export function createPageImporter(deps: PageImportDeps) {
@@ -168,11 +171,13 @@ export function createPageImporter(deps: PageImportDeps) {
 		siteId,
 		authorId,
 		includeTheme,
+		publish = false,
 	}: {
 		pkg: PagePackage;
 		siteId: string;
 		authorId: string;
 		includeTheme: boolean;
+		publish?: boolean;
 	}): Promise<PageImportResult> => {
 		if (!pkg.page) {
 			throw refuseImport("These are copied blocks, not a page file. Paste them in the editor instead.");
@@ -209,7 +214,8 @@ export function createPageImporter(deps: PageImportDeps) {
 				slug: slugs[index]!,
 				siteId,
 				authorId,
-				status: deps.draftStatus,
+				status: publish ? deps.publishStatus : deps.draftStatus,
+				...(publish ? { publishedAt: new Date() } : {}),
 				featuredImage: moved.featuredImage,
 				blocks: ensureRootPageShell({
 					blocks: Array.isArray(validation.blocks) ? (validation.blocks as BlockConfig[]) : [],
