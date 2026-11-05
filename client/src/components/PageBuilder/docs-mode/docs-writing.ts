@@ -62,7 +62,7 @@ export const splitText = ({ text, start, end }: { text: string; start: number; e
 const PROSE_STYLES: Readonly<Record<string, NonNullable<BlockConfig["styles"]>>> = {
 	"core/paragraph": { margin: "0 0 16px", padding: "0" },
 	"core/heading": { margin: "28px 0 10px", padding: "0" },
-	"core/list": { margin: "0 0 16px", padding: "0" },
+	"core/list": { margin: "0 0 16px", padding: "0 0 0 1.5em" },
 };
 
 /** A new block of `name` with the catalog's starting fields and `data` on top, or null for a name NextPress does not know. */

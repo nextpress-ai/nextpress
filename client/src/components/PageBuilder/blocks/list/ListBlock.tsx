@@ -11,6 +11,8 @@ import { List as ListIcon } from "lucide-react";
 import { createBlockDefinition } from "../createBlockDefinition";
 import { BlockShell } from "../shared/block-shell";
 import { InlineTextEditor } from "../shared/inline-text-editor";
+import { inlineMarkdown } from "@shared/content-text/html-text";
+import { inlineMarkdownToHtml } from "@shared/markdown/inline-html";
 import { leaveList } from "../../docs-mode/docs-writing";
 import { useWriting } from "../../writing/writing-context";
 import { generateBlockId } from "../../utils";
@@ -67,10 +69,13 @@ function createListItemsDraft({
   savedText,
   draft,
   setDraft,
+  lineToHtml = sanitizeHtml,
 }: {
   savedText: string;
   draft: string | null;
   setDraft: (next: string | null) => void;
+  /** How one typed line is saved inside its `<li>`; docs and posts read it as inline markdown. */
+  lineToHtml?: (line: string) => string;
 }): {
   fieldValue: string;
   onFocus: () => void;
@@ -91,7 +96,7 @@ function createListItemsDraft({
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => line.length > 0)
-        .map((line) => `<li>${sanitizeHtml(line)}</li>`)
+        .map((line) => `<li>${lineToHtml(line)}</li>`)
         .join("");
     },
   };
@@ -115,10 +120,12 @@ function ListCanvasItemsEditor({
   // In an editor that writes (docs, posts) a list made by typing "- " opens focused, and Enter on an empty line leaves it.
   const [caret] = useState(() => (writing && blockId ? writing.takeCaret(blockId) ?? undefined : undefined));
   const [itemsDraft, setItemsDraft] = useState<string | null>(null);
+  // In an editor that writes, items are typed as inline markdown (**bold**, `code`, [links](url)) and saved as HTML.
   const field = createListItemsDraft({
-    savedText: itemsText,
+    savedText: writing ? itemsText.split("\n").map((line) => inlineMarkdown(line)).join("\n") : itemsText,
     draft: itemsDraft,
     setDraft: setItemsDraft,
+    ...(writing ? { lineToHtml: inlineMarkdownToHtml } : {}),
   });
 
   return (

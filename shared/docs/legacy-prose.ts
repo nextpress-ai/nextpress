@@ -41,7 +41,9 @@ export function convertLegacyProseBlock(block: BlockConfig): BlockConfig {
 		const { style, items } = readDocsListContent(block.content);
 		const ordered = style === "number";
 		const values = listValues({ items: shownListItems(items), ordered });
-		return { ...block, name: "core/list", content: { kind: "structured", data: { ordered, values, marker: style === "check" ? "check" : "default", anchor: "", className: "" } } as BlockConfig["content"] };
+		// The old block drew its own indent; the list block needs room for its bullets or numbers.
+		const styles = block.styles?.padding === "0" ? { ...block.styles, padding: "0 0 0 1.5em" } : block.styles;
+		return { ...block, styles, name: "core/list", content: { kind: "structured", data: { ordered, values, marker: style === "check" ? "check" : "default", anchor: "", className: "" } } as BlockConfig["content"] };
 	}
 	return block;
 }

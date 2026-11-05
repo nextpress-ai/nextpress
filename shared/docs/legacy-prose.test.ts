@@ -21,7 +21,7 @@ describe("legacy prose conversion", () => {
 		]);
 		expect(text).toMatchObject({ id: "docs/text-1", name: "core/paragraph", styles: { margin: "0 0 16px" }, content: { kind: "text", value: "Hello <strong>there</strong>" } });
 		expect(heading).toMatchObject({ name: "core/heading", content: { kind: "text", value: "Setup", level: 3, anchor: "setup" } });
-		expect(list).toMatchObject({ name: "core/list", content: { kind: "structured", data: { ordered: true, values: "<li>One<ol><li>Sub</li></ol></li><li>Two</li>" } } });
+		expect(list).toMatchObject({ name: "core/list", styles: { margin: "0 0 16px" }, content: { kind: "structured", data: { ordered: true, values: "<li>One<ol><li>Sub</li></ol></li><li>Two</li>" } } });
 	});
 
 	it("reaches blocks inside containers and leaves other pages untouched", () => {
