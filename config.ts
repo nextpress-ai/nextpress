@@ -1,5 +1,5 @@
 export const NEXTPRESS_CONFIG = {
-  version: '1.5.0',
+  version: '1.6.0',
   links: {
     admin: '/admin/login',
     pages: '/admin/pages',
