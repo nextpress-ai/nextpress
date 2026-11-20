@@ -651,3 +651,73 @@ Plan and status: `intent-docs-editor-round-2-2026-10-26.md`.
 - `server/migrate.ts` logs the full error, including its nested cause. `scripts/nextpress` chooses the old drizzle-kit runner only when `dist/migrate.js` is absent, inside the same one-shot container. A bundled runner failure now stops the upgrade without a second attempt.
 - Verification: disposable PGlite checks exercise the complete migration chain on fresh databases and old databases with existing columns or all `0002` objects, repeat migration, and preserve user/password/profile values and site options. CLI checks execute the actual runner-selection code with fake migration executables and verify success/failure from both runners. Production and persistent local databases are untouched.
 - Owner approved the repair and publishing the existing 1.5.0 version. Backups of existing modified files: `backup/upgrade-migration-20261029/`.
+
+## Docs sync with releases v1.3.0–v1.6.0 (2026-11-20)
+
+- Root `README.md` had drifted badly behind the GitHub releases: it claimed "39 blocks" (catalog now registers 67 names in `shared/block-catalog/block-names.ts`, ~50 user-facing panel blocks) and listed shipped features (docs sites, site search, themes management) as pending/not started. `docs/public/` user guides and `packages/*/README.md` were already current — the staleness was concentrated in the root README, `CHANGELOG.md` (stopped at 1.3.6), and `docs/cli-usage.md` (missing `reset`/`reset-password`).
+- Owner decisions: CHANGELOG tracks every GitHub release; README states "60+ blocks" grouped by builder-panel category instead of an exact count that drifts.
+- Verification shortcuts that worked: `shared/block-catalog/block-names.ts` is the single source of truth for block names; `server/routes/index.ts` lists every route file (sitemap, forms, invites, themes, assistant-chats, page-transfer, core-update all confirmed there); `scripts/nextpress` usage text is the CLI flag source of truth; `docs/public/building-pages/blocks-overview.md` already groups blocks exactly as the panel does — mirror it rather than inventing categories.
+- Backups: `backup/docs-release-sync-2026-11-20/`; plan: `intent-docs-release-sync-2026-11-20.md`.
+
+## Positioning pass on docs (2026-11-20)
+
+- Owner asked to position the project better after the release-history audit. Changes: README one-liner now leads with "publishing platform" (websites, docs sites, blogs, forms, team workflows) instead of "WordPress-compatible CMS"; new "Why NextPress" section with five verified differentiators; `docs/public/index.md` and `what-is-nextpress.md` now mention documentation sites, forms and template parts.
+- Constraint that shaped the copy: `docs/internal/COPYWRITING.md` + `documentation-guidelines.md` ban hype, marketing adjectives and em dashes in docs. "Good light" had to come from accurate differentiation, not louder claims. Em dashes added in the previous docs pass were cleaned from README and cli-usage; CHANGELOG keeps its existing em-dash style (the 1.3.6 entry already used them).
+- Backup-dir gotcha: copying files into an existing backup dir overwrites same-named originals. When re-backing-up, use distinct names or a new dir. cli-usage original was recovered from `backup/2026-10-10-one-click-update/docs/cli-usage.md` (verified identical except the new sections).
+- Plan: `intent-positioning-2026-11-20.md`.
+
+### Verification pass (same day, second round)
+
+- Audited every new README claim against code. One real inaccuracy found and fixed: theme create/edit/activate is exposed to **agents via SDK (`packages/sdk/src/resources/themes.ts`) and MCP (`packages/mcp/src/tools/theme-tools.ts`)**, not to the in-editor chat assistant (its only theme tool is read-only `get_theme` in `shared/page-tools/site-tools.ts`). README now says "AI agents can manage themes through the SDK and MCP server".
+- Verified: Cmd+K palette (`GlobalCommandPalette`), OG/Twitter meta (`shared/published-document-meta.ts`), prefetch (speculation rules + hover prefetch in `shared/published-document-speed.ts`), lazy images (`loading="lazy"` injected by published-document-speed), blog home layouts (`PUT /api/blogs/:id/home/list`), form success popup (CSS in `shared/publish-block-css.ts`), CSV export (`submissions-csv.ts`), blocks clipboard (`client/src/lib/page-transfer/blocks-clipboard.ts`), theme presets/export (`theme-design-presets`, `.nextpress-theme.json`).
+- Em-dash cleanup: all " — " in README, CHANGELOG and cli-usage replaced with colons/commas per COPYWRITING.md. CHANGELOG now has zero em dashes (was 21).
+
+## Known doc gaps after the v1.3.0–v1.6.0 sync (2026-11-20)
+
+Found while verifying; none fixed yet, owner's call where noted:
+
+- **`/docs/` is gitignored** (`.gitignore` line 60: "The top-level docs folder only"). `git ls-files docs` returns nothing, so the whole tree is local-only. Every `docs/...` link in README (`cli-usage.md`, `upgrade-flow.md`, `sdk/README.md`, `mcp/getting-started.md`) is a dead link on GitHub. Either un-ignore the public-safe subset (`docs/public`, `docs/sdk`, `docs/mcp`) or strip the links. `docs/internal` and `design-system.md` should probably stay local.
+- **CHANGELOG entries are condensed paraphrases**, not verbatim GitHub release notes. Accurate at feature level, but not quote-perfect.
+- **`docs/public/` got a sampled audit, not a systematic one.** Blocks overview, forms, templates/themes, AI and roles pages looked current, but pages like `building-pages/forms.md` may still miss the submissions inbox/CSV export, and no page was checked line-by-line against shipped features.
+- **Softer README claims verified at surface level only**: "permission-aware dashboard", "account password recovery" UX details, "multiple providers" for AI keys, "invite links" flow wording. Routes/files exist; exact UX not traced.
+- **"Why NextPress" section is agent-phrased.** Factual but not the owner's voice; replace if a preferred tagline exists.
+- **Genuinely still pending** (kept on roadmap): categories/tags REST endpoints, public REST search endpoint (visitor site search ships, the API endpoint does not), inspector panel.
+- **Process learnings**: check `docs/internal/COPYWRITING.md` + `documentation-guidelines.md` before writing any docs copy (no em dashes, no hype, claims must match code). Verify each feature bullet against a route/tool/component before it ships in docs. Reusing a backup dir overwrites same-named originals; use a fresh dir per pass.
+
+## Quick wins closed (2026-11-20, third pass)
+
+- **CHANGELOG rewritten from real release notes.** `gh release view` works on this repo; bodies saved to `/tmp/np-releases/` during the session. Key correction vs the first pass: release notes are cumulative, so features must be attributed to their first appearance. 1.3.7 (not 1.3.8) introduced accordion/popup/site-header blocks, brand logos, motion effects, duplicate pages, plugins and in-place post reading; 1.3.8 was a repeat. 1.4.2 also shipped link previews, per-screen visibility and prefetch/compression. 1.6.0's real additions are unified docs/post editing, publish-on-import and password change/reset.
+- **README password claim fixed**: it is change-password + server-side `reset-password`, not self-service recovery (no email). Now reads "Change your password; an admin locked out can reset one from the server".
+- **Dead docs links fixed at the source**: `.gitignore` no longer ignores all of `/docs/`; it now ignores only `docs/internal/`, `docs/context/`, `design-system.md`, the docs-site page json and `docs/README.md`. Everything else (`public/`, `sdk/`, `mcp/`, `cli-usage.md`, `upgrade-flow.md`, `add-a-block.md`) is trackable, so README links resolve on GitHub once committed. Owner still needs to `git add docs/`.
+- Still open: docs/public systematic audit (spot checks only, forms.md verified current), verbatim-vs-condensed changelog is now resolved, "Why NextPress" voice pending owner, pending roadmap items unchanged.
+
+## Technical gaps audit (2026-11-20)
+
+Real product gaps found in code, beyond docs. Ordered roughly by user impact.
+
+### Confirmed dead or partial
+
+- **`page.templateId` / `post.templateId` is dead UI.** Page settings can set a Template, the value is saved (`shared/schema.ts` `pages.templateId`, `posts.templateId`), but no render path reads it: `server/routes/render.routes.ts` and `public.routes.ts` only resolve template *parts*. `docs/public/_open-questions.md` already flags this; still unfixed.
+- **`server/templates/` looks like dead code.** The `{{variable}}` + display-condition engine (`variable-parser`, `condition-evaluator`, `template-renderer`) has no importer outside its own folder. The live system is `server/lib/template-parts/` + `resolvePageTemplateParts`. UI leftovers remain: `ConditionBuilder` is still wired into `BlockSettings.tsx` and `TemplateModal` into `PreDesignedBlocks.tsx`, so users can build conditions/variables that never reach published output. Needs owner decision: remove the dead engine + UI, or wire it up.
+- **Plugins are a flag, not a runtime.** `plugins.routes.ts` does CRUD + activate/deactivate, but nothing loads plugin code (README already says "no outside-code loader yet"). Activate likely only flips `status`.
+- **No DB restore path.** CLI has export/import/reset and auto-backup before reset/override, but no `nextpress restore`; restoring a dump is manual (documented in `docs/public/_open-questions.md`).
+
+### Confirmed missing endpoints/features
+
+- **Categories and tags have no REST endpoints.** Posts store them in `other.categories`/`other.tags` (`shared/schema.ts`) and `post/info` displays them, but no `categories`/`tags` routes exist. Still on README roadmap.
+- **No public REST search endpoint.** Visitor site search works via a prebuilt index (`server/lib/site-search/`, `/api/public/docs-index`), but there is no query API for headless/SDK use. README roadmap wording already reflects this.
+- **No email of any kind.** No password-reset email, form notifications or comment notifications (`docs/public/index.md` "What it does not do" — accurate).
+- **No image resizing.** Uploads are served as-is (`docs/public/getting-started/what-is-nextpress.md` — accurate).
+- **Inspector panel** not started (README roadmap).
+
+### Verified working (don't re-audit)
+
+Themes CRUD + activate (`themes.routes.ts`, SDK `resources/themes.ts`, MCP `theme-tools.ts`), assistant chats (`assistant-chats.*`), docs sites + docs-index search, forms + submissions + CSV, page transfer, sitemap, RSS `/feed`, published-page cache, response compression, prefetch, roles/invites, one-click updates (`core-update.*`).
+
+### Process note
+
+Tech-gap hunting works well with: `grep -rln "<feature>" server/routes` to confirm endpoints exist, checking whether render/public routes actually consume a stored field (the `templateId` trap), and `git check-ignore`/`git ls-files` for repo-tracking questions.
+
+## Tech gaps doc (2026-11-20)
+
+Actionable gaps written up in `docs/internal/tech-gaps.md` (local-only, gitignored): dead `templateId` field, dead `server/templates/` engine + reachable UI leftovers, plugins runtime, `nextpress restore`, categories/tags endpoints, public search endpoint. Deferred items (email, image resizing, inspector panel) stay here only, per owner.

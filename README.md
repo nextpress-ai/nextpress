@@ -1,6 +1,6 @@
 # Nextpress Beta
 
-A self-hostable WordPress-compatible CMS built in JavaScript/TypeScript.
+A self-hostable publishing platform: websites, documentation sites, blogs, forms and team workflows on your own server and your own domains. WordPress-compatible, with a visual block editor, a built-in AI assistant and a full REST API.
 
 ## Packages
 
@@ -9,7 +9,7 @@ Published npm packages from this monorepo:
 | Package | npm | Description | Docs |
 |---------|-----|-------------|------|
 | **SDK** | [`@nextpress-org/sdk`](https://www.npmjs.com/package/@nextpress-org/sdk) | TypeScript client for pages, posts, blocks, and editor workflows | [`packages/sdk/README.md`](packages/sdk/README.md) · [SDK guides](docs/sdk/README.md) |
-| **MCP** | [`@nextpress-org/mcp`](https://www.npmjs.com/package/@nextpress-org/mcp) | MCP server for Cursor and Claude — agents edit content through the SDK | [`packages/mcp/README.md`](packages/mcp/README.md) |
+| **MCP** | [`@nextpress-org/mcp`](https://www.npmjs.com/package/@nextpress-org/mcp) | MCP server for Cursor and Claude: agents edit content through the SDK | [`packages/mcp/README.md`](packages/mcp/README.md) |
 
 ```bash
 pnpm add @nextpress-org/sdk    # programmatic CMS API
@@ -51,80 +51,101 @@ App image on Docker Hub: [https://hub.docker.com/r/husseinkizz/nextpress](https:
 
 ---
 
+## Why NextPress
+
+- **Your server, your data.** Content, media and the database stay on infrastructure you control. NextPress runs anywhere Docker runs and sends no telemetry.
+- **One install, many sites.** Each site gets its own domain, theme, pages, posts and settings, with HTTPS set up for you.
+- **Built for people and agents.** A visual editor for humans, plus a REST API, official SDK and MCP server so scripts and AI agents can work with the same content.
+- **AI included.** A page assistant and AI-managed themes, using an AI service and key you provide.
+- **WordPress-compatible.** Import posts and pages from WordPress, and talk to a WordPress-style REST API for headless usage.
+
+---
+
 ## What You Can Do With Nextpress
 
-### Blocks (39 total)
+### Blocks (60+)
 
-Nextpress ships **39 blocks** for pages, posts, and templates.
+Nextpress ships **60+ blocks** for pages, posts, templates, and documentation sites. The builder panel groups them the same way:
 
-| Category | Count | Status |
-|----------|-------|--------|
-| Basic | 12 | Stable |
-| Layout | 6 | Stable |
-| Media | 8 | Stable |
-| Form | 3 | Stable |
-| Post | 10 | Stable |
-
-**Basic blocks (12)**
+**Basic**
 
 - [x] Heading
 - [x] Paragraph
 - [x] Button
 - [x] Buttons
-- [x] Quote
-- [x] Pullquote
-- [x] List
-- [x] Code
-- [x] HTML
-- [x] Markdown
-- [x] Preformatted
-- [x] Table
+- [x] Icon (see icon sets below)
+- [x] Badge
 
-**Layout blocks (6)**
+**Form fields**
 
-- [x] Columns
-- [x] Group
-- [x] Container
-- [x] Spacer
-- [x] Separator
-- [x] Divider
+- [x] Form (see [Forms](#forms-and-submissions) below)
+- [x] Text field (`core/input`)
+- [x] Text area (`core/textarea`)
+- [x] Dropdown (`core/select`)
 
-**Media blocks (8)**
+**Media**
 
 - [x] Image
 - [x] Gallery
 - [x] Video
 - [x] Audio
+- [x] Media & Text
 - [x] Cover
-- [x] Media Text
 - [x] File
-- [x] Icon (see icon sets below)
+- [x] Logo cloud
 
-**Form blocks (3)**
+**Layout**
 
-- [x] Text field (`core/input`)
-- [x] Text area (`core/textarea`)
-- [x] Dropdown (`core/select`)
+- [x] Spacer
+- [x] Separator
+- [x] Columns
+- [x] Container
+- [x] Group
+- [x] Stack
+- [x] Grid
+- [x] Card
+- [x] Header (full-site header with brand, links and buttons)
+- [x] Accordion (holds accordion items)
+- [x] Popup (opened by a button or link)
+- [x] Steps (holds steps)
+- [x] Tabs (holds tabs)
 
-**Icon block (4 icon sets) [Experimental]**
+**Advanced**
 
-- [x] **Lucide** (1,736 icons)
-- [x] **react-icons** (9 libraries, ~28K icons)
-- [x] **SVGL** (120+ brand logos)
-- [x] **All** (search across every set)
+- [x] Quote
+- [x] Pullquote
+- [x] List
+- [x] Code
+- [x] HTML
+- [x] Preformatted
+- [x] Table
+- [x] Markdown
+- [x] Search (opens site search; visitors can also press Ctrl+K / Cmd+K)
+- [x] Divider
 
-**Post blocks (10)**
+**Post**
 
 - [x] Post Title
-- [x] Featured Image
 - [x] Excerpt
-- [x] Post List
+- [x] Featured Image
+- [x] Post List (grid, list or card layouts)
 - [x] TOC
 - [x] Author Box
 - [x] Comments
 - [x] Navigation
 - [x] Info
 - [x] Progress
+
+**Docs** (for [documentation sites](#documentation-sites))
+
+- [x] Docs layout, docs page, callout, code group, file tree, params, example, diagram, update
+
+**Icon block (4 icon sets) [Experimental]**
+
+- [x] **Lucide** (1,700+ icons)
+- [x] **react-icons** (9 libraries, ~28K icons)
+- [x] **SVGL** (120+ brand logos, plus custom icon uploads)
+- [x] **All** (search across every set)
 
 ### Multiple sites
 
@@ -152,6 +173,74 @@ Bring content over from an existing WordPress site:
 - [x] Convert Gutenberg HTML and layout blocks into native NextPress blocks
 - [x] Re-import to refresh content you already brought over
 
+### AI assistant
+
+An assistant built into the page editor and the admin:
+
+- [x] Chat with the assistant inside the page builder to create and edit content
+- [x] Persistent conversations: pick up where you left off
+- [x] Bring your own AI service and key (multiple providers supported)
+- [x] AI agents can manage themes through the SDK and MCP server: create, edit and activate
+
+### Documentation sites
+
+Publish documentation alongside your site, with dedicated docs blocks:
+
+- [x] Docs sites with their own navigation and search
+- [x] Docs-specific blocks: callouts, code groups, file trees, params, examples, diagrams, update markers
+- [x] Docs pages use the same block editor as pages and posts
+
+### Blogs and posts
+
+- [x] Multiple blogs per site, each with its own layout
+- [x] Blog-aware post editor with Markdown-style shortcuts and slash commands
+- [x] Post blocks for title, excerpt, featured image, lists, TOC, author box, comments, navigation, info and reading progress
+- [x] Categories and tags on posts
+- [x] Visitor comments with moderation
+
+### People and roles
+
+- [x] Roles per site: subscriber, editor, admin, owner
+- [x] Invite people with invitation links
+- [x] Permission-aware dashboard
+- [x] Change your password; an admin locked out can reset one from the server
+
+### Themes
+
+- [x] Visual theme editor with live preview
+- [x] Theme presets to start from
+- [x] Import and export themes between installs
+- [x] Per-site themes
+
+### Forms and submissions
+
+- [x] Form block with text, textarea, dropdown and button fields
+- [x] Submissions inbox in the admin
+- [x] Export submissions as CSV
+- [x] Form success popups
+
+### Content portability
+
+Move content without touching the database:
+
+- [x] Export/import whole pages, with images and themes, between NextPress sites
+- [x] Copy and paste blocks between sites
+- [x] Full-install `nextpress export` / `import` / `reset` CLI for backups and server moves (see [`docs/cli-usage.md`](docs/cli-usage.md))
+
+### Search and discovery
+
+- [x] Search block and site-wide search (Ctrl+K / Cmd+K)
+- [x] Automatic XML sitemap
+- [x] RSS feed
+- [x] Social previews (Open Graph and Twitter Card tags)
+
+### Performance
+
+- [x] Published-page caching with automatic invalidation on content or theme changes
+- [x] Page prefetching for faster navigation
+- [x] Response compression and image lazy-loading
+- [x] Self-hosted fonts, no third-party font CDN
+
 ### REST API
 
 WordPress-compatible endpoints for headless or traditional usage:
@@ -170,7 +259,9 @@ WordPress-compatible endpoints for headless or traditional usage:
 - [x] Dashboard data
 - [x] Templates CRUD
 - [x] **WordPress import** (posts and pages)
-- [ ] Themes management
+- [x] Themes management
+- [x] Page transfer (cross-site export/import)
+- [x] Form submissions
 - [x] Preview mode for drafts
 - [x] Preview **share links** (token-based, no login)
 - [x] Public REST API for headless CMS usage
@@ -180,7 +271,13 @@ WordPress-compatible endpoints for headless or traditional usage:
 The visual editor for creating and arranging content:
 
 - [x] Block-based editing with drag and drop
+- [x] Inline canvas text editing
+- [x] Markdown-style shortcuts and slash commands
 - [x] Device preview (Desktop, Tablet, Mobile)
+- [x] Motion and animation controls per block
+- [x] Cmd+K navigation and site search
+- [x] Sortable content lists and drag-to-reorder
+- [x] Responsive overflow checks
 - [x] Page settings (title, slug, template, status, SEO meta, fonts, width, padding)
 - [x] Block settings (styles, spacing, colors, hover states, link URLs)
 - [x] Typography and corner-shape presets in settings
@@ -204,6 +301,7 @@ Create reusable page layouts with dynamic content:
 - [x] Insert templates into pages and posts
 - Template variables: site, post, page, author, date (24 total variables available)
 - Condition types: is_home, is_single, is_page, post_in_category, etc.
+- Linked template parts: design a header, footer or section once and show it on many pages; edits reach every page that uses it
 
 ### SEO Features
 
@@ -223,8 +321,8 @@ Built to grow with your needs:
 
 - [x] WordPress-style action and filter hooks
 - [x] Plugins admin: add, turn on or off, and remove (no outside-code loader yet)
-- [ ] Theme system with template overrides
-- [x] Template system for creating reusable layouts
+- [x] Theme system with visual editor, presets and import/export
+- [x] Linked template parts: reusable headers, footers and sections shared across pages
 - [x] Public REST API for headless usage
 - [x] Official SDK ([`@nextpress-org/sdk`](packages/sdk/README.md)): pages, posts, blocks, editor sessions, preview links
 - [x] API keys with permission presets in Settings
@@ -242,6 +340,8 @@ The technical foundation that makes it all work:
 | Install | One-command setup script |
 | Setup | Web-based wizard for initial configuration |
 | Upgrades | CLI-driven upgrades with schema checks and backups |
+| Updates | One-click updates from the dashboard (opt-in per install) |
+| Portability | `nextpress export` / `import` / `reset` for backups and server moves |
 | Health check | `/api/health` for monitoring and orchestration |
 
 ## Current Focus
@@ -266,10 +366,9 @@ These features are on our roadmap:
 |---------|--------|
 | Categories endpoint (for post organization) | Pending |
 | Tags endpoint (for post tagging) | Pending |
-| Search endpoint (content discovery) | Pending |
+| Public REST search endpoint (visitor-facing site search already ships) | Pending |
 | Inspector panel (visual page layout tool) | Not started |
-| Documentation website (dedicated docs site) | Not started |
-| Website builder UI refinements | Not started |
+| Website builder UI refinements | Ongoing |
 
 ## Getting Involved
 

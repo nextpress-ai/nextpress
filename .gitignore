@@ -57,7 +57,12 @@ task-*.md
 working-*.md
 .zcode/
 # The top-level docs folder only: code folders named docs (shared/docs, server/lib/docs, …) are part of the app.
-/docs/
+# Public and product docs are tracked so README links work; internal docs stay local.
+/docs/internal/
+/docs/context/
+/docs/design-system.md
+/docs/nextpress-docs.nextpress-page.json
+/docs/README.md
 opencode.json
 .opencode/
 .claude/
