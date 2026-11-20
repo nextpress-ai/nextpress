@@ -83,21 +83,12 @@ describe("Plugins page", () => {
 		expect(screen.getAllByRole("button", { name: "Add plugin" }).length).toBeGreaterThan(0);
 	});
 
-	it("lists a plugin and turns it on", async () => {
-		const user = userEvent.setup();
-		apiRequest.mockResolvedValue({
-			json: async () => ({ ...samplePlugin, status: "active" }),
-		});
+	it("lists a plugin with where it runs, and offers no way to switch it on", async () => {
 		renderPage([samplePlugin]);
 		expect(await screen.findByText("Search extra")).toBeInTheDocument();
 		expect(screen.getByText("On published pages")).toBeInTheDocument();
-		await user.click(screen.getByRole("switch", { name: "Turn Search extra on" }));
-		await waitFor(() => {
-			expect(apiRequest).toHaveBeenCalledWith(
-				"POST",
-				"/api/plugins/11111111-1111-4111-8111-111111111111/activate",
-			);
-		});
+		expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+		expect(screen.queryByText("Off")).not.toBeInTheDocument();
 	});
 
 	it("sends the typed name when adding a plugin", async () => {

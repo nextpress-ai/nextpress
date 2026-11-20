@@ -199,7 +199,25 @@ nextpress reset
 nextpress import ~/data.json
 ```
 
-## 6.3 Reset Password
+## 6.3 Restore
+
+Put a database backup back. The files this restores are the `.sql` backups in
+`backups/`, made before an upgrade, a reset or a restore:
+
+```bash
+nextpress restore backups/nextpress-db-20261025120000.sql
+```
+
+The command:
+
+- Writes a backup of the current data to `backups/` before it changes anything.
+- Prompts for confirmation; `--yes` skips the prompt.
+- Stops the app while the database is replaced, then starts it again and checks its health.
+- Runs migrations after the restore, so a backup from an older version is brought up to date.
+
+For an export file (`.json` or `.tar.gz`), use `nextpress import` instead.
+
+## 6.4 Reset Password
 
 Set a new password for a locked-out account without touching site data:
 
@@ -214,7 +232,7 @@ signs that person out everywhere. For scripts, read the password from a pipe:
 printf '%s' "$NEW_PASSWORD" | nextpress reset-password you@example.com --password-stdin
 ```
 
-## 6.4 Updates From the Dashboard
+## 6.5 Updates From the Dashboard
 
 Turn one-click updates from the admin dashboard on, off, or check them:
 

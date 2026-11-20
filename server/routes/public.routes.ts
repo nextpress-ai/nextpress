@@ -26,6 +26,8 @@ import { siteSearchIndexOf } from '../lib/site-search';
 import { findPageByPath } from '../lib/page-paths/page-paths';
 import { matchesIfNoneMatch } from './shared/if-none-match';
 import { composeWrittenPost } from '../lib/compose-written-post';
+import { createRateLimiter } from '../utils/rate-limit';
+import { clientAddress } from '../utils/client-address';
 
 /** A browser may reuse its copy of the search index for a minute, then asks again (a cheap 304 when nothing changed). */
 const DOCS_INDEX_CACHE_CONTROL = 'public, max-age=60, must-revalidate';
@@ -37,6 +39,7 @@ export function createPublicRoutes(deps: Deps): Router {
   const router = Router();
   const { models } = deps;
   const searchIndex = siteSearchIndexOf({ models });
+  const checkSearchLimit = createRateLimiter();
 
   const siteIdentity = async (site: Site) => {
     const stored = await models.sites.getSettings(site.id);
@@ -304,6 +307,40 @@ export function createPublicRoutes(deps: Deps): Router {
         res.setHeader('Cache-Control', 'no-store');
         res.status(500).json({ message: "Search isn't available right now. Try again in a moment." });
       }
+    }),
+  );
+
+  /**
+   * GET /api/public/search?q=… — search the site the address belongs to, for headless readers and the
+   * SDK. Answers from the same prebuilt index the visitor's browser downloads, so a result is never
+   * older than what a visitor sees. Only what a visitor may read is in that index. Sixty searches a
+   * minute per address; an empty query answers with no results rather than an error.
+   */
+  router.get(
+    '/search',
+    asyncHandler(async (req, res) => {
+      if (!checkSearchLimit({ key: clientAddress(req), limit: 60, windowMs: 60_000 })) {
+        return res.status(429).json({ message: 'Too many searches. Wait a moment and try again.' });
+      }
+
+      const query = typeof req.query.q === 'string' ? req.query.q : '';
+      const requested = Number.parseInt(String(req.query.limit ?? ''), 10);
+      const limit = Number.isFinite(requested) ? requested : undefined;
+
+      const { err, result } = await safeTryAsync(async () => {
+        const site = await resolvePublicSite({ models, req, siteIdHint: readPublicSiteIdHint(req) });
+        if (!site) return null;
+        const results = await searchIndex.search({ siteId: site.id, query, limit });
+        return { query, results };
+      });
+
+      if (err) {
+        console.error({ atFunction: 'public.search', data: { host: req.get('host') ?? null, error: err }, message: 'Could not search the site' });
+        return res.status(500).json({ message: "Search isn't available right now. Try again in a moment." });
+      }
+      if (!result) return res.status(404).json({ message: 'Site not found' });
+      res.setHeader('Cache-Control', 'no-store');
+      res.json(result);
     }),
   );
 

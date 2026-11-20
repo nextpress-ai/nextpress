@@ -19,6 +19,6 @@ The items below need a decision from the owner, or a check on a running install,
 ## Left out on purpose
 
 - **Blog and docs editors.** Both now use the standard block editor with Markdown shortcuts and slash commands. The docs cover creating a blog, a post and a docs site, but do not yet go deep on editor features; the MCP docs tools are still listed by name only.
-- **Plugins screen.** Plugins can be added and switched on or off, but no plugin code is loaded yet.
-- **Restoring a database backup.** NextPress has no restore command. A restore procedure needs the owner's approval before it is published.
+- **Plugins screen.** Plugins can be added and removed. Switching one on is not offered yet, because no plugin code is loaded.
+- **Restoring a database backup.** `nextpress restore <file>` now replaces the database from a `.sql` backup. It writes a backup of the current data first.
 - **Template variables and display rules.** Listed as experimental in the README and not confirmed in the editor.

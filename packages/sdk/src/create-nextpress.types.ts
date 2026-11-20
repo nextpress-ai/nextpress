@@ -25,6 +25,7 @@ import type {
 	SiteInfoResource,
 	SitesResource,
 	SystemResource,
+	TaxonomyResource,
 	TemplatesResource,
 	ThemesResource,
 	UsersResource,
@@ -45,6 +46,7 @@ export type NextpressClient = {
 	auth: AuthResource;
 	posts: PostsResource;
 	pages: PagesResource;
+	taxonomy: TaxonomyResource;
 	blogs: BlogsResource;
 	comments: CommentsResource;
 	media: MediaResource;

@@ -66,6 +66,7 @@ working-*.md
 opencode.json
 .opencode/
 .claude/
+.commandcode/
 backup/opencode.json.bak
 
 # Release media assets (binaries — not committed to source)

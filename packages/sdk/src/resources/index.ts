@@ -19,6 +19,7 @@ export type { SettingsResource } from "./settings.js";
 export type { SiteInfoResource } from "./site-info.js";
 export type { SitesResource } from "./sites.js";
 export type { SystemResource } from "./system.js";
+export type { TaxonomyResource, TaxonomyTerm } from "./taxonomy.js";
 export type { TemplatesResource } from "./templates.js";
 export type { ThemesResource } from "./themes.js";
 export type { UsersResource } from "./users.js";

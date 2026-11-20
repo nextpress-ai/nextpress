@@ -7,4 +7,4 @@ export {
 	type SearchIndexOptions,
 	type SearchIndexPayload,
 } from "./search-index-options";
-export { createSiteSearchIndex, scheduleSearchIndexRebuild, siteSearchIndexOf, type BuiltSearchIndex, type SiteSearchIndex } from "./site-search-index";
+export { createSiteSearchIndex, scheduleSearchIndexRebuild, siteSearchIndexOf, type BuiltSearchIndex, type SearchHit, type SiteSearchIndex } from "./site-search-index";

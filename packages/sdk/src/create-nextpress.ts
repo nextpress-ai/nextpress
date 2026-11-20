@@ -26,6 +26,7 @@ import { createSettingsResource } from "./resources/settings.js";
 import { createSiteInfoResource } from "./resources/site-info.js";
 import { createSitesResource } from "./resources/sites.js";
 import { createSystemResource } from "./resources/system.js";
+import { createTaxonomyResource } from "./resources/taxonomy.js";
 import { createTemplatesResource } from "./resources/templates.js";
 import { createThemesResource } from "./resources/themes.js";
 import { createUsersResource } from "./resources/users.js";
@@ -77,6 +78,7 @@ export function createNextpress(options: NextpressOptions): NextpressClient {
 		auth: createAuthResource({ http }),
 		posts,
 		pages,
+		taxonomy: createTaxonomyResource({ http }),
 		blogs: createBlogsResource({ http }),
 		comments: createCommentsResource({ http }),
 		media: createMediaResource({ http }),

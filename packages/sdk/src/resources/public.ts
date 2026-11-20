@@ -13,6 +13,21 @@ export type PublicPost = Post & {
 	renderedHtml?: string;
 };
 
+/** One search result: where to open it and the words to show. */
+export type PublicSearchResult = {
+	path: string;
+	pageTitle: string;
+	heading: string;
+	excerpt: string;
+	/** Higher is a better match. */
+	score: number;
+};
+
+export type PublicSearchAnswer = {
+	query: string;
+	results: PublicSearchResult[];
+};
+
 export type PublicResource = {
 	/** Fetch published page content for headless frontends by slug. */
 	page: (params: { slug: string }) => Promise<Page>;
@@ -22,6 +37,8 @@ export type PublicResource = {
 	posts: (params?: PublicPostsQuery) => Promise<PaginatedResponse<Post, "posts">>;
 	/** Resolve the configured front page without hard-coding its slug. */
 	homepage: () => Promise<Page>;
+	/** Search the site's published pages: where to open each hit and a short excerpt. */
+	search: (params: { query: string; limit?: number }) => Promise<PublicSearchAnswer>;
 };
 
 /** Creates the public resource for headless published content (no auth). */
@@ -60,6 +77,16 @@ export function createPublicResource({ http }: { http: HttpClient }): PublicReso
 		/** Resolve the configured front page without hard-coding its slug. */
 		homepage: async (): Promise<Page> => {
 			return http.request("/api/public/homepage", { auth: false });
+		},
+
+		/** Search the site's published pages; an empty query answers with no results. */
+		search: async ({ query, limit }: { query: string; limit?: number }): Promise<PublicSearchAnswer> => {
+			const q = query.trim();
+			if (!q) return { query: "", results: [] };
+			return http.request("/api/public/search", {
+				auth: false,
+				query: { q, limit },
+			});
 		},
 	};
 }
