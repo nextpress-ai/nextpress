@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import MiniSearch from "minisearch";
 import { buildPagePaths, pagePathInputOf } from "@shared/page-paths";
 import type { BlockConfig } from "@shared/schema-types";
 import type { Deps } from "../../routes/shared/deps";
@@ -7,7 +8,7 @@ import { SITE_PAGE_LIMIT } from "../page-paths/page-paths";
 import { readSitePagesFingerprint } from "../page-paths/site-page-tree";
 import type { SearchablePage } from "./build-search-documents";
 import { buildSearchIndexPayload } from "./build-search-index-payload";
-import { SEARCH_INDEX_VERSION } from "./search-index-options";
+import { SEARCH_INDEX_OPTIONS, SEARCH_INDEX_VERSION, type SearchDocument, type SearchIndexPayload } from "./search-index-options";
 
 type PageModels = Pick<Deps["models"], "pages">;
 
@@ -32,6 +33,18 @@ export type SiteSearchIndex = {
 	readStamp: (params: { siteId: string }) => Promise<{ fingerprint: string; etag: string }>;
 	/** The index for pages that look like `fingerprint`: the saved one if it is current, else one made now (one build at a time, shared). */
 	read: (params: { siteId: string; fingerprint: string }) => Promise<BuiltSearchIndex>;
+	/** Search this site's index for `query` and return the stored result fields, best match first. */
+	search: (params: { siteId: string; query: string; limit?: number }) => Promise<SearchHit[]>;
+};
+
+/** One search result: where to open it and the words to show. The same fields the browser's copy keeps. */
+export type SearchHit = {
+	path: string;
+	pageTitle: string;
+	heading: string;
+	excerpt: string;
+	/** Higher is a better match. */
+	score: number;
 };
 
 type SiteState = {
@@ -39,6 +52,8 @@ type SiteState = {
 	waiting: ReturnType<typeof setTimeout> | null;
 	building: Promise<BuiltSearchIndex> | null;
 	changedWhileBuilding: boolean;
+	/** The built body loaded back into a searchable index, kept beside it so a query does not load it twice. */
+	searchable: { built: BuiltSearchIndex; mini: MiniSearch<SearchDocument> } | null;
 };
 
 /** Weak tag: the same pages give the same words, whatever way the reply is compressed. */
@@ -97,7 +112,7 @@ export const createSiteSearchIndex = ({
 	const stateOf = (siteId: string): SiteState => {
 		const existing = sites.get(siteId);
 		if (existing) return existing;
-		const created: SiteState = { built: null, waiting: null, building: null, changedWhileBuilding: false };
+		const created: SiteState = { built: null, waiting: null, building: null, changedWhileBuilding: false, searchable: null };
 		sites.set(siteId, created);
 		return created;
 	};
@@ -158,7 +173,39 @@ export const createSiteSearchIndex = ({
 		return startBuild(siteId);
 	};
 
-	return { schedule, readStamp, read };
+	/** Default result count: enough for a page of results, small enough to answer at once. */
+	const DEFAULT_HITS = 20;
+
+	/**
+	 * Searches the site's saved index on the server. The built body is loaded back into MiniSearch
+	 * with the same options it was made with, then kept beside the body, so a run of queries loads it
+	 * once. A newer build replaces it. Only the fields the browser copy also keeps come back; the full
+	 * page text stays on the server.
+	 */
+	const search = async ({ siteId, query, limit = DEFAULT_HITS }: { siteId: string; query: string; limit?: number }): Promise<SearchHit[]> => {
+		const trimmed = query.trim();
+		if (!trimmed) return [];
+		const state = stateOf(siteId);
+		const stamp = await readStamp({ siteId });
+		const built = await read({ siteId, fingerprint: stamp.fingerprint });
+		if (!state.searchable || state.searchable.built !== built) {
+			const payload = JSON.parse(built.body) as SearchIndexPayload;
+			state.searchable = { built, mini: MiniSearch.loadJSON<SearchDocument>(JSON.stringify(payload.index), SEARCH_INDEX_OPTIONS) };
+		}
+		const max = Math.min(Math.max(1, limit), 50);
+		return state.searchable.mini
+			.search(trimmed, { combineWith: "AND" })
+			.slice(0, max)
+			.map((result) => ({
+				path: String(result.path ?? ""),
+				pageTitle: String(result.pageTitle ?? ""),
+				heading: String(result.heading ?? ""),
+				excerpt: String(result.excerpt ?? ""),
+				score: result.score,
+			}));
+	};
+
+	return { schedule, readStamp, read, search };
 };
 
 const indexes = new WeakMap<PageModels["pages"], SiteSearchIndex>();

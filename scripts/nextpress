@@ -85,6 +85,7 @@ Commands:
   import <file>              Import data from an export file.
   reset [--yes]              Reset the instance to a fresh install (backs up first).
   reset-password <login>     Set a new password for a locked-out account.
+  restore <file> [--yes]     Replace all data from a database backup (backs up first).
   update-helper on|off|status
                              Turn updates from the admin dashboard on or off.
   uninstall --yes            Stop services and remove this install.
@@ -126,6 +127,16 @@ Reset password:
   that person out everywhere. Sites stay up. Nothing else changes.
   --password-stdin reads the password from a pipe instead, for scripts.
 
+Restore:
+  nextpress restore <file> [--yes]
+
+  Replaces everything in the database with a .sql backup, such as the files
+  kept in backups/ before a reset or an upgrade. A backup of the current data
+  is written to backups/ before anything changes. The app stops while the
+  database is replaced, then starts again and is checked. Migrations run
+  after the restore, so a backup from an older version is brought up to date.
+  --yes skips the confirmation. For an export file, use: nextpress import.
+
 Entities: users, sites, pages, blogs, posts, comments, media, templates, options
 
 Updates from the admin dashboard:
@@ -150,6 +161,7 @@ Examples:
   nextpress import nextpress-export-20260827-120000.json
   nextpress import nextpress-export.tar.gz --mode skip
   nextpress reset-password you@example.com
+  nextpress restore backups/nextpress-db-20260101-120000.sql
   nextpress logs
 EOF
 }
@@ -1376,6 +1388,121 @@ run_import() {
 	info "Import complete."
 }
 
+# Restore replaces the whole database with a dump, so every table is dropped first.
+# It is destructive: a backup is taken before anything changes, and a confirmation
+# is required unless --yes is given.
+parse_restore_args() {
+	RESTORE_FILE=""
+	RESTORE_YES="false"
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+			--yes) RESTORE_YES="true"; shift ;;
+			-*) fail "Unknown restore option: $1" ;;
+			*)
+				if [ "$RESTORE_FILE" != "" ]; then
+					fail "Give one backup file. Use: nextpress restore <file>"
+				fi
+				RESTORE_FILE="$1"
+				shift
+				;;
+		esac
+	done
+
+	if [ "$RESTORE_FILE" = "" ]; then
+		fail "Missing backup file. Use: nextpress restore <file> [--yes]"
+	fi
+}
+
+# Refuses anything that is not a plain SQL dump made by pg_dump. A .tar.gz export
+# is not a database dump: that is restored with `nextpress import`.
+assert_restore_file_readable() {
+	case "$RESTORE_FILE" in
+		*.sql) ;;
+		*.tar.gz)
+			fail "That is an export file, not a database backup. Restore it with: nextpress import <file>"
+			;;
+		*) fail "Restore reads a .sql database backup, such as the files in $BACKUP_DIR/. Give a file ending in .sql" ;;
+	esac
+
+	if [ ! -f "$RESTORE_FILE" ]; then
+		fail "Backup file not found: $RESTORE_FILE"
+	fi
+	if [ ! -r "$RESTORE_FILE" ]; then
+		fail "Backup file is not readable: $RESTORE_FILE"
+	fi
+	if [ ! -s "$RESTORE_FILE" ]; then
+		fail "Backup file is empty: $RESTORE_FILE"
+	fi
+}
+
+confirm_restore() {
+	if [ "$RESTORE_YES" = "true" ]; then
+		return
+	fi
+
+	# Opening it is the real test: /dev/tty keeps its permissions even when there is no terminal.
+	if ! { true </dev/tty >/dev/tty; } 2>/dev/null; then
+		fail "Refusing to restore without an interactive terminal. Re-run with --yes if you accept that current data is replaced."
+	fi
+
+	local answer=""
+	printf '%s' "Restore replaces ALL current data in $INSTALL_DIR with $RESTORE_FILE (a backup is made first). Continue? Type yes: " >/dev/tty
+	IFS= read -r answer </dev/tty || fail "Could not read restore confirmation."
+	if [ "$answer" != "yes" ]; then
+		fail "Restore cancelled. Nothing was changed."
+	fi
+}
+
+run_restore() {
+	parse_restore_args "$@"
+	assert_install_dir_exists
+	assert_docker_available
+	load_install_env
+
+	assert_restore_file_readable
+
+	# An absolute path, so the pg_restore redirect inside the subshell (which cds to
+	# INSTALL_DIR) reads the file the person named.
+	case "$RESTORE_FILE" in
+		/*) ;;
+		*) RESTORE_FILE="$(pwd)/$RESTORE_FILE" ;;
+	esac
+
+	info "Preparing to restore NextPress in $INSTALL_DIR from: $RESTORE_FILE"
+
+	ensure_postgres_running
+	confirm_restore
+
+	# A backup first: restoring is the one command that can lose current data.
+	create_db_backup
+
+	# Stop the app so no connections hold the schema open while it is replaced.
+	info "Stopping app service..."
+	compose stop app || true
+
+	info "Clearing the current database..."
+	if ! compose exec -T postgres psql -U postgres -d nextpress -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"; then
+		fail "Could not clear the database. The backup is intact; the app is stopped. Run: nextpress restart"
+	fi
+
+	info "Restoring from the backup..."
+	# The dump is played back through psql: it stops on the first real error, so a
+	# half-restored database is reported instead of looked at as complete.
+	if ! (cd "$INSTALL_DIR" && compose exec -T postgres psql -U postgres -d nextpress -v ON_ERROR_STOP=1 < "$RESTORE_FILE"); then
+		fail "Restore failed partway. The pre-restore backup is in $INSTALL_DIR/$BACKUP_DIR/. The app is stopped."
+	fi
+
+	# A dump may come from an older version. Applying migrations brings it up to this
+	# install's schema; on the same version they have nothing to do.
+	run_schema_migrations "$(app_image)"
+
+	info "Restarting services..."
+	compose up -d
+	wait_for_app_health
+
+	info "Restore complete. Your pre-restore backup is in $INSTALL_DIR/$BACKUP_DIR/"
+}
+
 run_install() {
 	parse_install_args "$@"
 	local target_config
@@ -2306,6 +2433,9 @@ main() {
 			;;
 		reset-password)
 			run_reset_password "${sub_args[@]}"
+			;;
+		restore)
+			run_restore "${sub_args[@]}"
 			;;
 		update-helper)
 			run_update_helper "${sub_args[@]}"

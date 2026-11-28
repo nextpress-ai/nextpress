@@ -360,6 +360,11 @@ const SCOPE_RULES: ScopeRule[] = [
 	},
 	...CONTENT_RESOURCE_RULES,
 	{
+		// Categories and tags are counted from posts, so reading them is reading posts.
+		matches: ({ path }) => path.startsWith("/api/categories") || path.startsWith("/api/tags"),
+		scopes: () => ["posts:read"],
+	},
+	{
 		matches: ({ path }) => path.startsWith("/api/hooks"),
 		scopes: () => ["hooks:read"],
 	},

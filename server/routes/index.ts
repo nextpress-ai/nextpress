@@ -9,6 +9,7 @@ import hooks from '../hooks';
 import { createAuthRoutes } from './auth.routes';
 import { createUsersRoutes } from './users.routes';
 import { createPostsRoutes } from './posts.routes';
+import { createTaxonomyRoutes } from './taxonomy.routes';
 import { createPagesRoutes } from './pages.routes';
 import { createPageTransferRoutes } from './page-transfer.routes';
 import { createDocsRoutes } from './docs.routes';
@@ -133,6 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/invites', createInvitesRoutes({ ...deps, invites: createInviteService({ models: deps.models, createAccount }) }));
 
   app.use('/api/posts', createPostsRoutes(deps));
+  app.use('/api', createTaxonomyRoutes(deps));
   app.use('/api/pages', createPagesRoutes(deps));
   app.use('/api/page-transfer', createPageTransferRoutes(deps));
   app.use('/api/docs', createDocsRoutes(deps));

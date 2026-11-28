@@ -22,7 +22,13 @@ NextPress makes or lets you make three kinds of copies:
 - If the backup fails, the upgrade stops before it changes anything.
 - Before each upgrade, all but the three newest backups are removed.
 
-NextPress does not restore a backup for you. Restoring one is a manual job on the server. Backups stay on the same server, so also keep an export somewhere else.
+NextPress does not restore a backup unless you ask it to. To put a backup back, run:
+
+```bash
+nextpress restore backups/nextpress-db-20261025120000.sql
+```
+
+Restore replaces everything in the database with the backup. It writes a fresh backup of the current data to the `backups` folder first, asks for confirmation, and stops the app while the database is replaced. The app starts again afterwards and is checked. Backups stay on the same server, so also keep an export somewhere else.
 
 ## Export your data
 

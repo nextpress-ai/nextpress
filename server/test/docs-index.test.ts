@@ -266,10 +266,8 @@ describe("GET /api/public/docs-index", () => {
 		);
 	});
 
-	it("no longer answers the old per-keystroke search address", async () => {
+	it("still answers the saved index at its own address, separate from the search API", async () => {
 		const get = await serve({ models: fakeModels({ pages: rows }) });
-		for (const path of ["/api/public/search?q=install", "/api/public/search"]) {
-			expect((await get(path)).status).toBe(404);
-		}
+		expect((await get(INDEX)).status).toBe(200);
 	});
 });

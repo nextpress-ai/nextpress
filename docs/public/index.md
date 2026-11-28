@@ -25,7 +25,7 @@ NextPress is a self-hosted publishing platform. You run it on your own server an
 
 - It sends no email. There are no password reset emails, no form notifications and no comment notifications.
 - It has no AI service of its own. The assistant works only after an admin connects a service and adds a key.
-- It does not restore backups for you. Restoring a database backup is a manual job on the server.
+- It does not restore backups on its own. `nextpress restore <file>` puts a database backup back when you ask it to.
 - The WordPress import does not bring drafts, media libraries, comments, users or menus.
 
 ## How the parts fit together

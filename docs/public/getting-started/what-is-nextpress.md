@@ -46,7 +46,7 @@ The preview in the editor uses the same code that renders the live site, so a pr
 
 - It sends no email of any kind.
 - It does not include an AI service. An admin connects one and adds a key.
-- It does not restore backups for you.
+- It does not restore backups on its own. `nextpress restore <file>` puts a database backup back when you ask it to.
 - It does not resize uploaded pictures. Each picture is served as you uploaded it.
 
 ## Beta
